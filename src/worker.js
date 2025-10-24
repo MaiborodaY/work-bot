@@ -189,10 +189,24 @@ export default {
       await locations.show(u, intro, place);
     }
 
+    // Support multiple admin IDs via env variables: ADMIN_ID, ADMIN2, ADMIN_IDS (comma/space-separated)
+    const __adminIdSet = new Set(
+      [
+        ...String(env.ADMIN_IDS || "")
+          .split(/[\s,]+/)
+          .map(s => s && String(s))
+          .filter(Boolean),
+        ...[env.ADMIN_ID, env.ADMIN2]
+          .filter(Boolean)
+          .map(String),
+      ]
+    );
+    const isAdmin = (id) => __adminIdSet.has(String(id));
+
     const admin = new AdminCommands({
       users,
       send: (text) => send(text),
-      isAdmin: (id) => String(id) === String(env.ADMIN_ID),
+      isAdmin,
     });
 
     // ===== минимальная телеметрия оплаты =====
@@ -377,7 +391,7 @@ if (update.message.successful_payment) {
 
 
       // admin helper: вернуть file_id для фото
-      if (String(userId) === String(env.ADMIN_ID)) {
+      if (isAdmin(userId)) {
         const msg = update.message;
         if (msg?.photo?.length) {
           const p = msg.photo[msg.photo.length - 1];
