@@ -28,7 +28,7 @@ export const CONFIG = {
 
   // Магазин
   SHOP: {
-    coffee:   { title: "☕ КофЭ (+10⚡️)",        price: 12,  heal: 11 },
+    coffee:   { title: "☕ КофЭ (+10⚡️)",        price: 12,  heal: 10 },
     sandwich: { title: "🥪 Сендвич (+25⚡️)",      price: 30,  heal: 25 },
     lunch:    { title: "🍱 Ланч (+50⚡️)",         price: 60,  heal: 50 },
     borscht:  { title: "🥣 Зеленый борщ (+100⚡️)", price: 120, heal: 100 },
