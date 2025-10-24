@@ -165,3 +165,21 @@ dist
 .env*
 !.env.example
 .wrangler/
+
+# node / deps
+node_modules/
+npm-debug.log*
+yarn.lock
+package-lock.json
+
+# build
+dist/
+.esbuild/
+
+# wrangler
+.wrangler/
+.dev.vars
+
+# OS
+.DS_Store
+Thumbs.db
