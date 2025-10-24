@@ -1,0 +1,27 @@
+{
+  "name": "work-bot",
+  "main": "src/worker.js",
+  "workers_dev": true,
+  "preview_urls": false,
+  "compatibility_date": "2025-10-13",
+  "triggers": {
+    "crons": [
+      "*/5 * * * *"
+    ]
+  },
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  },
+  "vars": {
+    "ADMIN_ID": "313719698",
+    "BOT_TOKEN": "8274462230:AAEuKSmFDN6lG5CiB-yCbtHFGKw5iCwKoBk",
+    "WEBHOOK_SECRET": "my-secret-123"
+  },
+  "kv_namespaces": [
+    {
+      "id": "7cc1bceda0154a4f806bc5db5d0ee982",
+      "binding": "DB"
+    }
+  ]
+}
