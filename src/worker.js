@@ -226,6 +226,12 @@ export default {
       const text = (update.message.text || "").trim();
       const u = await users.getOrCreate(userId);
 
+      // /play — send game card with configured game_short_name
+      if (text === "/play") {
+        try { await bot.sendGame(chatId, env.GAME_SHORT_NAME); } catch {}
+        return new Response("ok");
+      }
+
       // chatId для пушей
       if (u.chatId !== chatId) {
         u.chatId = chatId;
@@ -440,6 +446,20 @@ if (update.message.successful_payment) {
     // ---------- CALLBACKS ----------
     if (update.callback_query) {
       const cb = update.callback_query;
+
+      // Game callback: answer with URL to open the game on Pages
+      if (cb.game_short_name && cb.game_short_name === (env.GAME_SHORT_NAME || "")) {
+        const payload = cb.inline_message_id
+          ? { user_id: cb.from.id, inline_message_id: cb.inline_message_id }
+          : { user_id: cb.from.id, chat_id: cb.message.chat.id, message_id: cb.message.message_id };
+
+        const p = btoa(JSON.stringify(payload));
+        const base = String(env.PAGES_URL || "").replace(/\/+$/,'');
+        const openUrl = `${base}/?p=${encodeURIComponent(p)}`;
+        try { await bot.answerCallbackUrl(cb.id, openUrl); } catch {}
+        return new Response("ok");
+      }
+
       const data = cb.data || "";
       const u = await users.getOrCreate(cb.from.id);
 

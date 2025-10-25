@@ -100,6 +100,26 @@ export class TelegramClient {
     });
   }
 
+  // Send a game message using Telegram Games platform
+  async sendGame(chatId, gameShortName) {
+    const body = { chat_id: chatId, game_short_name: gameShortName };
+    await fetch(`${this.base}/sendGame`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  }
+
+  // Answer callback_query with URL to open the game
+  async answerCallbackUrl(callbackQueryId, url) {
+    const body = { callback_query_id: callbackQueryId, url };
+    await fetch(`${this.base}/answerCallbackQuery`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  }
+
   // подтверждение pre_checkout_query (обязательно для Stars)
   async answerPreCheckoutQuery(preCheckoutQueryId, ok = true, error_message = undefined) {
     const body = { pre_checkout_query_id: preCheckoutQueryId, ok };
