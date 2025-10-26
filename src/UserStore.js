@@ -178,7 +178,7 @@ export class UserStore {
     return {
       id,
       money: 20,
-      energy: 30,
+      energy: 5,
       energy_max: CONFIG.ENERGY_MAX,
 
       inv: { coffee: 0, sandwich: 0, lunch: 0 },
@@ -206,7 +206,7 @@ export class UserStore {
       weekTotal: 0,
       weekKey: "",
 
-      premium: 2,
+      premium: 20,
 
       // FastForward дневной лимит
       fastForwardDaily: { day: "", n: 0 },
