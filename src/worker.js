@@ -44,6 +44,17 @@ import { GymService } from "./GymService.js";
 // Новый сервис ускоренного завершения
 import { FastForwardService } from "./FastForwardService.js";
 
+// --- Public links (RU only) ---
+const PRIVACY_URL = "https://sites.google.com/view/world-of-life-privacy/";
+
+const HELP_TEXT = `World of Life — мини-симулятор жизни.
+Как начать: «Заработать» → получите первые монеты → «Прокачка».
+Команды: /start /play /help /privacy
+Поддержка: @WorldOfLifeGame`;
+
+const PRIVACY_TEXT = `Мы храним только ваш Telegram ID и игровые данные.
+Удалим прогресс по запросу (обычно до 72 часов).
+Полная политика: ${PRIVACY_URL}`;
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -223,14 +234,25 @@ export default {
 
     // ---------- MESSAGES ----------
     if (update.message) {
-      const text = (update.message.text || "").trim();
-      const u = await users.getOrCreate(userId);
+  const text = (update.message.text || "").trim();
+  const u = await users.getOrCreate(userId);
 
-      // /play — send game card with configured game_short_name
-      if (text === "/play") {
-        try { await bot.sendGame(chatId, env.GAME_SHORT_NAME); } catch {}
-        return new Response("ok");
-      }
+  // /help
+  if (/^\/help(?:@\w+)?$/i.test(text)) {
+    await send(HELP_TEXT);
+    return new Response("ok");
+  }
+  // /privacy
+  if (/^\/privacy(?:@\w+)?$/i.test(text)) {
+    await send(PRIVACY_TEXT);
+    return new Response("ok");
+  }
+
+  // /play — send game card with configured game_short_name
+  if (text === "/play") {
+    try { await bot.sendGame(chatId, env.GAME_SHORT_NAME); } catch {}
+    return new Response("ok");
+  }
 
       // chatId для пушей
       if (u.chatId !== chatId) {
