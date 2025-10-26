@@ -72,7 +72,7 @@ if (route !== "Shop" && route !== "Home") {
       await this.media.show({
         sourceMsg: this._sourceMsg,
         place: "Square",
-        caption: header +"🏙️ Ты на Площади. Сходи заработай денег на жизнь" + "\n\n" + this.formatters.balance(user),
+        caption: header +"🏙️ Ты на Площади. Нажми Заработать и выбери Работу",
         keyboard: kb,
         policy: "photo",
       });
