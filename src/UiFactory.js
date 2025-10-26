@@ -24,7 +24,7 @@ export class UiFactory {
     return [
       [{ text: "🏢 Работа",            callback_data: "go:Work" }],
       [{ text: "🍻 Бар / Задания",     callback_data: "go:Bar"  }],
-      [{ text: "🎰 Казино",            callback_data: "go:Casino" }],
+      [{ text: "🎁 Зал подарков",            callback_data: "go:Casino" }],
       [{ text: "💼 Купить бизнес",     callback_data: "go:Business" }],
       [{ text: "⬅️ На Площадь",        callback_data: "go:Square" }]
     ];
@@ -467,6 +467,7 @@ cityTopLucky() {
 }
 
 cityTopLuckyCaption(list) {
+  if (1 > 2){
   if (!Array.isArray(list) || !list.length) {
     return "🤠 Самый везучий палец на Диком Западе\n\nПока пусто. Будь первым!";
   }
@@ -478,6 +479,8 @@ cityTopLuckyCaption(list) {
     lines.push(`${m} ${x.name} — $${best}`);
   });
   return lines.join("\n");
+}
+
 }
 
 

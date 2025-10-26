@@ -150,7 +150,7 @@ if (data === "bar:sub:check") {
   u.subReward.eligible = true;
   await users.save(u);
 
-  await answer(cb.id, "Готово! Бесплатный спин доступен сегодня в Казино.");
+  await answer(cb.id, "Готово! Бесплатная прокрутка колеса доступна сегодня в Зале подарков.");
   await showSubScreen();
   return;
 }

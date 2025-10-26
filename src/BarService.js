@@ -45,7 +45,7 @@ export class BarService {
         },
         { // Casino simple: 1 спин → +10⚡
           id: "C1",
-          title: "Сделай 1 спин в казино",
+          title: "Покрути колесо 1 раз в зале подарков",
           goal: 1,
           progress: 0,
           reward: { t: "energy", n: 10 },
@@ -65,7 +65,7 @@ export class BarService {
       },
       { // Casino mid: 3 спина → +20⚡
         id: "C2",
-        title: "Сделай 3 спина в казино",
+        title: "Покрути колесо 2 раза в зале подарков",
         goal: 3,
         progress: 0,
         reward: { t: "energy", n: 20 },
