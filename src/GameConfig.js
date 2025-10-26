@@ -8,7 +8,7 @@ export const CONFIG = {
   START_ENERGY_REQ: 20,
   ENERGY_COST_SHIFT: 15,
   // Стартовый кап энергии (v1)
-  ENERGY_MAX: 30,
+  ENERGY_MAX: 5,
 
   // Новая модель работ — каталог (v1 баланс)
   JOBS: {

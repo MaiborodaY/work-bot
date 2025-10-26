@@ -467,7 +467,6 @@ cityTopLucky() {
 }
 
 cityTopLuckyCaption(list) {
-  if (1 > 2){
   if (!Array.isArray(list) || !list.length) {
     return "🤠 Самый везучий палец на Диком Западе\n\nПока пусто. Будь первым!";
   }
@@ -479,8 +478,6 @@ cityTopLuckyCaption(list) {
     lines.push(`${m} ${x.name} — $${best}`);
   });
   return lines.join("\n");
-}
-
 }
 
 
