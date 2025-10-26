@@ -387,8 +387,8 @@ if (route === "Gym") {
   try {
     const backToGym = (user?.nav?.backTo || null) || "Progress";
     const backText =
-      backToGym === "Work"  ? "��:��? �?�������? �� �?�<�+�?�?�? �?���+�?�'�<" :
-      backToGym === "Study" ? "��:��? �?�������? �� �?�ؑ'�+��" :
+      backToGym === "Work"  ? "Назад, к выбору работы" :
+      backToGym === "Study" ? "Назад, к учебе" :
       backToGym === "Gym"   ? "��:��? �?�������? �? -���>" :
                                "��:��? �?�������?";
     const backCb = `go:${backToGym}`;
