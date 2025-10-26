@@ -1,5 +1,5 @@
 // AdminCommands.js
-// Release 1.0
+// Release 2.0
 // Команды администратора: grant/setmoney + кристаллы (givegem/setgem) + полный вайп (/wipe)
 export class AdminCommands {
   /**
