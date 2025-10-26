@@ -12,11 +12,11 @@ export const CONFIG = {
 
   // Новая модель работ — каталог (v1 баланс)
   JOBS: {
-    flyers:           { title: "Раздача листовок",     durationMs: 2 * 60_000,    pay:  3,  energy:  1 },
-    dishwasher:       { title: "Мойщик посуды",        durationMs: 5 * 60_000,    pay: 10,  energy:  3 },
-    waiter:           { title: "Официант",             durationMs: 10 * 60_000,   pay: 20,  energy:  6 },
+    flyers:           { title: "Раздача листовок",     durationMs: 2 * 60_000,    pay:  7,  energy:  1 },
+    dishwasher:       { title: "Мойщик посуды",        durationMs: 5 * 60_000,    pay: 20,  energy:  6 },
+    waiter:           { title: "Официант",             durationMs: 10 * 60_000,   pay: 38,  energy:  10 },
   
-    courier:          { title: "Курьер",               durationMs: 30 * 60_000,   pay: 54,  energy: 18 },
+    courier:          { title: "Курьер",               durationMs: 30 * 60_000,   pay: 64,  energy: 18 },
     loader:           { title: "Грузчик",              durationMs: 60 * 60_000,   pay:108,  energy: 36 },
     shawarma_seller:  { title: "Продавец шаурмы",      durationMs:120 * 60_000,   pay:216,  energy: 72 },
     dentist:          { title: "Стоматолог",           durationMs:180 * 60_000,   pay:324,  energy:108 },
