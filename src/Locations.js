@@ -383,7 +383,19 @@ if (route === "Gym") {
   } catch {}
 
   // 2) клавиатура как раньше
-  const kb = this.ui.gym(user, this.now(), ffCost);
+  let kb = this.ui.gym(user, this.now(), ffCost);
+  try {
+    const backToGym = (user?.nav?.backTo || null) || "Progress";
+    const backText =
+      backToGym === "Work"  ? "��:��? �?�������? �� �?�<�+�?�?�? �?���+�?�'�<" :
+      backToGym === "Study" ? "��:��? �?�������? �� �?�ؑ'�+��" :
+      backToGym === "Gym"   ? "��:��? �?�������? �? -���>" :
+                               "��:��? �?�������?";
+    const backCb = `go:${backToGym}`;
+    if (Array.isArray(kb) && kb.length > 0) {
+      kb[kb.length - 1] = [{ text: backText, callback_data: backCb }];
+    }
+  } catch {}
 
   // 3) заголовок
   let defaultTitle;
