@@ -14,7 +14,7 @@ import { DailyBonusService } from "./DailyBonusService.js";
 import { ASSETS, JOB_ASSETS } from "./Assets.js";
 
 
-// handlers
+// handlers test comm
 import { workHandler } from "./handlers/work.js";
 import { studyHandler } from "./handlers/study.js";
 import { homeHandler } from "./handlers/home.js";
