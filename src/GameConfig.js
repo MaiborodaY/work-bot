@@ -73,11 +73,11 @@ export const CONFIG = {
   GYM: {
     BASE_TIME_MS:     10 * 60 * 1000,
     BASE_COST_MONEY:  20,
-    BASE_COST_ENERGY: 8,
+    BASE_COST_ENERGY: 5,
 
     TIME_GROWTH:    1.18,
     MONEY_GROWTH:   1.15,
-    ENERGY_GROWTH:  1.08,
+    ENERGY_GROWTH:  1.1,
 
     MAX_TIME_MS:      45 * 60 * 1000,
     MAX_COST_MONEY:   120,
