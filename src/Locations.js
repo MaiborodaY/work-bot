@@ -49,7 +49,7 @@ export class Locations {
     const route = routeOverride || this._route || "Square";
 
 // backTo храним в БД: уходим с Shop/Home — очищаем u.nav.backTo и сохраняем
-if (route !== "Shop" && route !== "Home") {
+if (route !== "Shop" && route !== "Home" && route !== "Gym") {
   if (user?.nav?.backTo) {
     try {
       user.nav.backTo = null;

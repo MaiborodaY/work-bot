@@ -1,6 +1,7 @@
 // handlers/work.js
 import { JobService } from "../JobService.js";
 import { FastForwardService } from "../FastForwardService.js";
+import { CONFIG } from "../GameConfig.js";
 
 export const workHandler = {
   match: (data) =>
@@ -30,6 +31,21 @@ export const workHandler = {
 
     if (data.startsWith("work:start:")) {
       const typeId = data.split(":")[2];
+      // Если максимальной энергии не хватает для выбранной работы — сразу ведём в зал
+      try {
+        const jobType = (CONFIG && CONFIG.JOBS) ? CONFIG.JOBS[typeId] : null;
+        const hasCoffee = Array.isArray(u?.upgrades) && u.upgrades.includes("coffee");
+        const requiredEnergy = jobType ? (hasCoffee ? Math.ceil(jobType.energy * 0.95) : jobType.energy) : null;
+        const energyCap = typeof u?.energy_max === "number" ? u.energy_max : (CONFIG?.ENERGY_MAX ?? 100);
+        if (requiredEnergy != null && energyCap < requiredEnergy) {
+          u.nav = typeof u.nav === "object" && u.nav ? u.nav : {};
+          u.nav.backTo = "Work";
+          await users.save(u);
+          try { await answer(cb.id, "Сначала прокачай максимальную энергию — загляни в тренажёрный зал."); } catch {}
+          await ctx.goTo(u, "Gym", "Прокачай максимальную энергию, чтобы устроиться на работу.");
+          return;
+        }
+      } catch {}
       const res = await jobs.start(u, typeId);
       if (!res.ok) {
         const lowEnergy = String(res.error || "").toLowerCase().includes("энерг");
