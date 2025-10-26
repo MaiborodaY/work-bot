@@ -205,8 +205,8 @@ export class AdminCommands {
     return true;
   }
 
-  // Сортировка по id
-  rows.sort((a, b) => String(a.id).localeCompare(String(b.id)));
+  // Сортировка по name
+  rows.sort((a, b) => String(a.name).localeCompare(String(b.name)));
 
   // Рендер чанками (≈70 строк на сообщение — безопасно для лимита TG)
   const CHUNK = 70;
