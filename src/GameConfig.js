@@ -107,7 +107,7 @@ export const CONFIG = {
     ROUND: "ceil",
     MIN_COST: 1,
     MAX_HOURS_PER_TX: 24,
-    DAILY_LIMIT: 20
+    DAILY_LIMIT: 25
   },
 
   // Баннеры
