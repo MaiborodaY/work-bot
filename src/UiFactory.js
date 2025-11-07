@@ -24,7 +24,7 @@ export class UiFactory {
     return [
       [{ text: "🏢 Работа",            callback_data: "go:Work" }],
       [{ text: "🍻 Бар / Задания",     callback_data: "go:Bar"  }],
-      [{ text: "🎁 Зал подарков",            callback_data: "go:Casino" }],
+      [{ text: "🎁 Казино",            callback_data: "go:Casino" }],
       [{ text: "💼 Купить бизнес",     callback_data: "go:Business" }],
       [{ text: "⬅️ На Площадь",        callback_data: "go:Square" }]
     ];

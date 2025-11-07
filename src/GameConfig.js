@@ -51,7 +51,7 @@ export const CONFIG = {
 
   // Казино
   CASINO: {
-    prices: [5, 10, 20, 50, 100, 200, 500],
+    prices: [5, 10, 20, 50, 100, 200, 500, 100],
     price_low:  5,
     price_high: 10,
     cooldown_ms: 4_000,
@@ -84,7 +84,7 @@ export const CONFIG = {
     MAX_COST_ENERGY:  20,
 
     REWARD_ENERGY_MAX: 1,
-    MAX_ENERGY_CAP:    150
+    MAX_ENERGY_CAP:    160
   },
 
   // 💎 Прем-валюта GEMS ЭТО ЗВЕЗДЫ!!
