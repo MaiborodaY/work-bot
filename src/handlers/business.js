@@ -17,7 +17,7 @@ export const businessHandler = {
       const isOwned = ownedArr.some(it => (typeof it === "string" ? it === B.id : it?.id === B.id));
       if (isOwned) {
         await answer("Уже куплено");
-        await goTo(u, "Business");
+        await goTo(u, (id === "shawarma") ? "Biz_shawarma" : (id === "stomatology") ? "Biz_stomatology" : "Business");
         return;
       }
 
@@ -39,7 +39,7 @@ export const businessHandler = {
       await users.save(u);
 
       await send(`✅ Куплено: ${B.emoji} ${B.title}\n−$${price}\nБаланс: $${u.money}`);
-      await goTo(u, "Business");
+      await goTo(u, (id === "shawarma") ? "Biz_shawarma" : (id === "stomatology") ? "Biz_stomatology" : "Business");
       return;
     }
 
@@ -51,7 +51,7 @@ export const businessHandler = {
         const idx = ownedArr.findIndex(it => (typeof it === "string" ? it === B.id : it?.id === B.id));
         if (idx < 0) {
           await answer("Этот бизнес у тебя не куплен");
-          await goTo(u, "Business");
+          await goTo(u, (id === "shawarma") ? "Biz_shawarma" : (id === "stomatology") ? "Biz_stomatology" : "Business");
           return;
         }
       
@@ -77,7 +77,7 @@ export const businessHandler = {
         await users.save(u);
       
         await send(`💼 ${B.emoji} ${B.title}\n✅ Получено за сегодня: $${reward}\nБаланс: $${u.money}`);
-        await goTo(u, "Business");
+        await goTo(u, (id === "shawarma") ? "Biz_shawarma" : (id === "stomatology") ? "Biz_stomatology" : "Business");
         return;
       }
     await answer("Неизвестное действие");

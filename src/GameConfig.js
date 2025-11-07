@@ -136,6 +136,15 @@ export const CONFIG = {
         daily: 500,          // доход раз в день (UTC)
         resetPolicy: "utc_daily_burn", // не забрал в этот день — сгорает
         note: "Доход начисляется 1 раз в день. Накопление не сохраняется."
+      },
+      stomatology: {
+        id: "stomatology",
+        emoji: "🦷",
+        title: "Стоматология",
+        price: 50000,
+        daily: 1000,
+        resetPolicy: "utc_daily_burn",
+        note: "Доход можно забирать 1 раз в сутки. Накопления между днями нет."
       }
     }
 };

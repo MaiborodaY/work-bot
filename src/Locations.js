@@ -490,6 +490,63 @@ if (route === "BarTasks") {
 
 // ---------- Business ----------
 if (route === "Business") {
+  // Selection-first version when multiple businesses exist
+  try {
+    const all = CONFIG?.BUSINESS || {};
+    const items = Object.keys(all).map(k => all[k]);
+    if (items.length > 1) {
+      const caption = (header || "") + "Свой бизнес\n\nВыберите бизнес:";
+      const kb = items.map(B => [{ text: `${B.emoji} ${B.title}`, callback_data: `go:Biz_${B.id}` }]);
+      kb.push([{ text: "Назад к заработку", callback_data: "go:Earn" }]);
+      await this.media.show({ sourceMsg: this._sourceMsg, place: "Business", caption, keyboard: kb, policy: "photo" });
+      this._sourceMsg = null;
+      this._route = "Business";
+      return;
+    }
+  } catch {}
+  // Multi-business overview when more than one type is configured
+  try {
+    const all = CONFIG?.BUSINESS || {};
+    const items = Object.keys(all).map(k => all[k]);
+    if (items.length > 1) {
+      const todayUTC = new Date().toISOString().slice(0, 10);
+      const captionLines = [];
+      captionLines.push((header || "") + "Свой бизнес\n");
+      const kb = [];
+      const ownedArr = Array.isArray(user?.biz?.owned) ? user.biz.owned : [];
+      for (const B of items) {
+        const ownedObj = ownedArr.find(it => (typeof it === "string" ? it === B.id : it?.id === B.id));
+        const isOwned = !!ownedObj;
+        const claimedToday = isOwned && (ownedObj.lastClaimDayUTC === todayUTC);
+        const availableToday = isOwned && !claimedToday ? (Number(B.daily) || 0) : 0;
+        captionLines.push(`${B.emoji} ${B.title}`);
+        captionLines.push(`Цена: $${B.price}`);
+        captionLines.push(`Доход: $${B.daily} в день`);
+        captionLines.push(`Накопление между днями: не накапливается`);
+        captionLines.push(
+          isOwned
+            ? (claimedToday ? "Статус: доход за сегодня забрано" : `Статус: доступно сегодня: $${availableToday}`)
+            : "Статус: не куплено"
+        );
+        if (B.note) captionLines.push(B.note);
+        captionLines.push("");
+        if (!isOwned) {
+          kb.push([{ text: `Купить ${B.title} за $${B.price}`, callback_data: `biz:buy:${B.id}` }]);
+        } else {
+          if (!claimedToday) {
+            kb.push([{ text: `Забрать $${B.daily} (${B.title})`, callback_data: `biz:claim:${B.id}` }]);
+          } else {
+            kb.push([{ text: `Сегодня уже забрано (${B.title})`, callback_data: "noop" }]);
+          }
+        }
+      }
+      kb.push([{ text: "��:��? �?�������?", callback_data: "go:Earn" }]);
+      await this.media.show({ sourceMsg: this._sourceMsg, place: "Business", caption: captionLines.join("\n"), keyboard: kb, policy: "photo" });
+      this._sourceMsg = null;
+      this._route = "Business";
+      return;
+    }
+  } catch {}
   const B = CONFIG.BUSINESS.shawarma;
   const title = `${B.emoji} ${B.title}`;
   const price = `$${B.price}`;
@@ -542,6 +599,104 @@ if (route === "Business") {
   });
   this._sourceMsg = null;
   this._route = "Business";
+  return;
+}
+
+// ---------- Biz_shawarma ----------
+if (route === "Biz_shawarma") {
+  const B = CONFIG?.BUSINESS?.shawarma;
+  if (!B) { await this.media.show({ sourceMsg: this._sourceMsg, place: "Business", caption: (header||"")+"Бизнес недоступен", keyboard: [[{ text: "Назад", callback_data: "go:Business" }]], policy: "auto" }); this._sourceMsg=null; this._route="Business"; return; }
+
+  const ownedArr = Array.isArray(user?.biz?.owned) ? user.biz.owned : [];
+  const ownedObj = ownedArr.find(it => (typeof it === "string" ? it === B.id : it?.id === B.id));
+  const isOwned = !!ownedObj;
+  const todayUTC = new Date().toISOString().slice(0, 10);
+  const claimedToday = isOwned && (ownedObj.lastClaimDayUTC === todayUTC);
+  const availableToday = isOwned && !claimedToday ? (Number(B.daily)||0) : 0;
+
+  const kb = [];
+  if (!isOwned) {
+    kb.push([{ text: `Купить за $${B.price}`, callback_data: `biz:buy:${B.id}` }]);
+  } else {
+    if (!claimedToday) {
+      kb.push([{ text: `Забрать $${B.daily}`, callback_data: `biz:claim:${B.id}` }]);
+    } else {
+      kb.push([{ text: "Сегодня уже забрано", callback_data: "noop" }]);
+    }
+  }
+  kb.push([{ text: "Назад к бизнесам", callback_data: "go:Business" }]);
+  kb.push([{ text: "Назад к заработку", callback_data: "go:Earn" }]);
+
+  const statusLine = isOwned
+    ? (claimedToday ? "Статус: доход за сегодня забран" : `Статус: доступно сегодня: $${availableToday}`)
+    : "Статус: не куплено";
+
+  const assetShaw = (ASSETS?.BusinessShawarma || JOB_ASSETS?.shawarma_seller || ASSETS?.Business);
+  await this.media.show({
+    sourceMsg: this._sourceMsg,
+    place: "Business",
+    asset: assetShaw,
+    caption:
+      (header || "") +
+      `${B.emoji} ${B.title}\n` +
+      `Цена: $${B.price}\n` +
+      `Доход: $${B.daily} в день\n` +
+      `Накопление между днями: не накапливается\n` +
+      statusLine,
+    keyboard: kb,
+    policy: "photo",
+  });
+  this._sourceMsg = null;
+  this._route = "Biz_shawarma";
+  return;
+}
+
+// ---------- Biz_stomatology ----------
+if (route === "Biz_stomatology") {
+  const B = CONFIG?.BUSINESS?.stomatology;
+  if (!B) { await this.media.show({ sourceMsg: this._sourceMsg, place: "Business", caption: (header||"")+"Бизнес недоступен", keyboard: [[{ text: "Назад", callback_data: "go:Business" }]], policy: "auto" }); this._sourceMsg=null; this._route="Business"; return; }
+
+  const ownedArr = Array.isArray(user?.biz?.owned) ? user.biz.owned : [];
+  const ownedObj = ownedArr.find(it => (typeof it === "string" ? it === B.id : it?.id === B.id));
+  const isOwned = !!ownedObj;
+  const todayUTC = new Date().toISOString().slice(0, 10);
+  const claimedToday = isOwned && (ownedObj.lastClaimDayUTC === todayUTC);
+  const availableToday = isOwned && !claimedToday ? (Number(B.daily)||0) : 0;
+
+  const kb = [];
+  if (!isOwned) {
+    kb.push([{ text: `Купить за $${B.price}`, callback_data: `biz:buy:${B.id}` }]);
+  } else {
+    if (!claimedToday) {
+      kb.push([{ text: `Забрать $${B.daily}`, callback_data: `biz:claim:${B.id}` }]);
+    } else {
+      kb.push([{ text: "Сегодня уже забрано", callback_data: "noop" }]);
+    }
+  }
+  kb.push([{ text: "Назад к бизнесам", callback_data: "go:Business" }]);
+  kb.push([{ text: "Назад к заработку", callback_data: "go:Earn" }]);
+
+  const statusLine = isOwned
+    ? (claimedToday ? "Статус: доход за сегодня забран" : `Статус: доступно сегодня: $${availableToday}`)
+    : "Статус: не куплено";
+
+  const assetSto = (ASSETS?.BusinessStomatology || JOB_ASSETS?.dentist || ASSETS?.Business);
+  await this.media.show({
+    sourceMsg: this._sourceMsg,
+    place: "Business",
+    asset: assetSto,
+    caption:
+      (header || "") +
+      `${B.emoji} ${B.title}\n` +
+      `Цена: $${B.price}\n` +
+      `Доход: $${B.daily} в день\n` +
+      `Накопление между днями: не накапливается\n` +
+      statusLine,
+    keyboard: kb,
+    policy: "photo",
+  });
+  this._sourceMsg = null;
+  this._route = "Biz_stomatology";
   return;
 }
 

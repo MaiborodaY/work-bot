@@ -14,6 +14,8 @@ export const ASSETS = {
     GymActive: "AgACAgIAAxkBAAIZvmj2ZHwyVbrhN23DxKWd1TJp8-_LAAIc-jEb8mK4S1f5DWLdS5CuAQADAgADeQADNgQ",
     CityBoard: "AgACAgIAAxkBAAIciGj3ejh_tt_RdC_H9QABv5CS41yIBAACY_8xG_JiwEs7v8wyU9aNlgEAAwIAA3kAAzYE",
     Premium: "AgACAgIAAxkBAAIdiGj36oNXbt67bnkdEmllXUlFOWATAALOBTIbyKTBSwlYKSgTqMsaAQADAgADeQADNgQ", 
+    BusinessShawarma: "AgACAgIAAxkBAAIeN2j4KNwhPuT_wKCXPnk1azeE4AG2AALsBjIbyKTBS08rjhx33rE9AQADAgADeQADNgQ",
+    BusinessStomatology: "AgACAgIAAxkBAAIgEGj5cG5a2kxu-LhOVOHB6DEIYMnEAAIqAjIbyKTJS9Xq0xq136GaAQADAgADeQADNgQ",
     Business: "AgACAgIAAxkBAAIeN2j4KNwhPuT_wKCXPnk1azeE4AG2AALsBjIbyKTBS08rjhx33rE9AQADAgADeQADNgQ", // ← баннер экрана «Купить бизнес»
 
 
