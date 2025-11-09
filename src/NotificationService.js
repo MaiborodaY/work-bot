@@ -90,7 +90,7 @@ if (this._hasReadyStudy(u, now)) {
 if (this._hasReadyGym(u, now)) {
   const textG = `🏋️ Тренировка завершена — забери результат`;
   await this.bot.sendWithInline(u.chatId, textG, [[{ text: "Перейти в Зал", callback_data: "go:Gym" }]]);
-  if (u.gym && !u.gym.notified) u.gym.notified = true;
+  if (u.gym && !u.gym.notified) { u.gym.notified = true; changed = true; }
 }
 
 if (changed) {
