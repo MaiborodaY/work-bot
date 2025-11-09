@@ -390,7 +390,7 @@ if (route === "Gym") {
       backToGym === "Work"  ? "Назад, к выбору работы" :
       backToGym === "Study" ? "Назад, к учебе" :
       backToGym === "Gym"   ? "Назад" : "Назад";
-    const backCb = `go:${backToGym}`;
+    const backCb = `go:${backToGym === "Gym" ? "Progress" : backToGym}`;
     if (Array.isArray(kb) && kb.length > 0) {
       kb[kb.length - 1] = [{ text: backText, callback_data: backCb }];
     }
