@@ -323,16 +323,16 @@ shop(opts = {}) {
     
 
     // получаем текущие параметры тренировки из сервиса
-    // const { timeMs, costMoney, costEnergy } = GymService.computeForUser(user);
-    // const mins = Math.max(1, Math.round(timeMs / 60000));
+    const { timeMs, costMoney, costEnergy } = GymService.computeForUser(user);
+    const mins = Math.max(1, Math.round(timeMs / 60000));
 
-    // return [
-    //   [{
-    //     text: `🏋️ Начать(−$${costMoney}, −${costEnergy}⚡, ~${mins} мин)`,
-    //     callback_data: "gym:start"
-    //   }],
-    //   [{ text: "⬅️ Назад", callback_data: "go:Progress" }],
-    // ];
+    return [
+      [{
+        text: `🏋️ Начать(−$${costMoney}, −${costEnergy}⚡, ~${mins} мин)`,
+        callback_data: "gym:start"
+      }],
+      [{ text: "⬅️ Назад", callback_data: "go:Progress" }],
+    ];
   }
 
   // ---------- Улучшения ----------
