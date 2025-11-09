@@ -5,8 +5,8 @@ export class DailyBonusService {
   constructor({ users, now }) {
     this.users = users;
     this.now = now || (() => Date.now());
-    this.base = 5;   // $
-    this.step = 2;   // $ за день стрика
+    this.base = 20;   // $
+    this.step = 25;   // $ за день стрика
     this.cap  = 7;   // максимум учитываемых дней в формуле
   }
 

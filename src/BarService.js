@@ -43,14 +43,14 @@ export class BarService {
           reward: { t: "premium", n: 1 },
           status: "active"
         },
-        { // Casino simple: 1 спин → +10⚡
-          id: "C1",
-          title: "Покрути колесо 1 раз в зале подарков",
-          goal: 1,
-          progress: 0,
-          reward: { t: "energy", n: 10 },
-          status: "active"
-        }
+        // { // Casino simple: 1 спин → +10⚡
+        //   id: "C1",
+        //   title: "Покрути колесо 1 раз в зале подарков",
+        //   goal: 1,
+        //   progress: 0,
+        //   reward: { t: "energy", n: 10 },
+        //   status: "active"
+        // }
       ];
     }
 
@@ -63,14 +63,14 @@ export class BarService {
         reward: { t: "premium", n: 2 },
         status: "active"
       },
-      { // Casino mid: 3 спина → +20⚡
-        id: "C2",
-        title: "Покрути колесо 2 раза в зале подарков",
-        goal: 3,
-        progress: 0,
-        reward: { t: "energy", n: 20 },
-        status: "active"
-      }
+      // { // Casino mid: 3 спина → +20⚡
+      //   id: "C2",
+      //   title: "Покрути колесо 2 раза в зале подарков",
+      //   goal: 3,
+      //   progress: 0,
+      //   reward: { t: "energy", n: 20 },
+      //   status: "active"
+      // }
     ];
   }
 

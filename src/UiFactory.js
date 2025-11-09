@@ -24,7 +24,7 @@ export class UiFactory {
     return [
       [{ text: "🏢 Работа",            callback_data: "go:Work" }],
       [{ text: "🍻 Бар / Задания",     callback_data: "go:Bar"  }],
-      [{ text: "🎁 Казино",            callback_data: "go:Casino" }],
+      // [{ text: "🎁 Казино",            callback_data: "go:Casino" }],
       [{ text: "💼 Купить бизнес",     callback_data: "go:Business" }],
       [{ text: "⬅️ На Площадь",        callback_data: "go:Square" }]
     ];
@@ -69,9 +69,9 @@ export class UiFactory {
     const subDay = user?.subReward?.day || "";
     const eligible = !!(user?.subReward?.eligible);
     const showSubBtn = !freeUsed && (subDay !== today || eligible === true);
-    if (showSubBtn) {
-      kb.push([{ text: "🎁 Ежедневная награда за подписку", callback_data: "bar:sub" }]);
-    }
+    // if (showSubBtn) {
+    //   kb.push([{ text: "🎁 Ежедневная награда за подписку", callback_data: "bar:sub" }]);
+    // }
   
     // Главная навигация
     kb.push([{ text: "⬅️ Назад", callback_data: "go:Earn" }]);
@@ -383,9 +383,9 @@ shop(opts = {}) {
         { text: "🧠 Топ умников", callback_data: "city:topsmart" },
         { text: "💪 Топ силачей",    callback_data: "city:topstrong" }
       ],
-      [
-        { text: "🤠 Самый везучий палец на Диком Западе!", callback_data: "city:toplucky" }
-      ],
+      // [
+      //   { text: "🤠 Самый везучий палец на Диком Западе!", callback_data: "city:toplucky" }
+      // ],
       [{ text: "✏️ Изменить ник", callback_data: "social:name" }],
       [{ text: "⬅️ Назад", callback_data: "go:City" }],
     ];
