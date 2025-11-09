@@ -100,8 +100,8 @@ export class UiFactory {
       const rText = fmtReward(t.reward);
       const prog =
         t.id === "W1" ? `${t.progress}/${t.goal} работ` :
-        t.id === "W2" ? `$${t.progress}/$${t.goal}` :
-                        `${t.progress}/${t.goal} спинов`;
+        // t.id === "W2" ? `$${t.progress}/$${t.goal}` :
+        //                 `${t.progress}/${t.goal} спинов`;
   
       kb.push([{ text: `🎯 ${t.title} (награда: ${rText})`, callback_data: "noop" }]);
       kb.push([{ text: `📈 Прогресс: ${prog}`, callback_data: "noop" }]);
@@ -323,16 +323,16 @@ shop(opts = {}) {
     
 
     // получаем текущие параметры тренировки из сервиса
-    const { timeMs, costMoney, costEnergy } = GymService.computeForUser(user);
-    const mins = Math.max(1, Math.round(timeMs / 60000));
+    // const { timeMs, costMoney, costEnergy } = GymService.computeForUser(user);
+    // const mins = Math.max(1, Math.round(timeMs / 60000));
 
-    return [
-      [{
-        text: `🏋️ Начать(−$${costMoney}, −${costEnergy}⚡, ~${mins} мин)`,
-        callback_data: "gym:start"
-      }],
-      [{ text: "⬅️ Назад", callback_data: "go:Progress" }],
-    ];
+    // return [
+    //   [{
+    //     text: `🏋️ Начать(−$${costMoney}, −${costEnergy}⚡, ~${mins} мин)`,
+    //     callback_data: "gym:start"
+    //   }],
+    //   [{ text: "⬅️ Назад", callback_data: "go:Progress" }],
+    // ];
   }
 
   // ---------- Улучшения ----------
