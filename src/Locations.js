@@ -269,7 +269,7 @@ if (route === "ShopHub") {
           place: "Study",
           caption: header + `🎓 Обучайся, чтобы уменьшить время работы\nМаксимальный бонус к скорости ${CONFIG.STUDY.MAX_LEVEL}% `
            + "\n\n" + this.formatters.balance(user)+ "\n" + this.formatters.studyLine(user)
-           +"\n"+"1% к скорости работы за каждое обучение",
+           +"\n"+"+1% к скорости работы за каждое обучение",
           keyboard: this.ui.studyIdle(this.economy.fmtStudyEffects(user)),
           policy: "auto",
         });
@@ -285,7 +285,9 @@ if (route === "ShopHub") {
       await this.media.show({
         sourceMsg: this._sourceMsg,
         place: "Home",
-        caption: "🏠 Ты дома. Можно восстановить энергию с бонусом от кровати."+ "\n\n" + this.formatters.balance(user),
+        caption: "🏠 Ты дома. Можно восстановить энергию с бонусом от кровати."
+        + "\n\n" +"Нажми Отдыхать для начала отдыха или Прервать для получения энергии после отдыха"
+        + "\n\n" + this.formatters.balance(user),
         keyboard: this.ui.home(user, { backTo }),
         policy: "auto",
       });

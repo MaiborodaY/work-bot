@@ -410,7 +410,7 @@ cityTopStrong() {
       return "🏆 Топ дня\n\nПока пусто. Будь первым!";
     }
     const medals = ["🥇","🥈","🥉"];
-    const lines = ["🏆 Топ дня\n"];
+    const lines = ["🏆 Топ дня\n\n Кто за сегодня заработал больше всех?"];
     list.forEach((x, i) => {
       const m = medals[i] || `${i+1}.`;
       lines.push(`${m} ${x.name} — $${x.total}`);
@@ -422,7 +422,7 @@ cityTopStrong() {
       return "🏆 Топ недели\n\nПока пусто. Будь первым!";
     }
     const medals = ["🥇","🥈","🥉"];
-    const lines = ["🏆 Топ недели\n"];
+    const lines = ["🏆 Топ недели\n\n Кто за неделю заработал больше всех?"];
     list.forEach((x, i) => {
       const m = medals[i] || `${i+1}.`;
       lines.push(`${m} ${x.name} — $${x.total}`);
