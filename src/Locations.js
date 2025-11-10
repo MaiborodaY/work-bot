@@ -267,7 +267,9 @@ if (route === "ShopHub") {
         await this.media.show({
           sourceMsg: this._sourceMsg,
           place: "Study",
-          caption: header + `🎓 Обучайся, чтобы уменьшить время работы\nМаксимальный бонус к скорости ${CONFIG.STUDY.MAX_LEVEL}% ` + "\n\n" + this.formatters.balance(user)+ "\n" + this.formatters.studyLine(user),
+          caption: header + `🎓 Обучайся, чтобы уменьшить время работы\nМаксимальный бонус к скорости ${CONFIG.STUDY.MAX_LEVEL}% `
+           + "\n\n" + this.formatters.balance(user)+ "\n" + this.formatters.studyLine(user)
+           +"\n"+"1% к скорости работы за каждое обучение",
           keyboard: this.ui.studyIdle(this.economy.fmtStudyEffects(user)),
           policy: "auto",
         });

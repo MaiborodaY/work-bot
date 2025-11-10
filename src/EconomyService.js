@@ -42,7 +42,7 @@ export class EconomyService {
     const costEnergy = Math.round(CONFIG.STUDY.BASE_COST_ENERGY * pow);
     const mins = Math.round((CONFIG.STUDY.BASE_TIME_MS * pow) / 60000);
 
-    return `−$${costMoney}, −${costEnergy}⚡, +1% к скорости, ~${mins} мин`;
+    return `−$${costMoney}, −${costEnergy}⚡, ~${mins} мин`;
   }
 
   fmtWorkEffects(u) {
