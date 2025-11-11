@@ -122,11 +122,11 @@ export class UiFactory {
   
 
     // ---------- Работа ----------
- workV2(user, options = {}) {
-  const { active = null, ready = false, ffCost = null, onboarding = false } = options;
+workV2(user, options = {}) {
+  const { active = null, ready = false, ffCost = null } = options;
   const kb = [];
 
-  // Активная смена — как было
+  // Активная смена — без изменений
   if (active) {
     if (ready) {
       kb.push([{ text: `✅ Забрать выплату ($${active.plannedPay})`, callback_data: "work:claim" }]);
@@ -143,11 +143,12 @@ export class UiFactory {
     return kb;
   }
 
-  // Пустая (выбор работы): при онбординге показываем только первую работу
-  const entries = Object.entries(CONFIG.JOBS);
-  const list = onboarding ? entries.slice(0, 1) : entries;
+  // ← ЕДИНСТВЕННОЕ НОВОЕ: читаем флаг прямо из user и режем список
+  const onboarding = !!(user && user.flags && user.flags.onboarding);
+  const entriesAll = Object.entries(CONFIG.JOBS);
+  const entries = onboarding ? entriesAll.slice(0, 1) : entriesAll;
 
-  for (const [id, j] of list) {
+  for (const [id, j] of entries) {
     kb.push([{
       text: `${j.title} — ${Math.round(j.durationMs/60000)} мин — $${j.pay} — −${j.energy}⚡`,
       callback_data: `work:start:${id}`
