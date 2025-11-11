@@ -145,7 +145,8 @@ workV2(user, options = {}) {
 
   // 🔙 ПОЛНЫЙ список работ без каких-либо фильтров/условий
   const entries = Object.entries(CONFIG.JOBS || {});
-  for (const [id, j] of entries) {
+  const list = (user?.flags?.onboarding) ? entries.slice(0, 1) : entries;
+  for (const [id, j] of list) {
     const mins = Math.max(1, Math.round((j.durationMs || 0) / 60000));
     kb.push([{
       text: `${j.title} — ${mins} мин — $${j.pay} — −${j.energy}⚡`,

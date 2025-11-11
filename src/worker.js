@@ -323,7 +323,7 @@ if (mStart) {
         // отметим онбординг, если пришли из рекламы: /start ads_* 
   const startPayload = (mStart[1] || "").trim();
   u.flags = u.flags || {};
-  if (/^ads_/i.test(startPayload)) {
+  if (/^ads_/i.test(startPayload) || u.__isNew) {
     u.flags.onboarding = true;            // включаем «стерильный» режим
     u.flags.onboardingStartedAt = now();
   }
@@ -592,8 +592,10 @@ if (cb.game_short_name && cb.game_short_name === (env.TD_GAME_SHORT_NAME || ""))
           stars
         };
 
-const baseHandlers = [
+// Minimal set during onboarding: navigation + work only
+const FULL_HANDLERS = [
   navigationHandler,
+  premiumShopHandler,
   socialHandler,
   barHandler,
   dailyHandler,
@@ -602,31 +604,18 @@ const baseHandlers = [
   studyHandler,
   homeHandler,
   shopHandler,
+  casinoHandler,
   gymHandler,
   upgradesHandler,
 ];
 
+const baseHandlers = [
+  navigationHandler,
+  workHandler,
+];
+
 // во время онбординга скрываем премиум-магазин и казино из обработчиков
-let handlers = [...baseHandlers];
-if (!u.flags?.onboarding) {
-  handlers = [
-    navigationHandler,
-    // магазин премиума разрешаем после онбординга
-    premiumShopHandler,
-    socialHandler,
-    barHandler,
-    dailyHandler,
-    workHandler,
-    businessHandler,
-    studyHandler,
-    homeHandler,
-    shopHandler,
-    // казино тоже только после онбординга
-    casinoHandler,
-    gymHandler,
-    upgradesHandler,
-  ];
-}
+let handlers = (u?.flags?.onboarding) ? [...baseHandlers] : FULL_HANDLERS;
 
 
         for (const h of handlers) {

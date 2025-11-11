@@ -81,6 +81,11 @@ if (route === "Square") {
     }
   }
 
+  // Ensure only one button is shown during onboarding
+  if (onboarding) {
+    kb = [[{ text: "Начать подработку", callback_data: "go:Work" }]];
+  }
+
   await this.media.show({
     sourceMsg: this._sourceMsg,
     place: "Square",
@@ -120,14 +125,7 @@ if (route === "Progress") {
   });
   this._sourceMsg = null;
   this._route = "Progress";
-    try {
-    if (user?.flags?.onboarding) {
-      user.flags.onboarding = false;
-      if (this.users && typeof this.users.save === "function") {
-        await this.users.save(user);
-      }
-    }
-  } catch {}
+    // Keep onboarding active when viewing Progress; it ends after first job start
   return;
 }
 // ---------- City ----------

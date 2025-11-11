@@ -31,6 +31,17 @@ export const workHandler = {
 
     if (data.startsWith("work:start:")) {
       const typeId = data.split(":")[2];
+      // Enforce first-job-only rule during onboarding
+      try {
+        if (u?.flags?.onboarding) {
+          const firstType = Object.keys(CONFIG.JOBS || {})[0];
+          if (firstType && typeId !== firstType) {
+            await answer(cb.id, "Пока доступна только первая подработка.");
+            await render();
+            return;
+          }
+        }
+      } catch {}
       // Если максимальной энергии не хватает для выбранной работы — сразу ведём в зал
       try {
         const jobType = (CONFIG && CONFIG.JOBS) ? CONFIG.JOBS[typeId] : null;

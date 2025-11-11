@@ -9,6 +9,10 @@ export const navigationHandler = {
     // Разрешаем свободную навигацию без проверок занятости.
     // Активности (работа/учёба/отдых) продолжаются в фоне,
     // а их прогресс и возможное авто-завершение уже обрабатываются в Locations.show().
+    if (u?.flags?.onboarding && place !== "Square" && place !== "Work") {
+      await goTo(u, "Square");
+      return;
+    }
     await goTo(u, place);
   }
 };

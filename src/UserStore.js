@@ -224,6 +224,8 @@ export class UserStore {
     const raw = await this.db.get(key);
     if (!raw) {
       const u = this._newUser(id);
+      // Mark as new in-memory (not persisted) to enable onboarding logic on first /start
+      u.__isNew = true;
       await this.save(u);
       return u;
     }
