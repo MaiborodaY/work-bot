@@ -121,20 +121,20 @@ export class UiFactory {
   
   
 
-    // ---------- Работа ----------
+   // ---------- Работа ----------
 workV2(user, options = {}) {
-  const { active = null, ready = false, ffCost = null } = options;
+  const { active = null, ready = false } = options;
   const kb = [];
 
-  // Активная смена — без изменений
+  // если смена идёт — UI как прежде
   if (active) {
     if (ready) {
       kb.push([{ text: `✅ Забрать выплату ($${active.plannedPay})`, callback_data: "work:claim" }]);
       kb.push([{ text: "⏹️ Отменить", callback_data: "work:cancel" }]);
     } else {
       kb.push([{ text: `⏳ Осталось ~${Math.max(0, Math.ceil((active.endAt - Date.now())/60000))} мин`, callback_data: "noop" }]);
-      const costLabel = (typeof ffCost === "number" && ffCost > 0)
-        ? `${CONFIG.PREMIUM.emoji}${ffCost}`
+      const costLabel = (typeof options.ffCost === "number" && options.ffCost > 0)
+        ? `${CONFIG.PREMIUM.emoji}${options.ffCost}`
         : `${CONFIG.PREMIUM.emoji}?`;
       kb.push([{ text: `⏩ Завершить сейчас (${costLabel})`, callback_data: "work:skip" }]);
       kb.push([{ text: "⏹️ Отменить (штраф −5⚡)", callback_data: "work:cancel" }]);
@@ -143,12 +143,28 @@ workV2(user, options = {}) {
     return kb;
   }
 
-  // ← ЕДИНСТВЕННОЕ НОВОЕ: читаем флаг прямо из user и режем список
+  // === вот ключ: во время онбординга показываем только ОДНУ первую работу ===
   const onboarding = !!(user && user.flags && user.flags.onboarding);
-  const entriesAll = Object.entries(CONFIG.JOBS);
-  const entries = onboarding ? entriesAll.slice(0, 1) : entriesAll;
 
-  for (const [id, j] of entries) {
+  const entries = Object.entries(CONFIG.JOBS);
+  let list = entries;
+
+  if (onboarding) {
+    // 1) по умолчанию — первая по порядку из CONFIG.JOBS
+    let first = entries[0];
+
+    // 2) если в ключе/тайтле есть «листов»/«flyer» — берём её приоритетно
+    for (const e of entries) {
+      const [id, j] = e;
+      const hay = (id + " " + (j?.title || "")).toLowerCase();
+      if (hay.includes("листов") || hay.includes("flyer") || hay.includes("раздач")) {
+        first = e; break;
+      }
+    }
+    list = [first]; // ← только одна работа
+  }
+
+  for (const [id, j] of list) {
     kb.push([{
       text: `${j.title} — ${Math.round(j.durationMs/60000)} мин — $${j.pay} — −${j.energy}⚡`,
       callback_data: `work:start:${id}`
@@ -158,6 +174,7 @@ workV2(user, options = {}) {
   kb.push([{ text: "⬅️ На Площадь", callback_data: "go:Square" }]);
   return kb;
 }
+
 
 
   // ---------- Учёба ----------
