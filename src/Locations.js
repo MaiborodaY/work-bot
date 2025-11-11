@@ -189,79 +189,83 @@ if (route === "ShopHub") {
 }
 
 
-    // ---------- Work ----------
-    if (route === "Work") {
-      const active = user.jobs?.active?.[0] || null;
-      if (active) {
-        const leftMin = Math.max(0, Math.ceil((active.endAt - this.now()) / 60000));
-        const ready = this.now() >= active.endAt;
-        const caption = ready
-        ? `✅ Готово к выплате: ${active.title} — [$${active.plannedPay}]`
-        : `▶️ Идёт: ${active.title} (~${leftMin} мин)\n\nСовет: можно заняться другими делами.\n\n` +
-          this.formatters.balance(user);
-     
-;
+// ---------- Work ----------
+if (route === "Work") {
+  const onboarding = !!(user?.flags?.onboarding);            // ← ОБЪЯВЛЯЕМ флаг
+  const active = user.jobs?.active?.[0] || null;
 
-        // динамическая стоимость ускорения
-        let ffCost = null;
-        try {
-          if (this.fastForward && !ready) {
-            const q = this.fastForward.quote(user, "work");
-            if (q?.ok) ffCost = q.cost;
+  if (active) {
+    const leftMin = Math.max(0, Math.ceil((active.endAt - this.now()) / 60000));
+    const ready = this.now() >= active.endAt;
+
+    // динамическая стоимость ускорения
+    let ffCost = null;
+    try {
+      if (this.fastForward && !ready) {
+        const q = this.fastForward.quote(user, "work");
+        if (q?.ok) ffCost = q.cost;
+      }
+    } catch {}
+
+    const typeId = active.typeId;
+    const fileId = JOB_ASSETS[typeId] || ASSETS.WorkDefault;
+
+    const caption = ready
+      ? `✅ Готово к выплате: ${active.title} — [$${active.plannedPay}]`
+      : `▶️ Идёт: ${active.title} (~${leftMin} мин)\n\nСовет: можно заняться другими делами.\n\n` +
+        this.formatters.balance(user);
+
+    await this.media.show({
+      sourceMsg: this._sourceMsg,
+      place: "Work",
+      asset: fileId,
+      caption,
+      keyboard: this.ui.workV2(user, { active, ready, ffCost }),
+      policy: "photo",
+    });
+  } else {
+    const perks = this.formatters.workPerks(user, { hints: true });
+
+    // базовая клавиатура со всеми работами
+    let kb = this.ui.workV2(user, {});
+
+    // 🔒 Онбординг: оставляем только первую кнопку "work:*" (раздача листовок) + Назад
+    if (onboarding && Array.isArray(kb)) {
+      let primaryBtn = null;
+      outer:
+      for (const row of kb) {
+        if (!Array.isArray(row)) continue;
+        for (const btn of row) {
+          if (btn && typeof btn.callback_data === "string" && btn.callback_data.startsWith("work:")) {
+            primaryBtn = btn;
+            break outer;
           }
-        } catch {}
-
-        const typeId = active.typeId;
-        const fileId = JOB_ASSETS[typeId] || ASSETS.WorkDefault;
-        
-        await this.media.show({
-          sourceMsg: this._sourceMsg,
-          place: "Work",
-          asset: fileId,                 // ← override картинки
-          caption,
-          keyboard: this.ui.workV2(user, { active, ready, ffCost }),
-          policy: "photo",               // показываем фото выбранной работы
-        });
-      } else {
-
-        const perks = this.formatters.workPerks(user, { hints: true });
-
-            // базовая клавиатура со всеми работами
-    let kbFull = this.ui.workV2(user, {});
-
-    // 🔒 Во время онбординга оставляем только первую «рабочую» кнопку (например, «раздача листовок»)
-    let kb = kbFull;
-    if (onboarding && Array.isArray(kbFull)) {
-      // найдём первую кнопку, у которой callback_data начинается на "work:"
-      let primaryRow = null;
-      for (const row of kbFull) {
-        if (Array.isArray(row)) {
-          const hasWorkBtn = row.some(b => b && typeof b.callback_data === "string" && /^work:/.test(b.callback_data));
-          if (hasWorkBtn) { primaryRow = row.filter(b => b?.callback_data && /^work:/.test(b.callback_data)); break; }
         }
       }
-      // если нашли — показываем только её, плюс «Назад»
-      if (primaryRow && primaryRow.length) {
-        kb = [
-          primaryRow.slice(0, 1),                         // ← ровно одна кнопка: первая работа (раздача листовок)
-          [{ text: "⬅️ На Площадь", callback_data: "go:Square" }],
-        ];
-      }
+      kb = primaryBtn
+        ? [[primaryBtn], [{ text: "⬅️ На Площадь", callback_data: "go:Square" }]]
+        : [[{ text: "⬅️ На Площадь", callback_data: "go:Square" }]];
     }
-        await this.media.show({
-          sourceMsg: this._sourceMsg,
-          place: "Work",
-          caption: header + "🏢 Выбирая работу - получаешь деньги, но тратишь энергию:" + "\n\n" +
-          this.formatters.balance(user) + "\n\n" + "Улучшения работы:\n"+
-          perks,
 
-          keyboard: this.ui.workV2(user, {}),
-          policy: "auto",
-        });
-      }
-      this._sourceMsg = null;
-      this._route = "Work";
-        // ✅ если был онбординг — считаем, что пользователь начал путь, выключаем его
+    const caption = (header || "") +
+      (onboarding
+        ? "Первая подработка: начните с простой задачи. Получите первые монеты.\n\n" + this.formatters.balance(user)
+        : "🏢 Выбирая работу — получаешь деньги, но тратишь энергию:\n\n" +
+          this.formatters.balance(user) + "\n\n" + "Улучшения работы:\n" + perks);
+
+    await this.media.show({
+      sourceMsg: this._sourceMsg,
+      place: "Work",
+      caption,
+      keyboard: kb,                                      // ← ИСПОЛЬЗУЕМ отфильтрованную клавиатуру
+      policy: onboarding ? "photo" : "auto",
+    });
+  }
+
+  this._sourceMsg = null;
+  this._route = "Work";
+
+  // ✅ завершаем онбординг после первого захода на Work
   try {
     if (user?.flags?.onboarding) {
       user.flags.onboarding = false;
@@ -270,8 +274,10 @@ if (route === "ShopHub") {
       }
     }
   } catch {}
+
   return;
-    }
+}
+
 
     // ---------- Study ----------
     if (route === "Study") {
