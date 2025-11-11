@@ -254,6 +254,12 @@ export default {
     return new Response("ok");
   }
 
+    // /td — send game card with configured td_game_short_name
+  if (text === "/td") {
+    try { await bot.sendGame(chatId, env.TD_GAME_SHORT_NAME); } catch {}
+    return new Response("ok");
+  }
+
       // chatId для пушей
       if (u.chatId !== chatId) {
         u.chatId = chatId;
