@@ -192,6 +192,7 @@ if (route === "ShopHub") {
 // ---------- Work ----------
 if (route === "Work") {
   const active = user.jobs?.active?.[0] || null;
+  const onboarding = !!(user?.flags?.onboarding);
 
   if (active) {
     const leftMin = Math.max(0, Math.ceil((active.endAt - this.now()) / 60000));
@@ -230,11 +231,34 @@ if (route === "Work") {
       this.formatters.balance(user) + "\n\n" +
       "Улучшения работы:\n" + perks;
 
+    // === единственное место, где скрываем лишние работы ===
+    let kb;
+    if (onboarding) {
+      // показать только первую работу из CONFIG.JOBS
+      const entries = Object.entries(CONFIG.JOBS);
+      if (entries.length) {
+        const [firstId, j] = entries[0];
+        kb = [
+          [{
+            text: `${j.title} — ${Math.round(j.durationMs/60000)} мин — $${j.pay} — −${j.energy}⚡`,
+            callback_data: `work:start:${firstId}`
+          }],
+          [{ text: "⬅️ На Площадь", callback_data: "go:Square" }],
+        ];
+      } else {
+        // на случай пустого списка работ
+        kb = [[{ text: "⬅️ На Площадь", callback_data: "go:Square" }]];
+      }
+    } else {
+      // обычный режим — все работы
+      kb = this.ui.workV2(user, {});
+    }
+
     await this.media.show({
       sourceMsg: this._sourceMsg,
       place: "Work",
       caption,
-      keyboard: this.ui.workV2(user, {}),   // ← тут уже отфильтрует UiFactory
+      keyboard: kb,                    // ← используем нашу отфильтрованную клавау
       policy: "auto",
     });
   }
@@ -242,7 +266,7 @@ if (route === "Work") {
   this._sourceMsg = null;
   this._route = "Work";
 
-  // Завершить онбординг после первого захода на Work
+  // опционально: если нужно, чтобы онбординг отключался после первого захода
   try {
     if (user?.flags?.onboarding) {
       user.flags.onboarding = false;
@@ -254,6 +278,7 @@ if (route === "Work") {
 
   return;
 }
+
 
 
 
