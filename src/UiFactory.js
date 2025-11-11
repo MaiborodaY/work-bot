@@ -122,49 +122,41 @@ export class UiFactory {
   
 
     // ---------- Работа ----------
-  workV2(user, options = {}) {
-    const { active = null, ready = false, ffCost = null } = options;
-    const kb = [];
-    const onboarding = !!(user?.flags?.onboarding);
+ workV2(user, options = {}) {
+  const { active = null, ready = false, ffCost = null, onboarding = false } = options;
+  const kb = [];
 
-    if (active) {
-      if (ready) {
-        kb.push([{ text: `✅ Забрать выплату ($${active.plannedPay})`, callback_data: "work:claim" }]);
-        kb.push([{ text: "⏹️ Отменить", callback_data: "work:cancel" }]);
-      } else {
-        kb.push([{ text: `⏳ Осталось ~${Math.max(0, Math.ceil((active.endAt - Date.now())/60000))} мин`, callback_data: "noop" }]);
-        const costLabel = (typeof ffCost === "number" && ffCost > 0) ? `${CONFIG.PREMIUM.emoji}${ffCost}` : `${CONFIG.PREMIUM.emoji}?`;
-        kb.push([{ text: `⏩ Завершить сейчас (${costLabel})`, callback_data: "work:skip" }]);
-        kb.push([{ text: "⏹️ Отменить (штраф −5⚡)", callback_data: "work:cancel" }]);
-      }
-      kb.push([{ text: "⬅️ Назад", callback_data: "go:Earn" }]);
-      return kb;
-    }
-
-    // ⛳ Онбординг: показываем только самую первую работу из CONFIG.JOBS
-    if (onboarding) {
-      const [firstId, j] = Object.entries(CONFIG.JOBS)[0] || [];
-      if (firstId && j) {
-        kb.push([{
-          text: `${j.title} — ${Math.round(j.durationMs/60000)} мин — $${j.pay} — −${j.energy}⚡`,
-          callback_data: `work:start:${firstId}`
-        }]);
-      }
-      // На онбординге — «Назад» ведёт на Площадь
-      kb.push([{ text: "⬅️ На Площадь", callback_data: "go:Square" }]);
-      return kb;
-    }
-
-    // Обычный режим: все работы
-    for (const [id, j] of Object.entries(CONFIG.JOBS)) {
-      kb.push([{
-        text: `${j.title} — ${Math.round(j.durationMs/60000)} мин — $${j.pay} — −${j.energy}⚡`,
-        callback_data: `work:start:${id}`
-      }]);
+  // Активная смена — как было
+  if (active) {
+    if (ready) {
+      kb.push([{ text: `✅ Забрать выплату ($${active.plannedPay})`, callback_data: "work:claim" }]);
+      kb.push([{ text: "⏹️ Отменить", callback_data: "work:cancel" }]);
+    } else {
+      kb.push([{ text: `⏳ Осталось ~${Math.max(0, Math.ceil((active.endAt - Date.now())/60000))} мин`, callback_data: "noop" }]);
+      const costLabel = (typeof ffCost === "number" && ffCost > 0)
+        ? `${CONFIG.PREMIUM.emoji}${ffCost}`
+        : `${CONFIG.PREMIUM.emoji}?`;
+      kb.push([{ text: `⏩ Завершить сейчас (${costLabel})`, callback_data: "work:skip" }]);
+      kb.push([{ text: "⏹️ Отменить (штраф −5⚡)", callback_data: "work:cancel" }]);
     }
     kb.push([{ text: "⬅️ Назад", callback_data: "go:Earn" }]);
     return kb;
   }
+
+  // Пустая (выбор работы): при онбординге показываем только первую работу
+  const entries = Object.entries(CONFIG.JOBS);
+  const list = onboarding ? entries.slice(0, 1) : entries;
+
+  for (const [id, j] of list) {
+    kb.push([{
+      text: `${j.title} — ${Math.round(j.durationMs/60000)} мин — $${j.pay} — −${j.energy}⚡`,
+      callback_data: `work:start:${id}`
+    }]);
+  }
+
+  kb.push([{ text: "⬅️ На Площадь", callback_data: "go:Square" }]);
+  return kb;
+}
 
 
   // ---------- Учёба ----------

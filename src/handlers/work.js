@@ -47,26 +47,33 @@ export const workHandler = {
         }
       } catch {}
       const res = await jobs.start(u, typeId);
-      if (!res.ok) {
-        const lowEnergy = String(res.error || "").toLowerCase().includes("энерг");
-        if (lowEnergy) {
-          // Пишем флаг в БД
-          u.nav = typeof u.nav === "object" && u.nav ? u.nav : {};
-          u.nav.backTo = "Work";
-          await users.save(u);
-    
-          await answer(cb.id, "⚡ Не хватает энергии — открыл магазин.");
-          await ctx.goTo(u, "Shop", "Пополнить энергию можно здесь:");
-          return;
-        }
-        await answer(cb.id, res.error || "Не удалось начать работу.");
-        return;
-      }
-      await answer(cb.id, `▶️ Начал: ${res.inst.title} (~${Math.ceil((res.inst.endAt - now()) / 60000)} мин)`);
-      await render();
+  if (!res.ok) {
+    const lowEnergy = String(res.error || "").toLowerCase().includes("энерг");
+    if (lowEnergy) {
+      u.nav = typeof u.nav === "object" && u.nav ? u.nav : {};
+      u.nav.backTo = "Work";
+      await users.save(u);
+
+      await answer(cb.id, "⚡ Не хватает энергии — открыл магазин.");
+      await ctx.goTo(u, "Shop", "Пополнить энергию можно здесь:");
       return;
     }
-    
+    await answer(cb.id, res.error || "Не удалось начать работу.");
+    return;
+  }
+
+  // ✅ первый успешный старт — отключаем онбординг
+  try {
+    if (u?.flags?.onboarding) {
+      u.flags.onboarding = false;
+      await users.save(u);
+    }
+  } catch {}
+
+  await answer(cb.id, `▶️ Начал: ${res.inst.title} (~${Math.ceil((res.inst.endAt - now()) / 60000)} мин)`);
+  await render();
+  return;
+}
     
     
     

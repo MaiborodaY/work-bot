@@ -219,7 +219,7 @@ if (route === "Work") {
       place: "Work",
       asset: fileId,
       caption,
-      keyboard: this.ui.workV2(user, { active, ready, ffCost }),
+      keyboard: this.ui.workV2(user, { active, ready, ffCost }), // активная смена — как было
       policy: "photo",
     });
 
@@ -231,53 +231,20 @@ if (route === "Work") {
       this.formatters.balance(user) + "\n\n" +
       "Улучшения работы:\n" + perks;
 
-    // === единственное место, где скрываем лишние работы ===
-    let kb;
-    if (onboarding) {
-      // показать только первую работу из CONFIG.JOBS
-      const entries = Object.entries(CONFIG.JOBS);
-      if (entries.length) {
-        const [firstId, j] = entries[0];
-        kb = [
-          [{
-            text: `${j.title} — ${Math.round(j.durationMs/60000)} мин — $${j.pay} — −${j.energy}⚡`,
-            callback_data: `work:start:${firstId}`
-          }],
-          [{ text: "⬅️ На Площадь", callback_data: "go:Square" }],
-        ];
-      } else {
-        // на случай пустого списка работ
-        kb = [[{ text: "⬅️ На Площадь", callback_data: "go:Square" }]];
-      }
-    } else {
-      // обычный режим — все работы
-      kb = this.ui.workV2(user, {});
-    }
-
     await this.media.show({
       sourceMsg: this._sourceMsg,
       place: "Work",
       caption,
-      keyboard: kb,                    // ← используем нашу отфильтрованную клавау
+      keyboard: this.ui.workV2(user, { onboarding }), // ← ключевая строка
       policy: "auto",
     });
   }
 
   this._sourceMsg = null;
   this._route = "Work";
-
-  // опционально: если нужно, чтобы онбординг отключался после первого захода
-  try {
-    if (user?.flags?.onboarding) {
-      user.flags.onboarding = false;
-      if (this.users && typeof this.users.save === "function") {
-        await this.users.save(user);
-      }
-    }
-  } catch {}
-
   return;
 }
+
 
 
 
