@@ -291,10 +291,11 @@
           }
         }
 
-    // === /start: авто-ник и сразу на Площадь (без промпта) ===
-    if (text === "/start") {
-      const from = update.message.from || {};
-      if (!u.displayName) {
+// === /start: поддержка deeplink-параметра и стерильный онбординг ===
+const mStart = text.match(/^\/start(?:@\w+)?(?:\s+(\S+))?$/i);
+if (mStart) {
+  const from = update.message.from || {};
+  if (!u.displayName) {
         const fn = (from.first_name || "").trim();
         const ln = (from.last_name || "").trim();
         const candidates = [
@@ -319,25 +320,32 @@
         }
       }
 
+        // отметим онбординг, если пришли из рекламы: /start ads_* 
+  const startPayload = (mStart[1] || "").trim();
+  u.flags = u.flags || {};
+  if (/^ads_/i.test(startPayload)) {
+    u.flags.onboarding = true;            // включаем «стерильный» режим
+    u.flags.onboardingStartedAt = now();
+  }
+
   // старт больше не ждёт ввода
   u.awaitingName = false;
   u.afterNameRoute = "";
   await users.save(u);
 
-  // ✅ Шаг 1: снять возможное «ничего» и сбросить состояние клавы
-  try {
-    await bot.sendMessage(chatId, " ", { reply_markup: { remove_keyboard: true } });
-  } catch {}
+  try { await bot.sendMessage(chatId, " ", { reply_markup: { remove_keyboard: true } }); } catch {}
 
-  // ✅ Шаг 2: отправить сообщение БЕЗ extra — TelegramClient подставит дефолтный reply_markup из конструктора
-  try {
-    await bot.sendMessage(chatId, "Добро пожаловать в World of Life — мини-симулятор жизни.\n1. Нажмите «Заработать» — короткая подработка на 2 минуты.\n2. Получите первые монеты.\n3. Откройте «Прокачка», чтобы ускорять прогресс.");
-  } catch {}
+  // максимально нейтральный текст, без эмодзи/восклицаний
+  const welcome =
+    "Привет! Это мини-симулятор жизни в чате.\n" +
+    "1) Нажмите «Начать подработку».\n" +
+    "2) Получите первые монеты.\n" +
+    "3) Загляните в «Прокачка».";
+  try { await bot.sendMessage(chatId, welcome); } catch {}
 
-  await goTo(u, "Square");
+  await goTo(u, "Square");  // Square сам покажет «стерильный» вариант
   return new Response("ok");
-
-    }
+}
 
 
         
@@ -584,23 +592,42 @@ if (cb.game_short_name && cb.game_short_name === (env.TD_GAME_SHORT_NAME || ""))
           stars
         };
 
-        const handlers = [
-          navigationHandler,
-          // магазин премиума
-          premiumShopHandler,
-          socialHandler,
-          // навигация и прочие
-          barHandler,
-          dailyHandler,
-          workHandler,
-          businessHandler, // ➕ НОВОЕ
-          studyHandler,
-          homeHandler,
-          shopHandler,
-          casinoHandler,
-          gymHandler,
-          upgradesHandler,
-        ];
+const baseHandlers = [
+  navigationHandler,
+  socialHandler,
+  barHandler,
+  dailyHandler,
+  workHandler,
+  businessHandler,
+  studyHandler,
+  homeHandler,
+  shopHandler,
+  gymHandler,
+  upgradesHandler,
+];
+
+// во время онбординга скрываем премиум-магазин и казино из обработчиков
+let handlers = [...baseHandlers];
+if (!u.flags?.onboarding) {
+  handlers = [
+    navigationHandler,
+    // магазин премиума разрешаем после онбординга
+    premiumShopHandler,
+    socialHandler,
+    barHandler,
+    dailyHandler,
+    workHandler,
+    businessHandler,
+    studyHandler,
+    homeHandler,
+    shopHandler,
+    // казино тоже только после онбординга
+    casinoHandler,
+    gymHandler,
+    upgradesHandler,
+  ];
+}
+
 
         for (const h of handlers) {
           if (h.match(data)) {

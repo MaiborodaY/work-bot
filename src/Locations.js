@@ -64,35 +64,69 @@ if (route !== "Shop" && route !== "Home" && route !== "Gym") {
     const header = introText ? introText + "\n\n" : "";
 
     // ---------- Square ----------
-    if (route === "Square") {
-      let kb = this.ui.square();
-      if (this.daily && this.daily.canClaim(user)) {
-        kb = [[{ text: "🎁 Бонус дня", callback_data: "daily:claim" }], ...kb];
-      }
-      await this.media.show({
-        sourceMsg: this._sourceMsg,
-        place: "Square",
-        caption: header +"🏙️ Ты на Площади. Нажми Заработать и выбери Работу",
-        keyboard: kb,
-        policy: "photo",
-      });
-      this._sourceMsg = null;
-      this._route = "Square";
-      return;
+if (route === "Square") {
+  const onboarding = !!(user?.flags?.onboarding);
+
+  let kb;
+  if (onboarding) {
+    // минимум действий и нейтральные подписи
+    kb = [
+      [{ text: "Начать подработку", callback_data: "go:Work" }],
+      [{ text: "Прокачка", callback_data: "go:Progress" }],
+    ];
+  } else {
+    kb = this.ui.square();
+    if (this.daily && this.daily.canClaim(user)) {
+      kb = [[{ text: "🎁 Бонус дня", callback_data: "daily:claim" }], ...kb];
     }
+  }
+
+  await this.media.show({
+    sourceMsg: this._sourceMsg,
+    place: "Square",
+    caption: onboarding
+      ? (header || "") + "Вы на главной. Нажмите «Начать подработку», чтобы получить первые монеты."
+      : (header || "") + "🏙️ Ты на Площади. Нажми Заработать и выбери Работу",
+    keyboard: kb,
+    policy: "photo",
+  });
+  this._sourceMsg = null;
+  this._route = "Square";
+  return;
+}
+
     // ---------- Earn ----------
     if (route === "Earn") {
-      await this.media.show({
-        sourceMsg: this._sourceMsg,
-        place: "Square", // можно оставить Square-ассет; отдельный баннер добавим позже
-        caption: (introText ? introText + "\n\n" : "") + "💼 Заработать: выбери способ дохода",
-        keyboard: this.ui.earn(),
-        policy: "photo",
-      });
-      this._sourceMsg = null;
-      this._route = "Earn";
-      return;
-    }
+  const onboarding = !!(user?.flags?.onboarding);
+  if (onboarding) {
+    await this.media.show({
+      sourceMsg: this._sourceMsg,
+      place: "Square",
+      caption: "Заработать — начните с короткой подработки. Это займёт пару минут.",
+      keyboard: [
+        [{ text: "Начать подработку", callback_data: "go:Work" }],
+        [{ text: "Назад", callback_data: "go:Square" }],
+      ],
+      policy: "photo",
+    });
+    this._sourceMsg = null;
+    this._route = "Earn";
+    return;
+  }
+
+  // обычный режим как было
+  await this.media.show({
+    sourceMsg: this._sourceMsg,
+    place: "Square",
+    caption: (introText ? introText + "\n\n" : "") + "💼 Заработать: выбери способ дохода",
+    keyboard: this.ui.earn(),
+    policy: "photo",
+  });
+  this._sourceMsg = null;
+  this._route = "Earn";
+  return;
+}
+
 // ---------- Progress ----------
 if (route === "Progress") {
   await this.media.show({
@@ -104,6 +138,14 @@ if (route === "Progress") {
   });
   this._sourceMsg = null;
   this._route = "Progress";
+    try {
+    if (user?.flags?.onboarding) {
+      user.flags.onboarding = false;
+      if (this.users && typeof this.users.save === "function") {
+        await this.users.save(user);
+      }
+    }
+  } catch {}
   return;
 }
 // ---------- City ----------
@@ -196,7 +238,16 @@ if (route === "ShopHub") {
       }
       this._sourceMsg = null;
       this._route = "Work";
-      return;
+        // ✅ если был онбординг — считаем, что пользователь начал путь, выключаем его
+  try {
+    if (user?.flags?.onboarding) {
+      user.flags.onboarding = false;
+      if (this.users && typeof this.users.save === "function") {
+        await this.users.save(user);
+      }
+    }
+  } catch {}
+  return;
     }
 
     // ---------- Study ----------
