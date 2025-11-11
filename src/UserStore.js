@@ -163,12 +163,17 @@ export class UserStore {
     // ===== ЛЕГАСИ — мягко удаляем устаревшие ключи =====
     const dropKeys = [
       "status","last_work_start","shifts","goals","last_daily",
-      "streak","achievements","achv","flags","ui","effects",
+      "streak","achievements","achv","ui","effects",
       "skipsToday" // старый суточный лимит скипов работы — больше не используется
     ];
     for (const k of dropKeys) {
       if (k in u) { delete u[k]; dirty = true; }
     }
+
+    // Ensure flags presence and types (used for onboarding persistence)
+    if (!u.flags || typeof u.flags !== "object") { u.flags = {}; dirty = true; }
+    if (typeof u.flags.onboarding !== "boolean") { u.flags.onboarding = false; dirty = true; }
+    if (typeof u.flags.onboardingStartedAt !== "number") { u.flags.onboardingStartedAt = 0; dirty = true; }
 
     if (dirty) await this.save(u);
     return u;
@@ -292,3 +297,4 @@ export class UserStore {
     return { ok: true, value: u.displayName };
   }
 }
+
