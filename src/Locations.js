@@ -191,14 +191,12 @@ if (route === "ShopHub") {
 
 // ---------- Work ----------
 if (route === "Work") {
-  const onboarding = !!(user?.flags?.onboarding);            // ← ОБЪЯВЛЯЕМ флаг
   const active = user.jobs?.active?.[0] || null;
 
   if (active) {
     const leftMin = Math.max(0, Math.ceil((active.endAt - this.now()) / 60000));
     const ready = this.now() >= active.endAt;
 
-    // динамическая стоимость ускорения
     let ffCost = null;
     try {
       if (this.fastForward && !ready) {
@@ -223,49 +221,28 @@ if (route === "Work") {
       keyboard: this.ui.workV2(user, { active, ready, ffCost }),
       policy: "photo",
     });
+
   } else {
     const perks = this.formatters.workPerks(user, { hints: true });
-
-    // базовая клавиатура со всеми работами
-    let kb = this.ui.workV2(user, {});
-
-    // 🔒 Онбординг: оставляем только первую кнопку "work:*" (раздача листовок) + Назад
-    if (onboarding && Array.isArray(kb)) {
-      let primaryBtn = null;
-      outer:
-      for (const row of kb) {
-        if (!Array.isArray(row)) continue;
-        for (const btn of row) {
-          if (btn && typeof btn.callback_data === "string" && btn.callback_data.startsWith("work:")) {
-            primaryBtn = btn;
-            break outer;
-          }
-        }
-      }
-      kb = primaryBtn
-        ? [[primaryBtn], [{ text: "⬅️ На Площадь", callback_data: "go:Square" }]]
-        : [[{ text: "⬅️ На Площадь", callback_data: "go:Square" }]];
-    }
-
-    const caption = (header || "") +
-      (onboarding
-        ? "Первая подработка: начните с простой задачи. Получите первые монеты.\n\n" + this.formatters.balance(user)
-        : "🏢 Выбирая работу — получаешь деньги, но тратишь энергию:\n\n" +
-          this.formatters.balance(user) + "\n\n" + "Улучшения работы:\n" + perks);
+    const caption =
+      (header || "") +
+      "🏢 Выбирая работу — получаешь деньги, но тратишь энергию:\n\n" +
+      this.formatters.balance(user) + "\n\n" +
+      "Улучшения работы:\n" + perks;
 
     await this.media.show({
       sourceMsg: this._sourceMsg,
       place: "Work",
       caption,
-      keyboard: kb,                                      // ← ИСПОЛЬЗУЕМ отфильтрованную клавиатуру
-      policy: onboarding ? "photo" : "auto",
+      keyboard: this.ui.workV2(user, {}),   // ← тут уже отфильтрует UiFactory
+      policy: "auto",
     });
   }
 
   this._sourceMsg = null;
   this._route = "Work";
 
-  // ✅ завершаем онбординг после первого захода на Work
+  // Завершить онбординг после первого захода на Work
   try {
     if (user?.flags?.onboarding) {
       user.flags.onboarding = false;
@@ -277,6 +254,7 @@ if (route === "Work") {
 
   return;
 }
+
 
 
     // ---------- Study ----------
