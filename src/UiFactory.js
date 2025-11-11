@@ -121,12 +121,12 @@ export class UiFactory {
   
   
 
-   // ---------- Работа ----------
+// ---------- Работа ----------
 workV2(user, options = {}) {
   const { active = null, ready = false } = options;
   const kb = [];
 
-  // если смена идёт — UI как прежде
+  // 1) если смена идёт — не трогаем
   if (active) {
     if (ready) {
       kb.push([{ text: `✅ Забрать выплату ($${active.plannedPay})`, callback_data: "work:claim" }]);
@@ -134,8 +134,7 @@ workV2(user, options = {}) {
     } else {
       kb.push([{ text: `⏳ Осталось ~${Math.max(0, Math.ceil((active.endAt - Date.now())/60000))} мин`, callback_data: "noop" }]);
       const costLabel = (typeof options.ffCost === "number" && options.ffCost > 0)
-        ? `${CONFIG.PREMIUM.emoji}${options.ffCost}`
-        : `${CONFIG.PREMIUM.emoji}?`;
+        ? `${CONFIG.PREMIUM.emoji}${options.ffCost}` : `${CONFIG.PREMIUM.emoji}?`;
       kb.push([{ text: `⏩ Завершить сейчас (${costLabel})`, callback_data: "work:skip" }]);
       kb.push([{ text: "⏹️ Отменить (штраф −5⚡)", callback_data: "work:cancel" }]);
     }
@@ -143,30 +142,34 @@ workV2(user, options = {}) {
     return kb;
   }
 
-  // === вот ключ: во время онбординга показываем только ОДНУ первую работу ===
-  const onboarding = !!(user && user.flags && user.flags.onboarding);
+  // 2) детектор «нового игрока» без изменения модели
+  const jobsObj   = user?.jobs || {};
+  const hasAnyJob = !!(jobsObj.startedTotal || jobsObj.doneTotal || jobsObj.history?.length);
+  const studyLvl  = Number(user?.study?.level || 0);
+  const money     = Number.isFinite(user?.money) ? user.money : 0;
 
-  const entries = Object.entries(CONFIG.JOBS);
+  const isNewbie =
+    !!user?.flags?.onboarding ||           // явный флаг онбординга
+    (!hasAnyJob && studyLvl === 0 && money <= 0); // «новый» по факту
+
+  // 3) формируем список работ (в обычном режиме — все)
+  const entries = Object.entries(CONFIG.JOBS || {});
   let list = entries;
 
-  if (onboarding) {
-    // 1) по умолчанию — первая по порядку из CONFIG.JOBS
-    let first = entries[0];
-
-    // 2) если в ключе/тайтле есть «листов»/«flyer» — берём её приоритетно
-    for (const e of entries) {
-      const [id, j] = e;
+  // 4) в режиме онбординга/новичка показываем только одну «стартовую» работу
+  if (isNewbie && entries.length) {
+    // приоритетно ищем раздачу листовок; если нет — берем первую из конфига
+    let first = entries.find(([id, j]) => {
       const hay = (id + " " + (j?.title || "")).toLowerCase();
-      if (hay.includes("листов") || hay.includes("flyer") || hay.includes("раздач")) {
-        first = e; break;
-      }
-    }
-    list = [first]; // ← только одна работа
+      return hay.includes("листов") || hay.includes("раздач") || hay.includes("flyer");
+    }) || entries[0];
+    list = [first];
   }
 
+  // 5) рендер пунктов
   for (const [id, j] of list) {
     kb.push([{
-      text: `${j.title} — ${Math.round(j.durationMs/60000)} мин — $${j.pay} — −${j.energy}⚡`,
+      text: `${j.title} — ${Math.max(1, Math.round((j.durationMs||0)/60000))} мин — $${j.pay} — −${j.energy}⚡`,
       callback_data: `work:start:${id}`
     }]);
   }
@@ -174,6 +177,9 @@ workV2(user, options = {}) {
   kb.push([{ text: "⬅️ На Площадь", callback_data: "go:Square" }]);
   return kb;
 }
+
+
+
 
 
 
