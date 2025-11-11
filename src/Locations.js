@@ -223,22 +223,45 @@ if (route === "Work") {
       policy: "photo",
     });
 
-  } else {
-    const perks = this.formatters.workPerks(user, { hints: true });
-    const caption =
-      (header || "") +
-      "🏢 Выбирая работу — получаешь деньги, но тратишь энергию:\n\n" +
-      this.formatters.balance(user) + "\n\n" +
-      "Улучшения работы:\n" + perks;
+} else {
+  const perks = this.formatters.workPerks(user, { hints: true });
+  const caption =
+    (header || "") +
+    "🏢 Выбирая работу — получаешь деньги, но тратишь энергию:\n\n" +
+    this.formatters.balance(user) + "\n\n" +
+    "Улучшения работы:\n" + perks;
 
-    await this.media.show({
-      sourceMsg: this._sourceMsg,
-      place: "Work",
-      caption,
-      keyboard: this.ui.workV2(user, { onboarding }), // ← ключевая строка
-      policy: "auto",
-    });
+  // === Фильтрация для онбординга: оставляем только первую работу ===
+  const onboarding = !!(user?.flags?.onboarding);
+  let kb;
+
+  if (onboarding) {
+    const entries = Object.entries(CONFIG.JOBS);
+    const [firstId, j] = entries[0] || [];
+    if (firstId && j) {
+      kb = [
+        [{
+          text: `${j.title} — ${Math.round(j.durationMs/60000)} мин — $${j.pay} — −${j.energy}⚡`,
+          callback_data: `work:start:${firstId}`
+        }],
+        [{ text: "⬅️ На Площадь", callback_data: "go:Square" }],
+      ];
+    } else {
+      // fallback — если почему-то нет работ в конфиге
+      kb = [[{ text: "⬅️ На Площадь", callback_data: "go:Square" }]];
+    }
+  } else {
+    kb = this.ui.workV2(user, {}); // обычный полный список
   }
+
+  await this.media.show({
+    sourceMsg: this._sourceMsg,
+    place: "Work",
+    caption,
+    keyboard: kb,                     // ← теперь используем отфильтрованный kb
+    policy: "auto",
+  });
+}
 
   this._sourceMsg = null;
   this._route = "Work";
