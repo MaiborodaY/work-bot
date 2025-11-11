@@ -126,13 +126,14 @@ workV2(user, options = {}) {
   const { active = null, ready = false } = options;
   const kb = [];
 
-  // 1) если смена идёт — не трогаем
+  // если смена идёт — как раньше, без изменений
   if (active) {
     if (ready) {
       kb.push([{ text: `✅ Забрать выплату ($${active.plannedPay})`, callback_data: "work:claim" }]);
       kb.push([{ text: "⏹️ Отменить", callback_data: "work:cancel" }]);
     } else {
-      kb.push([{ text: `⏳ Осталось ~${Math.max(0, Math.ceil((active.endAt - Date.now())/60000))} мин`, callback_data: "noop" }]);
+      const left = Math.max(0, Math.ceil((active.endAt - Date.now())/60000));
+      kb.push([{ text: `⏳ Осталось ~${left} мин`, callback_data: "noop" }]);
       const costLabel = (typeof options.ffCost === "number" && options.ffCost > 0)
         ? `${CONFIG.PREMIUM.emoji}${options.ffCost}` : `${CONFIG.PREMIUM.emoji}?`;
       kb.push([{ text: `⏩ Завершить сейчас (${costLabel})`, callback_data: "work:skip" }]);
@@ -142,34 +143,12 @@ workV2(user, options = {}) {
     return kb;
   }
 
-  // 2) детектор «нового игрока» без изменения модели
-  const jobsObj   = user?.jobs || {};
-  const hasAnyJob = !!(jobsObj.startedTotal || jobsObj.doneTotal || jobsObj.history?.length);
-  const studyLvl  = Number(user?.study?.level || 0);
-  const money     = Number.isFinite(user?.money) ? user.money : 0;
-
-  const isNewbie =
-    !!user?.flags?.onboarding ||           // явный флаг онбординга
-    (!hasAnyJob && studyLvl === 0 && money <= 0); // «новый» по факту
-
-  // 3) формируем список работ (в обычном режиме — все)
+  // 🔙 ПОЛНЫЙ список работ без каких-либо фильтров/условий
   const entries = Object.entries(CONFIG.JOBS || {});
-  let list = entries;
-
-  // 4) в режиме онбординга/новичка показываем только одну «стартовую» работу
-  if (isNewbie && entries.length) {
-    // приоритетно ищем раздачу листовок; если нет — берем первую из конфига
-    let first = entries.find(([id, j]) => {
-      const hay = (id + " " + (j?.title || "")).toLowerCase();
-      return hay.includes("листов") || hay.includes("раздач") || hay.includes("flyer");
-    }) || entries[0];
-    list = [first];
-  }
-
-  // 5) рендер пунктов
-  for (const [id, j] of list) {
+  for (const [id, j] of entries) {
+    const mins = Math.max(1, Math.round((j.durationMs || 0) / 60000));
     kb.push([{
-      text: `${j.title} — ${Math.max(1, Math.round((j.durationMs||0)/60000))} мин — $${j.pay} — −${j.energy}⚡`,
+      text: `${j.title} — ${mins} мин — $${j.pay} — −${j.energy}⚡`,
       callback_data: `work:start:${id}`
     }]);
   }

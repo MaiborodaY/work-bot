@@ -95,26 +95,7 @@ if (route === "Square") {
   return;
 }
 
-    // ---------- Earn ----------
-    if (route === "Earn") {
-  const onboarding = !!(user?.flags?.onboarding);
-  if (onboarding) {
-    await this.media.show({
-      sourceMsg: this._sourceMsg,
-      place: "Square",
-      caption: "Заработать — начните с короткой подработки. Это займёт пару минут.",
-      keyboard: [
-        [{ text: "Начать подработку", callback_data: "go:Work" }],
-        [{ text: "Назад", callback_data: "go:Square" }],
-      ],
-      policy: "photo",
-    });
-    this._sourceMsg = null;
-    this._route = "Earn";
-    return;
-  }
-
-  // обычный режим как было
+if (route === "Earn") {
   await this.media.show({
     sourceMsg: this._sourceMsg,
     place: "Square",
@@ -126,6 +107,7 @@ if (route === "Square") {
   this._route = "Earn";
   return;
 }
+
 
 // ---------- Progress ----------
 if (route === "Progress") {
@@ -231,37 +213,17 @@ if (route === "Work") {
     this.formatters.balance(user) + "\n\n" +
     "Улучшения работы:\n" + perks;
 
-  // === Фильтрация для онбординга: оставляем только первую работу ===
-  const onboarding = !!(user?.flags?.onboarding);
-  let kb;
-
-  if (onboarding) {
-    const entries = Object.entries(CONFIG.JOBS);
-    const [firstId, j] = entries[0] || [];
-    if (firstId && j) {
-      kb = [
-        [{
-          text: `${j.title} — ${Math.round(j.durationMs/60000)} мин — $${j.pay} — −${j.energy}⚡`,
-          callback_data: `work:start:${firstId}`
-        }],
-        [{ text: "⬅️ На Площадь", callback_data: "go:Square" }],
-      ];
-    } else {
-      // fallback — если почему-то нет работ в конфиге
-      kb = [[{ text: "⬅️ На Площадь", callback_data: "go:Square" }]];
-    }
-  } else {
-    kb = this.ui.workV2(user, {}); // обычный полный список
-  }
+  const kb = this.ui.workV2(user, {}); // ВСЕ работы, без фильтра
 
   await this.media.show({
     sourceMsg: this._sourceMsg,
     place: "Work",
     caption,
-    keyboard: kb,                     // ← теперь используем отфильтрованный kb
+    keyboard: kb,
     policy: "auto",
   });
 }
+
 
   this._sourceMsg = null;
   this._route = "Work";
