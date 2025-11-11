@@ -225,6 +225,29 @@ if (route === "ShopHub") {
       } else {
 
         const perks = this.formatters.workPerks(user, { hints: true });
+
+            // базовая клавиатура со всеми работами
+    let kbFull = this.ui.workV2(user, {});
+
+    // 🔒 Во время онбординга оставляем только первую «рабочую» кнопку (например, «раздача листовок»)
+    let kb = kbFull;
+    if (onboarding && Array.isArray(kbFull)) {
+      // найдём первую кнопку, у которой callback_data начинается на "work:"
+      let primaryRow = null;
+      for (const row of kbFull) {
+        if (Array.isArray(row)) {
+          const hasWorkBtn = row.some(b => b && typeof b.callback_data === "string" && /^work:/.test(b.callback_data));
+          if (hasWorkBtn) { primaryRow = row.filter(b => b?.callback_data && /^work:/.test(b.callback_data)); break; }
+        }
+      }
+      // если нашли — показываем только её, плюс «Назад»
+      if (primaryRow && primaryRow.length) {
+        kb = [
+          primaryRow.slice(0, 1),                         // ← ровно одна кнопка: первая работа (раздача листовок)
+          [{ text: "⬅️ На Площадь", callback_data: "go:Square" }],
+        ];
+      }
+    }
         await this.media.show({
           sourceMsg: this._sourceMsg,
           place: "Work",
