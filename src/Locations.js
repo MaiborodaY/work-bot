@@ -64,6 +64,26 @@ if (route !== "Shop" && route !== "Home" && route !== "Gym") {
     const header = introText ? introText + "\n\n" : "";
 
     // ---------- Square ----------
+    // Онбординг: один шаг для трафика из рекламы
+    if (route === "Square" && user?.flags?.onboarding) {
+      const kbOnboarding = [[{ text: "Заработать первые монеты", callback_data: "go:Work" }]];
+
+      await this.media.show({
+        sourceMsg: this._sourceMsg,
+        place: "Square",
+        caption:
+          (header || "") +
+          "Вы на главной площади игры.\n\n" +
+          "Нажмите «Заработать первые монеты», чтобы получить своё первое задание и начать игру.",
+        keyboard: kbOnboarding,
+        policy: "photo",
+      });
+      this._sourceMsg = null;
+      this._route = "Square";
+      return;
+    }
+
+    // ---------- Square (основной режим) ----------
 if (route === "Square") {
   const onboarding = !!(user?.flags?.onboarding);
 
@@ -170,6 +190,28 @@ if (route === "ShopHub") {
 
 
 // ---------- Work ----------
+// Онбординг: первое открытие списка заданий
+if (route === "Work" && user?.flags?.onboarding && !(user.jobs?.active?.[0])) {
+  const kb = this.ui.workV2(user, {});
+  const caption =
+    (header || "") +
+    "Здесь вы выбираете первое задание и получаете за него игровые монеты.\n\n" +
+    this.formatters.balance(user) + "\n\n" +
+    "Выберите первое задание из списка ниже.";
+
+  await this.media.show({
+    sourceMsg: this._sourceMsg,
+    place: "Work",
+    caption,
+    keyboard: kb,
+    policy: "auto",
+  });
+  this._sourceMsg = null;
+  this._route = "Work";
+  return;
+}
+
+// ---------- Work (основной режим) ----------
 if (route === "Work") {
   const active = user.jobs?.active?.[0] || null;
   const onboarding = !!(user?.flags?.onboarding);

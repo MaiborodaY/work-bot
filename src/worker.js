@@ -341,7 +341,12 @@ if (mStart) {
     "1) Нажмите «Начать подработку».\n" +
     "2) Получите первые монеты.\n" +
     "3) Загляните в «Прокачка».";
-  try { await bot.sendMessage(chatId, welcome); } catch {}
+  const onboardingWelcome =
+    "Привет! Это текстовая игра «World of Life» прямо в Telegram.\n\n" +
+    "Здесь вы проходите задания, прокачиваете персонажа и следите за его прогрессом в чате.\n\n" +
+    "Чтобы начать, нажмите кнопку «Заработать первые монеты» ниже — она откроет ваше первое задание.";
+
+  try { await bot.sendMessage(chatId, onboardingWelcome); } catch {}
 
   await goTo(u, "Square");  // Square сам покажет «стерильный» вариант
   return new Response("ok");

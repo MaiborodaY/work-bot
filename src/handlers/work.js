@@ -29,6 +29,17 @@ export const workHandler = {
       return;
     }
 
+    // Доп. проверка для онбординга: разрешаем только первое задание
+    if (data.startsWith("work:start:") && u?.flags?.onboarding) {
+      const typeId = data.split(":")[2];
+      const firstType = Object.keys(CONFIG.JOBS || {})[0];
+      if (firstType && typeId !== firstType) {
+        await answer(cb.id, "Для первого знакомства с игрой можно начать только с первого задания.");
+        await render();
+        return;
+      }
+    }
+
     if (data.startsWith("work:start:")) {
       const typeId = data.split(":")[2];
       // Enforce first-job-only rule during onboarding
