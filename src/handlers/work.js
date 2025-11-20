@@ -1,17 +1,17 @@
-// handlers/work.js
+﻿// handlers/work.js
 import { JobService } from "../JobService.js";
 import { FastForwardService } from "../FastForwardService.js";
 import { CONFIG } from "../GameConfig.js";
 
 export const workHandler = {
   match: (data) =>
-  data === "work:open" ||
-  data.startsWith("work:start:") ||
-  data === "work:claim" ||
-  data === "work:cancel" ||
-  data === "work:skip" ||
-  data === "work:goto:home" ||
-  data === "work:goto:shop",
+    data === "work:open" ||
+    data.startsWith("work:start:") ||
+    data === "work:claim" ||
+    data === "work:cancel" ||
+    data === "work:skip" ||
+    data === "work:goto:home" ||
+    data === "work:goto:shop",
 
   async handle(ctx) {
     const { data, u, cb, answer, users, now, social, goTo, orders, send, sendWithInline } = ctx;
@@ -34,7 +34,7 @@ export const workHandler = {
       const typeId = data.split(":")[2];
       const firstType = Object.keys(CONFIG.JOBS || {})[0];
       if (firstType && typeId !== firstType) {
-        await answer(cb.id, "Для первого знакомства с игрой можно начать только с первого задания.");
+        await answer(cb.id, "Для знакомства с игрой можно начать только с первого задания.");
         await render();
         return;
       }
@@ -43,16 +43,15 @@ export const workHandler = {
     if (data.startsWith("work:start:")) {
       const typeId = data.split(":")[2];
       // Enforce first-job-only rule during onboarding
+      // Правило: во время онбординга можно запускать только первую работу
       try {
-        if (u?.flags?.onboarding) {
-          const firstType = Object.keys(CONFIG.JOBS || {})[0];
-          if (firstType && typeId !== firstType) {
-            await answer(cb.id, "Пока доступна только первая подработка.");
-            await render();
-            return;
-          }
+        if (u?.flags) {
+          u.flags.onboarding = true;
+          u.flags.onboardingStep = "go_gym";
+          await users.save(u);
         }
       } catch {}
+
       // Если максимальной энергии не хватает для выбранной работы — сразу ведём в зал
       try {
         const jobType = (CONFIG && CONFIG.JOBS) ? CONFIG.JOBS[typeId] : null;
@@ -63,52 +62,54 @@ export const workHandler = {
           u.nav = typeof u.nav === "object" && u.nav ? u.nav : {};
           u.nav.backTo = "Work";
           await users.save(u);
-          try { await answer(cb.id, "Сначала прокачай максимальную энергию — загляни в тренажёрный зал."); } catch {}
-          await ctx.goTo(u, "Gym", "Прокачай максимальную энергию, чтобы устроиться на работу.");
+          try { await answer(cb.id, "Сначала прокачай максимум энергии — загляни в зал."); } catch {}
+          await ctx.goTo(u, "Gym", "Прокачай максимум энергии, чтобы взять смену.");
           return;
         }
       } catch {}
-      const res = await jobs.start(u, typeId);
-  if (!res.ok) {
-    const lowEnergy = String(res.error || "").toLowerCase().includes("энерг");
-    if (lowEnergy) {
-      u.nav = typeof u.nav === "object" && u.nav ? u.nav : {};
-      u.nav.backTo = "Work";
-      await users.save(u);
 
-      await answer(cb.id, "⚡ Не хватает энергии — открыл магазин.");
-      await ctx.goTo(u, "Shop", "Пополнить энергию можно здесь:");
+      const res = await jobs.start(u, typeId);
+      if (!res.ok) {
+        const lowEnergy = String(res.error || "").toLowerCase().includes("энерг");
+        if (lowEnergy) {
+          u.nav = typeof u.nav === "object" && u.nav ? u.nav : {};
+          u.nav.backTo = "Work";
+          await users.save(u);
+
+          await answer(cb.id, "⚡ Не хватает энергии — открыл магазин.");
+          await ctx.goTo(u, "Shop", "Пополнить энергию можно здесь:");
+          return;
+        }
+        await answer(cb.id, res.error || "Не удалось начать работу.");
+        return;
+      }
+
+      // Обновляем шаг онбординга после запуска первой смены
+      try {
+        if (u?.flags) {
+          u.flags.onboarding = true;
+          u.flags.onboardingStep = "go_gym";
+          await users.save(u);
+        }
+      } catch {}
+
+      await answer(
+        cb.id,
+        `▶️ Начало: ${res.inst.title} (~${Math.ceil((res.inst.endAt - now()) / 60000)} мин)`
+      );
+      await render();
       return;
     }
-    await answer(cb.id, res.error || "Не удалось начать работу.");
-    return;
-  }
 
-  // ✅ первый успешный старт — отключаем онбординг
-  try {
-    if (u?.flags?.onboarding) {
-      u.flags.onboarding = false;
-      await users.save(u);
-    }
-  } catch {}
-
-  await answer(cb.id, `▶️ Начал: ${res.inst.title} (~${Math.ceil((res.inst.endAt - now()) / 60000)} мин)`);
-  await render();
-  return;
-}
-    
-    
-    
-    
     if (data === "work:goto:home") {
       ctx.locations.setBack("Work");
-      await ctx.goTo(u, "Home", "⚡ Восстанови энергию и вернёмся к работе.");
+      await ctx.goTo(u, "Home", "Восстанови энергию и вернемся к работе.");
       return;
     }
-    
+
     if (data === "work:goto:shop") {
       ctx.locations.setBack("Work");
-      await ctx.goTo(u, "Shop", "🛒 Купи что-нибудь для энергии и вернёмся к работе.");
+      await ctx.goTo(u, "Shop", "Купи что-то для энергии и вернемся к работе.");
       return;
     }
 
@@ -118,7 +119,7 @@ export const workHandler = {
         await answer(cb.id, res.error || "Не удалось выдать выплату.");
         return;
       }
-      await answer(cb.id, `✅ Готово: +$${res.pay}`);
+      await answer(cb.id, `Готово: +$${res.pay}`);
       await render();
       return;
     }
@@ -150,7 +151,7 @@ export const workHandler = {
         await answer(cb.id, res.error || "Не удалось отменить.");
         return;
       }
-      await answer(cb.id, `⏹️ Работа отменена (штраф −5⚡).`);
+      await answer(cb.id, `⏹ Работа отменена (штраф −5⚡).`);
       await render();
       return;
     }

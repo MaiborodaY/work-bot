@@ -1,4 +1,4 @@
-// JobService.js
+﻿// JobService.js
 import { CONFIG } from "./GameConfig.js";
 import { HomeService } from "./HomeService.js";
 import { BarService } from "./BarService.js";
@@ -27,7 +27,7 @@ export class JobService {
     if (this._has(u, "car")) duration = Math.floor(duration * 0.9);
     if (this._has(u, "coffee")) energy = Math.ceil(energy * 0.95);
 
-    // Перманентный бонус от учёбы: уровень = +1% скорость (уменьшаем длительность)
+    // Перманентный бонус от учёбы: уровень = +1% скорости (уменьшаем длительность)
     const studyLevel = Math.min(u?.study?.level || 0, CONFIG.STUDY.MAX_LEVEL);
     duration = Math.floor(duration * (1 - studyLevel / 100));
 
@@ -78,7 +78,11 @@ export class JobService {
       u.awaitingName = true;
       u.afterNameRoute = "work:claim";
       await this.users.save(u);
-      return { ok: false, error: "Сначала укажи никнейм для игры (2–16 символов). Напиши его одним сообщением." };
+      return {
+        ok: false,
+        error:
+          "Сначала укажи никнейм для игры (2–16 символов). Напиши его одним сообщением.",
+      };
     }
 
     const inst = this.getActive(u);
@@ -109,7 +113,7 @@ export class JobService {
 
     await this.users.save(u);
 
-    // БАР-квесты (best-effort)
+    // BAR-квесты (best-effort)
     try {
       await BarService.onWorkClaim({ u, users: this.users, now: this.now, pay });
     } catch {}
@@ -118,14 +122,14 @@ export class JobService {
     try {
       if (this.social) {
         await this.social.incrementTotals({ amount: pay });
-    
+
         // дневной топ — как и раньше
         await this.social.maybeUpdateDailyTop({
           userId: u.id,
           displayName: u.displayName || String(u.id),
           total: u.dayTotal
         });
-    
+
         // НОВОЕ: недельный топ
         await this.social.maybeUpdateWeeklyTop({
           userId: u.id,
@@ -134,7 +138,6 @@ export class JobService {
         });
       }
     } catch {}
-    
 
     return { ok: true, pay };
   }

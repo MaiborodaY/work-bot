@@ -1,4 +1,4 @@
-// UserStore.js
+﻿// UserStore.js
 import { CONFIG } from "./GameConfig.js";
 
 export class UserStore {
@@ -152,15 +152,15 @@ export class UserStore {
       if (u.bar.chosen)  { delete u.bar.chosen;  dirty = true; }
     }
 
-     // Ежедневное право на бесплатный спин (после подписки в Баре)
-     if (!u.subReward || typeof u.subReward !== "object") {
+    // Ежедневное право на бесплатный спин (после подписки в Баре)
+    if (!u.subReward || typeof u.subReward !== "object") {
       u.subReward = { day: "", eligible: false }; dirty = true;
     } else {
       if (typeof u.subReward.day !== "string") { u.subReward.day = ""; dirty = true; }
       if (typeof u.subReward.eligible !== "boolean") { u.subReward.eligible = false; dirty = true; }
     }
 
-    // ===== ЛЕГАСИ — мягко удаляем устаревшие ключи =====
+    // ===== LEGACY — мягко удаляем устаревшие ключи =====
     const dropKeys = [
       "status","last_work_start","shifts","goals","last_daily",
       "streak","achievements","achv","ui","effects",
@@ -174,6 +174,8 @@ export class UserStore {
     if (!u.flags || typeof u.flags !== "object") { u.flags = {}; dirty = true; }
     if (typeof u.flags.onboarding !== "boolean") { u.flags.onboarding = false; dirty = true; }
     if (typeof u.flags.onboardingStartedAt !== "number") { u.flags.onboardingStartedAt = 0; dirty = true; }
+    if (typeof u.flags.onboardingStep !== "string") { u.flags.onboardingStep = ""; dirty = true; }
+    if (typeof u.flags.firstJobGemGiven !== "boolean") { u.flags.firstJobGemGiven = false; dirty = true; }
 
     if (dirty) await this.save(u);
     return u;
@@ -201,7 +203,6 @@ export class UserStore {
 
       subReward: { day: "", eligible: false },
 
-
       displayName: "",
       awaitingName: true,
       afterNameRoute: "",
@@ -220,7 +221,10 @@ export class UserStore {
       premiumDaily: { day: "", coke: 0 },
 
       // Бар
-      bar: { day: "", assigned: false, tasks: [] }
+      bar: { day: "", assigned: false, tasks: [] },
+
+      // Flags
+      flags: { onboarding: false, onboardingStartedAt: 0, onboardingStep: "", firstJobGemGiven: false }
     };
   }
 
@@ -251,42 +255,47 @@ export class UserStore {
     if (s.includes("http") || s.includes("://") || s.includes("t.me/") || s.includes("@")) {
       return { ok: false, error: "В нике не должно быть ссылок и @." };
     }
+    // RU/UA/EN + цифры, пробел, _ . -
     const re = /^[A-Za-z0-9 А-Яа-яЁёІіЇїЄєҐґ_.-]+$/u;
-    if (!re.test(s)) return { ok: false, error: "Разрешены буквы/цифры/пробел/._- (лат/кирилл/укр)." };
+    if (!re.test(s)) {
+      return {
+        ok: false,
+        error: "Разрешены буквы/цифры/пробел/._- (латиница/кириллица/украинский).",
+      };
+    }
     return { ok: true, value: s };
   }
 
-    /**
+  /**
    * Санитайзер для авто-фолбэка из Telegram: вычищает лишнее и, при необходимости, обрезает до 16.
    * Возвращает "" если после очистки <2 символов.
    * @param {string} raw
    * @param {{truncate?: boolean}} [opt]
    */
-    sanitizeForDisplayName(raw, opt = {}) {
-      if (typeof raw !== "string") return "";
-      const truncate = !!opt.truncate;
-      
-      // Нормализуем и чистим zero-width, чтобы не прятали символы
-      raw = raw.normalize?.("NFKC") || raw; 
-      let s = raw.replace(/[\u200B-\u200D\uFEFF]/g, "");
-      
-      // Убираем URL и @
-      s = s.replace(/https?:\/\/\S+|t\.me\/\S+|@/gi, " ");
-  
-      // Оставляем только разрешённые символы (буквы RU/UA/EN, цифры, пробел, _ . -)
-      s = s.replace(/[^A-Za-z0-9 А-Яа-яЁёІіЇїЄєҐґ_.-]+/gu, " ");
-  
-      // Нормализуем пробелы и обрезаем края
-      s = s.replace(/\s+/g, " ").trim();
-  
-      // Обрезка до 16, если нужно
-      if (truncate && s.length > 16) s = s.slice(0, 16);
-  
-      // Минимальная длина после очистки
-      if (s.length < 2) return "";
-      return s;
-    }
-  
+  sanitizeForDisplayName(raw, opt = {}) {
+    if (typeof raw !== "string") return "";
+    const truncate = !!opt.truncate;
+    
+    // Нормализуем и чистим zero-width, чтобы не прятали символы
+    raw = raw.normalize?.("NFKC") || raw; 
+    let s = raw.replace(/[\u200B-\u200D\uFEFF]/g, "");
+    
+    // Убираем URL и @
+    s = s.replace(/https?:\/\/\S+|t\.me\/\S+|@/gi, " ");
+
+    // Оставляем только разрешённые символы (буквы RU/UA/EN, цифры, пробел, _ . -)
+    s = s.replace(/[^A-Za-z0-9 А-Яа-яЁёІіЇїЄєҐґ_.-]+/gu, " ");
+
+    // Нормализуем пробелы и обрезаем края
+    s = s.replace(/\s+/g, " ").trim();
+
+    // Обрезка до 16, если нужно
+    if (truncate && s.length > 16) s = s.slice(0, 16);
+
+    // Минимальная длина после очистки
+    if (s.length < 2) return "";
+    return s;
+  }
 
   async setDisplayName(u, name) {
     const v = this.validateDisplayName(name);
@@ -297,4 +306,3 @@ export class UserStore {
     return { ok: true, value: u.displayName };
   }
 }
-

@@ -1,4 +1,4 @@
-// NameService.js — единая логика ника (промпт + обработка текста)
+﻿// NameService.js — единая логика ника (промпт + обработка текста)
 import { UserStore } from "./UserStore.js";
 
 /**
@@ -17,12 +17,14 @@ export class NameService {
    */
   async prompt(send, reason = "") {
     const base =
-    "📝 Укажи свой никнейм для игры простым сообщением в ответ на это\n\n" +
-    "Требования: 2–16 символов; RU/UA/EN; можно цифры, пробел, «_», «.», «-».";
-  
+      "📋 Укажи свой никнейм для игры простым сообщением в ответ на это\n\n" +
+      "Требования: 2–16 символов; RU/UA/EN; можно цифры, пробел, «_», «.», «-».";
+
     const text = reason ? `⚠️ ${reason}\n\n${base}` : base;
 
-    const keyboard = { inline_keyboard: [[{ text: "⬅️ На Площадь", callback_data: "go:Square" }]] };
+    const keyboard = {
+      inline_keyboard: [[{ text: "⬅️ На Площадь", callback_data: "go:Square" }]],
+    };
     await send(text, { reply_markup: keyboard });
   }
 
@@ -38,7 +40,9 @@ export class NameService {
 
     // используем существующую валидацию + сохранение из UserStore
     const res = await this.users.setDisplayName(u, s);
-    if (!res.ok) return { ok: false, error: res.error || "Некорректный ник." };
+    if (!res.ok) {
+      return { ok: false, error: res.error || "Некорректный ник." };
+    }
 
     return { ok: true, value: res.value };
   }
