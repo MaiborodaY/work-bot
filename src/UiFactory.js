@@ -21,8 +21,8 @@ export class UiFactory {
   
   earn() {
     return [
-      [{ text: "Смены", callback_data: "go:Work" }],
-      [{ text: "Бар / подработка", callback_data: "go:Bar" }],
+      [{ text: "Работы", callback_data: "go:Work" }],
+      [{ text: "Бар", callback_data: "go:Bar" }],
       [{ text: "Бизнес", callback_data: "go:Business" }],
       [{ text: "Назад в город", callback_data: "go:Square" }]
     ];
