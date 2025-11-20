@@ -42,15 +42,6 @@ export const workHandler = {
 
     if (data.startsWith("work:start:")) {
       const typeId = data.split(":")[2];
-      // Enforce first-job-only rule during onboarding
-      // Правило: во время онбординга можно запускать только первую работу
-      try {
-        if (u?.flags) {
-          u.flags.onboarding = true;
-          u.flags.onboardingStep = "go_gym";
-          await users.save(u);
-        }
-      } catch {}
 
       // Если максимальной энергии не хватает для выбранной работы — сразу ведём в зал
       try {
@@ -86,8 +77,7 @@ export const workHandler = {
 
       // Обновляем шаг онбординга после запуска первой смены
       try {
-        if (u?.flags) {
-          u.flags.onboarding = true;
+        if (u?.flags?.onboarding) {
           u.flags.onboardingStep = "go_gym";
           await users.save(u);
         }
