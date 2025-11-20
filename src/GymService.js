@@ -2,44 +2,44 @@
 import { CONFIG } from "./GameConfig.js";
 
 /**
- * РЎРµСЂРІРёСЃ С‚СЂРµРЅР°Р¶С‘СЂРЅРѕРіРѕ Р·Р°Р»Р°:
- * - СЂР°СЃС‚СѓС‰РёРµ РґР»РёС‚РµР»СЊРЅРѕСЃС‚СЊ, С†РµРЅР° ($), СЂР°СЃС…РѕРґ вљЎ РїРѕ СѓСЂРѕРІРЅСЋ "gym.level"
- * - РїРѕ Р·Р°РІРµСЂС€РµРЅРёРё +1 Рє РєР°РїСѓ СЌРЅРµСЂРіРёРё (РёР»Рё РґСЂСѓРіРѕР№ С€Р°Рі РёР· РєРѕРЅС„РёРіР°), РґРѕ Р»РёРјРёС‚Р°
- * - СЃРѕСЃС‚РѕСЏРЅРёРµ С‚СЂРµРЅРёСЂРѕРІРєРё С…СЂР°РЅРёС‚СЃСЏ РІ u.gym { level, active, startAt, endAt }
+ * Сервис тренажёрного зала:
+ * - растущие длительность, цена ($), расход ⚡ по уровню "gym.level"
+ * - по завершении +1 к капу энергии (или другой шаг из конфига), до лимита
+ * - состояние тренировки хранится в u.gym { level, active, startAt, endAt }
  */
 export class GymService {
   constructor({ users, send, now, social = null }) {
     this.users  = users;
     this.send   = typeof send === "function" ? send : async () => {};
     this.now    = now || (() => Date.now());
-    this.social = social; // в†ђ РґРѕР±Р°РІРёР»Рё, Р°РЅР°Р»РѕРіРёС‡РЅРѕ StudyService
+    this.social = social; // ← добавили, аналогично StudyService
   }
 
-  /** РќРѕСЂРјР°Р»РёР·РѕРІР°РЅРЅС‹Р№ РєРѕРЅС„РёРі СЃ РґРµС„РѕР»С‚Р°РјРё Рё РєР°РїР°РјРё */
+  /** Нормализованный конфиг с дефолтами и капами */
   static cfg() {
     return {
-      // РІСЂРµРјСЏ
+      // время
       BASE_TIME_MS:     CONFIG.GYM?.BASE_TIME_MS     ?? (10 * 60 * 1000),
       TIME_GROWTH:      CONFIG.GYM?.TIME_GROWTH      ?? 1.18,
       MAX_TIME_MS:      CONFIG.GYM?.MAX_TIME_MS      ?? (45 * 60 * 1000),
 
-      // РґРµРЅСЊРіРё
+      // деньги
       BASE_COST_MONEY:  CONFIG.GYM?.BASE_COST_MONEY  ?? 20,
       MONEY_GROWTH:     CONFIG.GYM?.MONEY_GROWTH     ?? 1.15,
       MAX_COST_MONEY:   CONFIG.GYM?.MAX_COST_MONEY   ?? 120,
 
-      // СЌРЅРµСЂРіРёСЏ
+      // энергия
       BASE_COST_ENERGY: CONFIG.GYM?.BASE_COST_ENERGY ?? 8,
       ENERGY_GROWTH:    CONFIG.GYM?.ENERGY_GROWTH    ?? 1.08,
       MAX_COST_ENERGY:  CONFIG.GYM?.MAX_COST_ENERGY  ?? 20,
 
-      // РЅР°РіСЂР°РґР°
+      // награда
       REWARD_ENERGY_MAX: CONFIG.GYM?.REWARD_ENERGY_MAX ?? 1,
       MAX_ENERGY_CAP:    CONFIG.GYM?.MAX_ENERGY_CAP    ?? 150,
     };
   }
 
-  /** Р§РёСЃС‚Р°СЏ вЂњС„РѕСЂРјСѓР»Р°вЂќ РґР»СЏ С‚РµРєСѓС‰РµР№ С‚СЂРµРЅРёСЂРѕРІРєРё РёРіСЂРѕРєР° */
+  /** Чистая “формула” для текущей тренировки игрока */
   static computeForUser(u) {
     const C = this.cfg();
     const L = Math.max(0, u?.gym?.level || 0);
@@ -51,39 +51,39 @@ export class GymService {
     return { timeMs, costMoney, costEnergy, level: L };
   }
 
-  /** Р—Р°РїСѓСЃРє С‚СЂРµРЅРёСЂРѕРІРєРё */
+  /** Запуск тренировки */
   async start(u) {
     u.gym = u.gym || { level: 0, active: false, startAt: 0, endAt: 0 };
 
     if (u.gym.active) {
-      return { ok: false, error: "РўСЂРµРЅРёСЂРѕРІРєР° СѓР¶Рµ РёРґС‘С‚." };
+      return { ok: false, error: "Тренировка уже идет." };
     }
 
     const { timeMs, costMoney, costEnergy, level } = GymService.computeForUser(u);
 
-    if ((u.money || 0) < costMoney)  return { ok: false, error: "РќРµРґРѕСЃС‚Р°С‚РѕС‡РЅРѕ РґРµРЅРµРі." };
-    if ((u.energy || 0) < costEnergy) return { ok: false, error: "РќРµРґРѕСЃС‚Р°С‚РѕС‡РЅРѕ СЌРЅРµСЂРіРёРё." };
+    if ((u.money || 0) < costMoney)  return { ok: false, error: "Недостаточно денег." };
+    if ((u.energy || 0) < costEnergy) return { ok: false, error: "Недостаточно энергии." };
 
-    // СЃРїРёСЃР°РЅРёСЏ
+    // списания
     u.money  = (u.money  || 0) - costMoney;
     u.energy = Math.max(0, (u.energy || 0) - costEnergy);
 
-    // СЃРѕСЃС‚РѕСЏРЅРёРµ С‚СЂРµРЅРёСЂРѕРІРєРё
+    // состояние тренировки
     const startAt = this.now();
     const endAt   = startAt + timeMs;
     u.gym.active  = true;
     u.gym.startAt = startAt;
     u.gym.endAt   = endAt;
-    u.gym.notified = false; // С‡С‚РѕР±С‹ РїРѕ Р·Р°РІРµСЂС€РµРЅРёРё РєСЂРѕРЅ РїСЂРёСЃР»Р°Р» РїСѓС€
+    u.gym.notified = false; // чтобы по завершении крон прислал пуш
 
     await this.users.save(u);
     return { ok: true, timeMs, costMoney, costEnergy, level, endAt };
   }
 
   /**
-   * Р—Р°РІРµСЂС€РµРЅРёРµ, РµСЃР»Рё СЃСЂРѕРє РІС‹С€РµР».
-   * Р•СЃР»Рё РїРµСЂРµРґР°РЅ goTo, РїРѕРєР°Р¶РµРј СЌРєСЂР°РЅ Gym СЃ РёРЅС‚СЂРѕ; РёРЅР°С‡Рµ РїСЂРѕСЃС‚Рѕ РѕС‚РїСЂР°РІРёРј СЃРѕРѕР±С‰РµРЅРёРµ.
-   * Р’РѕР·РІСЂР°С‰Р°РµС‚ true, РµСЃР»Рё Р·Р°РІРµСЂС€РёР»Рё.
+   * Завершение, если срок вышел.
+   * Если передан goTo, покажем экран Gym с интро; иначе просто отправим сообщение.
+   * Возвращает true, если завершили.
    */
   async maybeFinish(u, goTo = null) {
     if (!u?.gym?.active) return false;
@@ -93,28 +93,30 @@ export class GymService {
 
     const C = GymService.cfg();
 
-    // Р°Рї СѓСЂРѕРІРЅСЏ Рё РЅР°РіСЂР°РґР° Рє РєР°РїСѓ СЌРЅРµСЂРіРёРё
+    // ап уровня и награда к капу энергии
     const prevLevel = Math.max(0, u.gym.level || 0);
     u.gym.level  = prevLevel + 1;
     u.gym.active = false;
     u.gym.startAt = 0;
     u.gym.endAt   = 0;
 
-    u.energy_max = Math.min(C.MAX_ENERGY_CAP, (u.energy_max || CONFIG.ENERGY_MAX || 100) + (C.REWARD_ENERGY_MAX || 1));
+    u.energy_max = Math.min(
+      C.MAX_ENERGY_CAP,
+      (u.energy_max || CONFIG.ENERGY_MAX || 100) + (C.REWARD_ENERGY_MAX || 1)
+    );
     await this.users.save(u);
 
-// РѕР±РЅРѕРІР»СЏРµРј "РўРѕРї СЃРёР»Р°С‡РµР№" (best effort), РєР°Рє РІ study РґР»СЏ СѓРјРЅРёРєРѕРІ
-try {
-  if (this.social && typeof this.social.maybeUpdateStrongTop === "function") {
-    await this.social.maybeUpdateStrongTop({
-      userId: u.id,
-      displayName: u.displayName || String(u.id),
-      energyMax: u.energy_max,
-      level: u.gym.level,
-    });
-  }
-} catch {}
-
+    // обновляем "Топ силачей" (best effort), как в study для умников
+    try {
+      if (this.social && typeof this.social.maybeUpdateStrongTop === "function") {
+        await this.social.maybeUpdateStrongTop({
+          userId: u.id,
+          displayName: u.displayName || String(u.id),
+          energyMax: u.energy_max,
+          level: u.gym.level,
+        });
+      }
+    } catch {}
 
     const intro = `💪 Тренировка завершена! Энергокап: ${u.energy_max}. (Уровень зала: ${u.gym.level})`;
 
@@ -126,4 +128,3 @@ try {
     return true;
   }
 }
-
