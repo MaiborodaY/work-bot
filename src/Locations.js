@@ -2,6 +2,8 @@
 import { NameService } from "./NameService.js";
 import { ASSETS, JOB_ASSETS } from "./Assets.js";
 
+// Helper for gym active title
+const titleActive = (mins) => `Тренировка идёт: ~${mins} мин`;
 
 export class Locations {
   /**
