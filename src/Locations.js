@@ -3,7 +3,7 @@ import { NameService } from "./NameService.js";
 import { ASSETS, JOB_ASSETS } from "./Assets.js";
 
 // Helper for gym active title
-const titleActive = (mins) => `Тренировка идёт: ~${mins} мин`;
+const titleActive = (mins) => `🏋️ Тренировка идёт: ~${mins} мин`;
 
 export class Locations {
   /**
@@ -71,8 +71,8 @@ export class Locations {
       }]];
 
       const caption = (header || "") + (goGym
-        ? "Первая смена готова. Открой зал, чтобы потратить награду и увеличить энергию."
-        : "Запускаем игру без лишних меню. Нажми кнопку ниже, чтобы начать первую минутную смену и получить награду.");
+        ? "💪 Первая смена готова. Открой зал, чтобы потратить награду и увеличить энергию."
+        : "🚀 Запускаем игру без лишних меню. Нажми кнопку ниже, чтобы начать первую минутную смену и получить награду.");
 
       await this.media.show({
         sourceMsg: this._sourceMsg,
@@ -96,7 +96,7 @@ export class Locations {
       await this.media.show({
         sourceMsg: this._sourceMsg,
         place: "Square",
-        caption: (header || "") + "Площадь: выберите, куда пойти дальше, или загляните в магазин.",
+        caption: (header || "") + "🏙️ Площадь: выберите, куда пойти дальше, или загляните в магазин.",
         keyboard: kb,
         policy: "photo",
       });
@@ -109,7 +109,7 @@ export class Locations {
       await this.media.show({
         sourceMsg: this._sourceMsg,
         place: "Square",
-        caption: (introText ? introText + "\n\n" : "") + "Заработок: выберите, как хотите получить деньги.",
+        caption: (introText ? introText + "\n\n" : "") + "💼 Заработок: выберите, как хотите получить деньги.",
         keyboard: this.ui.earn(),
         policy: "photo",
       });
@@ -124,7 +124,7 @@ export class Locations {
       await this.media.show({
         sourceMsg: this._sourceMsg,
         place: "Square",
-        caption: (header || "") + "Прогресс: учеба, зал и улучшения.",
+        caption: (header || "") + "📈 Прогресс: учеба, зал и улучшения.",
         keyboard: this.ui.progress(),
         policy: "photo",
       });
@@ -138,7 +138,7 @@ export class Locations {
       await this.media.show({
         sourceMsg: this._sourceMsg,
         place: "Square",
-        caption: (header || "") + "Город: дом и таблицы лидеров.",
+        caption: (header || "") + "🏙️ Город: дом и таблицы лидеров.",
         keyboard: this.ui.city(),
         policy: "photo",
       });
@@ -179,7 +179,7 @@ export class Locations {
     if (route === "Work" && user?.flags?.onboarding && !(user.jobs?.active?.[0])) {
       if (onboardingStage === "go_gym") {
         const kbGym = [[{ text: "Go to gym", callback_data: "go:Gym" }]];
-        const captionGym = (header || "") + "Первая выплата получена. Открой зал и вложи её в энергию.";
+        const captionGym = (header || "") + "💪 Первая выплата получена. Открой зал и вложи её в энергию.";
         await this.media.show({
           sourceMsg: this._sourceMsg,
           place: "Work",
@@ -195,9 +195,9 @@ export class Locations {
       const kb = this.ui.workV2(user, {});
       const caption =
         (header || "") +
-        "Шаг 1: запусти первую минутную смену. Это почти не требует энергии и дает стартовый доход.\n\n" +
+        "🚦 Шаг 1: запусти первую минутную смену. Это почти не требует энергии и дает стартовый доход.\n\n" +
         this.formatters.balance(user) + "\n\n" +
-        "Выбери первую смену ниже. После награды покажем зал.";
+        "Выбери первую смену ниже. 💪 После награды покажем зал.";
 
       await this.media.show({
         sourceMsg: this._sourceMsg,
@@ -232,8 +232,8 @@ export class Locations {
         const fileId = JOB_ASSETS[typeId] || ASSETS.WorkDefault;
 
         const caption = ready
-          ? `Готово к выплате: ${active.title} [$${active.plannedPay}]`
-          : `Идет смена: ${active.title} (~${leftMin} мин)\n\nСовет: можно открыть другие разделы.\n\n` +
+          ? `💰 Готово к выплате: ${active.title} [$${active.plannedPay}]`
+          : `⏳ Идет смена: ${active.title} (~${leftMin} мин)\n\n💡 Совет: можно открыть другие разделы.\n\n` +
             this.formatters.balance(user);
 
         await this.media.show({
@@ -248,9 +248,9 @@ export class Locations {
         const perks = this.formatters.workPerks(user, { hints: true });
         const caption =
           (header || "") +
-          "Выбери смену ниже и запускай работу. Цель — получить выплату сегодня.\n\n" +
+          "💼 Выбери смену ниже и запускай работу. 🎯 Цель — получить выплату сегодня.\n\n" +
           this.formatters.balance(user) + "\n\n" +
-          "Бонусы от учебы и улучшений:\n" + perks;
+          "✨ Бонусы от учебы и улучшений:\n" + perks;
 
         const kb = this.ui.workV2(user, {});
 
@@ -455,9 +455,9 @@ export class Locations {
       try {
         const backToGym = (user?.nav?.backTo || null) || "Progress";
         const backText =
-          backToGym === "Work"  ? "Назад, к выбору смен" :
-          backToGym === "Study" ? "Назад, к учебе" :
-          backToGym === "Gym"   ? "Назад" : "Назад";
+          backToGym === "Work"  ? "⬅️ Назад, к выбору смен" :
+          backToGym === "Study" ? "⬅️ Назад, к учебе" :
+          backToGym === "Gym"   ? "⬅️ Назад" : "⬅️ Назад";
         const backCb = "go:" + (backToGym === "Gym" ? "Progress" : backToGym);
         if (Array.isArray(kb) && kb.length > 0) {
           kb[kb.length - 1] = [{ text: backText, callback_data: backCb }];
@@ -469,13 +469,13 @@ export class Locations {
         const now = this.now();
         const end = user.gym.endAt || 0;
         if (now >= end) {
-          defaultTitle = "Тренировка завершена — можно повысить энергию";
+          defaultTitle = "🏁 Тренировка завершена — можно повысить энергию";
         } else {
           const leftMin = Math.max(1, Math.ceil((end - now) / 60000));
           defaultTitle = titleActive(leftMin);
         }
       } else {
-        defaultTitle = "Тренируйтесь в зале, чтобы увеличить максимальную энергию. Каждая тренировка дает +1 к максимуму.";
+        defaultTitle = "💪 Тренируйтесь в зале, чтобы увеличить максимальную энергию. Каждая тренировка дает +1 к максимуму.";
       }
       
       const titleOrHeader = (introText && introText.trim()) ? introText.trim() : defaultTitle;
@@ -555,9 +555,9 @@ export class Locations {
         const all = CONFIG?.BUSINESS || {};
         const items = Object.keys(all).map(k => all[k]);
         if (items.length > 1) {
-          const caption = (header || "") + "Свой бизнес\n\nВыберите бизнес:";
+          const caption = (header || "") + "💼 Свой бизнес\n\nВыберите бизнес:";
           const kb = items.map(B => [{ text: `${B.emoji} ${B.title}`, callback_data: `go:Biz_${B.id}` }]);
-          kb.push([{ text: "Назад к заработку", callback_data: "go:Earn" }]);
+          kb.push([{ text: "⬅️ Назад к заработку", callback_data: "go:Earn" }]);
           await this.media.show({ sourceMsg: this._sourceMsg, place: "Business", caption, keyboard: kb, policy: "photo" });
           this._sourceMsg = null;
           this._route = "Business";
@@ -571,7 +571,7 @@ export class Locations {
         if (items.length > 1) {
           const todayUTC = new Date().toISOString().slice(0, 10);
           const captionLines = [];
-          captionLines.push((header || "") + "Свой бизнес\n");
+          captionLines.push((header || "") + "💼 Свой бизнес\n");
           const kb = [];
           const ownedArr = Array.isArray(user?.biz?.owned) ? user.biz.owned : [];
           for (const B of items) {
@@ -695,8 +695,8 @@ export class Locations {
           kb.push([{ text: "Сегодня уже забрано", callback_data: "noop" }]);
         }
       }
-      kb.push([{ text: "Назад к бизнесам", callback_data: "go:Business" }]);
-      kb.push([{ text: "Назад к заработку", callback_data: "go:Earn" }]);
+      kb.push([{ text: "⬅️ Назад к бизнесам", callback_data: "go:Business" }]);
+      kb.push([{ text: "⬅️ Назад к заработку", callback_data: "go:Earn" }]);
 
       const statusLine = isOwned
         ? (claimedToday ? "Статус: доход за сегодня забран" : `Статус: доступно сегодня: $${availableToday}`)
@@ -755,8 +755,8 @@ export class Locations {
           kb.push([{ text: "Сегодня уже забрано", callback_data: "noop" }]);
         }
       }
-      kb.push([{ text: "Назад к бизнесам", callback_data: "go:Business" }]);
-      kb.push([{ text: "Назад к заработку", callback_data: "go:Earn" }]);
+      kb.push([{ text: "⬅️ Назад к бизнесам", callback_data: "go:Business" }]);
+      kb.push([{ text: "⬅️ Назад к заработку", callback_data: "go:Earn" }]);
 
       const statusLine = isOwned
         ? (claimedToday ? "Статус: доход за сегодня забран" : `Статус: доступно сегодня: $${availableToday}`)

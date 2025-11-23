@@ -44,12 +44,12 @@ import { FastForwardService } from "./FastForwardService.js";
 // --- Public links (RU only) ---
 const PRIVACY_URL = "https://sites.google.com/view/world-of-life-privacy/";
 
-const HELP_TEXT = `World of Life — текстовая игра про развитие и карьеру.
-Нажимайте кнопки, чтобы зарабатывать, учиться и тренироваться.
-Команды: /start /play /help /privacy
-Поддержка: @WorldOfLifeGame`;
+const HELP_TEXT = `🎮 World of Life — текстовая игра про развитие и карьеру.
+💰 Нажимайте кнопки, чтобы зарабатывать, учиться и тренироваться.
+🛠 Команды: /start /play /help /privacy
+🤝 Поддержка: @WorldOfLifeGame`;
 
-const PRIVACY_TEXT = `Мы храним только ваш Telegram ID и прогресс в игре.
+const PRIVACY_TEXT = `🔒 Мы храним только ваш Telegram ID и прогресс в игре.
 Данные нужны для сохранения аккаунта и удаляются в течение 72 часов по запросу.
 Политика: ${PRIVACY_URL}`;
 
@@ -353,12 +353,12 @@ export default {
         } catch {}
 
         const onboardingWelcome =
-          "Привет! Это World of Life.\n\n" +
+          "👋 Привет! Это World of Life.\n\n" +
           "Первые шаги:\n" +
-          "1) Запусти первую минутную смену и получи $ и 1 кристалл.\n" +
-          "2) Забери награду.\n" +
-          "3) Зайди в зал и вложи награду в энергию.\n\n" +
-          "Пока ты новичок, показываем только нужные кнопки.";
+          "1) ▶️ Запусти первую минутную смену и получи $ и 1 кристалл.\n" +
+          "2) 💰 Забери награду.\n" +
+          "3) 🏋️ Зайди в зал и вложи награду в энергию.\n\n" +
+          "✨ Пока ты новичок, показываем только нужные кнопки.";
         try {
           await bot.sendMessage(chatId, onboardingWelcome);
         } catch {}
@@ -497,18 +497,18 @@ export default {
         return new Response("ok");
       }
 
-      if (text === "Меню") {
+      if (text === "Меню" || text === "🧭 Меню") {
         await goTo(u, "Square");
         return new Response("ok");
       }
 
-      if (text === "Профиль") {
+      if (text === "Профиль" || text === "👤 Профиль") {
         const statusText = Formatters.status(u, { economy, now, pct });
         await send(statusText);
         return new Response("ok");
       }
 
-      await locations.show(u, "Используйте кнопки ниже для действий.");
+      await locations.show(u, "👇 Используйте кнопки ниже для действий.");
       return new Response("ok");
     }
 

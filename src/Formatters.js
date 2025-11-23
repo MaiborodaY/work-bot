@@ -11,35 +11,35 @@ export const Formatters = {
     const gemEmoji  = CONFIG?.PREMIUM?.emoji ?? "💎";
 
     return (
-      `Деньги: $${money}\n` +
-      `Энергия: ${energy}/${energyMax}\n` +
+      `💰 Деньги: $${money}\n` +
+      `⚡ Энергия: ${energy}/${energyMax}\n` +
       `${gemEmoji} Кристаллы: ${premium}`
     );
   },
 
   moneyLine(u) {
     const money = Number.isFinite(u?.money) ? u.money : 0;
-    return `Деньги: $${money}`;
+    return `💰 Деньги: $${money}`;
   },
 
   studyLine(u) {
     const level = Math.min(Math.max(Number(u?.study?.level) || 0, 0), CONFIG?.STUDY?.MAX_LEVEL ?? 50);
-    return `Учеба: уровень ${level} (+${level}% скорость работы)`;
+    return `📚 Учеба: уровень ${level} (+${level}% скорость работы)`;
   },
 
   laptopLine(u) {
     const has = Array.isArray(u?.upgrades) && u.upgrades.includes("laptop");
-    return `Ноутбук: +${has ? 10 : 0}% к оплате`;
+    return `💻 Ноутбук: +${has ? 10 : 0}% к оплате`;
   },
 
   coffeeLine(u) {
     const has = Array.isArray(u?.upgrades) && u.upgrades.includes("coffee");
-    return `Кофемашина: -${has ? 5 : 0}% к расходу энергии`;
+    return `☕ Кофемашина: -${has ? 5 : 0}% к расходу энергии`;
   },
 
   carLine(u) {
     const has = Array.isArray(u?.upgrades) && u.upgrades.includes("car");
-    return `Авто: +${has ? 10 : 0}% к скорости смены`;
+    return `🚗 Авто: +${has ? 10 : 0}% к скорости смены`;
   },
 
   workPerks(u, opts = {}) {
@@ -52,9 +52,9 @@ export const Formatters = {
     const hasCoffee = this._hasUpgrade(u, "coffee");
     const hasCar    = this._hasUpgrade(u, "car");
 
-    if (hasLaptop) lines.push("Ноутбук: +10% к оплате");
-    if (hasCoffee) lines.push("Кофемашина: -5% к расходу энергии");
-    if (hasCar)    lines.push("Авто: +10% к скорости смены");
+    if (hasLaptop) lines.push("💻 Ноутбук: +10% к оплате");
+    if (hasCoffee) lines.push("☕ Кофемашина: -5% к расходу энергии");
+    if (hasCar)    lines.push("🚗 Авто: +10% к скорости смены");
 
     if (hints) {
       const missing = [];
@@ -62,7 +62,7 @@ export const Formatters = {
       if (!hasCoffee) missing.push("кофемашина");
       if (!hasCar)    missing.push("авто");
       if (missing.length) {
-        lines.push("Совет: собери " + missing.join(", ") + " — это ускорит рост дохода.");
+        lines.push("💡 Совет: собери " + missing.join(", ") + " — это ускорит рост дохода.");
       }
     }
 
@@ -83,12 +83,12 @@ export const Formatters = {
         : (a, b) => (b > 0 ? Math.min(100, Math.floor((a / b) * 100)) : 0);
 
     const lines = [];
-    lines.push("Мой профиль");
+    lines.push("👤 Мой профиль");
 
     const nick = u?.displayName && String(u.displayName).trim()
       ? u.displayName
       : "Игрок";
-    lines.push(`Имя: ${nick}`);
+    lines.push(`🎭 Имя: ${nick}`);
 
     lines.push(Formatters.balance(u));
 
@@ -99,9 +99,9 @@ export const Formatters = {
       const total   = Math.max(1, (inst.endAt || 0) - (inst.startAt || 0));
       const elapsed = Math.max(0, total - leftMs);
       const progress = pct(elapsed, total);
-      lines.push(`Смена: ${inst.title} · ${progress}% (~${mins} мин)`);
+      lines.push(`💼 Смена: ${inst.title} · ${progress}% (~${mins} мин)`);
     } else {
-      lines.push("Смена не запущена");
+      lines.push("⏸️ Смена не запущена");
     }
 
     lines.push(Formatters.studyLine(u));
@@ -111,7 +111,7 @@ export const Formatters = {
 
   casinoBestLine(u) {
     const best = Math.max(0, Number(u?.casino?.bestSingleWin) || 0);
-    return `Лучший выигрыш за спин: $${best}`;
+    return `🏅 Лучший выигрыш за спин: $${best}`;
   },
 
   casinoStatsLines(u) {
@@ -143,9 +143,9 @@ export const Formatters = {
 
     const best = Math.max(0, Number(u?.casino?.bestSingleWin) || 0);
 
-    const lineDay   = `День: выигрыш ${fmt(wonD)} · траты ${fmt(lostD)} · итог ${fmt(netD)}`;
-    const lineWeek  = `Неделя: выигрыш ${fmt(wonW)} · траты ${fmt(lostW)} · итог ${fmt(netW)}`;
-    const lineBest  = `\nЛучший спин: ${fmt(best)}`;
+    const lineDay   = `📊 День: выигрыш ${fmt(wonD)} · траты ${fmt(lostD)} · итог ${fmt(netD)}`;
+    const lineWeek  = `🗓️ Неделя: выигрыш ${fmt(wonW)} · траты ${fmt(lostW)} · итог ${fmt(netW)}`;
+    const lineBest  = `\n🏅 Лучший спин: ${fmt(best)}`;
 
     return `${lineDay}\n${lineWeek}\n${lineBest}`;
   },
