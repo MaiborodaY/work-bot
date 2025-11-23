@@ -26,6 +26,7 @@ import { socialHandler } from "./handlers/social.js";
 import { dailyHandler } from "./handlers/daily.js";
 import { barHandler } from "./handlers/bar.js"; // ДОБАВИТЬ
 import { businessHandler } from "./handlers/business.js"; // ➕ НОВОЕ
+import { miniGamesHandler } from "./handlers/minigames.js";
 
 // платежи Stars
 import { OrdersStore as StarsOrdersStore } from "./payments/OrdersStore.js";
@@ -642,6 +643,7 @@ export default {
         pct,
         goTo,
         sendWithInline,
+        bot,
         send,
         // сырьевые медиа-функции
         sendPhoto,
@@ -670,6 +672,7 @@ export default {
         socialHandler,
         barHandler,
         dailyHandler,
+        miniGamesHandler,
         workHandler,
         businessHandler,
         studyHandler,

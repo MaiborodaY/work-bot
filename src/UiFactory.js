@@ -14,8 +14,17 @@ export class UiFactory {
     return [
       [{ text: "💼 Заработок", callback_data: "go:Earn" }],
       [{ text: "📈 Прогресс", callback_data: "go:Progress" }],
+      [{ text: "🎮 Мини-игры", callback_data: "go:MiniGames" }],
       [{ text: "🏙️ Город", callback_data: "go:City" }],
       [{ text: "🛍️ Магазин", callback_data: "go:ShopHub" }],
+    ];
+  }
+  
+  miniGames() {
+    return [
+      [{ text: "🛡️ Защита башнями", callback_data: "game:td" }],
+      [{ text: "🏃‍♂️ Неуловимый бегун", callback_data: "game:runner" }],
+      [{ text: "⬅️ На Площадь", callback_data: "go:Square" }],
     ];
   }
   

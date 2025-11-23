@@ -173,6 +173,20 @@ export class Locations {
       return;
     }
 
+    // ---------- MiniGames ----------
+    if (route === "MiniGames") {
+      await this.media.show({
+        sourceMsg: this._sourceMsg,
+        place: "Square",
+        caption: (header || "") + "🎮 Мини-игры: выбери режим и нажми, чтобы запустить.",
+        keyboard: this.ui.miniGames(),
+        policy: "photo",
+      });
+      this._sourceMsg = null;
+      this._route = "MiniGames";
+      return;
+    }
+
 
     // ---------- Work ----------
     // Онбординг: первое открытие списка заданий
