@@ -25,7 +25,7 @@ export const CONFIG = {
     sandwich:  { title: "Сэндвич (+25 энергии)",       price: 30,  heal: 25 },
     lunch:     { title: "Бизнес-ланч (+50 энергии)",   price: 60,  heal: 50 },
     borscht:   { title: "Суп дня (+100 энергии)",      price: 120, heal: 100 },
-    coke_zero: { title: "Cola Zero (+15 энергии)",     price_premium: 2 }
+    coke_zero: { title: "Cola Zero (max энергии)",     price_premium: 2 }
   },
 
   UPGRADES: {
