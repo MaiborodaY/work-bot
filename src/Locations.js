@@ -796,6 +796,66 @@ export class Locations {
       return;
     }
 
+    // ---------- Biz_restaurant ----------
+    if (route === "Biz_restaurant") {
+      const B = CONFIG?.BUSINESS?.restaurant;
+      if (!B) {
+        await this.media.show({
+          sourceMsg: this._sourceMsg,
+          place: "Business",
+          caption: (header || "") + "Бизнес недоступен",
+          keyboard: [[{ text: "Назад", callback_data: "go:Business" }]],
+          policy: "auto"
+        });
+        this._sourceMsg = null;
+        this._route = "Business";
+        return;
+      }
+
+      const ownedArr = Array.isArray(user?.biz?.owned) ? user.biz.owned : [];
+      const ownedObj = ownedArr.find(it => (typeof it === "string" ? it === B.id : it?.id === B.id));
+      const isOwned = !!ownedObj;
+      const todayUTC = new Date().toISOString().slice(0, 10);
+      const claimedToday = isOwned && (ownedObj.lastClaimDayUTC === todayUTC);
+      const availableToday = isOwned && !claimedToday ? (Number(B.daily)||0) : 0;
+
+      const kb = [];
+      if (!isOwned) {
+        kb.push([{ text: `Купить за $${B.price}`, callback_data: `biz:buy:${B.id}` }]);
+      } else {
+        if (!claimedToday) {
+          kb.push([{ text: `Забрать $${B.daily}`, callback_data: `biz:claim:${B.id}` }]);
+        } else {
+          kb.push([{ text: "Уже забрано сегодня", callback_data: "noop" }]);
+        }
+      }
+      kb.push([{ text: "⬅️ Назад к бизнесам", callback_data: "go:Business" }]);
+      kb.push([{ text: "🏃 К заработку", callback_data: "go:Earn" }]);
+
+      const statusLine = isOwned
+        ? (claimedToday ? "Статус: прибыль уже получена" : `Статус: доступно к получению: $${availableToday}`)
+        : "Статус: не куплено";
+
+      const assetRest = (ASSETS?.BusinessRestaurant || JOB_ASSETS?.waiter || ASSETS?.Business);
+      await this.media.show({
+        sourceMsg: this._sourceMsg,
+        place: "Business",
+        asset: assetRest,
+        caption:
+          (header || "") +
+          `${B.emoji} ${B.title}\n` +
+          `Цена: $${B.price}\n` +
+          `Доход: $${B.daily} в день\n` +
+          `Ежедневный сброс прибыли: не накапливается\n` +
+          statusLine,
+        keyboard: kb,
+        policy: "photo",
+      });
+      this._sourceMsg = null;
+      this._route = "Biz_restaurant";
+      return;
+    }
+
     // ---------- Fallback → Square ----------
     let kb = this.ui.square();
     if (this.daily && this.daily.canClaim(user)) {

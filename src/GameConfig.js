@@ -128,6 +128,15 @@ export const CONFIG = {
       daily: 1000,
       resetPolicy: "utc_daily_burn",
       note: "Приносит прием пациентов раз в день. Доход нужно забирать вовремя."
+    },
+    restaurant: {
+      id: "restaurant",
+      emoji: "🍽️",
+      title: "Ресторан",
+      price: 100000,
+      daily: 2000,
+      resetPolicy: "utc_daily_burn",
+      note: "Популярное заведение с высоким чеком. Забирайте прибыль раз в день."
     }
   }
 };
