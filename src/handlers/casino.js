@@ -83,9 +83,9 @@ const ensureStats = (u) => {
       for (let i = 0; i < PRICES.length; i += 2) {
         const row = [];
         const p1 = PRICES[i];
-        row.push({ text: `🌀 Попытка — $${p1}`, callback_data: `casino_spin:${p1}` });
+        row.push({ text: `🌀 $${p1}`, callback_data: `casino_spin:${p1}` });
         const p2 = PRICES[i + 1];
-        if (p2 != null) row.push({ text: `🌀 Попытка — $${p2}`, callback_data: `casino_spin:${p2}` });
+        if (p2 != null) row.push({ text: `🌀$${p2}`, callback_data: `casino_spin:${p2}` });
         rows.push(row);
       }
       rows.push([{ text: "🃏 All in", callback_data: "casino_allin:ask" }]);
@@ -147,8 +147,8 @@ const ensureStats = (u) => {
     const spinWithBet = async (bet, isAllIn = false) => {
       const err = canPlayChecks();
       if (err) { await answer(cb.id, err); return; }
-      if (bet <= 0) { await answer(cb.id, "💸 Недостаточно денег для ставки."); return; }
-      if ((u.money || 0) < bet) { await answer(cb.id, "💸 Недостаточно денег для этой ставки."); return; }
+      if (bet <= 0) { await answer(cb.id, "💸 Недостаточно денег для попытки."); return; }
+      if ((u.money || 0) < bet) { await answer(cb.id, "💸 Недостаточно денег для этой попытки."); return; }
 
       const t = now();
       u.money -= bet;
