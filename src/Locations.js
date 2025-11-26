@@ -347,7 +347,7 @@ export class Locations {
         await this.media.show({
           sourceMsg: this._sourceMsg,
           place: "Study",
-          caption: header + `🎓 Обучайся, чтобы ускорить работу.\nМаксимальный бонус к скорости ${CONFIG.STUDY.MAX_LEVEL}% `
+          caption: header + `🎓 Обучайся, чтобы ускорить работу.\nМаксимальный бонус к скорости может достигать ${CONFIG.STUDY.MAX_LEVEL}% `
            + "\n\n" + this.formatters.balance(user)+ "\n" + this.formatters.studyLine(user)
            +"\n"+"+1% к скорости работы за каждое обучение",
           keyboard: this.ui.studyIdle(this.economy.fmtStudyEffects(user)),
