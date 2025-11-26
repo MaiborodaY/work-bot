@@ -489,7 +489,7 @@ export class Locations {
           defaultTitle = titleActive(leftMin);
         }
       } else {
-        defaultTitle = "💪 Тренируйтесь в зале, чтобы увеличить максимальную энергию. Каждая тренировка дает +1 к максимуму.";
+        defaultTitle = "💪 Тренируйтесь в зале, чтобы увеличить максимальную энергию. \nКаждая тренировка дает +1 к максимуму. \nМаксимум может быть 160 энергии";
       }
       
       const titleOrHeader = (introText && introText.trim()) ? introText.trim() : defaultTitle;
