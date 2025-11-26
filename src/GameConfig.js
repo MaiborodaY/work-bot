@@ -41,7 +41,7 @@ export const CONFIG = {
   BONUS_STREAK: { 1: { money: 10 }, 3: { money: 20 }, 7: { money: 50, energy: 10 } },
 
   CASINO: {
-    prices: [5, 10, 20, 50, 100, 200, 500, 1000],
+    prices: [5, 10, 20, 50, 100, 500, 1000, 5000],
     price_low: 5,
     price_high: 10,
     cooldown_ms: 4_000,
