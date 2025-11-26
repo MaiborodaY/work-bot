@@ -99,7 +99,7 @@ export default {
     const now = () => Date.now();
     const pct = (a, b) => Math.min(100, Math.floor((a / b) * 100));
 
-    const social = new SocialService({ db: env.DB, users, now });
+    const social = new SocialService({ db: env.DB, users, now, economy });
 
     const orders = new StarsOrdersStore(env.DB, now);
     const stars = new StarsPayService({ botToken: env.BOT_TOKEN, orders, now });
@@ -221,7 +221,8 @@ export default {
       // maybeFinishGym: (u, goToFn) => gym.maybeFinish(u, goToFn),
       // новый сервис для динамической цены кнопок
       fastForward,
-      users
+      users,
+      social
     });
 
     // статлесс переход — ничего не пишем в KV

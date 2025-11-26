@@ -1,4 +1,4 @@
-import { CONFIG } from "./GameConfig.js";
+﻿import { CONFIG } from "./GameConfig.js";
 
 export class EconomyService {
   effectivePay(u, lvl) {
@@ -14,18 +14,18 @@ export class EconomyService {
   }
 
   effectiveShift(u) {
-    // Базовый множитель: машина сокращает время
+    // Base multiplier: car shortens shift time
     let mult = u.upgrades?.includes("car") ? 0.9 : 1;
 
-    // Перманентный бонус от учёбы: уровень = +1% скорость на уровень (кап 50)
+    // Permanent study bonus: level = +1% speed per level (cap 50)
     const studyLevel = Math.min(u?.study?.level || 0, CONFIG.STUDY.MAX_LEVEL);
     mult *= (1 - studyLevel / 100);
 
-    // ⚠️ Больше НЕ учитываем одноразовые баффы (work_shift_mul удалён)
+    // One-off buffs are not applied anymore (work_shift_mul removed)
     return CONFIG.SHIFT_MS * mult;
   }
 
-  // Текст для кнопки «Начать обучение» — для СЛЕДУЮЩЕГО уровня
+  // Text for the "Start studying" button — for the next level
   fmtStudyEffects(u) {
     const L = Math.max(0, u?.study?.level || 0);
     if (L >= CONFIG.STUDY.MAX_LEVEL) {
@@ -42,14 +42,26 @@ export class EconomyService {
     const costEnergy = Math.round(CONFIG.STUDY.BASE_COST_ENERGY * pow);
     const mins = Math.round((CONFIG.STUDY.BASE_TIME_MS * pow) / 60000);
 
-    return `−$${costMoney}, −${costEnergy}⚡, ~${mins} мин`;
+    return `-${costMoney}, -${costEnergy} ⚡, ~${mins} мин`;
   }
 
   fmtWorkEffects(u) {
-    const lvl = { bonus: 0 }; // карьера вырезана, бонусов нет
+    const lvl = { bonus: 0 }; // Career bonuses removed
     const pay = this.effectivePay(u, lvl);
     const cost = this.effectiveEnergyCost(u);
     const mins = Math.round(this.effectiveShift(u) / 60000);
-    return `+$${pay}, −${cost}⚡, ~${mins} мин`;
+    return `+${pay}, -${cost} energy, ~${mins} min`;
+  }
+
+  applyReward(u, { money = 0, premium = 0, reason = "reward" } = {}) {
+    const addMoney = Math.max(0, Math.round(Number(money) || 0));
+    const addPremium = Math.max(0, Math.round(Number(premium) || 0));
+    if (addMoney) u.money = (u.money || 0) + addMoney;
+    if (addPremium) u.premium = (u.premium || 0) + addPremium;
+    try {
+      console.log(`economy.reward reason=${reason} user=${u?.id ?? "?"} money=${addMoney} premium=${addPremium}`);
+    } catch {}
+    return { money: addMoney, premium: addPremium, reason };
   }
 }
+

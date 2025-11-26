@@ -1,11 +1,15 @@
 // SocialService.js — один ключ на период: agg:day / agg:week / agg:all и lb:day.
 // Без датированных ключей и шардов. Есть авто-ролловер при смене дня/недели.
 
+import { CONFIG } from "./GameConfig.js";
+import { EconomyService } from "./EconomyService.js";
+
 export class SocialService {
-  constructor({ db, users, now }) {
+  constructor({ db, users, now, economy }) {
     this.db = db;
     this.users = users;
     this.now = now || (() => Date.now());
+    this.economy = economy || new EconomyService();
   }
 
   // ====== периодные ключи (UTC) ======
@@ -15,6 +19,36 @@ export class SocialService {
     const m = String(d.getUTCMonth() + 1).padStart(2, "0");
     const day = String(d.getUTCDate()).padStart(2, "0");
     return `${y}${m}${day}`; // YYYYMMDD
+  }
+
+  _dateStr(offsetMs = 0) {
+    const d = new Date(this.now() + offsetMs);
+    const y = d.getUTCFullYear();
+    const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+    const day = String(d.getUTCDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`; // YYYY-MM-DD
+  }
+
+  _dayKeyToDateStr(dayKey) {
+    const raw = String(dayKey || "");
+    if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+    if (/^\d{8}$/.test(raw)) {
+      return `${raw.slice(0, 4)}-${raw.slice(4, 6)}-${raw.slice(6, 8)}`;
+    }
+    return "";
+  }
+
+  _dailyWinnersKey(dayStr) {
+    return `DAILY_WINNERS:${dayStr}`;
+  }
+
+  _rewardForPlace(place) {
+    const table = CONFIG?.DAILY_TOP_REWARDS || {};
+    const cfg = table?.[place] || table?.[String(place)] || {};
+    return {
+      stars: Math.max(0, Number(cfg?.stars) || 0),
+      money: Math.max(0, Number(cfg?.money) || 0),
+    };
   }
 
   _weekKey() {
@@ -39,6 +73,19 @@ export class SocialService {
     const storedWeek = (await this.db.get("state:weekKey")) || "";
 
     if (storedDay !== curDay) {
+      if (storedDay) {
+        let prevTop = [];
+        try {
+          const rawTop = await this.db.get("lb:day");
+          prevTop = rawTop ? JSON.parse(rawTop) : [];
+        } catch {}
+        try {
+          await this.distributeDailyTopRewards({ rewardDayKey: storedDay, topList: prevTop });
+        } catch (e) {
+          console.error("daily_top_reward.error", e?.message || e);
+          throw e;
+        }
+      }
       await this.db.put("agg:day", "0");
       await this.db.put("lb:day", "[]");
       await this.db.put("state:dayKey", curDay);
@@ -51,6 +98,98 @@ export class SocialService {
   }
 
   // ====== агрегаты / топ ======
+  async distributeDailyTopRewards({ rewardDayKey, rewardDayStr, topList } = {}) {
+    const rewardDay = this._dayKeyToDateStr(rewardDayStr || rewardDayKey || "");
+    if (!rewardDay) return { ok: false, reason: "invalid_day" };
+
+    let list = Array.isArray(topList) ? [...topList] : [];
+    if (!topList) {
+      try {
+        const raw = await this.db.get("lb:day");
+        list = raw ? JSON.parse(raw) : [];
+      } catch {
+        list = [];
+      }
+    }
+
+    if (!Array.isArray(list)) list = [];
+    list = [...list];
+    list.sort((a, b) => (Number(b?.total) || 0) - (Number(a?.total) || 0));
+    const top = list.slice(0, 10);
+
+    const snapshot = [];
+    for (let i = 0; i < top.length; i++) {
+      const entry = top[i] || {};
+      const uidRaw = entry.userId ?? entry.id;
+      if (uidRaw == null) continue;
+      const place = i + 1;
+      const reward = this._rewardForPlace(place);
+      const userId = /^\d+$/.test(String(uidRaw)) ? Number(uidRaw) : uidRaw;
+      const earned = Number(entry.total || 0);
+      const name = (typeof entry.name === "string" && entry.name.trim()) ? entry.name.trim() : "";
+
+      snapshot.push({ userId, place, earned, reward, name });
+      await this._applyDailyReward({ userId, rewardDay, place, reward });
+    }
+
+    await this.saveDailyWinnersSnapshot(rewardDay, snapshot);
+    return { ok: true, snapshot, rewardDay };
+  }
+
+  async _applyDailyReward({ userId, rewardDay, place, reward }) {
+    if (!this.users || typeof this.users.load !== "function" || typeof this.users.save !== "function") return;
+
+    const u = await this.users.load(userId).catch(() => null);
+    if (!u || u.lastDailyRewardDay === rewardDay) return;
+
+    const stars = Math.max(0, Number(reward?.stars) || 0);
+    const money = Math.max(0, Number(reward?.money) || 0);
+
+    if (this.economy && typeof this.economy.applyReward === "function") {
+      this.economy.applyReward(u, { money, premium: stars, reason: "daily_top_reward" });
+    } else {
+      if (money) u.money = (u.money || 0) + money;
+      if (stars) u.premium = (u.premium || 0) + stars;
+    }
+
+    if (!u.stats || typeof u.stats !== "object") {
+      u.stats = { dailyTop1Count: 0, dailyTop3Count: 0, dailyTop10Count: 0 };
+    }
+    if (place === 1) {
+      u.stats.dailyTop1Count = (u.stats.dailyTop1Count || 0) + 1;
+      u.stats.dailyTop3Count = (u.stats.dailyTop3Count || 0) + 1;
+      u.stats.dailyTop10Count = (u.stats.dailyTop10Count || 0) + 1;
+    } else if (place <= 3) {
+      u.stats.dailyTop3Count = (u.stats.dailyTop3Count || 0) + 1;
+      u.stats.dailyTop10Count = (u.stats.dailyTop10Count || 0) + 1;
+    } else if (place <= 10) {
+      u.stats.dailyTop10Count = (u.stats.dailyTop10Count || 0) + 1;
+    }
+
+    u.lastDailyRewardDay = rewardDay;
+    await this.users.save(u);
+  }
+
+  async saveDailyWinnersSnapshot(dayStr, winners) {
+    const day = this._dayKeyToDateStr(dayStr);
+    if (!day || !this.db) return;
+    const arr = Array.isArray(winners) ? winners : [];
+    await this.db.put(this._dailyWinnersKey(day), JSON.stringify(arr));
+  }
+
+  async getDailyWinnersSnapshot(dayStr = null) {
+    const day = this._dayKeyToDateStr(dayStr || this._dateStr(-24 * 60 * 60 * 1000));
+    if (!day || !this.db) return [];
+    const raw = await this.db.get(this._dailyWinnersKey(day));
+    if (!raw) return [];
+    try {
+      const arr = JSON.parse(raw);
+      return Array.isArray(arr) ? arr : [];
+    } catch {
+      return [];
+    }
+  }
+
   async _incr(key, by) {
     const cur = parseInt((await this.db.get(key)) || "0", 10) || 0;
     await this.db.put(key, String(cur + Math.max(0, by)));

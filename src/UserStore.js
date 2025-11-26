@@ -177,6 +177,17 @@ export class UserStore {
     if (typeof u.flags.onboardingStep !== "string") { u.flags.onboardingStep = ""; dirty = true; }
     if (typeof u.flags.firstJobGemGiven !== "boolean") { u.flags.firstJobGemGiven = false; dirty = true; }
 
+    // Daily top stats and reward marker
+    if (!u.stats || typeof u.stats !== "object") {
+      u.stats = { dailyTop1Count: 0, dailyTop3Count: 0, dailyTop10Count: 0 };
+      dirty = true;
+    } else {
+      if (typeof u.stats.dailyTop1Count !== "number") { u.stats.dailyTop1Count = 0; dirty = true; }
+      if (typeof u.stats.dailyTop3Count !== "number") { u.stats.dailyTop3Count = 0; dirty = true; }
+      if (typeof u.stats.dailyTop10Count !== "number") { u.stats.dailyTop10Count = 0; dirty = true; }
+    }
+    if (typeof u.lastDailyRewardDay !== "string") { u.lastDailyRewardDay = ""; dirty = true; }
+
     if (dirty) await this.save(u);
     return u;
   }
@@ -211,6 +222,9 @@ export class UserStore {
       dayKey: "",
       weekTotal: 0,
       weekKey: "",
+
+      stats: { dailyTop1Count: 0, dailyTop3Count: 0, dailyTop10Count: 0 },
+      lastDailyRewardDay: "",
 
       premium: 20,
 

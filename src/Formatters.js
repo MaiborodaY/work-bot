@@ -106,6 +106,14 @@ export const Formatters = {
 
     lines.push(Formatters.studyLine(u));
 
+    const stats = (u?.stats && typeof u.stats === "object") ? u.stats : {};
+    const top1 = Number(stats.dailyTop1Count || 0);
+    const top3 = Number(stats.dailyTop3Count || 0);
+    const top10 = Number(stats.dailyTop10Count || 0);
+    lines.push(`🧲 Магнит дня (1 место): ${top1} раз`);
+    lines.push(`🥈 Топ-3 дня: ${top3} раз`);
+    lines.push(`🏅 Топ-10 дня: ${top10} раз`);
+
     return lines.join("\n");
   },
 
