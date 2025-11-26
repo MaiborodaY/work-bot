@@ -19,7 +19,7 @@ export const casinoHandler = {
     u.casino.free = u.casino.free || { day: "", lastPrize: 0 };
     if (typeof u.casino.bestSingleWin !== "number") u.casino.bestSingleWin = 0;
 
-    // право на бесплатный спин через подписку (добавляем мягко)
+    // право на бесплатную попытку через подписку (добавляем мягко)
     if (!u.subReward || typeof u.subReward !== "object") {
       u.subReward = { day: "", eligible: false };
     } else {
@@ -83,14 +83,14 @@ const ensureStats = (u) => {
       for (let i = 0; i < PRICES.length; i += 2) {
         const row = [];
         const p1 = PRICES[i];
-        row.push({ text: `🎡 Спин — $${p1}`, callback_data: `casino_spin:${p1}` });
+        row.push({ text: `🌀 Попытка — $${p1}`, callback_data: `casino_spin:${p1}` });
         const p2 = PRICES[i + 1];
-        if (p2 != null) row.push({ text: `🎡 Спин — $${p2}`, callback_data: `casino_spin:${p2}` });
+        if (p2 != null) row.push({ text: `🌀 Попытка — $${p2}`, callback_data: `casino_spin:${p2}` });
         rows.push(row);
       }
       rows.push([{ text: "🃏 All in", callback_data: "casino_allin:ask" }]);
       rows.push([{ text: "ℹ️ Таблица выплат", callback_data: "casino_info" }]);
-      rows.push([{ text: "🚪 Вернуться на Площадь", callback_data: "o:Square" }]);
+      rows.push([{ text: "⬅️ В бар", callback_data: "go:Bar" }]);
 
       return { inline_keyboard: rows };
     };
@@ -101,12 +101,12 @@ const ensureStats = (u) => {
       const t = now();
       const today = todayStr();
       if (u.casino.day !== today) { u.casino.day = today; u.casino.spins = 0; }
-      if ((u.casino.spins || 0) >= CONFIG.CASINO.daily_limit) return "Лимит спинов на сегодня исчерпан.";
+      if ((u.casino.spins || 0) >= CONFIG.CASINO.daily_limit) return "Лимит попыток на сегодня исчерпан.";
       if (t - (u.casino.last || 0) < CONFIG.CASINO.cooldown_ms) return "Подожди несколько секунд…";
       return null;
     };
 
-    // Ядро одного спина (UI: результат + клавиатура ещё ставок)
+    // Ядро одной попытки (UI: результат + клавиатура ещё ставок)
     const spinCore = async ({ bet, headerText = "" }) => {
       const diceResp = await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendDice`, {
         method: "POST",
@@ -130,7 +130,7 @@ const ensureStats = (u) => {
         win > 0
           ? `🎉 Выигрыш: $${win} (×${mult})`
           : `🙃 Мимо. Попробуй ещё!`
-      }\nСтавка: $${bet}\n💰 Деньги: $${postMoney}\nСегодня: ${u.casino.spins}/${CONFIG.CASINO.daily_limit}`;
+      }\nСтавка: $${bet}\n💰 Деньги: $${postMoney}\nПопыток сегодня: ${u.casino.spins}/${CONFIG.CASINO.daily_limit}`;
       
       await tgSend("sendMessage", {
         chat_id: chatId,
@@ -192,13 +192,13 @@ await users.save(u);
       // остаёмся в потоковом UI (againKeyboard)
     };
 
-    // ---------- БЕСПЛАТНЫЙ СПИН ----------
+    // ---------- БЕСПЛАТНАЯ ПОПЫТКА ----------
     if (data === "casino_free") {
       const today = todayStr();
 
       // уже использован сегодня → обычный ответ
       if (u.casino.free.day === today) {
-        await answer(cb.id, "🎲 Бесплатный спин уже использован. Доступно завтра.");
+        await answer(cb.id, "🌀 Бесплатная попытка уже использована. Доступна завтра.");
         return;
       }
 
@@ -209,7 +209,7 @@ await users.save(u);
         // нет права → НЕ крутим, предлагаем идти в Бар
         await tgSend("sendMessage", {
           chat_id: chatId,
-          text: "Чтобы получить бесплатный спин, зайдите в Бар и заберите ежедневную награду за подписку.",
+          text: "Чтобы получить бесплатную попытку, зайдите в Бар и заберите ежедневную награду за подписку.",
           parse_mode: "HTML",
           reply_markup: {
             inline_keyboard: [
@@ -229,12 +229,12 @@ await users.save(u);
       // >>> Прогресс квеста Бара по казино (по факту спина)
       await BarService.onCasinoSpin({ u, users, now });
 
-      await answer(cb.id, "🎲 Бесплатный спин!");
+      await answer(cb.id, "🌀 Бесплатная попытка!");
 
       const bet = 10;
       const { win } = await spinCore({
         bet,
-        headerText: "🎲 Бесплатный спин (ставка $10, без списания)"
+        headerText: "🌀 Бесплатная попытка (ставка $10, без списания)"
       });
       
       // рекорд за 1 спин — учитываем и бесплатные спины

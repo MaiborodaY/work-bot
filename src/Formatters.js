@@ -111,7 +111,7 @@ export const Formatters = {
 
   casinoBestLine(u) {
     const best = Math.max(0, Number(u?.casino?.bestSingleWin) || 0);
-    return `🏅 Лучший выигрыш за спин: $${best}`;
+    return `🏅 Лучший выигрыш за попытку: $${best}`;
   },
 
   casinoStatsLines(u) {
@@ -145,7 +145,7 @@ export const Formatters = {
 
     const lineDay   = `📊 День: выигрыш ${fmt(wonD)} · траты ${fmt(lostD)} · итог ${fmt(netD)}`;
     const lineWeek  = `🗓️ Неделя: выигрыш ${fmt(wonW)} · траты ${fmt(lostW)} · итог ${fmt(netW)}`;
-    const lineBest  = `\n🏅 Лучший спин: ${fmt(best)}`;
+    const lineBest  = `\n🏅 Лучшая попытка: ${fmt(best)}`;
 
     return `${lineDay}\n${lineWeek}\n${lineBest}`;
   },

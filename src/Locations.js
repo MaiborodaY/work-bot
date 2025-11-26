@@ -396,8 +396,8 @@ export class Locations {
       const today = new Date().toISOString().slice(0,10);
       const spinsToday = (user.casino?.day === today) ? (user.casino?.spins || 0) : 0;
       const freeUsedToday = (user.casino?.free?.day === today);
-      const freeLine = freeUsedToday ? "Бесплатный спин завтра." : "1 бесплатный спин в день. Деньги не списываются.";
-      const statusLine = `Сегодня: ${spinsToday}/${CONFIG.CASINO.daily_limit} спинов`;
+      const freeLine = freeUsedToday ? "Бесплатная попытка будет доступна завтра." : "1 бесплатная попытка в день. Деньги не списываются.";
+      const statusLine = `Сегодня: ${spinsToday}/${CONFIG.CASINO.daily_limit} попыток`;
       const lastPrizeLine = (user.casino?.free?.lastPrize ?? null) != null
         ? `\nПоследний бесплатный приз: $${user.casino.free.lastPrize || 0}.`
         : "";
@@ -415,10 +415,10 @@ export class Locations {
 
       let casinoKb = this.ui.casinoMenu();
       if (!freeUsedToday) {
-        casinoKb = [[{ text: "🎲 Бесплатный спин ($10, без списания)", callback_data: "casino_free" }], ...casinoKb];
+        casinoKb = [[{ text: "🌀 Бесплатная попытка ($10, без списания)", callback_data: "casino_free" }], ...casinoKb];
       }
 
-      const captionCore = `🎰 Казино\n\n${freeLine}\n${statusLine}${lastPrizeLine}`;
+      const captionCore = `🌀 Зал арканы\n\n${freeLine}\n${statusLine}${lastPrizeLine}`;
       const captionWithStats = statsLines ? `${captionCore}\n\n${statsLines}` : captionCore;
       const captionStatsBest = bestLine ? `${captionWithStats}\n${bestLine}` : captionWithStats;
       const finalCaption = `${captionStatsBest}\n\n${this.formatters.moneyLine(user)}`;

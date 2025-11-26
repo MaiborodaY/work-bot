@@ -66,15 +66,16 @@ export class UiFactory {
     const tasks = Array.isArray(bar.tasks) ? bar.tasks : [];
   
     kb.push([{ text: "📋 Задания бара", callback_data: "bar:tasks" }]);
+    kb.push([{ text: "🌀 Зал арканы", callback_data: "go:Casino" }]);
   
     const today = new Date().toISOString().slice(0,10);
     const freeUsed = (user?.casino?.free?.day === today);
     const subDay = user?.subReward?.day || "";
     const eligible = !!(user?.subReward?.eligible);
     const showSubBtn = !freeUsed && (subDay !== today || eligible === true);
-    // if (showSubBtn) {
-    //   kb.push([{ text: "Получить бесплатное вращение", callback_data: "bar:sub" }]);
-    // }
+    if (showSubBtn) {
+      kb.push([{ text: "🎁 Бесплатная попытка", callback_data: "bar:sub" }]);
+    }
   
     kb.push([{ text: "⬅️ Назад к заработку", callback_data: "go:Earn" }]);
     return kb;
@@ -100,7 +101,11 @@ export class UiFactory {
   
     for (const t of tasks) {
       const rText = fmtReward(t.reward);
-      const prog = t.id === "W1" ? `${t.progress}/${t.goal} смен` : `${t.progress}/${t.goal}`;
+      const unit =
+        t.id === "W1" ? "смен" :
+        (t.id === "C1" || t.id === "C2") ? "попыток" :
+        "";
+      const prog = unit ? `${t.progress}/${t.goal} ${unit}` : `${t.progress}/${t.goal}`;
   
       kb.push([{ text: `🎯 ${t.title} (награда: ${rText})`, callback_data: "noop" }]);
       kb.push([{ text: `📊 Прогресс: ${prog}`, callback_data: "noop" }]);
@@ -272,15 +277,15 @@ export class UiFactory {
     for (let i = 0; i < PRICES.length; i += 2) {
       const row = [];
       const p1 = PRICES[i];
-      row.push({ text: `🎰 Крутить за $${p1}`, callback_data: `casino_spin:${p1}` });
+      row.push({ text: `🌀 Попытка за $${p1}`, callback_data: `casino_spin:${p1}` });
       const p2 = PRICES[i + 1];
-      if (p2 != null) row.push({ text: `🎰 Крутить за $${p2}`, callback_data: `casino_spin:${p2}` });
+      if (p2 != null) row.push({ text: `🌀 Попытка за $${p2}`, callback_data: `casino_spin:${p2}` });
       rows.push(row);
     }
     rows.push([{ text: "🃏 All in", callback_data: "casino_allin:ask" }]);
     rows.push([
       { text: "ℹ️ Правила", callback_data: "casino_info" },
-      { text: "⬅️ Назад", callback_data: "go:Earn" }
+      { text: "⬅️ В бар", callback_data: "go:Bar" }
     ]);
     return rows;
   }
@@ -451,7 +456,7 @@ export class UiFactory {
 
   cityTopLuckyCaption(list) {
     if (!Array.isArray(list) || !list.length) {
-      return "🍀 Самые везучие\n\nПока пусто. Попробуй удачу в казино.";
+      return "🍀 Самые везучие\n\nПока пусто. Попробуй удачу в Зале арканы.";
     }
     const medals = ["🥇","🥈","🥉"];
     const lines = ["🍀 Самые везучие:\n"];

@@ -53,7 +53,7 @@ export const barHandler = {
     const showSubScreen = async () => {
       const caption =
         "🎁 Ежедневная награда за подписку\n\n" +
-        "Подпишись на канал — откроется 1 бесплатный спин сегодня.\n" +
+        "Подпишись на канал — откроется 1 бесплатная попытка в Зале арканы сегодня.\n" +
         "После использования — право исчезает до завтра.";
 
       // ВАЖНО: передаём ЧИСТЫЙ массив inline_keyboard, БЕЗ обёртки { inline_keyboard: ... }
@@ -150,7 +150,7 @@ if (data === "bar:sub:check") {
   u.subReward.eligible = true;
   await users.save(u);
 
-  await answer(cb.id, "Готово! Бесплатная прокрутка колеса доступна сегодня в Зале подарков.");
+  await answer(cb.id, "Готово! Бесплатная попытка доступна сегодня в Зале арканы.");
   await showSubScreen();
   return;
 }
