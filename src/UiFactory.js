@@ -277,9 +277,9 @@ export class UiFactory {
     for (let i = 0; i < PRICES.length; i += 2) {
       const row = [];
       const p1 = PRICES[i];
-      row.push({ text: `🌀 Попытка за $${p1}`, callback_data: `casino_spin:${p1}` });
+      row.push({ text: `🌀 за $${p1}`, callback_data: `casino_spin:${p1}` });
       const p2 = PRICES[i + 1];
-      if (p2 != null) row.push({ text: `🌀 Попытка за $${p2}`, callback_data: `casino_spin:${p2}` });
+      if (p2 != null) row.push({ text: `🌀 за $${p2}`, callback_data: `casino_spin:${p2}` });
       rows.push(row);
     }
     rows.push([{ text: "🃏 All in", callback_data: "casino_allin:ask" }]);
