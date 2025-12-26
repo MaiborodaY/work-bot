@@ -149,6 +149,15 @@ export const CONFIG = {
       daily: 2000,
       resetPolicy: "utc_daily_burn",
       note: "Популярное заведение с высоким чеком. Забирайте прибыль раз в день."
+    },
+    courier_service: {
+      id: "courier_service",
+      emoji: "📦",
+      title: "Курьерская служба",
+      price: 200000,
+      daily: 4000,
+      resetPolicy: "utc_daily_burn",
+      note: "Доставляем посылки по городу без выходных. Доход стабилен, если не забывать забирать."
     }
   }
 };
