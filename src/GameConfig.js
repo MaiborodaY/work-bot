@@ -158,6 +158,15 @@ export const CONFIG = {
       daily: 4000,
       resetPolicy: "utc_daily_burn",
       note: "Доставляем посылки по городу без выходных. Доход стабилен, если не забывать забирать."
+    },
+    fitness_club: {
+      id: "fitness_club",
+      emoji: "💪",
+      title: "Фитнес-клуб",
+      price: 500000,
+      daily: 10000,
+      resetPolicy: "utc_daily_burn",
+      note: "Современный зал с тренерами и абонементами. Прибыль каждый день — забирайте вовремя."
     }
   }
 };
