@@ -46,6 +46,8 @@ export const CONFIG = {
     price_high: 10,
     cooldown_ms: 4_000,
     daily_limit: 10,
+    // Платные попытки (casino_spin / all-in) доступны только с этого уровня учёбы
+    MIN_STUDY_FOR_PAID: 5,
     mult3: { seven: 10.0, bar: 8.0, grape: 6.0, lemon: 4.0 },
     mult2: { seven: 2.0, bar: 1.75, grape: 1.5, lemon: 1.2 }
   },

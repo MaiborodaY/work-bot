@@ -445,6 +445,10 @@ export class Locations {
 
     // ---------- Casino ----------
     if (route === "Casino") {
+      const minStudy = Number(CONFIG?.CASINO?.MIN_STUDY_FOR_PAID ?? 5);
+      const studyLevel = Math.max(0, Number(user?.study?.level) || 0);
+      const paidLocked = studyLevel < minStudy;
+
       const today = new Date().toISOString().slice(0,10);
       const spinsToday = (user.casino?.day === today) ? (user.casino?.spins || 0) : 0;
       const freeUsedToday = (user.casino?.free?.day === today);
@@ -465,14 +469,17 @@ export class Locations {
           ? this.formatters.casinoBestLine(user)
           : "";
 
-      let casinoKb = this.ui.casinoMenu();
+      let casinoKb = this.ui.casinoMenu(user);
       if (!freeUsedToday) {
         casinoKb = [[{ text: "🌀 Бесплатная попытка ($10, без списания)", callback_data: "casino_free" }], ...casinoKb];
       }
 
       const captionCore = `🌀 Зал арканы\n\n${freeLine}\n${statusLine}${lastPrizeLine}`;
       const captionWithStats = statsLines ? `${captionCore}\n\n${statsLines}` : captionCore;
-      const captionStatsBest = bestLine ? `${captionWithStats}\n${bestLine}` : captionWithStats;
+      const captionWithLocks = paidLocked
+        ? `${captionWithStats}\n\nБольше попыток доступно с уровня учебы ${minStudy}.`
+        : captionWithStats;
+      const captionStatsBest = bestLine ? `${captionWithLocks}\n${bestLine}` : captionWithLocks;
       const finalCaption = `${captionStatsBest}\n\n${this.formatters.moneyLine(user)}`;
 
       await this.media.show({

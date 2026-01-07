@@ -1,5 +1,6 @@
 // BarService.js
 import { HomeService } from "./HomeService.js";
+import { CONFIG } from "./GameConfig.js";
 
 export class BarService {
   constructor({ users, now }) {
@@ -28,10 +29,13 @@ export class BarService {
     }
   }
 
-  _genTasksForDay(dayStr) {
+  _genTasksForDay(dayStr, u) {
     // Чередование: нечётные дни → W1 + C1; чётные → W2 + C2
     const dayNum = Number(dayStr.slice(-2)) || 0;
     const odd = (dayNum % 2) === 1;
+    const minStudyPaid = Number(CONFIG?.CASINO?.MIN_STUDY_FOR_PAID ?? 5);
+    const studyLevel = Math.max(0, Number(u?.study?.level) || 0);
+    const allowC2 = studyLevel >= minStudyPaid;
 
     if (odd) {
       return [
@@ -63,14 +67,23 @@ export class BarService {
         reward: { t: "premium", n: 2 },
         status: "active"
       },
-      { // Casino mid: 3 попытки → +20⚡
-        id: "C2",
-        title: "Сделай 3 попытки в Зале арканы",
-        goal: 3,
-        progress: 0,
-        reward: { t: "energy", n: 20 },
-        status: "active"
-      }
+      allowC2
+        ? { // Casino mid: 3 попытки → +20⚡
+            id: "C2",
+            title: "Сделай 3 попытки в Зале арканы",
+            goal: 3,
+            progress: 0,
+            reward: { t: "energy", n: 20 },
+            status: "active"
+          }
+        : { // Casino simple: 1 попытка → +10⚡
+            id: "C1",
+            title: "Сделай 1 попытку в Зале арканы",
+            goal: 1,
+            progress: 0,
+            reward: { t: "energy", n: 10 },
+            status: "active"
+          }
     ];
   }
 
@@ -84,15 +97,39 @@ export class BarService {
     if (u.bar.day !== today) {
       u.bar.day = today;
       u.bar.assigned = true;          // авто-выдача пакета при первом открытии
-      u.bar.tasks = this._genTasksForDay(today);
+      u.bar.tasks = this._genTasksForDay(today, u);
       return true; // был ресет/создание
     }
     // тот же день: если ещё не было assign — выдаём пакет сейчас
     if (!u.bar.assigned) {
       u.bar.assigned = true;
-      u.bar.tasks = this._genTasksForDay(today);
+      u.bar.tasks = this._genTasksForDay(today, u);
       return true;
     }
+    // Мягкая миграция: если до фикса уже выдали C2 игроку с низким уровнем учёбы — заменяем на C1.
+    const minStudyPaid = Number(CONFIG?.CASINO?.MIN_STUDY_FOR_PAID ?? 5);
+    const studyLevel = Math.max(0, Number(u?.study?.level) || 0);
+    if (studyLevel < minStudyPaid && Array.isArray(u.bar.tasks)) {
+      const idxC2 = u.bar.tasks.findIndex(t => t && t.id === "C2");
+      if (idxC2 !== -1) {
+        const t = u.bar.tasks[idxC2] || {};
+        const progress = Math.min(1, Math.max(0, Number(t.progress) || 0));
+        const status =
+          t.status === "claimed" ? "claimed" :
+          progress >= 1 ? "done" : "active";
+
+        u.bar.tasks[idxC2] = {
+          id: "C1",
+          title: "Сделай 1 попытку в Зале арканы",
+          goal: 1,
+          progress,
+          reward: { t: "energy", n: 10 },
+          status
+        };
+        return true;
+      }
+    }
+
     return false;
   }
 

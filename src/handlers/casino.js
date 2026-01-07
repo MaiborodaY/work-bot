@@ -14,6 +14,10 @@ export const casinoHandler = {
     const { data, u, cb, answer, users, casino, now, env, social } = ctx; // goTo не используем здесь
     const chatId = cb.message.chat.id;
 
+    const minStudy = Number(CONFIG?.CASINO?.MIN_STUDY_FOR_PAID ?? 5);
+    const studyLevel = Math.max(0, Number(u?.study?.level) || 0);
+    const allowPaid = studyLevel >= minStudy;
+
     // гарантируем структуру пользователя
     u.casino = u.casino || { last: 0, day: "", spins: 0 };
     u.casino.free = u.casino.free || { day: "", lastPrize: 0 };
@@ -78,24 +82,32 @@ const ensureStats = (u) => {
       ? CONFIG.CASINO.prices
       : [CONFIG.CASINO.price_low, CONFIG.CASINO.price_high];
 
-    const makeGridKeyboard = () => {
+    const makeGridKeyboard = ({ allowPaid } = {}) => {
       const rows = [];
-      for (let i = 0; i < PRICES.length; i += 2) {
-        const row = [];
-        const p1 = PRICES[i];
-        row.push({ text: `🌀 $${p1}`, callback_data: `casino_spin:${p1}` });
-        const p2 = PRICES[i + 1];
-        if (p2 != null) row.push({ text: `🌀$${p2}`, callback_data: `casino_spin:${p2}` });
-        rows.push(row);
+      if (allowPaid) {
+        for (let i = 0; i < PRICES.length; i += 2) {
+          const row = [];
+          const p1 = PRICES[i];
+          row.push({ text: `🌀 $${p1}`, callback_data: `casino_spin:${p1}` });
+          const p2 = PRICES[i + 1];
+          if (p2 != null) row.push({ text: `🌀$${p2}`, callback_data: `casino_spin:${p2}` });
+          rows.push(row);
+        }
+        rows.push([{ text: "🃏 All in", callback_data: "casino_allin:ask" }]);
       }
-      rows.push([{ text: "🃏 All in", callback_data: "casino_allin:ask" }]);
       rows.push([{ text: "ℹ️ Таблица выплат", callback_data: "casino_info" }]);
       rows.push([{ text: "⬅️ В бар", callback_data: "go:Bar" }]);
 
       return { inline_keyboard: rows };
     };
 
-    const againKeyboard = makeGridKeyboard();
+    const againKeyboard = makeGridKeyboard({ allowPaid });
+
+    // server-side gate for paid attempts (buttons can be bypassed via old messages)
+    if (!allowPaid && (data.startsWith("casino_spin") || data.startsWith("casino_allin"))) {
+      await answer(cb.id, `Больше попыток доступно с уровня учебы ${minStudy}.`);
+      return;
+    }
 
     const canPlayChecks = () => {
       const t = now();
@@ -285,7 +297,7 @@ await users.save(u);
         chat_id: chatId,
         text: t,
         parse_mode: "HTML",
-        reply_markup: makeGridKeyboard()
+        reply_markup: makeGridKeyboard({ allowPaid })
       });
       return;
     }

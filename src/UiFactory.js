@@ -268,7 +268,20 @@ export class UiFactory {
 
 
   // ---------- Казино ----------
-  casinoMenu() {
+  casinoMenu(user) {
+    const minStudy = Number(CONFIG?.CASINO?.MIN_STUDY_FOR_PAID ?? 5);
+    const studyLevel = Math.max(0, Number(user?.study?.level) || 0);
+    const allowPaid = studyLevel >= minStudy;
+
+    if (!allowPaid) {
+      return [
+        [
+          { text: "?? Правила", callback_data: "casino_info" },
+          { text: "?? В бар", callback_data: "go:Bar" }
+        ]
+      ];
+    }
+
     const PRICES = Array.isArray(CONFIG.CASINO.prices) && CONFIG.CASINO.prices.length
       ? CONFIG.CASINO.prices
       : [CONFIG.CASINO.price_low, CONFIG.CASINO.price_high];
