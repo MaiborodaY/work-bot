@@ -203,7 +203,7 @@ export class Locations {
       await this.media.show({
         sourceMsg: this._sourceMsg,
         place: "CityBoard", 
-        caption: header + "🌟 Рейтинг игроков\n\nПризы за лучшие места появятся позже.",
+        caption: header + "🌟 Рейтинг игроков\n\nПризы за лучшие места выдаются каждый день!.",
         keyboard: this.ui.cityBoard(),
         policy: "auto",
       });
