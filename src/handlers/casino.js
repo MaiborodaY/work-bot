@@ -243,10 +243,10 @@ await users.save(u);
 
       await answer(cb.id, "🌀 Бесплатная попытка!");
 
-      const bet = 10;
+      const bet = Number(CONFIG?.CASINO?.price_low ?? 5);
       const { win } = await spinCore({
         bet,
-        headerText: "🌀 Бесплатная попытка (ставка $10, без списания)"
+        headerText: `🌀 Бесплатная попытка (ставка $${bet}, без списания)`
       });
       
       // рекорд за 1 спин — учитываем и бесплатные спины

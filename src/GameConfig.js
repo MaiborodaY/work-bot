@@ -16,6 +16,7 @@ export const CONFIG = {
     loader:          { title: "Грузчик",            durationMs: 60 * 60_000,  pay: 108, energy: 36 },
     shawarma_seller: { title: "Шаверма на вынос",   durationMs: 120 * 60_000, pay: 216, energy: 72 },
     dentist:         { title: "Стоматолог",         durationMs: 180 * 60_000, pay: 324, energy: 108 },
+    qa_engineer:     { title: "QA engineer.",       durationMs: 300 * 60_000, pay: 500, energy: 140 },
   },
 
   REST_RECOVER_MS: 5 * 60 * 1000,
@@ -41,9 +42,9 @@ export const CONFIG = {
   BONUS_STREAK: { 1: { money: 10 }, 3: { money: 20 }, 7: { money: 50, energy: 10 } },
 
   CASINO: {
-    prices: [5, 10, 20, 50, 100, 500, 1000, 5000],
+    prices: [5, 20, 50, 100, 500, 1000, 5000, 10000],
     price_low: 5,
-    price_high: 10,
+    price_high: 20,
     cooldown_ms: 4_000,
     daily_limit: 10,
     // Платные попытки (casino_spin / all-in) доступны только с этого уровня учёбы

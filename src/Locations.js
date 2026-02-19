@@ -471,7 +471,7 @@ export class Locations {
 
       let casinoKb = this.ui.casinoMenu(user);
       if (!freeUsedToday) {
-        casinoKb = [[{ text: "🌀 Бесплатная попытка ($10, без списания)", callback_data: "casino_free" }], ...casinoKb];
+        casinoKb = [[{ text: "🌀 Бесплатная попытка ($5, без списания)", callback_data: "casino_free" }], ...casinoKb];
       }
 
       const captionCore = `🌀 Зал арканы\n\n${freeLine}\n${statusLine}${lastPrizeLine}`;
