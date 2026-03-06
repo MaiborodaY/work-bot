@@ -5,7 +5,7 @@ export const businessHandler = {
   match: (data) => data.startsWith("biz:"),
 
   async handle(ctx) {
-    const { data, u, users, answer, goTo, now, send } = ctx;
+    const { data, u, users, answer, goTo, now, send, clans } = ctx;
     const [ns, action, id] = data.split(":"); // biz:buy:shawarma / biz:claim:shawarma
     const bizRoute = (bizId) => (bizId ? `Biz_${bizId}` : "Business");
 
@@ -75,6 +75,12 @@ export const businessHandler = {
       u.biz = u.biz || {};
       u.biz.owned = ownedArr;
       await users.save(u);
+
+      try {
+        if (clans?.recordBusinessMoney) {
+          await clans.recordBusinessMoney(u, reward);
+        }
+      } catch {}
       
       await send(`💰 ${B.emoji} ${B.title}\n🤑 Прибыль за сутки: $${reward}\nБаланс: $${u.money}`);
       await goTo(u, bizRoute(id));

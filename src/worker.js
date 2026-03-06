@@ -1,4 +1,4 @@
-﻿import { CONFIG } from "./GameConfig.js";
+import { CONFIG } from "./GameConfig.js";
 import { TelegramClient } from "./TelegramClient.js";
 import { UserStore } from "./UserStore.js";
 import { EconomyService } from "./EconomyService.js";
@@ -10,6 +10,7 @@ import { StudyService } from "./StudyService.js";
 import { AdminCommands } from "./AdminCommands.js";
 import { NotificationService } from "./NotificationService.js";
 import { SocialService } from "./SocialService.js";
+import { ClanService } from "./ClanService.js";
 import { DailyBonusService } from "./DailyBonusService.js";
 import { ASSETS, JOB_ASSETS } from "./Assets.js";
 
@@ -27,6 +28,7 @@ import { dailyHandler } from "./handlers/daily.js";
 import { barHandler } from "./handlers/bar.js"; // ДОБАВИТЬ
 import { businessHandler } from "./handlers/business.js"; // ➕ НОВОЕ
 import { miniGamesHandler } from "./handlers/minigames.js";
+import { clanHandler } from "./handlers/clan.js";
 
 // платежи Stars
 import { OrdersStore as StarsOrdersStore } from "./payments/OrdersStore.js";
@@ -100,6 +102,7 @@ export default {
     const pct = (a, b) => Math.min(100, Math.floor((a / b) * 100));
 
     const social = new SocialService({ db: env.DB, users, now, economy });
+    const clans = new ClanService({ db: env.DB, users, now, economy });
 
     const orders = new StarsOrdersStore(env.DB, now);
     const stars = new StarsPayService({ botToken: env.BOT_TOKEN, orders, now });
@@ -222,7 +225,8 @@ export default {
       // новый сервис для динамической цены кнопок
       fastForward,
       users,
-      social
+      social,
+      clans
     });
 
     // статлесс переход — ничего не пишем в KV
@@ -298,6 +302,10 @@ export default {
 
       const u = await users.getOrCreate(userId);
 
+      try {
+        await clans.touchDailyPresence(u);
+      } catch {}
+
       // chatId для пушей
       if (u.chatId !== chatId) {
         u.chatId = chatId;
@@ -346,6 +354,7 @@ export default {
         }
 
         u.awaitingName = false;
+        u.awaitingClanName = false;
         u.afterNameRoute = "";
         await users.save(u);
 
@@ -392,6 +401,27 @@ export default {
         await users.save(u);
 
         await goTo(u, route, `✔ Ник установлен: ${u.displayName}`);
+        return new Response("ok");
+      }
+
+      // Название клана: если ждём ввода — перехватываем
+      if (u.awaitingClanName) {
+        const textMsg = (update.message.text || "").trim();
+        if (!textMsg || textMsg.startsWith("/")) {
+          await send(
+            "✍️ Введи название клана одним сообщением (2-24 символа). " +
+              "Можно буквы, цифры, пробел, _ . -"
+          );
+          return new Response("ok");
+        }
+
+        const res = await clans.createClan(u, textMsg);
+        if (!res.ok) {
+          await send(`⚠️ ${res.error || "Не удалось создать клан."}`);
+          return new Response("ok");
+        }
+
+        await goTo(u, "Clan", `✅ Клан создан: ${res.clan?.name || ""}`);
         return new Response("ok");
       }
 
@@ -575,6 +605,10 @@ export default {
       const data = cb.data || "";
       const u = await users.getOrCreate(cb.from.id);
 
+      try {
+        await clans.touchDailyPresence(u);
+      } catch {}
+
       // подстрахуем chatId
       if (u.chatId !== chatId) {
         u.chatId = chatId;
@@ -625,6 +659,31 @@ export default {
         return new Response("ok");
       }
 
+      // Если ждём название клана — разрешаем только выход через go:*
+      if (u.awaitingClanName) {
+        if (data && data.startsWith("go:")) {
+          const target = data.split(":")[1] || "Square";
+          u.awaitingClanName = false;
+          await users.save(u);
+          await goTo(u, target);
+          return new Response("ok");
+        }
+
+        await answer(cb.id, "Сначала отправь название клана сообщением.");
+        await locations.media.show({
+          sourceMsg: locations._sourceMsg || cb.message,
+          place: "CityBoard",
+          caption:
+            "✍️ Введи название клана одним сообщением.\n" +
+            "Длина: 2-24 символа.\n" +
+            "Можно буквы, цифры, пробел, _ . -",
+          keyboard: [[{ text: "⬅️ Отмена", callback_data: "go:Clan" }]],
+          policy: "auto"
+        });
+        locations.setSourceMessage(null);
+        return new Response("ok");
+      }
+
       // автозавершение по любому клику
       if (cb.message) {
         locations.setSourceMessage(cb.message);
@@ -659,6 +718,7 @@ export default {
         fastForward,
         // соц
         social,
+        clans,
         // ui
         ui,
         // payments
@@ -670,6 +730,7 @@ export default {
       // Minimal set during onboarding: navigation + work only
       const FULL_HANDLERS = [
         navigationHandler,
+        clanHandler,
         premiumShopHandler,
         socialHandler,
         barHandler,

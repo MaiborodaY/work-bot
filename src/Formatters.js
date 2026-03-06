@@ -1,4 +1,4 @@
-﻿// Formatters.js
+// Formatters.js
 import { CONFIG } from "./GameConfig.js";
 import { EconomyService } from "./EconomyService.js";
 
@@ -89,6 +89,11 @@ export const Formatters = {
       ? u.displayName
       : "Игрок";
     lines.push(`🎭 Имя: ${nick}`);
+    if (u?.clan?.clanId) {
+      lines.push(`👥 Клан: #${String(u.clan.clanId)}`);
+    } else {
+      lines.push("👥 Клан: не выбран");
+    }
 
     lines.push(Formatters.balance(u));
 

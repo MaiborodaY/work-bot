@@ -1,4 +1,4 @@
-﻿// UiFactory.js
+// UiFactory.js
 import { CONFIG } from "./GameConfig.js";
 import { GymService } from "./GymService.js";
 
@@ -48,6 +48,7 @@ export class UiFactory {
     return [
       [{ text: "🏠 Дом и отдых", callback_data: "go:Home" }],
       [{ text: "🏆 Доска почёта", callback_data: "go:CityBoard" }],
+      [{ text: "👥 Кланы", callback_data: "go:Clan" }],
       [{ text: "⬅️ Назад в город", callback_data: "go:Square" }],
     ];
   }

@@ -1,4 +1,4 @@
-﻿// handlers/work.js
+// handlers/work.js
 import { JobService } from "../JobService.js";
 import { FastForwardService } from "../FastForwardService.js";
 import { CONFIG } from "../GameConfig.js";
@@ -14,7 +14,7 @@ export const workHandler = {
     data === "work:goto:shop",
 
   async handle(ctx) {
-    const { data, u, cb, answer, users, now, social, goTo, orders, send, sendWithInline } = ctx;
+    const { data, u, cb, answer, users, now, social, clans, goTo, orders, send, sendWithInline } = ctx;
 
     const jobs = new JobService({ users, now, social });
     const ff = new FastForwardService({ users, orders, now, send });
@@ -109,6 +109,11 @@ export const workHandler = {
         await answer(cb.id, res.error || "Не удалось выдать выплату.");
         return;
       }
+      try {
+        if (clans?.recordWorkMoney) {
+          await clans.recordWorkMoney(u, res.pay);
+        }
+      } catch {}
       await answer(cb.id, `Готово: +$${res.pay}`);
       await render();
       return;
@@ -129,6 +134,11 @@ export const workHandler = {
         await render();
         return;
       }
+      try {
+        if (clans?.recordWorkMoney) {
+          await clans.recordWorkMoney(u, claim.pay);
+        }
+      } catch {}
 
       await answer(cb.id, `⏩ Мгновенно завершено (−💎${res.cost}). +$${claim.pay}`);
       await render();

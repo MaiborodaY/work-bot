@@ -1,4 +1,4 @@
-﻿// GameConfig.js
+// GameConfig.js
 import { ASSETS } from "./Assets.js";
 
 export const CONFIG = {
@@ -110,6 +110,70 @@ export const CONFIG = {
     MIN_COST: 1,
     MAX_HOURS_PER_TX: 24,
     DAILY_LIMIT: 50
+  },
+
+  CLANS: {
+    MAX_MEMBERS: 20,
+    CONTRACTS_PER_WEEK: 3,
+    ALWAYS_CONTRACT: "work_money",
+    CONTRACTS: {
+      work_money: {
+        id: "work_money",
+        title: "Доход с работ",
+        hint: "Сумма, полученная кнопкой «Получить выплату» в разделе Работы.",
+        target: 250000,
+        unit: "$",
+        points: 100
+      },
+      business_money: {
+        id: "business_money",
+        title: "Доход с бизнесов",
+        hint: "Сумма, собранная с купленных бизнесов.",
+        target: 400000,
+        unit: "$",
+        points: 100
+      },
+      fortune_net_profit: {
+        id: "fortune_net_profit",
+        title: "Чистая прибыль Зала фортуны",
+        hint: "Только положительная разница: max(0, выигрыш - ставка).",
+        target: 30000,
+        unit: "$",
+        points: 100
+      },
+      active_actions: {
+        id: "active_actions",
+        title: "Активные действия",
+        hint: "Полезные игровые действия участников клана.",
+        target: 1000,
+        unit: "действ.",
+        points: 100
+      },
+      daily_presence: {
+        id: "daily_presence",
+        title: "Ежедневная активность",
+        hint: "Каждый участник может дать 1 пункт в день при любом действии в игре.",
+        target: 28,
+        unit: "дней",
+        points: 100
+      }
+    },
+    WEEKLY_REWARDS: {
+      1: { money: 50000, premium: 50, cosmeticTier: "top1" },
+      2: { money: 30000, premium: 30, cosmeticTier: "top2" },
+      3: { money: 20000, premium: 20, cosmeticTier: "top3" },
+      4: { money: 15000, premium: 0 },
+      5: { money: 12000, premium: 0 },
+      6: { money: 10000, premium: 0 },
+      7: { money: 8000, premium: 0 },
+      8: { money: 6000, premium: 0 },
+      9: { money: 4000, premium: 0 },
+      10: { money: 3000, premium: 0 }
+    },
+    ELIGIBILITY: {
+      MIN_SHARE: 0.01,
+      MIN_USEFUL_EVENTS: 3
+    }
   },
 
   ASSETS: ASSETS,

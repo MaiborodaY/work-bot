@@ -1,4 +1,4 @@
-﻿import { CONFIG } from "./GameConfig.js";
+import { CONFIG } from "./GameConfig.js";
 import { NameService } from "./NameService.js";
 import { ASSETS, JOB_ASSETS } from "./Assets.js";
 
@@ -14,10 +14,11 @@ export class Locations {
    *  maybeFinishGym?:(u:any, goTo:(u:any,place:string,intro?:string)=>Promise<void>)=>Promise<boolean>,
    *  daily?:any,
    *  fastForward?: { quote:(u:any, kind:"work"|"study"|"gym")=>{ok:boolean,cost?:number} }
-   *  users?:any 
+   *  users?:any
+   *  clans?:any
    * }} deps
    */
-  constructor({ media, ui, economy, formatters, pct, now, maybeFinishStudy, daily, fastForward, users, social }) {
+  constructor({ media, ui, economy, formatters, pct, now, maybeFinishStudy, daily, fastForward, users, social, clans }) {
     this.media = media;
     this.ui = ui;
     this.economy = economy;
@@ -29,6 +30,7 @@ export class Locations {
     this.fastForward = fastForward || null;
     this.users = users || null; // ← понадобится для await users.save(u)
     this.social = social || null;
+    this.clans = clans || null;
 
 
     this._sourceMsg = null;
@@ -180,12 +182,40 @@ export class Locations {
       await this.media.show({
         sourceMsg: this._sourceMsg,
         place: "Square",
-        caption: (header || "") + "🏙️ Город: дом и таблицы лидеров.",
+        caption: (header || "") + "🏙️ Город: дом, таблицы лидеров и кланы.",
         keyboard: this.ui.city(),
         policy: "photo",
       });
       this._sourceMsg = null;
       this._route = "City";
+      return;
+    }
+    // ---------- Clan ----------
+    if (route === "Clan") {
+      let view = null;
+      try {
+        if (this.clans && typeof this.clans.buildMainView === "function") {
+          view = await this.clans.buildMainView(user);
+        }
+      } catch {}
+
+      if (!view) {
+        view = {
+          caption: "👥 Кланы временно недоступны.",
+          keyboard: [[{ text: "⬅️ Назад", callback_data: "go:City" }]]
+        };
+      }
+
+      const caption = (header || "") + (view.caption || "");
+      await this.media.show({
+        sourceMsg: this._sourceMsg,
+        place: "CityBoard",
+        caption,
+        keyboard: view.keyboard || [[{ text: "⬅️ Назад", callback_data: "go:City" }]],
+        policy: "auto",
+      });
+      this._sourceMsg = null;
+      this._route = "Clan";
       return;
     }
     // ---------- CityBoard ----------

@@ -11,7 +11,7 @@ export const casinoHandler = {
     data === "casino_info",
 
   async handle(ctx) {
-    const { data, u, cb, answer, users, casino, now, env, social } = ctx; // goTo не используем здесь
+    const { data, u, cb, answer, users, casino, now, env, social, clans } = ctx; // goTo не используем здесь
     const chatId = cb.message.chat.id;
 
     const minStudy = Number(CONFIG?.CASINO?.MIN_STUDY_FOR_PAID ?? 5);
@@ -199,6 +199,11 @@ st.lostW = Math.max(0, (st.lostW || 0)  + Math.max(0, bet));
 
 if (win > 0) u.money += win;
 await users.save(u);
+try {
+  if (clans?.recordFortuneSpin) {
+    await clans.recordFortuneSpin(u, { bet, win });
+  }
+} catch {}
       
       
       // остаёмся в потоковом UI (againKeyboard)
@@ -272,6 +277,11 @@ st.wonW = Math.max(0, (st.wonW || 0) + Math.max(0, win));
 if (win > 0) u.money += win;
 u.casino.free.lastPrize = win;
 await users.save(u);
+try {
+  if (clans?.recordFortuneSpin) {
+    await clans.recordFortuneSpin(u, { bet: 0, win });
+  }
+} catch {}
       
 
       // остаёмся в потоковом меню

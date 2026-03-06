@@ -1,4 +1,4 @@
-﻿// UserStore.js
+// UserStore.js
 import { CONFIG } from "./GameConfig.js";
 
 export class UserStore {
@@ -105,6 +105,7 @@ export class UserStore {
     if (typeof u.displayName !== "string") { u.displayName = ""; dirty = true; }
     u.awaitingName = !!u.awaitingName;
     if (typeof u.afterNameRoute !== "string") { u.afterNameRoute = ""; dirty = true; }
+    u.awaitingClanName = !!u.awaitingClanName;
 
     // Соц-табло суммы
     if (typeof u.dayTotal  !== "number") { u.dayTotal  = 0; dirty = true; }
@@ -159,6 +160,17 @@ export class UserStore {
     } else {
       if (typeof u.subReward.day !== "string") { u.subReward.day = ""; dirty = true; }
       if (typeof u.subReward.eligible !== "boolean") { u.subReward.eligible = false; dirty = true; }
+    }
+
+    // Кланы
+    if (!u.clan || typeof u.clan !== "object") {
+      u.clan = { clanId: "", joinedAt: 0, joinAvailableFromWeek: "", lastPresenceDay: "" };
+      dirty = true;
+    } else {
+      if (typeof u.clan.clanId !== "string") { u.clan.clanId = ""; dirty = true; }
+      if (typeof u.clan.joinedAt !== "number") { u.clan.joinedAt = 0; dirty = true; }
+      if (typeof u.clan.joinAvailableFromWeek !== "string") { u.clan.joinAvailableFromWeek = ""; dirty = true; }
+      if (typeof u.clan.lastPresenceDay !== "string") { u.clan.lastPresenceDay = ""; dirty = true; }
     }
 
     // ===== LEGACY — мягко удаляем устаревшие ключи =====
@@ -218,6 +230,7 @@ export class UserStore {
       displayName: "",
       awaitingName: true,
       afterNameRoute: "",
+      awaitingClanName: false,
 
       dayTotal: 0,
       dayKey: "",
@@ -237,6 +250,8 @@ export class UserStore {
 
       // Бар
       bar: { day: "", assigned: false, tasks: [] },
+
+      clan: { clanId: "", joinedAt: 0, joinAvailableFromWeek: "", lastPresenceDay: "" },
 
       // Flags
       flags: { onboarding: false, onboardingStartedAt: 0, onboardingStep: "", firstJobGemGiven: false }
