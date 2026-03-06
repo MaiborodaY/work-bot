@@ -209,7 +209,7 @@ export class Locations {
       const caption = (header || "") + (view.caption || "");
       await this.media.show({
         sourceMsg: this._sourceMsg,
-        place: "CityBoard",
+        place: "Clan",
         caption,
         keyboard: view.keyboard || [[{ text: "⬅️ Назад", callback_data: "go:City" }]],
         policy: "auto",

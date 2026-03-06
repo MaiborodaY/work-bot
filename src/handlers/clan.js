@@ -13,7 +13,7 @@ export const clanHandler = {
   async handle(ctx) {
     const { data, u, cb, answer, users, locations, clans, goTo } = ctx;
 
-    const show = async (view, place = "CityBoard") => {
+    const show = async (view, place = "Clan") => {
       await locations.media.show({
         sourceMsg: locations._sourceMsg || cb?.message || null,
         place,
@@ -46,7 +46,7 @@ export const clanHandler = {
           "Введи название клана одним сообщением.\n" +
           "Длина: 2-24 символа.\n" +
           "Можно буквы, цифры, пробел, _ . -",
-        keyboard: [[{ text: "Назад", callback_data: "go:Clan" }]]
+        keyboard: [[{ text: "⬅️ Назад", callback_data: "go:Clan" }]]
       });
       return;
     }

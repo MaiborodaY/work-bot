@@ -939,7 +939,7 @@ export class ClanService {
 
     if (!clan) {
       const lines = [
-        "Кланы",
+        "👥 Кланы",
         "",
         "Создай открытый клан или вступи в существующий.",
         "Каждую неделю у клана 3 контракта: всегда доход с работ + 2 случайных.",
@@ -948,18 +948,18 @@ export class ClanService {
 
       if (!canJoin.ok) {
         lines.push("");
-        lines.push(`? ${canJoin.error}`);
+        lines.push(`⚠️ ${canJoin.error}`);
       }
 
       return {
         caption: lines.join("\n"),
         keyboard: [
-          [{ text: "Создать клан", callback_data: "clan:create_prompt" }],
-          [{ text: "Открытые кланы", callback_data: "clan:list" }],
-          [{ text: "Рейтинг недели", callback_data: "clan:weekly_top" }],
-          [{ text: "Рейтинг all-time", callback_data: "clan:all_time" }],
-          [{ text: "Как считается рейтинг", callback_data: "clan:rating_info" }],
-          [{ text: "Назад", callback_data: "go:City" }]
+          [{ text: "🛡️ Создать клан", callback_data: "clan:create_prompt" }],
+          [{ text: "🌐 Открытые кланы", callback_data: "clan:list" }],
+          [{ text: "🏆 Рейтинг недели", callback_data: "clan:weekly_top" }],
+          [{ text: "👑 Рейтинг all-time", callback_data: "clan:all_time" }],
+          [{ text: "ℹ️ Как считается рейтинг", callback_data: "clan:rating_info" }],
+          [{ text: "⬅️ Назад", callback_data: "go:City" }]
         ]
       };
     }
@@ -994,13 +994,13 @@ export class ClanService {
     return {
       caption: lines.join("\n"),
       keyboard: [
-        [{ text: "Контракты недели", callback_data: "clan:contracts" }],
-        [{ text: "Участники", callback_data: "clan:members" }],
-        [{ text: "Рейтинг недели", callback_data: "clan:weekly_top" }],
-        [{ text: "Рейтинг all-time", callback_data: "clan:all_time" }],
-        [{ text: "Как считается рейтинг", callback_data: "clan:rating_info" }],
-        [{ text: "Выйти из клана", callback_data: "clan:leave" }],
-        [{ text: "Назад", callback_data: "go:City" }]
+        [{ text: "📜 Контракты недели", callback_data: "clan:contracts" }],
+        [{ text: "👥 Участники", callback_data: "clan:members" }],
+        [{ text: "🏆 Рейтинг недели", callback_data: "clan:weekly_top" }],
+        [{ text: "👑 Рейтинг all-time", callback_data: "clan:all_time" }],
+        [{ text: "ℹ️ Как считается рейтинг", callback_data: "clan:rating_info" }],
+        [{ text: "🚪 Выйти из клана", callback_data: "clan:leave" }],
+        [{ text: "⬅️ Назад", callback_data: "go:City" }]
       ]
     };
   }
@@ -1011,7 +1011,7 @@ export class ClanService {
     if (!clan) {
       return {
         caption: "Ты не состоишь в клане.",
-        keyboard: [[{ text: "Назад", callback_data: "go:Clan" }]]
+        keyboard: [[{ text: "⬅️ Назад", callback_data: "go:Clan" }]]
       };
     }
 
@@ -1041,7 +1041,7 @@ export class ClanService {
 
     return {
       caption: lines.join("\n").trim(),
-      keyboard: [[{ text: "Назад", callback_data: "go:Clan" }]]
+      keyboard: [[{ text: "⬅️ Назад", callback_data: "go:Clan" }]]
     };
   }
 
@@ -1051,7 +1051,7 @@ export class ClanService {
     if (!clan) {
       return {
         caption: "Ты не состоишь в клане.",
-        keyboard: [[{ text: "Назад", callback_data: "go:Clan" }]]
+        keyboard: [[{ text: "⬅️ Назад", callback_data: "go:Clan" }]]
       };
     }
 
@@ -1080,7 +1080,7 @@ export class ClanService {
 
     return {
       caption: lines.join("\n").trim(),
-      keyboard: [[{ text: "Назад", callback_data: "go:Clan" }]]
+      keyboard: [[{ text: "⬅️ Назад", callback_data: "go:Clan" }]]
     };
   }
 
@@ -1088,7 +1088,7 @@ export class ClanService {
     await this.ensureWeek();
     const list = await this.listOpenClans(15);
 
-    const lines = ["Открытые кланы", ""];
+    const lines = ["🌐 Открытые кланы", ""];
     if (!list.length) {
       lines.push("Пока нет открытых кланов. Можно создать первый.");
     } else {
@@ -1107,14 +1107,14 @@ export class ClanService {
     if (canJoin.ok) {
       for (const c of list) {
         if (!c.joinable) continue;
-        kb.push([{ text: `Вступить: ${c.name}`, callback_data: `clan:join:${c.clanId}` }]);
+        kb.push([{ text: `✅ Вступить: ${c.name}`, callback_data: `clan:join:${c.clanId}` }]);
       }
     }
 
-    kb.push([{ text: "Назад", callback_data: "go:Clan" }]);
+    kb.push([{ text: "⬅️ Назад", callback_data: "go:Clan" }]);
 
     if (!canJoin.ok) {
-      lines.push(`? ${canJoin.error}`);
+      lines.push(`⚠️ ${canJoin.error}`);
     }
 
     return {
@@ -1126,7 +1126,7 @@ export class ClanService {
   async buildWeeklyTopView() {
     await this.ensureWeek();
     const list = await this.getWeeklyRating(10);
-    const lines = ["Рейтинг кланов за неделю", ""];
+    const lines = ["🏆 Рейтинг кланов за неделю", ""];
 
     if (!list.length) {
       lines.push("Пока пусто.");
@@ -1143,14 +1143,14 @@ export class ClanService {
 
     return {
       caption: lines.join("\n"),
-      keyboard: [[{ text: "Назад", callback_data: "go:Clan" }]]
+      keyboard: [[{ text: "⬅️ Назад", callback_data: "go:Clan" }]]
     };
   }
 
   async buildAllTimeTopView() {
     await this.ensureWeek();
     const list = await this.getAllTimeRating(10);
-    const lines = ["Рейтинг кланов all-time", ""];
+    const lines = ["👑 Рейтинг кланов all-time", ""];
 
     if (!list.length) {
       lines.push("Пока пусто.");
@@ -1167,7 +1167,7 @@ export class ClanService {
 
     return {
       caption: lines.join("\n"),
-      keyboard: [[{ text: "Назад", callback_data: "go:Clan" }]]
+      keyboard: [[{ text: "⬅️ Назад", callback_data: "go:Clan" }]]
     };
   }
 
@@ -1196,7 +1196,7 @@ export class ClanService {
 
     return {
       caption: lines.join("\n"),
-      keyboard: [[{ text: "Назад", callback_data: "go:Clan" }]]
+      keyboard: [[{ text: "⬅️ Назад", callback_data: "go:Clan" }]]
     };
   }
 
