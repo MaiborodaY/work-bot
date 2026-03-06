@@ -409,9 +409,9 @@ export class ClanService {
   }
 
   _cosmeticLabel(tier) {
-    if (tier === "top1") return "?? Легенды недели";
-    if (tier === "top2") return "?? Герои недели";
-    if (tier === "top3") return "?? Прорыв недели";
+    if (tier === "top1") return "Топ-1 недели";
+    if (tier === "top2") return "Топ-2 недели";
+    if (tier === "top3") return "Топ-3 недели";
     return "";
   }
   async ensureWeek() {
@@ -939,7 +939,7 @@ export class ClanService {
 
     if (!clan) {
       const lines = [
-        "?? Кланы",
+        "Кланы",
         "",
         "Создай открытый клан или вступи в существующий.",
         "Каждую неделю у клана 3 контракта: всегда доход с работ + 2 случайных.",
@@ -954,12 +954,12 @@ export class ClanService {
       return {
         caption: lines.join("\n"),
         keyboard: [
-          [{ text: "? Создать клан", callback_data: "clan:create_prompt" }],
-          [{ text: "?? Открытые кланы", callback_data: "clan:list" }],
-          [{ text: "?? Рейтинг недели", callback_data: "clan:weekly_top" }],
-          [{ text: "?? Рейтинг all-time", callback_data: "clan:all_time" }],
-          [{ text: "?? Как считается рейтинг", callback_data: "clan:rating_info" }],
-          [{ text: "?? Назад", callback_data: "go:City" }]
+          [{ text: "Создать клан", callback_data: "clan:create_prompt" }],
+          [{ text: "Открытые кланы", callback_data: "clan:list" }],
+          [{ text: "Рейтинг недели", callback_data: "clan:weekly_top" }],
+          [{ text: "Рейтинг all-time", callback_data: "clan:all_time" }],
+          [{ text: "Как считается рейтинг", callback_data: "clan:rating_info" }],
+          [{ text: "Назад", callback_data: "go:City" }]
         ]
       };
     }
@@ -974,7 +974,7 @@ export class ClanService {
     const cosmetic = clan?.cosmetic?.label || this._cosmeticLabel(clan?.cosmetic?.tier) || "";
 
     const lines = [
-      `?? Клан: ${clan.name}`,
+      `Клан: ${clan.name}`,
       `Участники: ${membersCount}/${maxMembers}`,
       `Очки недели: ${week.score}/${week.maxScore}`,
       `Контракты: ${week.completedContracts}/${contractsCount}`
@@ -994,13 +994,13 @@ export class ClanService {
     return {
       caption: lines.join("\n"),
       keyboard: [
-        [{ text: "?? Контракты недели", callback_data: "clan:contracts" }],
-        [{ text: "?? Участники", callback_data: "clan:members" }],
-        [{ text: "?? Рейтинг недели", callback_data: "clan:weekly_top" }],
-        [{ text: "?? Рейтинг all-time", callback_data: "clan:all_time" }],
-        [{ text: "?? Как считается рейтинг", callback_data: "clan:rating_info" }],
-        [{ text: "?? Выйти из клана", callback_data: "clan:leave" }],
-        [{ text: "?? Назад", callback_data: "go:City" }]
+        [{ text: "Контракты недели", callback_data: "clan:contracts" }],
+        [{ text: "Участники", callback_data: "clan:members" }],
+        [{ text: "Рейтинг недели", callback_data: "clan:weekly_top" }],
+        [{ text: "Рейтинг all-time", callback_data: "clan:all_time" }],
+        [{ text: "Как считается рейтинг", callback_data: "clan:rating_info" }],
+        [{ text: "Выйти из клана", callback_data: "clan:leave" }],
+        [{ text: "Назад", callback_data: "go:City" }]
       ]
     };
   }
@@ -1011,7 +1011,7 @@ export class ClanService {
     if (!clan) {
       return {
         caption: "Ты не состоишь в клане.",
-        keyboard: [[{ text: "?? Назад", callback_data: "go:Clan" }]]
+        keyboard: [[{ text: "Назад", callback_data: "go:Clan" }]]
       };
     }
 
@@ -1019,7 +1019,7 @@ export class ClanService {
     this._ensureClanWeek(clan, this._weekKey());
 
     const lines = [
-      `?? Контракты недели: ${clan.name}`,
+      `Контракты недели: ${clan.name}`,
       `Счёт клана: ${clan.week.score}/${clan.week.maxScore}`,
       ""
     ];
@@ -1029,7 +1029,7 @@ export class ClanService {
       const value = Math.max(0, Number(c.value) || 0);
       const pct = Math.min(100, Math.floor((value / target) * 100));
       const unit = c.unit ? ` ${c.unit}` : "";
-      const done = c.completed ? "?" : "?";
+      const done = c.completed ? "Готово" : "В процессе";
 
       lines.push(`${done} ${c.title}`);
       lines.push(`Цель: ${target}${unit}`);
@@ -1041,7 +1041,7 @@ export class ClanService {
 
     return {
       caption: lines.join("\n").trim(),
-      keyboard: [[{ text: "?? Назад", callback_data: "go:Clan" }]]
+      keyboard: [[{ text: "Назад", callback_data: "go:Clan" }]]
     };
   }
 
@@ -1051,7 +1051,7 @@ export class ClanService {
     if (!clan) {
       return {
         caption: "Ты не состоишь в клане.",
-        keyboard: [[{ text: "?? Назад", callback_data: "go:Clan" }]]
+        keyboard: [[{ text: "Назад", callback_data: "go:Clan" }]]
       };
     }
 
@@ -1059,7 +1059,7 @@ export class ClanService {
     this._ensureClanWeek(clan, this._weekKey());
 
     const weekScore = Math.max(0, Number(clan.week.score) || 0);
-    const lines = [`?? Участники клана ${clan.name}`, ""];
+    const lines = [`Участники клана ${clan.name}`, ""];
 
     for (const uid of clan.members || []) {
       const user = await this.users.load(uid).catch(() => null);
@@ -1080,7 +1080,7 @@ export class ClanService {
 
     return {
       caption: lines.join("\n").trim(),
-      keyboard: [[{ text: "?? Назад", callback_data: "go:Clan" }]]
+      keyboard: [[{ text: "Назад", callback_data: "go:Clan" }]]
     };
   }
 
@@ -1088,7 +1088,7 @@ export class ClanService {
     await this.ensureWeek();
     const list = await this.listOpenClans(15);
 
-    const lines = ["?? Открытые кланы", ""];
+    const lines = ["Открытые кланы", ""];
     if (!list.length) {
       lines.push("Пока нет открытых кланов. Можно создать первый.");
     } else {
@@ -1111,7 +1111,7 @@ export class ClanService {
       }
     }
 
-    kb.push([{ text: "?? Назад", callback_data: "go:Clan" }]);
+    kb.push([{ text: "Назад", callback_data: "go:Clan" }]);
 
     if (!canJoin.ok) {
       lines.push(`? ${canJoin.error}`);
@@ -1126,12 +1126,12 @@ export class ClanService {
   async buildWeeklyTopView() {
     await this.ensureWeek();
     const list = await this.getWeeklyRating(10);
-    const lines = ["?? Рейтинг кланов за неделю", ""];
+    const lines = ["Рейтинг кланов за неделю", ""];
 
     if (!list.length) {
       lines.push("Пока пусто.");
     } else {
-      const medals = ["??", "??", "??"];
+      const medals = ["1.", "2.", "3."];
       for (let i = 0; i < list.length; i++) {
         const x = list[i];
         const mark = medals[i] || `${i + 1}.`;
@@ -1143,19 +1143,19 @@ export class ClanService {
 
     return {
       caption: lines.join("\n"),
-      keyboard: [[{ text: "?? Назад", callback_data: "go:Clan" }]]
+      keyboard: [[{ text: "Назад", callback_data: "go:Clan" }]]
     };
   }
 
   async buildAllTimeTopView() {
     await this.ensureWeek();
     const list = await this.getAllTimeRating(10);
-    const lines = ["?? Рейтинг кланов all-time", ""];
+    const lines = ["Рейтинг кланов all-time", ""];
 
     if (!list.length) {
       lines.push("Пока пусто.");
     } else {
-      const medals = ["??", "??", "??"];
+      const medals = ["1.", "2.", "3."];
       for (let i = 0; i < list.length; i++) {
         const x = list[i];
         const mark = medals[i] || `${i + 1}.`;
@@ -1167,13 +1167,13 @@ export class ClanService {
 
     return {
       caption: lines.join("\n"),
-      keyboard: [[{ text: "?? Назад", callback_data: "go:Clan" }]]
+      keyboard: [[{ text: "Назад", callback_data: "go:Clan" }]]
     };
   }
 
   buildRatingInfoView() {
     const lines = [
-      "?? Как считается рейтинг кланов",
+      "Как считается рейтинг кланов",
       "",
       "1) Каждую неделю у клана 3 контракта:",
       "- всегда «Доход с работ»",
@@ -1196,7 +1196,7 @@ export class ClanService {
 
     return {
       caption: lines.join("\n"),
-      keyboard: [[{ text: "?? Назад", callback_data: "go:Clan" }]]
+      keyboard: [[{ text: "Назад", callback_data: "go:Clan" }]]
     };
   }
 

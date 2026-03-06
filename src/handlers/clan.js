@@ -27,7 +27,7 @@ export const clanHandler = {
     if (data === "clan:create_prompt") {
       await answer(cb.id);
       if (u?.clan?.clanId) {
-        await answer(cb.id, "РЎРЅР°С‡Р°Р»Р° РІС‹Р№РґРё РёР· С‚РµРєСѓС‰РµРіРѕ РєР»Р°РЅР°.");
+        await answer(cb.id, "Сначала выйди из текущего клана.");
         await goTo(u, "Clan");
         return;
       }
@@ -43,10 +43,10 @@ export const clanHandler = {
 
       await show({
         caption:
-          "вњЌпёЏ Р’РІРµРґРё РЅР°Р·РІР°РЅРёРµ РєР»Р°РЅР° РѕРґРЅРёРј СЃРѕРѕР±С‰РµРЅРёРµРј.\n" +
-          "Р”Р»РёРЅР°: 2-24 СЃРёРјРІРѕР»Р°.\n" +
-          "РњРѕР¶РЅРѕ Р±СѓРєРІС‹, С†РёС„СЂС‹, РїСЂРѕР±РµР», _ . -",
-        keyboard: [[{ text: "в¬…пёЏ РћС‚РјРµРЅР°", callback_data: "go:Clan" }]]
+          "Введи название клана одним сообщением.\n" +
+          "Длина: 2-24 символа.\n" +
+          "Можно буквы, цифры, пробел, _ . -",
+        keyboard: [[{ text: "Назад", callback_data: "go:Clan" }]]
       });
       return;
     }
@@ -56,11 +56,11 @@ export const clanHandler = {
       const clanId = data.split(":")[2] || "";
       const res = await clans.joinClan(u, clanId);
       if (!res.ok) {
-        await answer(cb.id, res.error || "РќРµ СѓРґР°Р»РѕСЃСЊ РІСЃС‚СѓРїРёС‚СЊ РІ РєР»Р°РЅ.");
+        await answer(cb.id, res.error || "Не удалось вступить в клан.");
         await goTo(u, "Clan");
         return;
       }
-      await answer(cb.id, `РўС‹ РІСЃС‚СѓРїРёР» РІ РєР»Р°РЅ: ${res.clan?.name || ""}`);
+      await answer(cb.id, `Ты вступил в клан: ${res.clan?.name || ""}`);
       await goTo(u, "Clan");
       return;
     }
@@ -69,13 +69,13 @@ export const clanHandler = {
       await answer(cb.id);
       const res = await clans.leaveClan(u);
       if (!res.ok) {
-        await answer(cb.id, res.error || "РќРµ СѓРґР°Р»РѕСЃСЊ РІС‹Р№С‚Рё РёР· РєР»Р°РЅР°.");
+        await answer(cb.id, res.error || "Не удалось выйти из клана.");
         await goTo(u, "Clan");
         return;
       }
       const note =
-        "РўС‹ РІС‹С€РµР» РёР· РєР»Р°РЅР°.\n" +
-        `Р’СЃС‚СѓРїРёС‚СЊ РІ РЅРѕРІС‹Р№ РјРѕР¶РЅРѕ РїРѕСЃР»Рµ РЅРµРґРµР»СЊРЅС‹С… РІС‹РїР»Р°С‚: ${res.nextWeekStart}.`;
+        "Ты вышел из клана.\n" +
+        `Вступить в новый можно после недельных выплат: ${res.nextWeekStart}.`;
       await goTo(u, "Clan", note);
       return;
     }
