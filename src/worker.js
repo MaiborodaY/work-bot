@@ -252,7 +252,8 @@ export default {
     const admin = new AdminCommands({
       users,
       send: (text) => send(text),
-      isAdmin
+      isAdmin,
+      botToken: env.BOT_TOKEN
     });
 
     // ===== Минимальная телеметрия оплаты =====
@@ -493,21 +494,16 @@ export default {
         return new Response("ok");
       }
 
-      // admin helper: вернуть file_id для фото
-      if (isAdmin(userId)) {
-        const msg = update.message;
-        if (msg?.photo?.length) {
-          const p = msg.photo[msg.photo.length - 1];
-          await send(
-            `📷 file_id:\n<code>${p.file_id}</code>`,
-            { parse_mode: "HTML" }
-          );
-          return new Response("ok");
-        }
-      }
 
       // админ-команды
-      if (await admin.tryHandle(text, { fromId: userId }))
+      if (
+        await admin.tryHandle(text, {
+          fromId: userId,
+          chatId,
+          message: update.message,
+          waitUntil: (p) => ctx.waitUntil(p)
+        })
+      )
         return new Response("ok");
 
       if (text === "/reset") {
