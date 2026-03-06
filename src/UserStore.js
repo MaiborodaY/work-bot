@@ -116,6 +116,26 @@ export class UserStore {
     // Прем-валюта
     if (typeof u.premium !== "number") { u.premium = 0; dirty = true; }
 
+    // Биржа
+    if (!u.stocks || typeof u.stocks !== "object") {
+      u.stocks = { holdings: {}, lastDividendDay: "", lastDividendAmount: 0 };
+      dirty = true;
+    } else {
+      if (!u.stocks.holdings || typeof u.stocks.holdings !== "object") { u.stocks.holdings = {}; dirty = true; }
+      if (typeof u.stocks.lastDividendDay !== "string") { u.stocks.lastDividendDay = ""; dirty = true; }
+      if (typeof u.stocks.lastDividendAmount !== "number") { u.stocks.lastDividendAmount = 0; dirty = true; }
+      for (const [ticker, h] of Object.entries(u.stocks.holdings)) {
+        if (!h || typeof h !== "object") { delete u.stocks.holdings[ticker]; dirty = true; continue; }
+        const shares = Math.max(0, Math.floor(Number(h.shares) || 0));
+        const avgPrice = Math.max(0, Number(h.avgPrice) || 0);
+        if (!shares) { delete u.stocks.holdings[ticker]; dirty = true; continue; }
+        if (shares !== h.shares || avgPrice !== h.avgPrice) {
+          u.stocks.holdings[ticker] = { shares, avgPrice };
+          dirty = true;
+        }
+      }
+    }
+
     // Лимит ускорений (UTC) — для FastForward
     if (!u.fastForwardDaily || typeof u.fastForwardDaily !== "object") {
       u.fastForwardDaily = { day: "", n: 0 }; dirty = true;
@@ -241,6 +261,8 @@ export class UserStore {
       lastDailyRewardDay: "",
 
       premium: 20,
+
+      stocks: { holdings: {}, lastDividendDay: "", lastDividendAmount: 0 },
 
       // FastForward дневной лимит
       fastForwardDaily: { day: "", n: 0 },

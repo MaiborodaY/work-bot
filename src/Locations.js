@@ -16,9 +16,10 @@ export class Locations {
    *  fastForward?: { quote:(u:any, kind:"work"|"study"|"gym")=>{ok:boolean,cost?:number} }
    *  users?:any
    *  clans?:any
+   *  stocks?:any
    * }} deps
    */
-  constructor({ media, ui, economy, formatters, pct, now, maybeFinishStudy, daily, fastForward, users, social, clans }) {
+  constructor({ media, ui, economy, formatters, pct, now, maybeFinishStudy, daily, fastForward, users, social, clans, stocks }) {
     this.media = media;
     this.ui = ui;
     this.economy = economy;
@@ -31,6 +32,7 @@ export class Locations {
     this.users = users || null; // ← понадобится для await users.save(u)
     this.social = social || null;
     this.clans = clans || null;
+    this.stocks = stocks || null;
 
 
     this._sourceMsg = null;
@@ -159,6 +161,35 @@ export class Locations {
       });
       this._sourceMsg = null;
       this._route = "Earn";
+      return;
+    }
+
+    // ---------- Stocks ----------
+    if (route === "Stocks") {
+      let view = null;
+      try {
+        if (this.stocks && typeof this.stocks.buildMarketView === "function") {
+          view = await this.stocks.buildMarketView(user);
+        }
+      } catch {}
+
+      if (!view) {
+        view = {
+          caption: "📈 Биржа временно недоступна.",
+          keyboard: [[{ text: "⬅️ Назад к заработку", callback_data: "go:Earn" }]]
+        };
+      }
+
+      const caption = (header || "") + (view.caption || "");
+      await this.media.show({
+        sourceMsg: this._sourceMsg,
+        place: "Work",
+        caption,
+        keyboard: view.keyboard || [[{ text: "⬅️ Назад к заработку", callback_data: "go:Earn" }]],
+        policy: "auto",
+      });
+      this._sourceMsg = null;
+      this._route = "Stocks";
       return;
     }
 

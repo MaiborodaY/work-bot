@@ -28,7 +28,7 @@ export const ASSETS = {
   export const JOB_ASSETS = {
     flyers:     "AgACAgIAAxkBAAIX_2j17kRiUTaPYEsbA_lFIKMZti7LAAK8_TEb_p6wS8riGCAnSMlAAQADAgADeQADNgQ",
     dishwasher: "AgACAgIAAxkBAAIX-Wj17jd1OQvAf_sJQk2twxVSfQKmAAK5_TEb_p6wS_Wnsf4JWjwqAQADAgADeQADNgQ",
-    waiter:     "AgACAgIAAxkBAAIX_Wj17kD8GwvXyW-6aI8s2PLSt96hAAK7_TEb_p6wS4mNfmviyyXmAQADAgADeQADNgQ",
+    waiter:     "AgACAgIAAxkBAAJn32mrZWs4igy1U89Vng6BUb7IFD2qAAIQEWsbkjRgSUAIgQABaQQOZwEAAwIAA3kAAzoE",
     courier:    "AgACAgIAAxkBAAIYAWj17kgAAdu_e3FZlJS1L49IlPQ0tAACvf0xG_6esEs37zMizlnhygEAAwIAA3kAAzYE",
     loader:     "AgACAgIAAxkBAAIX-2j17jsC58ArbDo3GCiVMPxRSjllAAK6_TEb_p6wS76hKG5qDHNDAQADAgADeQADNgQ",
     shawarma_seller: "AgACAgIAAxkBAAIeN2j4KNwhPuT_wKCXPnk1azeE4AG2AALsBjIbyKTBS08rjhx33rE9AQADAgADeQADNgQ",

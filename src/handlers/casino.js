@@ -11,7 +11,7 @@ export const casinoHandler = {
     data === "casino_info",
 
   async handle(ctx) {
-    const { data, u, cb, answer, users, casino, now, env, social, clans } = ctx; // goTo не используем здесь
+    const { data, u, cb, answer, users, casino, now, env, social, clans, stocks } = ctx; // goTo не используем здесь
     const chatId = cb.message.chat.id;
 
     const minStudy = Number(CONFIG?.CASINO?.MIN_STUDY_FOR_PAID ?? 5);
@@ -170,6 +170,11 @@ const ensureStats = (u) => {
 
       // >>> Прогресс квеста Бара по казино (по факту спина)
       await BarService.onCasinoSpin({ u, users, now });
+      try {
+        if (stocks?.recordCasinoSpin) {
+          await stocks.recordCasinoSpin(1);
+        }
+      } catch {}
 
       await answer(cb.id, isAllIn ? "🃏 All in! Крутим…" : "Крутим…");
 
@@ -245,6 +250,11 @@ try {
 
       // >>> Прогресс квеста Бара по казино (по факту спина)
       await BarService.onCasinoSpin({ u, users, now });
+      try {
+        if (stocks?.recordCasinoSpin) {
+          await stocks.recordCasinoSpin(1);
+        }
+      } catch {}
 
       await answer(cb.id, "🌀 Бесплатная попытка!");
 

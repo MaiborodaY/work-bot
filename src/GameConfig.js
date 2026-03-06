@@ -176,6 +176,67 @@ export const CONFIG = {
     }
   },
 
+  STOCKS: {
+    UPDATE_HOUR_UTC: 0,
+    HISTORY_DAYS: 7,
+    PRICE_FLOOR: 1,
+    PRICE_CEILING_MULT: 20,
+    SELL_FEE: 0.03,
+    DIVIDEND_RATE_DAILY: 0.005,
+    LUCKY_ACTIVITY: {
+      MAX_BONUS: 0.05,
+      SPINS_FOR_MAX: 100,
+      CURVE: "sqrt"
+    },
+    COMPANIES: {
+      shawarma: {
+        ticker: "shawarma",
+        title: "ShawarmaChain",
+        emoji: "🌯",
+        basePrice: 100,
+        volatility: 0.04,
+        reversion: 0.30,
+        casinoLinked: false
+      },
+      dent: {
+        ticker: "dent",
+        title: "DentCorp",
+        emoji: "💊",
+        basePrice: 180,
+        volatility: 0.07,
+        reversion: 0.20,
+        casinoLinked: false
+      },
+      fitlife: {
+        ticker: "fitlife",
+        title: "FitLife",
+        emoji: "🏋️",
+        basePrice: 220,
+        volatility: 0.09,
+        reversion: 0.10,
+        casinoLinked: false
+      },
+      quick: {
+        ticker: "quick",
+        title: "QuickDeliver",
+        emoji: "📦",
+        basePrice: 260,
+        volatility: 0.12,
+        reversion: 0.18,
+        casinoLinked: false
+      },
+      lucky: {
+        ticker: "lucky",
+        title: "LuckyHoldings",
+        emoji: "🎰",
+        basePrice: 140,
+        volatility: 0.18,
+        reversion: 0.03,
+        casinoLinked: true
+      }
+    }
+  },
+
   ASSETS: ASSETS,
 
   NOTIFY: {

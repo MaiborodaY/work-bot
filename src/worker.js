@@ -12,6 +12,7 @@ import { NotificationService } from "./NotificationService.js";
 import { SocialService } from "./SocialService.js";
 import { ClanService } from "./ClanService.js";
 import { DailyBonusService } from "./DailyBonusService.js";
+import { StockService } from "./StockService.js";
 import { ASSETS, JOB_ASSETS } from "./Assets.js";
 
 // handlers test comm
@@ -29,6 +30,7 @@ import { barHandler } from "./handlers/bar.js"; // ДОБАВИТЬ
 import { businessHandler } from "./handlers/business.js"; // ➕ НОВОЕ
 import { miniGamesHandler } from "./handlers/minigames.js";
 import { clanHandler } from "./handlers/clan.js";
+import { stocksHandler } from "./handlers/stocks.js";
 
 // платежи Stars
 import { OrdersStore as StarsOrdersStore } from "./payments/OrdersStore.js";
@@ -65,6 +67,7 @@ export default {
       const bot = new TelegramClient(env.BOT_TOKEN);
       const users = new UserStore(env.DB);
       const economy = new EconomyService();
+      const stocks = new StockService({ db: env.DB, users, now: () => Date.now() });
       const notifier = new NotificationService({
         users,
         bot,
@@ -74,6 +77,7 @@ export default {
         economy,
         debug: !!env.DEBUG
       });
+      await stocks.runDailyUpdate().catch(() => {});
       await notifier.run();
       return new Response("ok");
     }
@@ -103,6 +107,7 @@ export default {
 
     const social = new SocialService({ db: env.DB, users, now, economy });
     const clans = new ClanService({ db: env.DB, users, now, economy });
+    const stocks = new StockService({ db: env.DB, users, now });
 
     const orders = new StarsOrdersStore(env.DB, now);
     const stars = new StarsPayService({ botToken: env.BOT_TOKEN, orders, now });
@@ -226,7 +231,8 @@ export default {
       fastForward,
       users,
       social,
-      clans
+      clans,
+      stocks
     });
 
     // статлесс переход — ничего не пишем в KV
@@ -715,6 +721,7 @@ export default {
         // соц
         social,
         clans,
+        stocks,
         // ui
         ui,
         // payments
@@ -734,6 +741,7 @@ export default {
         miniGamesHandler,
         workHandler,
         businessHandler,
+        stocksHandler,
         studyHandler,
         homeHandler,
         shopHandler,
@@ -773,6 +781,7 @@ export default {
     const bot = new TelegramClient(env.BOT_TOKEN);
     const users = new UserStore(env.DB);
     const economy = new EconomyService();
+    const stocks = new StockService({ db: env.DB, users, now: () => Date.now() });
 
     const notifier = new NotificationService({
       users,
@@ -783,6 +792,6 @@ export default {
       economy,
       debug: !!env.DEBUG
     });
-    ctx.waitUntil(notifier.run());
+    ctx.waitUntil(Promise.allSettled([stocks.runDailyUpdate(), notifier.run()]));
   }
 };
