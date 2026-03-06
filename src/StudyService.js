@@ -1,6 +1,7 @@
 // StudyService.js — учёба может идти параллельно с работой/отдыхом
 import { CONFIG } from "./GameConfig.js";
 import { HomeService } from "./HomeService.js";
+import { NotifyDueIndex } from "./NotifyDueIndex.js";
 
 export class StudyService {
   constructor({ users, send, now, social }) {
@@ -8,6 +9,7 @@ export class StudyService {
     this.send  = typeof send === "function" ? send : async () => {};
     this.now   = now || (() => Date.now());
     this.social = social || null; // для апдейта "умников"
+    this.dueIndex = (this.users?.db) ? new NotifyDueIndex({ db: this.users.db, now: this.now }) : null;
   }
 
 
@@ -48,6 +50,12 @@ export class StudyService {
 
     await this.users.save(u);
 
+    // best-effort индекс готовности уведомлений для крона
+    try {
+      if (this.dueIndex) {
+        await this.dueIndex.markDue({ userId: u.id, activity: "study", endAt: u.study.endAt });
+      }
+    } catch {}
 
     return { ok: true, endAt: u.study.endAt, timeMs, costMoney, costEnergy };
   }

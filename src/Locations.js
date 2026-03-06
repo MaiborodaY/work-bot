@@ -101,23 +101,13 @@ export class Locations {
           if (Array.isArray(winners) && winners.length) {
             const medals = ["🥇","🥈","🥉"];
             const nameCache = new Map();
-            const resolveName = async (w) => {
+            const resolveName = (w) => {
               const key = String(w?.userId ?? "");
               if (key && nameCache.has(key)) return nameCache.get(key);
               const fromSnap = (w && typeof w.name === "string" && w.name.trim()) ? w.name.trim() : "";
               if (fromSnap) {
                 if (key) nameCache.set(key, fromSnap);
                 return fromSnap;
-              }
-              if (this.users && typeof this.users.load === "function" && key) {
-                try {
-                  const loaded = await this.users.load(w.userId);
-                  const dn = loaded?.displayName && String(loaded.displayName).trim();
-                  if (dn) {
-                    nameCache.set(key, dn);
-                    return dn;
-                  }
-                } catch {}
               }
               const fallback = key ? `Игрок #${key.slice(-4).padStart(4, "0")}` : "Игрок";
               if (key) nameCache.set(key, fallback);
@@ -127,7 +117,7 @@ export class Locations {
             const lines = ["Вчерашний топ по заработку:"];
             for (const w of winners) {
               const mark = medals[(w?.place || 0) - 1] || `${w.place}.`;
-              const name = await resolveName(w);
+              const name = resolveName(w);
               const earned = Math.max(0, Math.round(Number(w?.earned) || 0));
               const stars = Math.max(0, Number(w?.reward?.stars) || 0);
               const money = Math.max(0, Number(w?.reward?.money) || 0);

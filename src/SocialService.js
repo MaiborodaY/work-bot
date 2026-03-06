@@ -10,6 +10,8 @@ export class SocialService {
     this.users = users;
     this.now = now || (() => Date.now());
     this.economy = economy || new EconomyService();
+    this._periodEnsured = false;
+    this._periodEnsurePromise = null;
   }
 
   // ====== периодные ключи (UTC) ======
@@ -68,35 +70,50 @@ export class SocialService {
   }
 
   async ensurePeriod() {
-    const { dayKey: curDay, weekKey: curWeek } = this.getCurrentKeys();
-    const storedDay = (await this.db.get("state:dayKey")) || "";
-    const storedWeek = (await this.db.get("state:weekKey")) || "";
-
-    if (storedDay !== curDay) {
-      if (storedDay) {
-        let prevTop = [];
-        try {
-          const rawTop = await this.db.get("lb:day");
-          prevTop = rawTop ? JSON.parse(rawTop) : [];
-        } catch {}
-        try {
-          await this.distributeDailyTopRewards({ rewardDayKey: storedDay, topList: prevTop });
-        } catch (e) {
-          console.error("daily_top_reward.error", e?.message || e);
-          throw e;
-        }
-      }
-      await this.db.put("agg:day", "0");
-      await this.db.put("lb:day", "[]");
-      await this.db.put("state:dayKey", curDay);
+    if (this._periodEnsured) return;
+    if (this._periodEnsurePromise) {
+      await this._periodEnsurePromise;
+      return;
     }
-    if (storedWeek !== curWeek) {
-      await this.db.put("agg:week", "0");
-      await this.db.put("lb:week", "[]");          // ← очищаем недельный топ
-      await this.db.put("state:weekKey", curWeek);
-    }    
-  }
 
+    this._periodEnsurePromise = (async () => {
+      const { dayKey: curDay, weekKey: curWeek } = this.getCurrentKeys();
+      const storedDay = (await this.db.get("state:dayKey")) || "";
+      const storedWeek = (await this.db.get("state:weekKey")) || "";
+
+      if (storedDay !== curDay) {
+        if (storedDay) {
+          let prevTop = [];
+          try {
+            const rawTop = await this.db.get("lb:day");
+            prevTop = rawTop ? JSON.parse(rawTop) : [];
+          } catch {}
+          try {
+            await this.distributeDailyTopRewards({ rewardDayKey: storedDay, topList: prevTop });
+          } catch (e) {
+            console.error("daily_top_reward.error", e?.message || e);
+            throw e;
+          }
+        }
+        await this.db.put("agg:day", "0");
+        await this.db.put("lb:day", "[]");
+        await this.db.put("state:dayKey", curDay);
+      }
+      if (storedWeek !== curWeek) {
+        await this.db.put("agg:week", "0");
+        await this.db.put("lb:week", "[]");          // ← очищаем недельный топ
+        await this.db.put("state:weekKey", curWeek);
+      }
+
+      this._periodEnsured = true;
+    })();
+
+    try {
+      await this._periodEnsurePromise;
+    } finally {
+      this._periodEnsurePromise = null;
+    }
+  }
   // ====== агрегаты / топ ======
   async distributeDailyTopRewards({ rewardDayKey, rewardDayStr, topList } = {}) {
     const rewardDay = this._dayKeyToDateStr(rewardDayStr || rewardDayKey || "");

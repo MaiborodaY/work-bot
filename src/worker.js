@@ -268,7 +268,6 @@ export default {
     // ---------- MESSAGES ----------
     if (update.message) {
       const text = (update.message.text || "").trim();
-      const u = await users.getOrCreate(userId);
 
       // /help
       if (/^\/help(?:@\w+)?$/i.test(text)) {
@@ -296,6 +295,8 @@ export default {
         } catch {}
         return new Response("ok");
       }
+
+      const u = await users.getOrCreate(userId);
 
       // chatId для пушей
       if (u.chatId !== chatId) {

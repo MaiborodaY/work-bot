@@ -2,12 +2,14 @@
 import { CONFIG } from "./GameConfig.js";
 import { HomeService } from "./HomeService.js";
 import { BarService } from "./BarService.js";
+import { NotifyDueIndex } from "./NotifyDueIndex.js";
 
 export class JobService {
   constructor({ users, now, social }) {
     this.users = users;
     this.now = now || (() => Date.now());
     this.social = social || null;
+    this.dueIndex = (this.users?.db) ? new NotifyDueIndex({ db: this.users.db, now: this.now }) : null;
   }
 
   _has(u, key) { return Array.isArray(u.upgrades) && u.upgrades.includes(key); }
@@ -70,6 +72,14 @@ export class JobService {
 
     u.jobs.active = [inst];
     await this.users.save(u);
+
+    // best-effort индекс готовности уведомлений для крона
+    try {
+      if (this.dueIndex) {
+        await this.dueIndex.markDue({ userId: u.id, activity: "work", endAt });
+      }
+    } catch {}
+
     return { ok: true, inst };
   }
 

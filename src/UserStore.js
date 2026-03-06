@@ -20,10 +20,11 @@ export class UserStore {
   /**
    * Мягкая миграция пользователя.
    */
-  async load(id) {
-    const raw = await this.db.get(this._key(id));
+  async load(id, rawOverride = undefined) {
+    const raw = (typeof rawOverride === "string")
+      ? rawOverride
+      : await this.db.get(this._key(id));
     let u = raw ? JSON.parse(raw) : this._newUser(id);
-
     let dirty = false;
 
     // ===== Нормализация актуальных полей =====
@@ -252,7 +253,7 @@ export class UserStore {
       await this.save(u);
       return u;
     }
-    return this.load(id);
+    return this.load(id, raw);
   }
 
   async update(id, fn) {

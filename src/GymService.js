@@ -1,5 +1,6 @@
 ﻿// GymService.js
 import { CONFIG } from "./GameConfig.js";
+import { NotifyDueIndex } from "./NotifyDueIndex.js";
 
 /**
  * Сервис тренажёрного зала:
@@ -13,6 +14,7 @@ export class GymService {
     this.send   = typeof send === "function" ? send : async () => {};
     this.now    = now || (() => Date.now());
     this.social = social; // ← добавили, аналогично StudyService
+    this.dueIndex = (this.users?.db) ? new NotifyDueIndex({ db: this.users.db, now: this.now }) : null;
   }
 
   /** Нормализованный конфиг с дефолтами и капами */
@@ -77,6 +79,14 @@ export class GymService {
     u.gym.notified = false; // чтобы по завершении крон прислал пуш
 
     await this.users.save(u);
+
+    // best-effort индекс готовности уведомлений для крона
+    try {
+      if (this.dueIndex) {
+        await this.dueIndex.markDue({ userId: u.id, activity: "gym", endAt });
+      }
+    } catch {}
+
     return { ok: true, timeMs, costMoney, costEnergy, level, endAt };
   }
 
