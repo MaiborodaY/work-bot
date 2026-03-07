@@ -33,6 +33,7 @@ export class UiFactory {
       [{ text: "🛠️ Работы", callback_data: "go:Work" }],
       [{ text: "🍻 Бар", callback_data: "go:Bar" }],
       [{ text: "🏢 Бизнес", callback_data: "go:Business" }],
+      [{ text: "👔 Наёмники", callback_data: "go:Labour" }],
       [{ text: "📈 Биржа", callback_data: "go:Stocks" }],
       [{ text: "⬅️ Назад в город", callback_data: "go:Square" }]
     ];

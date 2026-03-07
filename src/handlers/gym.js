@@ -9,9 +9,9 @@ export const gymHandler = {
 
 
   async handle(ctx) {
-    const { u, cb, answer, users, locations, now, send, orders, social } = ctx;
+    const { u, cb, answer, users, locations, now, send, orders, social, labour } = ctx;
 
-    const gym = new GymService({ users, send, now, social });
+    const gym = new GymService({ users, send, now, social, labour });
     const ff  = new FastForwardService({ users, orders, now, send });
 
     // старт тренировки

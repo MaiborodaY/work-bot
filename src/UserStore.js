@@ -207,6 +207,24 @@ export class UserStore {
       dirty = true;
     }
 
+    // Наемники (статус игрока как сотрудника)
+    if (!u.employment || typeof u.employment !== "object") {
+      u.employment = {
+        active: false,
+        ownerId: "",
+        bizId: "",
+        ownerPct: 0,
+        contractEnd: 0
+      };
+      dirty = true;
+    } else {
+      if (typeof u.employment.active !== "boolean") { u.employment.active = false; dirty = true; }
+      if (typeof u.employment.ownerId !== "string") { u.employment.ownerId = ""; dirty = true; }
+      if (typeof u.employment.bizId !== "string") { u.employment.bizId = ""; dirty = true; }
+      if (typeof u.employment.ownerPct !== "number") { u.employment.ownerPct = 0; dirty = true; }
+      if (typeof u.employment.contractEnd !== "number") { u.employment.contractEnd = 0; dirty = true; }
+    }
+
     // ===== LEGACY — мягко удаляем устаревшие ключи =====
     const dropKeys = [
       "status","last_work_start","shifts","goals","last_daily",
@@ -289,6 +307,7 @@ export class UserStore {
 
       clan: { clanId: "", joinedAt: 0, joinAvailableFromWeek: "", lastPresenceDay: "" },
       clanCosmetic: null,
+      employment: { active: false, ownerId: "", bizId: "", ownerPct: 0, contractEnd: 0 },
 
       // Flags
       flags: { onboarding: false, onboardingStartedAt: 0, onboardingStep: "", firstJobGemGiven: false }

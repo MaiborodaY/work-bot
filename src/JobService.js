@@ -100,6 +100,7 @@ export class JobService {
     const now = this.now();
     if (now < inst.endAt) return { ok: false, error: "Слишком рано. Работа ещё не завершена." };
     if (inst.claimed) return { ok: false, error: "Выплата уже получена." };
+    const shiftEndAt = Number(inst.endAt || 0);
 
     let pay = this._applyFinishModifiers(u, inst.plannedPay);
     pay = Math.max(0, Math.round(pay));
@@ -149,7 +150,7 @@ export class JobService {
       }
     } catch {}
 
-    return { ok: true, pay };
+    return { ok: true, pay, endAt: shiftEndAt };
   }
 
   async cancel(u) {

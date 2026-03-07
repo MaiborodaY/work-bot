@@ -13,6 +13,7 @@ import { SocialService } from "./SocialService.js";
 import { ClanService } from "./ClanService.js";
 import { DailyBonusService } from "./DailyBonusService.js";
 import { StockService } from "./StockService.js";
+import { LabourService } from "./LabourService.js";
 import { ASSETS, JOB_ASSETS } from "./Assets.js";
 
 // handlers test comm
@@ -31,6 +32,7 @@ import { businessHandler } from "./handlers/business.js"; // ➕ НОВОЕ
 import { miniGamesHandler } from "./handlers/minigames.js";
 import { clanHandler } from "./handlers/clan.js";
 import { stocksHandler } from "./handlers/stocks.js";
+import { labourHandler } from "./handlers/labour.js";
 
 // платежи Stars
 import { OrdersStore as StarsOrdersStore } from "./payments/OrdersStore.js";
@@ -108,6 +110,7 @@ export default {
     const social = new SocialService({ db: env.DB, users, now, economy });
     const clans = new ClanService({ db: env.DB, users, now, economy });
     const stocks = new StockService({ db: env.DB, users, now });
+    const labour = new LabourService({ db: env.DB, users, now, bot });
 
     const orders = new StarsOrdersStore(env.DB, now);
     const stars = new StarsPayService({ botToken: env.BOT_TOKEN, orders, now });
@@ -213,7 +216,7 @@ export default {
 
     const study = new StudyService({ users, send, now, social });
     const daily = new DailyBonusService({ users, now });
-    const gym = new GymService({ users, send, now, social });
+    const gym = new GymService({ users, send, now, social, labour });
     const fastForward = new FastForwardService({ users, orders, now, send });
 
     const locations = new Locations({
@@ -232,7 +235,8 @@ export default {
       users,
       social,
       clans,
-      stocks
+      stocks,
+      labour
     });
 
     // статлесс переход — ничего не пишем в KV
@@ -321,6 +325,7 @@ export default {
 
       // 🔹 Легаси: если ник пуст и НЕ ждём ручной ввод (от Social) — тихо автоподставим
       if (!u.displayName && !u.awaitingName) {
+        let nameChanged = false;
         const from = update.message.from || {};
         const fn = (from.first_name || "").trim();
         const ln = (from.last_name || "").trim();
@@ -335,13 +340,23 @@ export default {
           const cleaned = users.sanitizeForDisplayName(c, { truncate: true });
           if (cleaned) {
             const res = await users.setDisplayName(u, cleaned);
-            if (res?.ok) break;
+            if (res?.ok) {
+              nameChanged = true;
+              break;
+            }
           }
         }
 
         if (!u.displayName) {
           u.displayName = `u${String(userId).slice(-8)}`;
           await users.save(u);
+          nameChanged = true;
+        }
+
+        if (nameChanged) {
+          try {
+            await labour.upsertFreePlayer(u);
+          } catch {}
         }
       }
 
@@ -406,6 +421,9 @@ export default {
         u.afterNameRoute = "";
         u.awaitingName = false;
         await users.save(u);
+        try {
+          await labour.upsertFreePlayer(u);
+        } catch {}
 
         await goTo(u, route, `✔ Ник установлен: ${u.displayName}`);
         return new Response("ok");
@@ -541,7 +559,8 @@ export default {
         const clan = await clans.getClanForUser(u).catch(() => null);
         const clanName = clan?.name ? String(clan.name) : "";
         const clanWeekKey = await clans.ensureWeek().catch(() => "");
-        const statusText = Formatters.status(u, { economy, now, pct, clanName, clanWeekKey });
+        const employmentLine = await labour.buildProfileEmploymentLine(u).catch(() => "");
+        const statusText = Formatters.status(u, { economy, now, pct, clanName, clanWeekKey, employmentLine });
         await send(statusText);
         return new Response("ok");
       }
@@ -622,6 +641,7 @@ export default {
 
       // 🔹 Легаси: если ник пуст и не ждём ручной ввод — автоподстановка
       if (!u.displayName && !u.awaitingName) {
+        let nameChanged = false;
         const from = cb.from || {};
         const fn = (from.first_name || "").trim();
         const ln = (from.last_name || "").trim();
@@ -636,13 +656,23 @@ export default {
           const cleaned = users.sanitizeForDisplayName(c, { truncate: true });
           if (cleaned) {
             const res = await users.setDisplayName(u, cleaned);
-            if (res?.ok) break;
+            if (res?.ok) {
+              nameChanged = true;
+              break;
+            }
           }
         }
 
         if (!u.displayName) {
           u.displayName = `u${String(userId).slice(-8)}`;
           await users.save(u);
+          nameChanged = true;
+        }
+
+        if (nameChanged) {
+          try {
+            await labour.upsertFreePlayer(u);
+          } catch {}
         }
       }
 
@@ -725,6 +755,7 @@ export default {
         social,
         clans,
         stocks,
+        labour,
         // ui
         ui,
         // payments
@@ -744,6 +775,7 @@ export default {
         miniGamesHandler,
         workHandler,
         businessHandler,
+        labourHandler,
         stocksHandler,
         studyHandler,
         homeHandler,

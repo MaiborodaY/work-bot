@@ -123,6 +123,10 @@ export const Formatters = {
       lines.push("⏸️ Смена не запущена");
     }
 
+    if (deps?.employmentLine && String(deps.employmentLine).trim()) {
+      lines.push(String(deps.employmentLine).trim());
+    }
+
     lines.push(Formatters.studyLine(u));
 
     const stats = (u?.stats && typeof u.stats === "object") ? u.stats : {};

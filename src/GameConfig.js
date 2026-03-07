@@ -237,6 +237,48 @@ export const CONFIG = {
     }
   },
 
+  LABOUR_MARKET: {
+    LIST_SIZE: 10,
+    INDEX_SIZE: 20,
+    SLOTS: {
+      shawarma: {
+        slotMoney: 10000,
+        slotGems: 20,
+        ownerPct: 0.08,
+        contractDays: 1,
+        minEnergyMax: 20
+      },
+      stomatology: {
+        slotMoney: 25000,
+        slotGems: 50,
+        ownerPct: 0.10,
+        contractDays: 2,
+        minEnergyMax: 40
+      },
+      restaurant: {
+        slotMoney: 50000,
+        slotGems: 100,
+        ownerPct: 0.12,
+        contractDays: 3,
+        minEnergyMax: 60
+      },
+      courier_service: {
+        slotMoney: 100000,
+        slotGems: 200,
+        ownerPct: 0.14,
+        contractDays: 5,
+        minEnergyMax: 80
+      },
+      fitness_club: {
+        slotMoney: 250000,
+        slotGems: 500,
+        ownerPct: 0.16,
+        contractDays: 7,
+        minEnergyMax: 100
+      }
+    }
+  },
+
   ASSETS: ASSETS,
 
   NOTIFY: {

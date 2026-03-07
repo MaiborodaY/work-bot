@@ -16,10 +16,11 @@ export class Locations {
    *  fastForward?: { quote:(u:any, kind:"work"|"study"|"gym")=>{ok:boolean,cost?:number} }
    *  users?:any
    *  clans?:any
-   *  stocks?:any
+   *  stocks?:any,
+   *  labour?:any
    * }} deps
    */
-  constructor({ media, ui, economy, formatters, pct, now, maybeFinishStudy, daily, fastForward, users, social, clans, stocks }) {
+  constructor({ media, ui, economy, formatters, pct, now, maybeFinishStudy, daily, fastForward, users, social, clans, stocks, labour }) {
     this.media = media;
     this.ui = ui;
     this.economy = economy;
@@ -33,6 +34,7 @@ export class Locations {
     this.social = social || null;
     this.clans = clans || null;
     this.stocks = stocks || null;
+    this.labour = labour || null;
 
 
     this._sourceMsg = null;
@@ -190,6 +192,35 @@ export class Locations {
       });
       this._sourceMsg = null;
       this._route = "Stocks";
+      return;
+    }
+
+    // ---------- Labour ----------
+    if (route === "Labour") {
+      let view = null;
+      try {
+        if (this.labour && typeof this.labour.buildMainView === "function") {
+          view = await this.labour.buildMainView(user);
+        }
+      } catch {}
+
+      if (!view) {
+        view = {
+          caption: "👔 Наёмники временно недоступны.",
+          keyboard: [[{ text: "⬅️ Назад к заработку", callback_data: "go:Earn" }]]
+        };
+      }
+
+      const caption = (header || "") + (view.caption || "");
+      await this.media.show({
+        sourceMsg: this._sourceMsg,
+        place: "Business",
+        caption,
+        keyboard: view.keyboard || [[{ text: "⬅️ Назад к заработку", callback_data: "go:Earn" }]],
+        policy: "auto"
+      });
+      this._sourceMsg = null;
+      this._route = "Labour";
       return;
     }
 

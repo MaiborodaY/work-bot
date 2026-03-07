@@ -9,11 +9,12 @@ import { NotifyDueIndex } from "./NotifyDueIndex.js";
  * - состояние тренировки хранится в u.gym { level, active, startAt, endAt }
  */
 export class GymService {
-  constructor({ users, send, now, social = null }) {
+  constructor({ users, send, now, social = null, labour = null }) {
     this.users  = users;
     this.send   = typeof send === "function" ? send : async () => {};
     this.now    = now || (() => Date.now());
     this.social = social; // ← добавили, аналогично StudyService
+    this.labour = labour;
     this.dueIndex = (this.users?.db) ? new NotifyDueIndex({ db: this.users.db, now: this.now }) : null;
   }
 
@@ -125,6 +126,13 @@ export class GymService {
           energyMax: u.energy_max,
           level: u.gym.level,
         });
+      }
+    } catch {}
+
+    // Обновляем индекс свободных кандидатов для рынка наемников
+    try {
+      if (this.labour && typeof this.labour.upsertFreePlayer === "function") {
+        await this.labour.upsertFreePlayer(u);
       }
     } catch {}
 

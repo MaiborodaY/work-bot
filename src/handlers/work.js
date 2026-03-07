@@ -14,7 +14,7 @@ export const workHandler = {
     data === "work:goto:shop",
 
   async handle(ctx) {
-    const { data, u, cb, answer, users, now, social, clans, goTo, orders, send, sendWithInline } = ctx;
+    const { data, u, cb, answer, users, now, social, clans, labour, goTo, orders, send, sendWithInline } = ctx;
 
     const jobs = new JobService({ users, now, social });
     const ff = new FastForwardService({ users, orders, now, send });
@@ -114,6 +114,11 @@ export const workHandler = {
           await clans.recordWorkMoney(u, res.pay);
         }
       } catch {}
+      try {
+        if (labour?.onEmployeePaid) {
+          await labour.onEmployeePaid(u, res.pay, res.endAt);
+        }
+      } catch {}
       await answer(cb.id, `Готово: +$${res.pay}`);
       await render();
       return;
@@ -137,6 +142,11 @@ export const workHandler = {
       try {
         if (clans?.recordWorkMoney) {
           await clans.recordWorkMoney(u, claim.pay);
+        }
+      } catch {}
+      try {
+        if (labour?.onEmployeePaid) {
+          await labour.onEmployeePaid(u, claim.pay, claim.endAt);
         }
       } catch {}
 
