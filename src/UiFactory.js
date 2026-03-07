@@ -1,75 +1,92 @@
 // UiFactory.js
 import { CONFIG } from "./GameConfig.js";
 import { GymService } from "./GymService.js";
+import { normalizeLang, t } from "./i18n/index.js";
 
 export class UiFactory {
-  mainReply() {
+  _lang(lang) {
+    return normalizeLang(lang || "ru");
+  }
+
+  _t(lang, key, vars = {}) {
+    return t(key, this._lang(lang), vars);
+  }
+
+  mainReply(lang = "ru") {
+    const l = this._lang(lang);
     return {
-      keyboard: [[{ text: "🧭 Меню" }, { text: "👤 Профиль" }]],
+      keyboard: [[{ text: this._t(l, "ui.reply.menu") }, { text: this._t(l, "ui.reply.profile") }]],
       resize_keyboard: true,
     };
   }
 
-  square() {
+  square(lang = "ru") {
+    const l = this._lang(lang);
     return [
-      [{ text: "💼 Заработок", callback_data: "go:Earn" }],
-      [{ text: "📈 Прогресс", callback_data: "go:Progress" }],
-      [{ text: "🎮 Мини-игры", callback_data: "go:MiniGames" }],
-      [{ text: "🏙️ Город", callback_data: "go:City" }],
-      [{ text: "🛍️ Магазин", callback_data: "go:ShopHub" }],
+      [{ text: this._t(l, "ui.square.earn"), callback_data: "go:Earn" }],
+      [{ text: this._t(l, "ui.square.progress"), callback_data: "go:Progress" }],
+      [{ text: this._t(l, "ui.square.minigames"), callback_data: "go:MiniGames" }],
+      [{ text: this._t(l, "ui.square.city"), callback_data: "go:City" }],
+      [{ text: this._t(l, "ui.square.shop"), callback_data: "go:ShopHub" }],
     ];
   }
   
-  miniGames() {
+  miniGames(lang = "ru") {
+    const l = this._lang(lang);
     return [
-      [{ text: "🛡️ Защита башнями", callback_data: "game:td" }],
-      [{ text: "🏃‍♂️ Неуловимый бегун", callback_data: "game:runner" }],
-      [{ text: "⬅️ На Площадь", callback_data: "go:Square" }],
+      [{ text: this._t(l, "ui.minigames.td"), callback_data: "game:td" }],
+      [{ text: this._t(l, "ui.minigames.runner"), callback_data: "game:runner" }],
+      [{ text: this._t(l, "ui.back.square"), callback_data: "go:Square" }],
     ];
   }
   
-  earn() {
+  earn(lang = "ru") {
+    const l = this._lang(lang);
     return [
-      [{ text: "🛠️ Работы", callback_data: "go:Work" }],
-      [{ text: "🍻 Бар", callback_data: "go:Bar" }],
-      [{ text: "🏢 Бизнес", callback_data: "go:Business" }],
-      [{ text: "👔 Наёмники", callback_data: "go:Labour" }],
-      [{ text: "📈 Биржа", callback_data: "go:Stocks" }],
-      [{ text: "⬅️ Назад в город", callback_data: "go:Square" }]
+      [{ text: this._t(l, "ui.earn.work"), callback_data: "go:Work" }],
+      [{ text: this._t(l, "ui.earn.bar"), callback_data: "go:Bar" }],
+      [{ text: this._t(l, "ui.earn.business"), callback_data: "go:Business" }],
+      [{ text: this._t(l, "ui.earn.labour"), callback_data: "go:Labour" }],
+      [{ text: this._t(l, "ui.earn.stocks"), callback_data: "go:Stocks" }],
+      [{ text: this._t(l, "ui.back.city"), callback_data: "go:Square" }]
     ];
   }
-  progress() {
+  progress(lang = "ru") {
+    const l = this._lang(lang);
     return [
-      [{ text: "🎓 Учеба", callback_data: "go:Study" }],
-      [{ text: "🏋️ Зал", callback_data: "go:Gym" }],
-      [{ text: "🛠️ Улучшения", callback_data: "go:Upgrades" }],
-      [{ text: "⬅️ Назад в город", callback_data: "go:Square" }],
+      [{ text: this._t(l, "ui.progress.study"), callback_data: "go:Study" }],
+      [{ text: this._t(l, "ui.progress.gym"), callback_data: "go:Gym" }],
+      [{ text: this._t(l, "ui.progress.upgrades"), callback_data: "go:Upgrades" }],
+      [{ text: this._t(l, "ui.back.city"), callback_data: "go:Square" }],
     ];
   }
-  city() {
+  city(lang = "ru") {
+    const l = this._lang(lang);
     return [
-      [{ text: "🏠 Дом и отдых", callback_data: "go:Home" }],
-      [{ text: "🏆 Доска почёта", callback_data: "go:CityBoard" }],
-      [{ text: "👥 Кланы", callback_data: "go:Clan" }],
-      [{ text: "⬅️ Назад в город", callback_data: "go:Square" }],
+      [{ text: this._t(l, "ui.city.home"), callback_data: "go:Home" }],
+      [{ text: this._t(l, "ui.city.board"), callback_data: "go:CityBoard" }],
+      [{ text: this._t(l, "ui.city.clans"), callback_data: "go:Clan" }],
+      [{ text: this._t(l, "ui.back.city"), callback_data: "go:Square" }],
     ];
   }
-  shopHub() {
+  shopHub(lang = "ru") {
+    const l = this._lang(lang);
     return [
-      [{ text: "🍔 Магазин еды", callback_data: "go:Shop" }],
-      [{ text: "💎 Премиум", callback_data: "premium:open" }],
-      [{ text: "⬅️ Назад в город", callback_data: "go:Square" }],
+      [{ text: this._t(l, "ui.shophub.food"), callback_data: "go:Shop" }],
+      [{ text: this._t(l, "ui.shophub.premium"), callback_data: "premium:open" }],
+      [{ text: this._t(l, "ui.back.city"), callback_data: "go:Square" }],
     ];
   }
        
 
-  bar(user, now = Date.now()) {
+  bar(user, now = Date.now(), lang = null) {
+    const l = this._lang(lang || user?.lang);
     const kb = [];
     const bar = user.bar || {};
     const tasks = Array.isArray(bar.tasks) ? bar.tasks : [];
   
-    kb.push([{ text: "📋 Задания бара", callback_data: "bar:tasks" }]);
-    kb.push([{ text: "🌀 Зал арканы", callback_data: "go:Casino" }]);
+    kb.push([{ text: this._t(l, "ui.bar.tasks"), callback_data: "bar:tasks" }]);
+    kb.push([{ text: this._t(l, "ui.bar.arcana"), callback_data: "go:Casino" }]);
   
     const today = new Date().toISOString().slice(0,10);
     const freeUsed = (user?.casino?.free?.day === today);
@@ -77,20 +94,21 @@ export class UiFactory {
     const eligible = !!(user?.subReward?.eligible);
     const showSubBtn = !freeUsed && (subDay !== today || eligible === true);
     if (showSubBtn) {
-      kb.push([{ text: "🎁 Бесплатная попытка", callback_data: "bar:sub" }]);
+      kb.push([{ text: this._t(l, "ui.bar.free"), callback_data: "bar:sub" }]);
     }
   
-    kb.push([{ text: "⬅️ Назад к заработку", callback_data: "go:Earn" }]);
+    kb.push([{ text: this._t(l, "ui.back.earn"), callback_data: "go:Earn" }]);
     return kb;
   }
 
-  barTasks(user) {
+  barTasks(user, lang = null) {
+    const l = this._lang(lang || user?.lang);
     const kb = [];
     const tasks = Array.isArray(user?.bar?.tasks) ? user.bar.tasks : [];
   
     if (!tasks.length) {
-      kb.push([{ text: "😌 Заданий пока нет", callback_data: "noop" }]);
-      kb.push([{ text: "⬅️ Назад", callback_data: "go:Bar" }]);
+      kb.push([{ text: this._t(l, "ui.bar.no_tasks"), callback_data: "noop" }]);
+      kb.push([{ text: this._t(l, "ui.back.default"), callback_data: "go:Bar" }]);
       return kb;
     }
   
@@ -105,47 +123,48 @@ export class UiFactory {
     for (const t of tasks) {
       const rText = fmtReward(t.reward);
       const unit =
-        t.id === "W1" ? "смен" :
-        (t.id === "C1" || t.id === "C2") ? "попыток" :
+        t.id === "W1" ? this._t(l, "ui.bar.unit.shifts") :
+        (t.id === "C1" || t.id === "C2") ? this._t(l, "ui.bar.unit.attempts") :
         "";
       const prog = unit ? `${t.progress}/${t.goal} ${unit}` : `${t.progress}/${t.goal}`;
   
-      kb.push([{ text: `🎯 ${t.title} (награда: ${rText})`, callback_data: "noop" }]);
-      kb.push([{ text: `📊 Прогресс: ${prog}`, callback_data: "noop" }]);
+      kb.push([{ text: `🎯 ${t.title} (${this._t(l, "ui.bar.reward")}: ${rText})`, callback_data: "noop" }]);
+      kb.push([{ text: `📊 ${this._t(l, "ui.bar.progress")}: ${prog}`, callback_data: "noop" }]);
   
       if (t.status === "done") {
-        kb.push([{ text: "🎁 Забрать", callback_data: `bar:claim:${t.id}` }]);
+        kb.push([{ text: this._t(l, "ui.bar.claim"), callback_data: `bar:claim:${t.id}` }]);
       } else if (t.status === "claimed") {
-        kb.push([{ text: "✅ Уже забрано", callback_data: "noop" }]);
+        kb.push([{ text: this._t(l, "ui.bar.claimed"), callback_data: "noop" }]);
       } else {
-        kb.push([{ text: "⏳ Выполняется", callback_data: "noop" }]);
+        kb.push([{ text: this._t(l, "ui.bar.in_progress"), callback_data: "noop" }]);
       }
     }
   
-    kb.push([{ text: "⬅️ Назад", callback_data: "go:Bar" }]);
+    kb.push([{ text: this._t(l, "ui.back.default"), callback_data: "go:Bar" }]);
     return kb;
   }
   
   
 
 // ---------- Работа ----------
-  workV2(user, options = {}) {
+  workV2(user, options = {}, lang = null) {
+    const l = this._lang(lang || user?.lang);
     const { active = null, ready = false } = options;
     const kb = [];
 
     if (active) {
       if (ready) {
-        kb.push([{ text: `💵 Получить выплату ($${active.plannedPay})`, callback_data: "work:claim" }]);
-        kb.push([{ text: "✖️ Отменить смену", callback_data: "work:cancel" }]);
+        kb.push([{ text: this._t(l, "ui.work.claim", { pay: active.plannedPay }), callback_data: "work:claim" }]);
+        kb.push([{ text: this._t(l, "ui.work.cancel_shift"), callback_data: "work:cancel" }]);
       } else {
         const left = Math.max(0, Math.ceil((active.endAt - Date.now())/60000));
-        kb.push([{ text: `⏳ Выполняется ~${left} мин`, callback_data: "noop" }]);
+        kb.push([{ text: this._t(l, "ui.work.running", { mins: left }), callback_data: "noop" }]);
         const costLabel = (typeof options.ffCost === "number" && options.ffCost > 0)
           ? `${CONFIG.PREMIUM.emoji}${options.ffCost}` : `${CONFIG.PREMIUM.emoji}?`;
-        kb.push([{ text: `⏩ Завершить за ${costLabel}`, callback_data: "work:skip" }]);
-        kb.push([{ text: "🛑 Отменить (штраф $5)", callback_data: "work:cancel" }]);
+        kb.push([{ text: this._t(l, "ui.work.skip_for", { cost: costLabel }), callback_data: "work:skip" }]);
+        kb.push([{ text: this._t(l, "ui.work.cancel_penalty"), callback_data: "work:cancel" }]);
       }
-      kb.push([{ text: "⬅️ Назад к заработку", callback_data: "go:Earn" }]);
+      kb.push([{ text: this._t(l, "ui.back.earn"), callback_data: "go:Earn" }]);
       return kb;
     }
 
@@ -154,29 +173,31 @@ export class UiFactory {
     for (const [id, j] of list) {
       const mins = Math.max(1, Math.round((j.durationMs || 0) / 60000));
       kb.push([{
-        text: `▶️ ${j.title} · ${mins} мин · $${j.pay} · ${j.energy}⚡`,
+        text: this._t(l, "ui.work.entry", { title: j.title, mins, pay: j.pay, energy: j.energy }),
         callback_data: `work:start:${id}`
       }]);
     }
 
-    kb.push([{ text: "⬅️ Назад в город", callback_data: "go:Square" }]);
+    kb.push([{ text: this._t(l, "ui.back.city"), callback_data: "go:Square" }]);
     return kb;
   }
 
   // ---------- Учеба ----------
-  studyIdle(effectsText) {
+  studyIdle(effectsText, lang = "ru") {
+    const l = this._lang(lang);
     return [
-      [{ text: `📘 Начать учебу (${effectsText})`, callback_data: "study:start" }],
-      [{ text: "⬅️ Назад к прогрессу", callback_data: "go:Progress" }],
+      [{ text: this._t(l, "ui.study.start", { effects: effectsText }), callback_data: "study:start" }],
+      [{ text: this._t(l, "ui.back.progress"), callback_data: "go:Progress" }],
     ];
   }
 
-  studyActive(progress, { ready = false, ffCost = null } = {}) {
+  studyActive(progress, { ready = false, ffCost = null } = {}, lang = "ru") {
+    const l = this._lang(lang);
     if (ready) {
       return [
-        [{ text: `📊 Прогресс: ${progress}%`, callback_data: "noop" }],
-        [{ text: "🎓 Завершить учебу", callback_data: "study:finish" }],
-        [{ text: "⬅️ Назад к прогрессу", callback_data: "go:Progress" }],
+        [{ text: this._t(l, "ui.progress.line", { progress }), callback_data: "noop" }],
+        [{ text: this._t(l, "ui.study.finish"), callback_data: "study:finish" }],
+        [{ text: this._t(l, "ui.back.progress"), callback_data: "go:Progress" }],
       ];
     }
 
@@ -184,15 +205,16 @@ export class UiFactory {
       ? `${CONFIG.PREMIUM.emoji}${ffCost}`
       : `${CONFIG.PREMIUM.emoji}?`;
     return [
-      [{ text: `📊 Прогресс: ${progress}%`, callback_data: "noop" }],
-      [{ text: `⏩ Завершить за ${costLabel}`, callback_data: "study:skip" }],
-      [{ text: "⬅️ Назад к прогрессу", callback_data: "go:Progress" }],
+      [{ text: this._t(l, "ui.progress.line", { progress }), callback_data: "noop" }],
+      [{ text: this._t(l, "ui.study.skip_for", { cost: costLabel }), callback_data: "study:skip" }],
+      [{ text: this._t(l, "ui.back.progress"), callback_data: "go:Progress" }],
     ];
   }
 
 
   // ---------- Дом ----------
-  home(user, opts = {}) {
+  home(user, opts = {}, lang = null) {
+    const l = this._lang(lang || user?.lang);
     const owned = new Set(user.upgrades || []);
     const kb = [];
 
@@ -203,9 +225,9 @@ export class UiFactory {
 
     if (!user.rest.active) {
       const approx = (mult === 1.5) ? "~1.5" : `${Math.round(1 * mult)}`;
-      kb.push([{ text: `😴 Отдыхать (+${approx}⚡/5 мин)`, callback_data: "rest:start" }]);
+      kb.push([{ text: this._t(l, "ui.home.rest_start", { approx }), callback_data: "rest:start" }]);
     } else {
-      kb.push([{ text: `⏹️ Остановить отдых (x${mult})`, callback_data: "rest:stop" }]);
+      kb.push([{ text: this._t(l, "ui.home.rest_stop", { mult }), callback_data: "rest:stop" }]);
     }
 
 
@@ -221,48 +243,49 @@ export class UiFactory {
       if (owned.has(bedKeys[i])) { currentIdx = i; break; }
     }
     const currentKey   = currentIdx >= 0 ? bedKeys[currentIdx] : null;
-    const currentTitle = currentKey ? (CONFIG.UPGRADES[currentKey]?.title || "Текущая кровать") : "Кровать не куплена";
+    const currentTitle = currentKey ? (CONFIG.UPGRADES[currentKey]?.title || this._t(l, "ui.home.bed.current_fallback")) : this._t(l, "ui.home.bed.none");
     
-    kb.push([{ text: `🛏️ Текущая кровать: ${currentTitle} (x${mult})`, callback_data: "noop" }]);
+    kb.push([{ text: this._t(l, "ui.home.bed.current", { title: currentTitle, mult }), callback_data: "noop" }]);
     
     const nextKey = bedKeys[currentIdx + 1];
     if (nextKey) {
       const it = CONFIG.UPGRADES[nextKey];
       const effect =
-        nextKey === "bed1" ? "Отдых +50%" :
-        nextKey === "bed2" ? "Отдых в 2 раза быстрее" :
-        nextKey === "bed3" ? "Отдых в 3 раза быстрее" : (it?.desc || "");
+        nextKey === "bed1" ? this._t(l, "ui.home.bed.effect1") :
+        nextKey === "bed2" ? this._t(l, "ui.home.bed.effect2") :
+        nextKey === "bed3" ? this._t(l, "ui.home.bed.effect3") : (it?.desc || "");
       const row = [{ text: `${it.title} · ${effect} · $${it.price}`, callback_data: `upg:buy:${nextKey}` }];
       if (typeof it.price_premium === "number") {
         row.push({ text: `${CONFIG.PREMIUM.emoji}${it.price_premium}`, callback_data: `upg:buy_p:${nextKey}` });
       }
       kb.push(row);
     } else {
-      kb.push([{ text: "✅ Все кровати куплены", callback_data: "noop" }]);
+      kb.push([{ text: this._t(l, "ui.home.bed.all_bought"), callback_data: "noop" }]);
     }
     
     const back = (opts && typeof opts.backTo === "string" && opts.backTo) ? opts.backTo : "City";
-    kb.push([{ text: "⬅️ Назад", callback_data: `go:${back}` }]);
+    kb.push([{ text: this._t(l, "ui.back.default"), callback_data: `go:${back}` }]);
     return kb;
   }
 
   // ---------- Магазин ----------
-  shop(opts = {}) {
+  shop(opts = {}, lang = "ru") {
+    const l = this._lang(lang);
     const items = Object.entries(CONFIG.SHOP).map(([k, v]) => {
       const label = (typeof v.price === "number")
-        ? `🛒 ${v.title} · $${v.price}`
+        ? this._t(l, "ui.shop.item_money", { title: v.title, price: v.price })
         : (typeof v.price_premium === "number")
-          ? `🛒 ${v.title} · ${CONFIG.PREMIUM.emoji}${v.price_premium}`
-          : `🛒 ${v.title}`;
+          ? this._t(l, "ui.shop.item_gems", { title: v.title, gems: `${CONFIG.PREMIUM.emoji}${v.price_premium}` })
+          : this._t(l, "ui.shop.item", { title: v.title });
       return [{ text: label, callback_data: `buy_${k}` }];
     });
 
     const backTo   = opts?.backTo || null;
     const backText =
-      backTo === "Work"  ? "⬅️ Назад к сменам" :
-      backTo === "Study" ? "⬅️ Назад к учебе" :
-      backTo === "Gym"   ? "⬅️ Назад в зал" :
-                           "⬅️ Назад";
+      backTo === "Work"  ? this._t(l, "ui.back.work_shifts") :
+      backTo === "Study" ? this._t(l, "ui.back.study") :
+      backTo === "Gym"   ? this._t(l, "ui.back.gym") :
+                           this._t(l, "ui.back.default");
     const backCb = backTo ? `go:${backTo}` : "go:ShopHub";
     items.push([{ text: backText, callback_data: backCb }]);
     return items;
@@ -271,7 +294,8 @@ export class UiFactory {
 
 
   // ---------- Казино ----------
-  casinoMenu(user) {
+  casinoMenu(user, lang = null) {
+    const l = this._lang(lang || user?.lang);
     const minStudy = Number(CONFIG?.CASINO?.MIN_STUDY_FOR_PAID ?? 5);
     const studyLevel = Math.max(0, Number(user?.study?.level) || 0);
     const allowPaid = studyLevel >= minStudy;
@@ -279,8 +303,8 @@ export class UiFactory {
     if (!allowPaid) {
       return [
         [
-          { text: "?? Правила", callback_data: "casino_info" },
-          { text: "?? В бар", callback_data: "go:Bar" }
+          { text: this._t(l, "ui.casino.rules"), callback_data: "casino_info" },
+          { text: this._t(l, "ui.casino.to_bar"), callback_data: "go:Bar" }
         ]
       ];
     }
@@ -293,21 +317,22 @@ export class UiFactory {
     for (let i = 0; i < PRICES.length; i += 2) {
       const row = [];
       const p1 = PRICES[i];
-      row.push({ text: `🌀 за $${p1}`, callback_data: `casino_spin:${p1}` });
+      row.push({ text: this._t(l, "ui.casino.spin_for", { price: p1 }), callback_data: `casino_spin:${p1}` });
       const p2 = PRICES[i + 1];
-      if (p2 != null) row.push({ text: `🌀 за $${p2}`, callback_data: `casino_spin:${p2}` });
+      if (p2 != null) row.push({ text: this._t(l, "ui.casino.spin_for", { price: p2 }), callback_data: `casino_spin:${p2}` });
       rows.push(row);
     }
-    rows.push([{ text: "🃏 All in", callback_data: "casino_allin:ask" }]);
+    rows.push([{ text: this._t(l, "ui.casino.allin"), callback_data: "casino_allin:ask" }]);
     rows.push([
-      { text: "ℹ️ Правила", callback_data: "casino_info" },
-      { text: "⬅️ В бар", callback_data: "go:Bar" }
+      { text: this._t(l, "ui.casino.rules"), callback_data: "casino_info" },
+      { text: this._t(l, "ui.casino.to_bar"), callback_data: "go:Bar" }
     ]);
     return rows;
   }
 
   // ===== Зал =====
-  gym(user, now = Date.now(), ffCost = null) {
+  gym(user, now = Date.now(), ffCost = null, lang = null) {
+    const l = this._lang(lang || user?.lang);
     if (user?.gym?.active) {
       const startAt = user.gym.startAt || 0;
       const endAt   = user.gym.endAt   || 1;
@@ -318,9 +343,9 @@ export class UiFactory {
     
       if (ready) {
         return [
-          [{ text: `📊 Прогресс: ${progress}%`, callback_data: "noop" }],
-          [{ text: "🏁 Завершить тренировку", callback_data: "gym:finish" }],
-          [{ text: "⬅️ Назад к прогрессу", callback_data: "go:Progress" }],
+          [{ text: this._t(l, "ui.progress.line", { progress }), callback_data: "noop" }],
+          [{ text: this._t(l, "ui.gym.finish"), callback_data: "gym:finish" }],
+          [{ text: this._t(l, "ui.back.progress"), callback_data: "go:Progress" }],
         ];
       }
     
@@ -328,9 +353,9 @@ export class UiFactory {
         ? `${CONFIG.PREMIUM.emoji}${ffCost}`
         : `${CONFIG.PREMIUM.emoji}?`;
       return [
-        [{ text: `📊 Прогресс: ${progress}%`, callback_data: "noop" }],
-        [{ text: `⏩ Завершить за ${costLabel}`, callback_data: "gym:skip" }],
-        [{ text: "⬅️ Назад к прогрессу", callback_data: "go:Progress" }],
+        [{ text: this._t(l, "ui.progress.line", { progress }), callback_data: "noop" }],
+        [{ text: this._t(l, "ui.gym.skip_for", { cost: costLabel }), callback_data: "gym:skip" }],
+        [{ text: this._t(l, "ui.back.progress"), callback_data: "go:Progress" }],
       ];
     }
     
@@ -340,17 +365,18 @@ export class UiFactory {
 
     return [
       [{
-        text: `🏋️ Начать тренировку ($${costMoney}, ${costEnergy}⚡, ~${mins} мин)`,
+        text: this._t(l, "ui.gym.start", { money: costMoney, energy: costEnergy, mins }),
         callback_data: "gym:start"
       }],
-      [{ text: "⬅️ Назад к прогрессу", callback_data: "go:Progress" }],
+      [{ text: this._t(l, "ui.back.progress"), callback_data: "go:Progress" }],
     ];
   }
 
   // ---------- Улучшения ----------
-  upgradesCaption(user) {
+  upgradesCaption(user, lang = null) {
+    const l = this._lang(lang || user?.lang);
     const owned = new Set(user.upgrades || []);
-    const lines = ["🛠️ Твои улучшения:"];
+    const lines = [this._t(l, "ui.upgrades.title")];
 
     for (const key of Object.keys(CONFIG.UPGRADES)) {
       if (key === "bed1" || key === "bed2" || key === "bed3") continue;
@@ -362,85 +388,92 @@ export class UiFactory {
     return lines.join("\n");
   }
 
-  upgrades(user) {
+  upgrades(user, lang = null) {
+    const l = this._lang(lang || user?.lang);
     const owned = new Set(user.upgrades || []);
     const rows = [];
     for (const key of Object.keys(CONFIG.UPGRADES)) {
       if (key === "bed1" || key === "bed2" || key === "bed3") continue;
       const it = CONFIG.UPGRADES[key];
       if (owned.has(key)) {
-        rows.push([{ text: `✅ Куплено: ${it.title}` , callback_data: "noop" }]);
+        rows.push([{ text: this._t(l, "ui.upgrades.bought", { title: it.title }) , callback_data: "noop" }]);
       } else {
-        const row = [{ text: `🛒 ${it.title} · $${it.price}`, callback_data: `upg:buy:${key}` }];
+        const row = [{ text: this._t(l, "ui.upgrades.buy", { title: it.title, price: it.price }), callback_data: `upg:buy:${key}` }];
         if (typeof it.price_premium === "number") {
           row.push({ text: `${CONFIG.PREMIUM.emoji}${it.price_premium}`, callback_data: `upg:buy_p:${key}` });
         }
         rows.push(row);
       }
     }
-    rows.push([{ text: "⬅️ Назад", callback_data: "go:Progress" }]);
+    rows.push([{ text: this._t(l, "ui.back.default"), callback_data: "go:Progress" }]);
     return rows;
   }
 
   // ---------- Доска почета ----------
-  cityBoard() {
+  cityBoard(lang = "ru") {
+    const l = this._lang(lang);
     return [
-      [{ text: "🤝 Внести вклад", callback_data: "city:contribute" }],
+      [{ text: this._t(l, "ui.cityboard.contribute"), callback_data: "city:contribute" }],
       [
-        { text: "📅 Топ за день",    callback_data: "city:topday" },
-        { text: "🗓️ Топ за неделю", callback_data: "city:topweek" }
+        { text: this._t(l, "ui.cityboard.topday"),    callback_data: "city:topday" },
+        { text: this._t(l, "ui.cityboard.topweek"), callback_data: "city:topweek" }
       ],
       [
-        { text: "🧠 Самые умные", callback_data: "city:topsmart" },
-        { text: "💪 Самые выносливые",    callback_data: "city:topstrong" }
+        { text: this._t(l, "ui.cityboard.topsmart"), callback_data: "city:topsmart" },
+        { text: this._t(l, "ui.cityboard.topstrong"),    callback_data: "city:topstrong" }
       ],
-      [{ text: "✏️ Сменить имя", callback_data: "social:name" }],
-      [{ text: "⬅️ Назад", callback_data: "go:City" }],
+      [{ text: this._t(l, "ui.cityboard.rename"), callback_data: "social:name" }],
+      [{ text: this._t(l, "ui.back.default"), callback_data: "go:City" }],
     ];
   }
   
-  cityTopStrong() {
+  cityTopStrong(lang = "ru") {
+    const l = this._lang(lang);
     return [
-      [{ text: "⬅️ Назад", callback_data: "go:CityBoard" }],
+      [{ text: this._t(l, "ui.back.default"), callback_data: "go:CityBoard" }],
     ];
   }
 
-  cityTopDay() {
+  cityTopDay(lang = "ru") {
+    const l = this._lang(lang);
     return [
-      [{ text: "⬅️ Назад", callback_data: "go:CityBoard" }],
+      [{ text: this._t(l, "ui.back.default"), callback_data: "go:CityBoard" }],
     ];
   }
 
-  cityTopDayCaption(list) {
+  cityTopDayCaption(list, lang = "ru") {
+    const l = this._lang(lang);
     if (!Array.isArray(list) || !list.length) {
-      return "🏅 Топ дня\n\nПока пусто. Заработай и попадешь сюда.";
+      return this._t(l, "ui.cityboard.day.empty");
     }
     const medals = ["🥇","🥈","🥉"];
-    const lines = ["🏅 Топ дня\n\nЛидеры по заработку:"];
+    const lines = [this._t(l, "ui.cityboard.day.title")];
     list.forEach((x, i) => {
       const m = medals[i] || `${i+1}.`;
       lines.push(`${m} ${x.name} — $${x.total}`);
     });
     return lines.join("\n");
   }
-  cityTopWeekCaption(list) {
+  cityTopWeekCaption(list, lang = "ru") {
+    const l = this._lang(lang);
     if (!Array.isArray(list) || !list.length) {
-      return "📆 Топ недели\n\nПока пусто. Заработай и попадешь сюда.";
+      return this._t(l, "ui.cityboard.week.empty");
     }
     const medals = ["🥇","🥈","🥉"];
-    const lines = ["📆 Топ недели\n\nЛидеры недели:"];
+    const lines = [this._t(l, "ui.cityboard.week.title")];
     list.forEach((x, i) => {
       const m = medals[i] || `${i+1}.`;
       lines.push(`${m} ${x.name} — $${x.total}`);
     });
     return lines.join("\n");
   }
-  cityTopSmartCaption(list) {
+  cityTopSmartCaption(list, lang = "ru") {
+    const l = this._lang(lang);
     if (!Array.isArray(list) || !list.length) {
-      return "🧠 Самые умные (учеба)\n\nПока пусто. Учись, чтобы попасть сюда.";
+      return this._t(l, "ui.cityboard.smart.empty");
     }
     const medals = ["🥇","🥈","🥉"];
-    const lines = ["🧠 Самые умные.\n\nЛучшие по уровню обучения:"];
+    const lines = [this._t(l, "ui.cityboard.smart.title")];
     list.forEach((x, i) => {
       const m = medals[i] || `${i+1}.`;
       const lvl = typeof x.level === "number" ? x.level : 0;
@@ -448,34 +481,37 @@ export class UiFactory {
     });
     return lines.join("\n");
   }
-  cityTopStrongCaption(list) {
+  cityTopStrongCaption(list, lang = "ru") {
+    const l = this._lang(lang);
     if (!Array.isArray(list) || !list.length) {
-      return "💪 Самые выносливые\n\nПока пусто. Тренируйся, чтобы попасть сюда.";
+      return this._t(l, "ui.cityboard.strong.empty");
     }
     const medals = ["🥇","🥈","🥉"];
-    const lines = ["💪 Самые выносливые.\n\nЛучшие по максимуму энергии:"];
+    const lines = [this._t(l, "ui.cityboard.strong.title")];
     list.forEach((x, i) => {
       const m = medals[i] || `${i+1}.`;
       const cap = typeof x.energyMax === "number" ? x.energyMax : 0;
       const lvl = typeof x.level === "number" ? x.level : null;
-      const levelPart = lvl != null ? ` (ур. тренировок: ${lvl})` : "";
+      const levelPart = lvl != null ? this._t(l, "ui.cityboard.training_level", { lvl }) : "";
       lines.push(`${m} ${x.name} — ${cap}⚡${levelPart}`);
     });
     return lines.join("\n");
   }
 
-  cityTopLucky() {
+  cityTopLucky(lang = "ru") {
+    const l = this._lang(lang);
     return [
-      [{ text: "⬅️ Назад", callback_data: "go:CityBoard" }],
+      [{ text: this._t(l, "ui.back.default"), callback_data: "go:CityBoard" }],
     ];
   }
 
-  cityTopLuckyCaption(list) {
+  cityTopLuckyCaption(list, lang = "ru") {
+    const l = this._lang(lang);
     if (!Array.isArray(list) || !list.length) {
-      return "🍀 Самые везучие\n\nПока пусто. Попробуй удачу в Зале арканы.";
+      return this._t(l, "ui.cityboard.lucky.empty");
     }
     const medals = ["🥇","🥈","🥉"];
-    const lines = ["🍀 Самые везучие:\n"];
+    const lines = [this._t(l, "ui.cityboard.lucky.title")];
     list.forEach((x, i) => {
       const m = medals[i] || `${i+1}.`;
       const best = typeof x.best === "number" ? x.best : 0;

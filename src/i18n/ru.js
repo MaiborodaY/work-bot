@@ -2,6 +2,171 @@ export const RU = {
   "lang.name": "Русский",
   "profile.lang.button": "🌐 Язык: {{lang}}",
   "profile.lang.title": "Выбери язык интерфейса:",
-  "profile.lang.changed": "Язык обновлён: {{lang}}"
-};
+  "profile.lang.changed": "Язык обновлён: {{lang}}",
 
+  "ui.reply.menu": "🧭 Меню",
+  "ui.reply.profile": "👤 Профиль",
+
+  "ui.square.earn": "💼 Заработок",
+  "ui.square.progress": "📈 Прогресс",
+  "ui.square.minigames": "🎮 Мини-игры",
+  "ui.square.city": "🏙️ Город",
+  "ui.square.shop": "🛍️ Магазин",
+
+  "ui.minigames.td": "🛡️ Защита башнями",
+  "ui.minigames.runner": "🏃‍♂️ Неуловимый бегун",
+
+  "ui.earn.work": "🛠️ Работы",
+  "ui.earn.bar": "🍻 Бар",
+  "ui.earn.business": "🏢 Бизнес",
+  "ui.earn.labour": "👔 Наёмники",
+  "ui.earn.stocks": "📈 Биржа",
+
+  "ui.progress.study": "🎓 Учеба",
+  "ui.progress.gym": "🏋️ Зал",
+  "ui.progress.upgrades": "🛠️ Улучшения",
+
+  "ui.city.home": "🏠 Дом и отдых",
+  "ui.city.board": "🏆 Доска почёта",
+  "ui.city.clans": "👥 Кланы",
+
+  "ui.shophub.food": "🍔 Магазин еды",
+  "ui.shophub.premium": "💎 Премиум",
+
+  "ui.back.city": "⬅️ Назад в город",
+  "ui.back.square": "⬅️ На Площадь",
+  "ui.back.earn": "⬅️ Назад к заработку",
+  "ui.back.progress": "⬅️ Назад к прогрессу",
+  "ui.back.study": "⬅️ Назад к учебе",
+  "ui.back.gym": "⬅️ Назад в зал",
+  "ui.back.work_shifts": "⬅️ Назад к сменам",
+  "ui.back.default": "⬅️ Назад",
+
+  "ui.bar.tasks": "📋 Задания бара",
+  "ui.bar.arcana": "🌀 Зал арканы",
+  "ui.bar.free": "🎁 Бесплатная попытка",
+  "ui.bar.no_tasks": "😌 Заданий пока нет",
+  "ui.bar.reward": "награда",
+  "ui.bar.progress": "Прогресс",
+  "ui.bar.claim": "🎁 Забрать",
+  "ui.bar.claimed": "✅ Уже забрано",
+  "ui.bar.in_progress": "⏳ Выполняется",
+  "ui.bar.unit.shifts": "смен",
+  "ui.bar.unit.attempts": "попыток",
+
+  "ui.work.claim": "💵 Получить выплату (${{pay}})",
+  "ui.work.cancel_shift": "✖️ Отменить смену",
+  "ui.work.running": "⏳ Выполняется ~{{mins}} мин",
+  "ui.work.skip_for": "⏩ Завершить за {{cost}}",
+  "ui.work.cancel_penalty": "🛑 Отменить (штраф $5)",
+  "ui.work.entry": "▶️ {{title}} · {{mins}} мин · ${{pay}} · {{energy}}⚡",
+
+  "ui.study.start": "📘 Начать учебу ({{effects}})",
+  "ui.study.finish": "🎓 Завершить учебу",
+  "ui.study.skip_for": "⏩ Завершить за {{cost}}",
+
+  "ui.progress.line": "📊 Прогресс: {{progress}}%",
+
+  "ui.home.rest_start": "😴 Отдыхать (+{{approx}}⚡/5 мин)",
+  "ui.home.rest_stop": "⏹️ Остановить отдых (x{{mult}})",
+  "ui.home.bed.current_fallback": "Текущая кровать",
+  "ui.home.bed.none": "Кровать не куплена",
+  "ui.home.bed.current": "🛏️ Текущая кровать: {{title}} (x{{mult}})",
+  "ui.home.bed.effect1": "Отдых +50%",
+  "ui.home.bed.effect2": "Отдых в 2 раза быстрее",
+  "ui.home.bed.effect3": "Отдых в 3 раза быстрее",
+  "ui.home.bed.all_bought": "✅ Все кровати куплены",
+
+  "ui.shop.item_money": "🛒 {{title}} · ${{price}}",
+  "ui.shop.item_gems": "🛒 {{title}} · {{gems}}",
+  "ui.shop.item": "🛒 {{title}}",
+
+  "ui.casino.rules": "ℹ️ Правила",
+  "ui.casino.to_bar": "⬅️ В бар",
+  "ui.casino.spin_for": "🌀 за ${{price}}",
+  "ui.casino.allin": "🃏 All in",
+
+  "ui.gym.finish": "🏁 Завершить тренировку",
+  "ui.gym.skip_for": "⏩ Завершить за {{cost}}",
+  "ui.gym.start": "🏋️ Начать тренировку (${{money}}, {{energy}}⚡, ~{{mins}} мин)",
+
+  "ui.upgrades.title": "🛠️ Твои улучшения:",
+  "ui.upgrades.bought": "✅ Куплено: {{title}}",
+  "ui.upgrades.buy": "🛒 {{title}} · ${{price}}",
+
+  "ui.cityboard.contribute": "🤝 Внести вклад",
+  "ui.cityboard.topday": "📅 Топ за день",
+  "ui.cityboard.topweek": "🗓️ Топ за неделю",
+  "ui.cityboard.topsmart": "🧠 Самые умные",
+  "ui.cityboard.topstrong": "💪 Самые выносливые",
+  "ui.cityboard.rename": "✏️ Сменить имя",
+  "ui.cityboard.day.empty": "🏅 Топ дня\n\nПока пусто. Заработай и попадешь сюда.",
+  "ui.cityboard.day.title": "🏅 Топ дня\n\nЛидеры по заработку:",
+  "ui.cityboard.week.empty": "📆 Топ недели\n\nПока пусто. Заработай и попадешь сюда.",
+  "ui.cityboard.week.title": "📆 Топ недели\n\nЛидеры недели:",
+  "ui.cityboard.smart.empty": "🧠 Самые умные (учеба)\n\nПока пусто. Учись, чтобы попасть сюда.",
+  "ui.cityboard.smart.title": "🧠 Самые умные.\n\nЛучшие по уровню обучения:",
+  "ui.cityboard.strong.empty": "💪 Самые выносливые\n\nПока пусто. Тренируйся, чтобы попасть сюда.",
+  "ui.cityboard.strong.title": "💪 Самые выносливые.\n\nЛучшие по максимуму энергии:",
+  "ui.cityboard.training_level": " (ур. тренировок: {{lvl}})",
+  "ui.cityboard.lucky.empty": "🍀 Самые везучие\n\nПока пусто. Попробуй удачу в Зале арканы.",
+  "ui.cityboard.lucky.title": "🍀 Самые везучие:\n",
+
+  "loc.onboarding.to_gym": "Перейти в зал",
+  "loc.onboarding.start_first_shift": "Начать первую смену",
+  "loc.onboarding.caption_gym": "💪 Первая смена готова. Открой зал, чтобы потратить награду и увеличить энергию.",
+  "loc.onboarding.caption_first_shift": "🚀 Запускаем игру без лишних меню. Нажми кнопку ниже, чтобы начать первую минутную смену и получить награду.",
+
+  "loc.daily_bonus": "🎁 Бонус дня",
+  "loc.square.caption": "🏙️ Площадь: выберите, куда пойти дальше, или загляните в магазин.",
+  "loc.square.yesterday_top": "Вчерашний топ по заработку:",
+  "loc.square.fallback": "🏙️ Ты на Площади. Куда пойдём?",
+
+  "loc.hint.job_ready": "💵 Смена закончена — деньги ждут тебя в Работах.",
+  "loc.hint.job_active": "⏳ Смена идёт. Загляни в Бар — там есть чем заняться.",
+  "loc.hint.no_energy": "😮‍💨 Энергия на нуле. Домой — отдыхать.",
+  "loc.hint.no_clan": "🤝 Ты без клана. В Городе можно вступить — вместе веселее.",
+  "loc.hint.default": "🏙️ Город не спит. Иди работай или загляни в Бар.",
+
+  "loc.earn.caption": "💼 Заработок: выберите, как хотите получить деньги.",
+  "loc.stocks.unavailable": "📈 Биржа временно недоступна.",
+  "loc.labour.unavailable": "👔 Наёмники временно недоступны.",
+  "loc.progress.caption": "📈 Прогресс: учеба, зал и улучшения.",
+  "loc.city.caption": "🏙️ Город: дом, таблицы лидеров и кланы.",
+  "loc.clan.unavailable": "👥 Кланы временно недоступны.",
+  "loc.cityboard.caption": "🌟 Рейтинг игроков\n\nПризы за лучшие места выдаются каждый день.",
+  "loc.shophub.caption": "🛒 Магазины",
+  "loc.minigames.caption": "🎮 Мини-игры: выбери режим и нажми, чтобы запустить.",
+
+  "loc.work.onboarding_to_gym": "💪 Первая выплата получена. Открой зал и вложи её в энергию.",
+  "loc.work.onboarding_step1": "🚦 Шаг 1: запусти первую минутную смену. Это почти не требует энергии и дает стартовый доход.",
+  "loc.work.onboarding_hint": "Выбери первую смену ниже. 💪 После награды покажем зал.",
+  "loc.work.caption_intro": "🛠️ Работы\nВыбери смену и жди — деньги придут сами.\nЧем дольше смена, тем выше оплата.\nУчёба ускоряет смены, зал даёт больше энергии на них.",
+  "loc.work.bonuses": "✨ Бонусы от учёбы и улучшений:",
+
+  "loc.study.ready_title": "📘 Обучение завершено — можно повысить уровень",
+  "loc.study.active_title": "📘 Идёт обучение (~{{mins}} мин)",
+  "loc.study.caption_intro": "🎓 Учёба\n+1% к скорости каждой смены за уровень.\nУровень 5 открывает Зал арканы.\nЧем выше уровень — тем дороже бизнесы ты сможешь купить.",
+
+  "loc.home.caption": "🏠 Ты дома. Здесь можно восстановить энергию с бонусом от кровати.",
+  "loc.home.hint": "Нажми «Отдыхать» для начала отдыха или «Прервать» для получения энергии после отдыха",
+  "loc.shop.caption": "🛒 Ты в магазине. Что купить?",
+
+  "loc.casino.free_tomorrow": "Бесплатная попытка будет доступна завтра.",
+  "loc.casino.free_today": "1 бесплатная попытка в день. Деньги не списываются.",
+  "loc.casino.status_line": "Сегодня: {{spins}}/{{limit}} попыток",
+  "loc.casino.last_free_prize": "Последний бесплатный приз: ${{prize}}.",
+  "loc.casino.free_btn": "🌀 Бесплатная попытка ($5, без списания)",
+  "loc.casino.caption_intro": "🎰 Казино\nИспытай удачу — шанс умножить деньги.\nОткрывается на 5 уровне учёбы.\nДневной лимит — не увлекайся.",
+  "loc.casino.locked_more": "Больше попыток доступно с уровня учебы {{level}}.",
+
+  "loc.bar.caption_intro": "🍻 Бар\nЕжедневные задания — выполняй и получай кристаллы.\nЗадания обновляются каждый день.",
+
+  "loc.gym.ready_title": "🏁 Тренировка завершена — можно повысить энергию",
+  "loc.gym.active_title": "🏋️ Тренировка идёт: ~{{mins}} мин",
+  "loc.gym.caption_intro": "🏋️ Зал\n+1 к максимуму энергии за тренировку.\nБольше энергии = больше смен без отдыха.\nНужна высокая энергия чтобы тебя наняли на дорогой бизнес.",
+
+  "loc.bartasks.title": "📋 Ежедневные задания",
+  "loc.bartasks.empty": "Сегодня квестов нет — приходи завтра.",
+  "loc.bartasks.done": "✓ Все задания на сегодня выполнены — приходи завтра."
+};
