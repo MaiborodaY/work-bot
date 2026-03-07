@@ -1,5 +1,9 @@
 // AdminCommands.js
 // Admin tools: legacy economy commands + broadcast workflow.
+import { CONFIG } from "./GameConfig.js";
+
+const LABOUR_FREE_PLAYERS_KEY = "labour:free_players";
+
 export class AdminCommands {
   /**
    * deps:
@@ -44,7 +48,8 @@ export class AdminCommands {
         "/setmoney &lt;userId&gt; &lt;amount&gt;\n" +
         "/givegem &lt;userId&gt; &lt;amount&gt;\n" +
         "/setgem &lt;userId&gt; &lt;amount&gt;\n" +
-        "/wipe &lt;userId&gt;\n\n" +
+        "/wipe &lt;userId&gt;\n" +
+        "/labour_reindex - rebuild free labour index once\n\n" +
         "<b>Broadcast</b>\n" +
         "/broadcast - start draft mode\n" +
         "/broadcast_test - send draft only to you\n" +
@@ -315,6 +320,21 @@ export class AdminCommands {
       await this._sendUsersList();
       return true;
     }
+    if (/^\/labour_reindex(?:@\w+)?\s*$/i.test(input)) {
+      await this.send("Labour reindex started...");
+      try {
+        const out = await this._rebuildLabourFreeIndex();
+        await this.send(
+          "Labour reindex done.\n" +
+          `Scanned: ${Number(out.scanned || 0)}\n` +
+          `Eligible: ${Number(out.eligible || 0)}\n` +
+          `Saved to index: ${Number(out.saved || 0)} (limit ${Number(out.limit || 0)})`
+        );
+      } catch (e) {
+        await this.send(`Labour reindex failed: ${this._escapeHtml(e?.message || e)}`);
+      }
+      return true;
+    }
 
     return false;
   }
@@ -526,10 +546,72 @@ export class AdminCommands {
       if (!page || page.list_complete || !page.cursor) break;
       cursor = page.cursor;
     }
-
     return out;
   }
 
+  async _rebuildLabourFreeIndex() {
+    const prefix = "u:";
+    const now = Date.now();
+    const limit = Math.max(1, Number(CONFIG?.LABOUR_MARKET?.INDEX_SIZE) || 20);
+    let cursor = undefined;
+    let scanned = 0;
+    let eligible = 0;
+    const rawRows = [];
+
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const page = await this.db.list({ prefix, cursor });
+      const keys = Array.isArray(page?.keys) ? page.keys : [];
+
+      for (const k of keys) {
+        scanned += 1;
+        try {
+          const raw = await this.db.get(k.name);
+          if (!raw) continue;
+          const u = JSON.parse(raw);
+
+          const fallbackId = String(k.name || "").slice(prefix.length);
+          const id = String(u?.id ?? fallbackId || "");
+          if (!id) continue;
+
+          const name = String(u?.displayName || "").trim();
+          if (!name) continue;
+
+          const energyMax = Math.max(0, Number(u?.energy_max) || 0);
+          const emp = (u?.employment && typeof u.employment === "object") ? u.employment : null;
+          const active = !!emp?.active;
+          const contractEnd = Number(emp?.contractEnd || 0);
+          const busy = active && contractEnd > now;
+          if (busy) continue;
+
+          eligible += 1;
+          rawRows.push({ id, name, energyMax });
+        } catch {
+          // skip invalid user rows
+        }
+      }
+
+      if (!page || page.list_complete || !page.cursor) break;
+      cursor = page.cursor;
+    }
+
+    rawRows.sort((a, b) => {
+      if ((b.energyMax || 0) !== (a.energyMax || 0)) return (b.energyMax || 0) - (a.energyMax || 0);
+      return 0;
+    });
+
+    const out = [];
+    const seen = new Set();
+    for (const row of rawRows) {
+      if (seen.has(row.id)) continue;
+      seen.add(row.id);
+      out.push(row);
+      if (out.length >= limit) break;
+    }
+
+    await this.db.put(LABOUR_FREE_PLAYERS_KEY, JSON.stringify(out));
+    return { scanned, eligible, saved: out.length, limit };
+  }
   async _sendDraft(chatId, draft) {
     if (!chatId || !draft) return { ok: false, error: "missing chatId/draft" };
 
