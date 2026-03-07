@@ -571,7 +571,7 @@ export class AdminCommands {
           const u = JSON.parse(raw);
 
           const fallbackId = String(k.name || "").slice(prefix.length);
-          const id = String(u?.id ?? fallbackId || "");
+          const id = String((u?.id ?? fallbackId) || "");
           if (!id) continue;
 
           const name = String(u?.displayName || "").trim();
