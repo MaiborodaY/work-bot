@@ -35,8 +35,11 @@ export const premiumHandler = {
       
         const firstX2Active = !u.firstPurchaseBonusUsed;
         const headLines = [
-          `${CONFIG.PREMIUM.emoji} Магазин кристаллов`,
-          ``,
+          "💎 Кристаллы",
+          "Редкая валюта — только из заданий и топов.",
+          "Нужны для премиум-покупок и слотов наёмников.",
+          "Не трать на мелочи — копи на слоты.",
+          "",
           `Баланс: ${CONFIG.PREMIUM.emoji}${u.premium || 0}`,
           `Выбери пакет:`,
         ];

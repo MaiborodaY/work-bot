@@ -396,9 +396,12 @@ export class Locations {
         const perks = this.formatters.workPerks(user, { hints: true });
         const caption =
           (header || "") +
-          "💼 Выбери смену ниже и запускай работу. 🎯 Цель — получить выплату сегодня.\n\n" +
+          "🛠️ Работы\n" +
+          "Выбери смену и жди — деньги придут сами.\n" +
+          "Чем дольше смена, тем выше оплата.\n" +
+          "Учёба ускоряет смены, зал даёт больше энергии на них.\n\n" +
           this.formatters.balance(user) + "\n\n" +
-          "✨ Бонусы от учебы и улучшений:\n" + perks;
+          "✨ Бонусы от учёбы и улучшений:\n" + perks;
 
         const kb = this.ui.workV2(user, {});
 
@@ -481,9 +484,12 @@ export class Locations {
         await this.media.show({
           sourceMsg: this._sourceMsg,
           place: "Study",
-          caption: header + `🎓 Обучайся, чтобы ускорить работу.\nМаксимальный бонус к скорости может достигать ${CONFIG.STUDY.MAX_LEVEL}% `
-           + "\n\n" + this.formatters.balance(user)+ "\n" + this.formatters.studyLine(user)
-           +"\n"+"+1% к скорости работы за каждое обучение",
+          caption: header +
+            "🎓 Учёба\n" +
+            "+1% к скорости каждой смены за уровень.\n" +
+            "Уровень 5 открывает казино.\n" +
+            "Чем выше уровень — тем дороже бизнесы ты сможешь купить.\n\n" +
+            this.formatters.balance(user) + "\n" + this.formatters.studyLine(user),
           keyboard: this.ui.studyIdle(this.economy.fmtStudyEffects(user)),
           policy: "auto",
         });
@@ -556,7 +562,12 @@ export class Locations {
         casinoKb = [[{ text: "🌀 Бесплатная попытка ($5, без списания)", callback_data: "casino_free" }], ...casinoKb];
       }
 
-      const captionCore = `🌀 Зал арканы\n\n${freeLine}\n${statusLine}${lastPrizeLine}`;
+      const captionCore =
+        "🎰 Казино\n" +
+        "Испытай удачу — шанс умножить деньги.\n" +
+        "Открывается на 5 уровне учёбы.\n" +
+        "Дневной лимит — не увлекайся.\n\n" +
+        `${freeLine}\n${statusLine}${lastPrizeLine}`;
       const captionWithStats = statsLines ? `${captionCore}\n\n${statsLines}` : captionCore;
       const captionWithLocks = paidLocked
         ? `${captionWithStats}\n\nБольше попыток доступно с уровня учебы ${minStudy}.`
@@ -581,7 +592,11 @@ export class Locations {
       await this.media.show({
         sourceMsg: this._sourceMsg,
         place: "Bar",
-        caption: "🍺 Бар «Две Лисы»\nТут можно получить награду и выполнить задания." + "\n\n" + this.formatters.balance(user),
+        caption:
+          "🍻 Бар\n" +
+          "Ежедневные задания — выполняй и получай кристаллы.\n" +
+          "Задания обновляются каждый день.\n\n" +
+          this.formatters.balance(user),
         keyboard: this.ui.bar(user, this.now()),
         policy: "auto",
       });
@@ -630,7 +645,11 @@ export class Locations {
           defaultTitle = titleActive(leftMin);
         }
       } else {
-        defaultTitle = "💪 Тренируйтесь в зале, чтобы увеличить максимальную энергию. \nКаждая тренировка дает +1 к максимуму. \nМаксимум может быть 160 энергии";
+        defaultTitle =
+          "🏋️ Зал\n" +
+          "+1 к максимуму энергии за тренировку.\n" +
+          "Больше энергии = больше смен без отдыха.\n" +
+          "Нужна высокая энергия чтобы тебя наняли на дорогой бизнес.";
       }
       
       const titleOrHeader = (introText && introText.trim()) ? introText.trim() : defaultTitle;
@@ -710,7 +729,13 @@ export class Locations {
         const all = CONFIG?.BUSINESS || {};
         const items = Object.keys(all).map(k => all[k]);
         if (items.length > 1) {
-          const caption = (header || "") + "💼 Свой бизнес\n\nВыберите бизнес:";
+          const caption =
+            (header || "") +
+            "🏢 Бизнес\n" +
+            "Пассивный доход раз в день — заходи и забирай.\n" +
+            "Чем дороже бизнес, тем больше приносит.\n" +
+            "Купи слот работодателя и получай % с чужих смен сверху.\n\n" +
+            "Выбери бизнес:";
           const kb = items.map(B => [{ text: `${B.emoji} ${B.title}`, callback_data: `go:Biz_${B.id}` }]);
           kb.push([{ text: "⬅️ Назад к заработку", callback_data: "go:Earn" }]);
           await this.media.show({ sourceMsg: this._sourceMsg, place: "Business", caption, keyboard: kb, policy: "photo" });
@@ -726,7 +751,13 @@ export class Locations {
         if (items.length > 1) {
           const todayUTC = new Date().toISOString().slice(0, 10);
           const captionLines = [];
-          captionLines.push((header || "") + "💼 Свой бизнес\n");
+          captionLines.push(
+            (header || "") +
+            "🏢 Бизнес\n" +
+            "Пассивный доход раз в день — заходи и забирай.\n" +
+            "Чем дороже бизнес, тем больше приносит.\n" +
+            "Купи слот работодателя и получай % с чужих смен сверху.\n"
+          );
           const kb = [];
           const ownedArr = Array.isArray(user?.biz?.owned) ? user.biz.owned : [];
           for (const B of items) {
@@ -802,7 +833,10 @@ export class Locations {
         place: "Business",
         caption:
           (header || "") +
-          "💵 Купить бизнес\n\n" +
+          "🏢 Бизнес\n" +
+          "Пассивный доход раз в день — заходи и забирай.\n" +
+          "Чем дороже бизнес, тем больше приносит.\n" +
+          "Купи слот работодателя и получай % с чужих смен сверху.\n\n" +
           `${title}\n` +
           `Цена: ${price}\n` +
           `Доход: ${daily} в день\n` +

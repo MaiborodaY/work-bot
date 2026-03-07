@@ -478,7 +478,7 @@ export class LabourService {
       const days = Math.max(1, Number(slotCfg.contractDays) || 1);
       await this._sendInline(
         reserved.chatId,
-        `Тебя наняли на ${bizTitle} игрока ${ownerName}.\nКонтракт на ${days} дн. Работай как обычно!`,
+        `Тебя наняли на ${bizTitle} игрока ${ownerName}.\nКонтракт на ${days} дн.\nТы получаешь 100% своей выплаты за смены. Работай как обычно!`,
         [[{ text: "💼 Работы", callback_data: "go:Work" }]]
       );
     }
@@ -557,7 +557,13 @@ export class LabourService {
   async buildMainView(owner) {
     owner = await this.reconcileOwnerSlots(owner);
     const arr = this._ownedArray(owner);
-    const lines = ["👔 Наёмники", ""];
+    const lines = [
+      "👔 Наёмники",
+      "Найми игрока — получай % с каждой его смены.",
+      "Он играет как обычно, ты зарабатываешь сверху.",
+      "Слот покупается один раз, контракт истекает сам.",
+      ""
+    ];
     const kb = [];
     const nowTs = this.now();
 
