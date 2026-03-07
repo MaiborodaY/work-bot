@@ -1,6 +1,8 @@
 // @ts-check
 import { CONFIG } from "./GameConfig.js";
 import { NotifyDueIndex } from "./NotifyDueIndex.js";
+import { normalizeLang, t } from "./i18n/index.js";
+import { getJobTitle } from "./I18nCatalog.js";
 
 const DUE_LOOKBACK_MINUTES = 15;
 const FALLBACK_SCAN_EVERY_HOURS = 6;
@@ -57,6 +59,14 @@ export class NotificationService {
         ];
   }
 
+  _lang(u) {
+    return normalizeLang(u?.lang || "ru");
+  }
+
+  _t(u, key, vars = {}) {
+    return t(key, this._lang(u), vars);
+  }
+
   /** Основной запуск */
   async run() {
     const ready = await this._fetchReadyUsers();
@@ -74,8 +84,8 @@ export class NotificationService {
 
         const inst = u?.jobs?.active?.[0];
         if (this._hasReadyWork(u, now)) {
-          const jobTitle = CONFIG?.JOBS?.[inst?.typeId]?.title || inst?.title || "Смена";
-          const text = `✅ Работа завершена: ${jobTitle} — готово к выплате.`;
+          const jobTitle = getJobTitle(inst?.typeId, this._lang(u)) || inst?.title || this._t(u, "notify.work.shift_fallback");
+          const text = this._t(u, "notify.work.ready", { title: jobTitle });
           const cta = this._nextCta(u);
           await this.bot.sendWithInline(u.chatId, text, [[{ text: cta, callback_data: "go:Work" }]]);
           if (inst && !inst.notified) {
@@ -85,8 +95,8 @@ export class NotificationService {
         }
 
         if (this._hasReadyStudy(u, now)) {
-          const textS = "📘 Учёба завершена — забери результат";
-          await this.bot.sendWithInline(u.chatId, textS, [[{ text: "Перейти в Учёбу", callback_data: "go:Study" }]]);
+          const textS = this._t(u, "notify.study.ready");
+          await this.bot.sendWithInline(u.chatId, textS, [[{ text: this._t(u, "notify.btn.go_study"), callback_data: "go:Study" }]]);
           if (u.study && !u.study.notified) {
             u.study.notified = true;
             changed = true;
@@ -94,8 +104,8 @@ export class NotificationService {
         }
 
         if (this._hasReadyGym(u, now)) {
-          const textG = "🏋️ Тренировка завершена — забери результат";
-          await this.bot.sendWithInline(u.chatId, textG, [[{ text: "Перейти в Зал", callback_data: "go:Gym" }]]);
+          const textG = this._t(u, "notify.gym.ready");
+          await this.bot.sendWithInline(u.chatId, textG, [[{ text: this._t(u, "notify.btn.go_gym"), callback_data: "go:Gym" }]]);
           if (u.gym && !u.gym.notified) {
             u.gym.notified = true;
             changed = true;
@@ -267,10 +277,14 @@ export class NotificationService {
 
   _nextCta(u) {
     const arr = this.ctaList;
-    if (!arr.length) return "💰 Пора за зарплатой";
+    if (!arr.length) return this._t(u, "notify.cta.fallback");
     if (!u.notify) u.notify = {};
     const i = Number.isInteger(u.notify.ctaIndex) ? u.notify.ctaIndex : 0;
-    const text = arr[(i % arr.length + arr.length) % arr.length];
+    const idx = (i % arr.length + arr.length) % arr.length;
+    const fallbackText = arr[idx];
+    const key = `notify.cta.${idx + 1}`;
+    const localized = this._t(u, key);
+    const text = localized && localized !== key ? localized : fallbackText;
     u.notify.ctaIndex = (i + 1) % arr.length;
     return text;
   }

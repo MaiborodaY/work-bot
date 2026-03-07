@@ -9,34 +9,34 @@ export const CONFIG = {
   ENERGY_MAX: 5,
 
   JOBS: {
-    flyers:          { title: "Раздавать листовки", durationMs: 1 * 60_000,   pay: 7,   energy: 1 },
-    dishwasher:      { title: "Посудомойщик",       durationMs: 5 * 60_000,   pay: 20,  energy: 6 },
-    waiter:          { title: "Официант",           durationMs: 10 * 60_000,  pay: 38,  energy: 10 },
-    courier:         { title: "Курьер",             durationMs: 30 * 60_000,  pay: 64,  energy: 18 },
-    loader:          { title: "Грузчик",            durationMs: 60 * 60_000,  pay: 108, energy: 36 },
-    shawarma_seller: { title: "Шаверма на вынос",   durationMs: 120 * 60_000, pay: 216, energy: 72 },
-    dentist:         { title: "Стоматолог",         durationMs: 180 * 60_000, pay: 324, energy: 108 },
-    qa_engineer:     { title: "QA engineer.",       durationMs: 300 * 60_000, pay: 500, energy: 140 },
+    flyers:          { title: "Раздавать листовки", titleKey: "cfg.job.flyers.title", durationMs: 1 * 60_000,   pay: 7,   energy: 1 },
+    dishwasher:      { title: "Посудомойщик",       titleKey: "cfg.job.dishwasher.title", durationMs: 5 * 60_000,   pay: 20,  energy: 6 },
+    waiter:          { title: "Официант",           titleKey: "cfg.job.waiter.title", durationMs: 10 * 60_000,  pay: 38,  energy: 10 },
+    courier:         { title: "Курьер",             titleKey: "cfg.job.courier.title", durationMs: 30 * 60_000,  pay: 64,  energy: 18 },
+    loader:          { title: "Грузчик",            titleKey: "cfg.job.loader.title", durationMs: 60 * 60_000,  pay: 108, energy: 36 },
+    shawarma_seller: { title: "Шаверма на вынос",   titleKey: "cfg.job.shawarma_seller.title", durationMs: 120 * 60_000, pay: 216, energy: 72 },
+    dentist:         { title: "Стоматолог",         titleKey: "cfg.job.dentist.title", durationMs: 180 * 60_000, pay: 324, energy: 108 },
+    qa_engineer:     { title: "QA engineer.",       titleKey: "cfg.job.qa_engineer.title", durationMs: 300 * 60_000, pay: 500, energy: 140 },
   },
 
   REST_RECOVER_MS: 5 * 60 * 1000,
 
   SHOP: {
-    coffee:    { title: "Кофе (+10 энергии)",          price: 12,  heal: 10 },
-    sandwich:  { title: "Сэндвич (+25 энергии)",       price: 30,  heal: 25 },
-    lunch:     { title: "Бизнес-ланч (+50 энергии)",   price: 60,  heal: 50 },
-    borscht:   { title: "Суп дня (+100 энергии)",      price: 120, heal: 100 },
-    coke_zero: { title: "Cola Zero (max энергии)",     price_premium: 2 }
+    coffee:    { title: "Кофе (+10 энергии)",          titleKey: "cfg.shop.coffee.title", price: 12,  heal: 10 },
+    sandwich:  { title: "Сэндвич (+25 энергии)",       titleKey: "cfg.shop.sandwich.title", price: 30,  heal: 25 },
+    lunch:     { title: "Бизнес-ланч (+50 энергии)",   titleKey: "cfg.shop.lunch.title", price: 60,  heal: 50 },
+    borscht:   { title: "Суп дня (+100 энергии)",      titleKey: "cfg.shop.borscht.title", price: 120, heal: 100 },
+    coke_zero: { title: "Cola Zero (max энергии)",     titleKey: "cfg.shop.coke_zero.title", price_premium: 2 }
   },
 
   UPGRADES: {
-    coffee: { title: "Кофемашина", desc: "-5% к расходу энергии на смену", price: 1000 },
-    laptop: { title: "Ноутбук",     desc: "+10% к оплате за работу",         price: 5000, price_premium: 100 },
-    car:    { title: "Авто",        desc: "+10% к скорости смены",           price: 10000, price_premium: 200 },
+    coffee: { title: "Кофемашина", titleKey: "cfg.upg.coffee.title", desc: "-5% к расходу энергии на смену", descKey: "cfg.upg.coffee.desc", price: 1000 },
+    laptop: { title: "Ноутбук", titleKey: "cfg.upg.laptop.title",     desc: "+10% к оплате за работу", descKey: "cfg.upg.laptop.desc",         price: 5000, price_premium: 100 },
+    car:    { title: "Авто", titleKey: "cfg.upg.car.title",        desc: "+10% к скорости смены", descKey: "cfg.upg.car.desc",           price: 10000, price_premium: 200 },
 
-    bed1:   { title: "Comfort Bed", desc: "Отдых на 50% быстрее",            price: 80 },
-    bed2:   { title: "Luxury Bed",  desc: "Отдых в 2 раза быстрее",          price: 1600, price_premium: 32 },
-    bed3:   { title: "Royal Bed",   desc: "Отдых в 3 раза быстрее",          price: 3000, price_premium: 60 },
+    bed1:   { title: "Comfort Bed", titleKey: "cfg.upg.bed1.title", desc: "Отдых на 50% быстрее", descKey: "cfg.upg.bed1.desc",            price: 80 },
+    bed2:   { title: "Luxury Bed", titleKey: "cfg.upg.bed2.title",  desc: "Отдых в 2 раза быстрее", descKey: "cfg.upg.bed2.desc",          price: 1600, price_premium: 32 },
+    bed3:   { title: "Royal Bed", titleKey: "cfg.upg.bed3.title",   desc: "Отдых в 3 раза быстрее", descKey: "cfg.upg.bed3.desc",          price: 3000, price_premium: 60 },
   },
 
   BONUS_STREAK: { 1: { money: 10 }, 3: { money: 20 }, 7: { money: 50, energy: 10 } },
@@ -297,46 +297,56 @@ export const CONFIG = {
       id: "shawarma",
       emoji: "🌯",
       title: "Ларек с шавермой",
+      titleKey: "cfg.biz.shawarma.title",
       price: 20000,
       daily: 500,
       resetPolicy: "utc_daily_burn",
-      note: "Продает шаверму раз в день. Доход сгорает, если не забрать."
+      note: "Продает шаверму раз в день. Доход сгорает, если не забрать.",
+      noteKey: "cfg.biz.shawarma.note"
     },
     stomatology: {
       id: "stomatology",
       emoji: "🦷",
       title: "Стоматология",
+      titleKey: "cfg.biz.stomatology.title",
       price: 50000,
       daily: 1000,
       resetPolicy: "utc_daily_burn",
-      note: "Приносит прием пациентов раз в день. Доход нужно забирать вовремя."
+      note: "Приносит прием пациентов раз в день. Доход нужно забирать вовремя.",
+      noteKey: "cfg.biz.stomatology.note"
     },
     restaurant: {
       id: "restaurant",
       emoji: "🍽️",
       title: "Ресторан",
+      titleKey: "cfg.biz.restaurant.title",
       price: 100000,
       daily: 2000,
       resetPolicy: "utc_daily_burn",
-      note: "Популярное заведение с высоким чеком. Забирайте прибыль раз в день."
+      note: "Популярное заведение с высоким чеком. Забирайте прибыль раз в день.",
+      noteKey: "cfg.biz.restaurant.note"
     },
     courier_service: {
       id: "courier_service",
       emoji: "📦",
       title: "Курьерская служба",
+      titleKey: "cfg.biz.courier_service.title",
       price: 200000,
       daily: 4000,
       resetPolicy: "utc_daily_burn",
-      note: "Доставляем посылки по городу без выходных. Доход стабилен, если не забывать забирать."
+      note: "Доставляем посылки по городу без выходных. Доход стабилен, если не забывать забирать.",
+      noteKey: "cfg.biz.courier_service.note"
     },
     fitness_club: {
       id: "fitness_club",
       emoji: "💪",
       title: "Фитнес-клуб",
+      titleKey: "cfg.biz.fitness_club.title",
       price: 500000,
       daily: 10000,
       resetPolicy: "utc_daily_burn",
-      note: "Современный зал с тренерами и абонементами. Прибыль каждый день — забирайте вовремя."
+      note: "Современный зал с тренерами и абонементами. Прибыль каждый день — забирайте вовремя.",
+      noteKey: "cfg.biz.fitness_club.note"
     }
   }
 };

@@ -2,6 +2,8 @@
 import { JobService } from "../JobService.js";
 import { FastForwardService } from "../FastForwardService.js";
 import { CONFIG } from "../GameConfig.js";
+import { normalizeLang, t } from "../i18n/index.js";
+import { getJobTitle } from "../I18nCatalog.js";
 
 export const workHandler = {
   match: (data) =>
@@ -15,6 +17,8 @@ export const workHandler = {
 
   async handle(ctx) {
     const { data, u, cb, answer, users, now, social, clans, labour, goTo, orders, send, sendWithInline } = ctx;
+    const lang = normalizeLang(u?.lang || "ru");
+    const tt = (key, vars = {}) => t(key, lang, vars);
 
     const jobs = new JobService({ users, now, social });
     const ff = new FastForwardService({ users, orders, now, send });
@@ -34,7 +38,7 @@ export const workHandler = {
       const typeId = data.split(":")[2];
       const firstType = Object.keys(CONFIG.JOBS || {})[0];
       if (firstType && typeId !== firstType) {
-        await answer(cb.id, "Для знакомства с игрой можно начать только с первого задания.");
+        await answer(cb.id, tt("handler.work.onboarding_first_only"));
         await render();
         return;
       }
@@ -53,8 +57,8 @@ export const workHandler = {
           u.nav = typeof u.nav === "object" && u.nav ? u.nav : {};
           u.nav.backTo = "Work";
           await users.save(u);
-          try { await answer(cb.id, "Сначала прокачай максимум энергии — загляни в зал."); } catch {}
-          await ctx.goTo(u, "Gym", "Прокачай максимум энергии, чтобы взять смену.");
+          try { await answer(cb.id, tt("handler.work.need_energy_cap_to_gym")); } catch {}
+          await ctx.goTo(u, "Gym", tt("handler.work.gym_intro_need_cap"));
           return;
         }
       } catch {}
@@ -67,11 +71,11 @@ export const workHandler = {
           u.nav.backTo = "Work";
           await users.save(u);
 
-          await answer(cb.id, "⚡ Не хватает энергии — открыл магазин.");
-          await ctx.goTo(u, "Shop", "Пополнить энергию можно здесь:");
+          await answer(cb.id, tt("handler.work.low_energy_to_shop"));
+          await ctx.goTo(u, "Shop", tt("handler.common.shop_energy_intro"));
           return;
         }
-        await answer(cb.id, res.error || "Не удалось начать работу.");
+        await answer(cb.id, res.error || tt("handler.work.start_failed"));
         return;
       }
 
@@ -83,10 +87,13 @@ export const workHandler = {
         }
       } catch {}
 
-      const startedTitle = CONFIG?.JOBS?.[res?.inst?.typeId]?.title || "Смена";
+      const startedTitle = getJobTitle(res?.inst?.typeId, lang) || tt("handler.work.shift_fallback");
       await answer(
         cb.id,
-        `▶️ Начало: ${startedTitle} (~${Math.ceil((res.inst.endAt - now()) / 60000)} мин)`
+        tt("handler.work.started", {
+          title: startedTitle,
+          mins: Math.ceil((res.inst.endAt - now()) / 60000)
+        })
       );
       await render();
       return;
@@ -94,20 +101,20 @@ export const workHandler = {
 
     if (data === "work:goto:home") {
       ctx.locations.setBack("Work");
-      await ctx.goTo(u, "Home", "Восстанови энергию и вернемся к работе.");
+      await ctx.goTo(u, "Home", tt("handler.work.goto_home_intro"));
       return;
     }
 
     if (data === "work:goto:shop") {
       ctx.locations.setBack("Work");
-      await ctx.goTo(u, "Shop", "Купи что-то для энергии и вернемся к работе.");
+      await ctx.goTo(u, "Shop", tt("handler.work.goto_shop_intro"));
       return;
     }
 
     if (data === "work:claim") {
       const res = await jobs.claim(u);
       if (!res.ok) {
-        await answer(cb.id, res.error || "Не удалось выдать выплату.");
+        await answer(cb.id, res.error || tt("handler.work.claim_failed"));
         return;
       }
       try {
@@ -120,7 +127,7 @@ export const workHandler = {
           await labour.onEmployeePaid(u, res.pay, res.endAt);
         }
       } catch {}
-      await answer(cb.id, `Готово: +$${res.pay}`);
+      await answer(cb.id, tt("handler.work.claim_ok", { pay: res.pay }));
       await render();
       return;
     }
@@ -128,7 +135,7 @@ export const workHandler = {
     if (data === "work:skip") {
       const res = await ff.finishNow(u, "work");
       if (!res.ok) {
-        await answer(cb.id, res.error || "Не удалось завершить мгновенно.");
+        await answer(cb.id, res.error || tt("handler.work.skip_failed"));
         await render();
         return;
       }
@@ -136,7 +143,7 @@ export const workHandler = {
       // Вариант A: сразу начисляем выплату через JobService.claim (social передан в JobService)
       const claim = await jobs.claim(u);
       if (!claim.ok) {
-        await answer(cb.id, claim.error || "Не удалось выдать выплату.");
+        await answer(cb.id, claim.error || tt("handler.work.claim_failed"));
         await render();
         return;
       }
@@ -151,7 +158,7 @@ export const workHandler = {
         }
       } catch {}
 
-      await answer(cb.id, `⏩ Мгновенно завершено (−💎${res.cost}). +$${claim.pay}`);
+      await answer(cb.id, tt("handler.work.skip_ok", { cost: res.cost, pay: claim.pay }));
       await render();
       return;
     }
@@ -159,10 +166,10 @@ export const workHandler = {
     if (data === "work:cancel") {
       const res = await jobs.cancel(u);
       if (!res.ok) {
-        await answer(cb.id, res.error || "Не удалось отменить.");
+        await answer(cb.id, res.error || tt("handler.work.cancel_failed"));
         return;
       }
-      await answer(cb.id, `⏹ Работа отменена (штраф −5⚡).`);
+      await answer(cb.id, tt("handler.work.cancel_ok"));
       await render();
       return;
     }

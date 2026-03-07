@@ -1,3 +1,5 @@
+import { normalizeLang, t } from "../i18n/index.js";
+
 export const labourHandler = {
   match: (data) =>
     data.startsWith("labour:buy_slot:") ||
@@ -7,8 +9,10 @@ export const labourHandler = {
 
   async handle(ctx) {
     const { data, u, cb, answer, goTo, users, locations, labour } = ctx;
+    const lang = normalizeLang(u?.lang || "ru");
+    const tt = (key, vars = {}) => t(key, lang, vars);
     if (!labour) {
-      await answer(cb.id, "Наёмники временно недоступны.");
+      await answer(cb.id, tt("handler.labour.unavailable"));
       return;
     }
 
@@ -35,7 +39,7 @@ export const labourHandler = {
       const bizId = String(data.split(":")[2] || "");
       const res = await labour.buySlot(u, bizId);
       if (!res.ok) {
-        await answer(cb.id, res.error || "Не удалось купить слот.");
+        await answer(cb.id, res.error || tt("handler.labour.buy_slot_failed"));
         await goTo(u, "Labour");
         return;
       }
@@ -43,7 +47,7 @@ export const labourHandler = {
       await goTo(
         u,
         "Labour",
-        `✅ Слот куплен.\nСписано: $${res.money} + 💎${res.gems}.`
+        tt("handler.labour.buy_slot_ok", { money: res.money, gems: res.gems })
       );
       return;
     }
@@ -62,12 +66,12 @@ export const labourHandler = {
       const employeeId = String(data.split(":")[3] || "");
       const res = await labour.hire(u, bizId, employeeId);
       if (!res.ok) {
-        await answer(cb.id, res.error || "Не удалось нанять игрока.");
+        await answer(cb.id, res.error || tt("handler.labour.hire_failed"));
         await goTo(u, "Labour");
         return;
       }
       await reloadSelf();
-      await goTo(u, "Labour", `✅ Нанят сотрудник: ${res.employeeName}.`);
+      await goTo(u, "Labour", tt("handler.labour.hire_ok", { name: res.employeeName }));
       return;
     }
 
@@ -76,12 +80,12 @@ export const labourHandler = {
       const bizId = String(data.split(":")[2] || "");
       const res = await labour.hireLast(u, bizId);
       if (!res.ok) {
-        await answer(cb.id, res.error || "Не удалось нанять снова.");
+        await answer(cb.id, res.error || tt("handler.labour.rehire_failed"));
         await goTo(u, "Labour");
         return;
       }
       await reloadSelf();
-      await goTo(u, "Labour", `✅ Нанят сотрудник: ${res.employeeName}.`);
+      await goTo(u, "Labour", tt("handler.labour.hire_ok", { name: res.employeeName }));
       return;
     }
   }

@@ -2,6 +2,7 @@
 import { CONFIG } from "./GameConfig.js";
 import { GymService } from "./GymService.js";
 import { normalizeLang, t } from "./i18n/index.js";
+import { getJobTitle, getShopTitle, getUpgradeDesc, getUpgradeTitle } from "./I18nCatalog.js";
 
 export class UiFactory {
   _lang(lang) {
@@ -172,8 +173,9 @@ export class UiFactory {
     const list = (user?.flags?.onboarding) ? entries.slice(0, 1) : entries;
     for (const [id, j] of list) {
       const mins = Math.max(1, Math.round((j.durationMs || 0) / 60000));
+      const title = getJobTitle(id, l);
       kb.push([{
-        text: this._t(l, "ui.work.entry", { title: j.title, mins, pay: j.pay, energy: j.energy }),
+        text: this._t(l, "ui.work.entry", { title, mins, pay: j.pay, energy: j.energy }),
         callback_data: `work:start:${id}`
       }]);
     }
@@ -233,7 +235,7 @@ export class UiFactory {
 
     const eatButtons = Object.entries(CONFIG.SHOP)
       .filter(([k, v]) => (user.inv[k] || 0) > 0 && typeof v.price === "number")
-      .map(([k, v]) => [{ text: `${v.title} x${user.inv[k]} (+${v.heal}⚡)`, callback_data: `eat_${k}` }]);
+      .map(([k, v]) => [{ text: `${getShopTitle(k, l)} x${user.inv[k]} (+${v.heal}⚡)`, callback_data: `eat_${k}` }]);
     if (eatButtons.length) kb.push(...eatButtons);
 
     const bedKeys = ["bed1", "bed2", "bed3"].filter(k => CONFIG.UPGRADES[k]);
@@ -243,18 +245,19 @@ export class UiFactory {
       if (owned.has(bedKeys[i])) { currentIdx = i; break; }
     }
     const currentKey   = currentIdx >= 0 ? bedKeys[currentIdx] : null;
-    const currentTitle = currentKey ? (CONFIG.UPGRADES[currentKey]?.title || this._t(l, "ui.home.bed.current_fallback")) : this._t(l, "ui.home.bed.none");
+    const currentTitle = currentKey ? (getUpgradeTitle(currentKey, l) || this._t(l, "ui.home.bed.current_fallback")) : this._t(l, "ui.home.bed.none");
     
     kb.push([{ text: this._t(l, "ui.home.bed.current", { title: currentTitle, mult }), callback_data: "noop" }]);
     
     const nextKey = bedKeys[currentIdx + 1];
     if (nextKey) {
       const it = CONFIG.UPGRADES[nextKey];
+      const nextTitle = getUpgradeTitle(nextKey, l) || it.title;
       const effect =
         nextKey === "bed1" ? this._t(l, "ui.home.bed.effect1") :
         nextKey === "bed2" ? this._t(l, "ui.home.bed.effect2") :
         nextKey === "bed3" ? this._t(l, "ui.home.bed.effect3") : (it?.desc || "");
-      const row = [{ text: `${it.title} · ${effect} · $${it.price}`, callback_data: `upg:buy:${nextKey}` }];
+      const row = [{ text: `${nextTitle} · ${effect} · $${it.price}`, callback_data: `upg:buy:${nextKey}` }];
       if (typeof it.price_premium === "number") {
         row.push({ text: `${CONFIG.PREMIUM.emoji}${it.price_premium}`, callback_data: `upg:buy_p:${nextKey}` });
       }
@@ -272,11 +275,12 @@ export class UiFactory {
   shop(opts = {}, lang = "ru") {
     const l = this._lang(lang);
     const items = Object.entries(CONFIG.SHOP).map(([k, v]) => {
+      const itemTitle = getShopTitle(k, l);
       const label = (typeof v.price === "number")
-        ? this._t(l, "ui.shop.item_money", { title: v.title, price: v.price })
+        ? this._t(l, "ui.shop.item_money", { title: itemTitle, price: v.price })
         : (typeof v.price_premium === "number")
-          ? this._t(l, "ui.shop.item_gems", { title: v.title, gems: `${CONFIG.PREMIUM.emoji}${v.price_premium}` })
-          : this._t(l, "ui.shop.item", { title: v.title });
+          ? this._t(l, "ui.shop.item_gems", { title: itemTitle, gems: `${CONFIG.PREMIUM.emoji}${v.price_premium}` })
+          : this._t(l, "ui.shop.item", { title: itemTitle });
       return [{ text: label, callback_data: `buy_${k}` }];
     });
 
@@ -381,9 +385,11 @@ export class UiFactory {
     for (const key of Object.keys(CONFIG.UPGRADES)) {
       if (key === "bed1" || key === "bed2" || key === "bed3") continue;
       const it = CONFIG.UPGRADES[key];
+      const title = getUpgradeTitle(key, l) || it.title;
+      const desc = getUpgradeDesc(key, l) || it.desc;
       const mark = owned.has(key) ? "✔" : "✖";
       const alt = (typeof it.price_premium === "number") ? ` / ${CONFIG.PREMIUM?.emoji || "💎"}${it.price_premium}` : "";
-      lines.push(`${mark} ${it.title}: ${it.desc}${it.price ? ` · $${it.price}${alt}` : ""}`);
+      lines.push(`${mark} ${title}: ${desc}${it.price ? ` · $${it.price}${alt}` : ""}`);
     }
     return lines.join("\n");
   }
@@ -395,10 +401,11 @@ export class UiFactory {
     for (const key of Object.keys(CONFIG.UPGRADES)) {
       if (key === "bed1" || key === "bed2" || key === "bed3") continue;
       const it = CONFIG.UPGRADES[key];
+      const title = getUpgradeTitle(key, l) || it.title;
       if (owned.has(key)) {
-        rows.push([{ text: this._t(l, "ui.upgrades.bought", { title: it.title }) , callback_data: "noop" }]);
+        rows.push([{ text: this._t(l, "ui.upgrades.bought", { title }) , callback_data: "noop" }]);
       } else {
-        const row = [{ text: this._t(l, "ui.upgrades.buy", { title: it.title, price: it.price }), callback_data: `upg:buy:${key}` }];
+        const row = [{ text: this._t(l, "ui.upgrades.buy", { title, price: it.price }), callback_data: `upg:buy:${key}` }];
         if (typeof it.price_premium === "number") {
           row.push({ text: `${CONFIG.PREMIUM.emoji}${it.price_premium}`, callback_data: `upg:buy_p:${key}` });
         }

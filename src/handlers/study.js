@@ -1,12 +1,15 @@
 import { StudyService } from "../StudyService.js";
 import { FastForwardService } from "../FastForwardService.js";
 import { CONFIG } from "../GameConfig.js";
+import { normalizeLang, t } from "../i18n/index.js";
 
 export const studyHandler = {
   match: (data) => data === "study:start" || data === "study:skip" || data === "study:finish",
 
   async handle(ctx) {
     const { u, cb, answer, users, locations, now, send, goTo, orders, social } = ctx;
+    const lang = normalizeLang(u?.lang || "ru");
+    const tt = (key, vars = {}) => t(key, lang, vars);
     const study = new StudyService({ users, send, now, social });
     const ff = new FastForwardService({ users, orders, now, send });
 
@@ -18,7 +21,7 @@ export const studyHandler = {
         await goTo(u, "Study");
         return;
       }
-      await goTo(u, "Study", `🎓 Обучение завершено! Уровень: ${fin.level}.`);
+      await goTo(u, "Study", tt("handler.study.finish_ok", { level: fin.level }));
       return;
     }
 
@@ -26,18 +29,18 @@ export const studyHandler = {
     if (ctx.data === "study:skip") {
       const res = await ff.finishNow(u, "study");
       if (!res.ok) {
-        await answer(cb.id, res.error || "Не удалось завершить мгновенно.");
+        await answer(cb.id, res.error || tt("handler.study.skip_failed"));
         await goTo(u, "Study");
         return;
       }
       const fin = await study.finish(u);
       if (!fin.ok) {
-        await answer(cb.id, "Не удалось завершить обучение.");
+        await answer(cb.id, tt("handler.study.finish_failed"));
         await goTo(u, "Study");
         return;
       }
-      await answer(cb.id, `⏩ Мгновенно завершено (−${CONFIG.PREMIUM.emoji}${res.cost}).`);
-      await goTo(u, "Study", `🎓 Обучение завершено! Уровень: ${fin.level}.`);
+      await answer(cb.id, tt("handler.study.skip_ok", { gems: CONFIG.PREMIUM.emoji, cost: res.cost }));
+      await goTo(u, "Study", tt("handler.study.finish_ok", { level: fin.level }));
       return;
     }
 
@@ -54,19 +57,23 @@ if (!res.ok) {
     u.nav.backTo = "Study";
     await users.save(u);
 
-    await answer(cb.id, "⚡ Не хватает энергии — открыл магазин.");
-    await goTo(u, "Shop", "Пополнить энергию можно здесь:");
+    await answer(cb.id, tt("handler.study.low_energy_to_shop"));
+    await goTo(u, "Shop", tt("handler.common.shop_energy_intro"));
     return;
   }
 
-  await answer(cb.id, res.error || "Не удалось начать обучение.");
+  await answer(cb.id, res.error || tt("handler.study.start_failed"));
   await goTo(u, "Study");
   return;
 }
 
     const mins = Math.ceil(res.timeMs / 60000);
-    const intro = `🎓 Учёба начата: −$${res.costMoney}, −${res.costEnergy}⚡, ~${mins} мин.\nМожешь заняться другими делами`;
-    await answer(cb.id, "📘 Запустил обучение.");
+    const intro = tt("handler.study.started_intro", {
+      costMoney: res.costMoney,
+      costEnergy: res.costEnergy,
+      mins
+    });
+    await answer(cb.id, tt("handler.study.started_ok"));
     await goTo(u, "Study", intro);
   }
 };

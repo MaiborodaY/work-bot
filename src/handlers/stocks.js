@@ -1,3 +1,5 @@
+import { normalizeLang, t } from "../i18n/index.js";
+
 export const stocksHandler = {
   match: (data) =>
     data === "stocks:refresh" ||
@@ -9,8 +11,10 @@ export const stocksHandler = {
 
   async handle(ctx) {
     const { data, u, cb, answer, goTo, stocks, locations } = ctx;
+    const l = normalizeLang(u?.lang || "ru");
+    const tt = (key, vars = {}) => t(key, l, vars);
     if (!stocks) {
-      await answer(cb.id, "Биржа временно недоступна.");
+      await answer(cb.id, tt("handler.stocks.unavailable"));
       return;
     }
 
@@ -33,7 +37,7 @@ export const stocksHandler = {
 
     if (data === "stocks:info") {
       await answer(cb.id);
-      const view = stocks.buildInfoView();
+      const view = stocks.buildInfoView(u);
       await show(view);
       return;
     }
@@ -43,7 +47,7 @@ export const stocksHandler = {
       const ticker = data.split(":")[2] || "";
       const view = await stocks.buildTickerView(u, ticker);
       if (!view) {
-        await answer(cb.id, "Акция не найдена.");
+        await answer(cb.id, tt("handler.stocks.not_found"));
         await goTo(u, "Stocks");
         return;
       }
@@ -55,13 +59,18 @@ export const stocksHandler = {
       const ticker = data.split(":")[2] || "";
       const qty = Number(data.split(":")[3] || 0);
       const res = await stocks.buy(u, ticker, qty);
-      await answer(cb.id, res.ok ? "Покупка выполнена." : (res.error || "Не удалось купить."));
+      await answer(cb.id, res.ok ? tt("handler.stocks.buy_toast_ok") : (res.error || tt("handler.stocks.buy_toast_fail")));
       await goTo(
         u,
         "Stocks",
         res.ok
-          ? `✅ Куплено ${res.sharesBought} акц. ${ticker} по $${res.price}\nСписано: $${res.cost}`
-          : `⚠️ ${res.error || "Не удалось купить акции."}`
+          ? tt("handler.stocks.buy_ok", {
+            shares: res.sharesBought,
+            ticker,
+            price: res.price,
+            cost: res.cost
+          })
+          : tt("handler.stocks.buy_fail", { error: res.error || tt("handler.stocks.buy_default_error") })
       );
       return;
     }
@@ -70,18 +79,24 @@ export const stocksHandler = {
       const ticker = data.split(":")[2] || "";
       const shares = stocks.getHoldingShares(u, ticker);
       if (!shares) {
-        await answer(cb.id, "У тебя нет акций для продажи.");
+        await answer(cb.id, tt("handler.stocks.no_shares"));
         await goTo(u, "Stocks");
         return;
       }
       const res = await stocks.sell(u, ticker, shares);
-      await answer(cb.id, res.ok ? "Продажа выполнена." : (res.error || "Не удалось продать."));
+      await answer(cb.id, res.ok ? tt("handler.stocks.sell_toast_ok") : (res.error || tt("handler.stocks.sell_toast_fail")));
       await goTo(
         u,
         "Stocks",
         res.ok
-          ? `✅ Продано ${res.sharesSold} акц. ${ticker}\nВыручка: $${res.gross}\nКомиссия: $${res.fee}\nНачислено: $${res.net}`
-          : `⚠️ ${res.error || "Не удалось продать акции."}`
+          ? tt("handler.stocks.sell_ok", {
+            shares: res.sharesSold,
+            ticker,
+            gross: res.gross,
+            fee: res.fee,
+            net: res.net
+          })
+          : tt("handler.stocks.sell_fail", { error: res.error || tt("handler.stocks.sell_default_error") })
       );
       return;
     }
@@ -90,13 +105,19 @@ export const stocksHandler = {
       const ticker = data.split(":")[2] || "";
       const qty = Number(data.split(":")[3] || 0);
       const res = await stocks.sell(u, ticker, qty);
-      await answer(cb.id, res.ok ? "Продажа выполнена." : (res.error || "Не удалось продать."));
+      await answer(cb.id, res.ok ? tt("handler.stocks.sell_toast_ok") : (res.error || tt("handler.stocks.sell_toast_fail")));
       await goTo(
         u,
         "Stocks",
         res.ok
-          ? `✅ Продано ${res.sharesSold} акц. ${ticker}\nВыручка: $${res.gross}\nКомиссия: $${res.fee}\nНачислено: $${res.net}`
-          : `⚠️ ${res.error || "Не удалось продать акции."}`
+          ? tt("handler.stocks.sell_ok", {
+            shares: res.sharesSold,
+            ticker,
+            gross: res.gross,
+            fee: res.fee,
+            net: res.net
+          })
+          : tt("handler.stocks.sell_fail", { error: res.error || tt("handler.stocks.sell_default_error") })
       );
       return;
     }

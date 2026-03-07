@@ -1,4 +1,5 @@
 import { CONFIG } from "./GameConfig.js";
+import { normalizeLang, t } from "./i18n/index.js";
 
 const STOCK_STATE_KEY = "stocks:state:v1";
 const STOCK_ACTIVITY_PREFIX = "stocks:activity:";
@@ -8,6 +9,15 @@ export class StockService {
     this.db = db;
     this.users = users;
     this.now = now || (() => Date.now());
+  }
+
+  _lang(source) {
+    if (typeof source === "string") return normalizeLang(source);
+    return normalizeLang(source?.lang || "ru");
+  }
+
+  _t(source, key, vars = {}) {
+    return t(key, this._lang(source), vars);
   }
 
   _cfg() {
@@ -325,21 +335,24 @@ export class StockService {
   async buildMarketView(u) {
     const state = await this.loadState();
     const lines = [
-      "📈 Биржа",
-      "Вкладывай деньги в компании и жди роста.",
-      "Цены меняются раз в день, дивиденды капают каждый день.",
-      "LuckyHoldings растёт когда все играют в казино.",
+      this._t(u, "stocks.view.title"),
+      this._t(u, "stocks.view.line1"),
+      this._t(u, "stocks.view.line2"),
+      this._t(u, "stocks.view.line3"),
       ""
     ];
     const portfolioValue = this._portfolioValue(u, state);
     const cash = Math.max(0, Number(u?.money) || 0);
 
-    lines.push(`💵 Баланс: $${cash}`);
-    lines.push(`🧾 Стоимость портфеля: $${this._round2(portfolioValue)}`);
+    lines.push(this._t(u, "stocks.view.balance", { cash }));
+    lines.push(this._t(u, "stocks.view.portfolio_value", { value: this._round2(portfolioValue) }));
 
     const stocks = this._ensureUserStocks(u);
     if (stocks.lastDividendDay) {
-      lines.push(`🎁 Дивиденды ${stocks.lastDividendDay}: $${Math.max(0, Number(stocks.lastDividendAmount) || 0)}`);
+      lines.push(this._t(u, "stocks.view.last_dividend", {
+        day: stocks.lastDividendDay,
+        amount: Math.max(0, Number(stocks.lastDividendAmount) || 0)
+      }));
     }
     lines.push("");
 
@@ -352,7 +365,7 @@ export class StockService {
       lines.push(
         `$${item.price} ${this._arrow(item.changePct)} ${this._fmtSignedPct(item.changePct)} (${this._fmtSignedMoney(item.changeAbs)})`
       );
-      lines.push(`Ваши акции: ${h.shares}`);
+      lines.push(this._t(u, "stocks.view.your_shares", { shares: h.shares }));
       lines.push("");
     }
 
@@ -360,14 +373,14 @@ export class StockService {
       const cCfg = this._companies()[t] || {};
       return [{ text: `${cCfg.emoji || "📊"} ${cCfg.title || t}`, callback_data: `stocks:view:${t}` }];
     });
-    kb.push([{ text: "ℹ️ Как работает биржа", callback_data: "stocks:info" }]);
-    kb.push([{ text: "🔄 Обновить", callback_data: "stocks:refresh" }]);
-    kb.push([{ text: "⬅️ Назад к заработку", callback_data: "go:Earn" }]);
+    kb.push([{ text: this._t(u, "stocks.btn.info"), callback_data: "stocks:info" }]);
+    kb.push([{ text: this._t(u, "stocks.btn.refresh"), callback_data: "stocks:refresh" }]);
+    kb.push([{ text: this._t(u, "stocks.btn.back_earn"), callback_data: "go:Earn" }]);
 
     return { caption: lines.join("\n").trim(), keyboard: kb };
   }
 
-  buildInfoView() {
+  buildInfoView(source = "ru") {
     const cfg = this._cfg();
     const updateHour = Math.max(0, Math.min(23, Number(cfg.UPDATE_HOUR_UTC) || 0));
     const feePct = this._round2(Math.max(0, Number(cfg.SELL_FEE) || 0) * 100);
@@ -375,22 +388,22 @@ export class StockService {
     const historyDays = Math.max(1, Number(cfg.HISTORY_DAYS) || 7);
 
     const lines = [
-      "ℹ️ Как работает биржа",
+      this._t(source, "stocks.info.title"),
       "",
-      "1) Акции можно покупать и продавать в любой момент.",
-      "2) Покупаются только целые акции (1, 2, 3...).",
-      `3) Цены пересчитываются раз в день в ${String(updateHour).padStart(2, "0")}:00 UTC.`,
-      `4) При продаже удерживается комиссия ${feePct}% (только с продажи).`,
-      `5) Дивиденды: ${dividendPct}% в день от текущей стоимости портфеля, выплата автоматом после пересчёта цен.`,
-      "6) LuckyHoldings дополнительно растёт от активности в казино (по числу спинов за прошлый день).",
-      `7) В карточке акции видно движение за день и история закрытия за ${historyDays} дней.`,
+      this._t(source, "stocks.info.line1"),
+      this._t(source, "stocks.info.line2"),
+      this._t(source, "stocks.info.line3", { hour: String(updateHour).padStart(2, "0") }),
+      this._t(source, "stocks.info.line4", { feePct }),
+      this._t(source, "stocks.info.line5", { dividendPct }),
+      this._t(source, "stocks.info.line6"),
+      this._t(source, "stocks.info.line7", { historyDays }),
       "",
-      "Важно: цены могут как расти, так и падать. Прибыль не гарантирована."
+      this._t(source, "stocks.info.risk")
     ];
 
     return {
       caption: lines.join("\n"),
-      keyboard: [[{ text: "⬅️ К бирже", callback_data: "go:Stocks" }]]
+      keyboard: [[{ text: this._t(source, "stocks.btn.back_market"), callback_data: "go:Stocks" }]]
     };
   }
 
@@ -413,45 +426,53 @@ export class StockService {
     const lines = [
       `${cCfg.emoji || "📊"} ${cCfg.title || ticker}`,
       "",
-      `Цена: $${item.price} ${this._arrow(item.changePct)} ${this._fmtSignedPct(item.changePct)} (${this._fmtSignedMoney(item.changeAbs)})`,
-      `База: $${Number(cCfg.basePrice) || 0}`,
+      this._t(u, "stocks.ticker.price_line", {
+        price: item.price,
+        arrow: this._arrow(item.changePct),
+        pct: this._fmtSignedPct(item.changePct),
+        abs: this._fmtSignedMoney(item.changeAbs)
+      }),
+      this._t(u, "stocks.ticker.base_line", { base: Number(cCfg.basePrice) || 0 }),
       "",
-      `Ваши акции: ${shares}`,
-      `Средняя цена: $${this._round2(avgPrice)}`,
-      `Стоимость: $${marketValue}`,
-      `Прибыль/убыток: ${this._fmtSignedMoney(unrealized)} (${this._fmtSignedPct(unrealizedPct)})`
+      this._t(u, "stocks.ticker.your_shares", { shares }),
+      this._t(u, "stocks.ticker.avg_price", { avg: this._round2(avgPrice) }),
+      this._t(u, "stocks.ticker.market_value", { value: marketValue }),
+      this._t(u, "stocks.ticker.pnl", {
+        amount: this._fmtSignedMoney(unrealized),
+        pct: this._fmtSignedPct(unrealizedPct)
+      })
     ];
 
     const kb = [];
     kb.push([
-      { text: "Купить 1", callback_data: `stocks:buy:${ticker}:1` },
-      { text: "Купить 5", callback_data: `stocks:buy:${ticker}:5` },
-      { text: "Купить 10", callback_data: `stocks:buy:${ticker}:10` }
+      { text: this._t(u, "stocks.btn.buy_n", { n: 1 }), callback_data: `stocks:buy:${ticker}:1` },
+      { text: this._t(u, "stocks.btn.buy_n", { n: 5 }), callback_data: `stocks:buy:${ticker}:5` },
+      { text: this._t(u, "stocks.btn.buy_n", { n: 10 }), callback_data: `stocks:buy:${ticker}:10` }
     ]);
     kb.push([
-      { text: "Продать 1", callback_data: `stocks:sell:${ticker}:1` },
-      { text: "Продать 5", callback_data: `stocks:sell:${ticker}:5` },
-      { text: "Продать 10", callback_data: `stocks:sell:${ticker}:10` }
+      { text: this._t(u, "stocks.btn.sell_n", { n: 1 }), callback_data: `stocks:sell:${ticker}:1` },
+      { text: this._t(u, "stocks.btn.sell_n", { n: 5 }), callback_data: `stocks:sell:${ticker}:5` },
+      { text: this._t(u, "stocks.btn.sell_n", { n: 10 }), callback_data: `stocks:sell:${ticker}:10` }
     ]);
-    kb.push([{ text: "Продать всё", callback_data: `stocks:sellall:${ticker}` }]);
-    kb.push([{ text: "⬅️ К бирже", callback_data: "go:Stocks" }]);
+    kb.push([{ text: this._t(u, "stocks.btn.sell_all"), callback_data: `stocks:sellall:${ticker}` }]);
+    kb.push([{ text: this._t(u, "stocks.btn.back_market"), callback_data: "go:Stocks" }]);
 
     return { caption: lines.join("\n"), keyboard: kb };
   }
 
   async buy(u, ticker, sharesRaw) {
     const cCfg = this._companies()[ticker];
-    if (!cCfg) return { ok: false, error: "Акция не найдена." };
+    if (!cCfg) return { ok: false, error: this._t(u, "stocks.err.not_found") };
     const shares = Math.max(0, Math.floor(Number(sharesRaw) || 0));
-    if (!shares) return { ok: false, error: "Укажи количество акций." };
+    if (!shares) return { ok: false, error: this._t(u, "stocks.err.specify_amount") };
 
     const state = await this.loadState();
     const item = state.companies[ticker];
-    if (!item) return { ok: false, error: "Рынок недоступен." };
+    if (!item) return { ok: false, error: this._t(u, "stocks.err.market_unavailable") };
     const price = Math.max(1, Number(item.price) || 1);
     const cost = Math.ceil(price * shares);
     const money = Math.max(0, Number(u.money) || 0);
-    if (money < cost) return { ok: false, error: "Недостаточно денег." };
+    if (money < cost) return { ok: false, error: this._t(u, "stocks.err.not_enough_money") };
 
     const old = this._getHolding(u, ticker);
     const totalShares = old.shares + shares;
@@ -473,16 +494,16 @@ export class StockService {
 
   async sell(u, ticker, sharesRaw) {
     const cCfg = this._companies()[ticker];
-    if (!cCfg) return { ok: false, error: "Акция не найдена." };
+    if (!cCfg) return { ok: false, error: this._t(u, "stocks.err.not_found") };
     const shares = Math.max(0, Math.floor(Number(sharesRaw) || 0));
-    if (!shares) return { ok: false, error: "Укажи количество акций." };
+    if (!shares) return { ok: false, error: this._t(u, "stocks.err.specify_amount") };
 
     const state = await this.loadState();
     const item = state.companies[ticker];
-    if (!item) return { ok: false, error: "Рынок недоступен." };
+    if (!item) return { ok: false, error: this._t(u, "stocks.err.market_unavailable") };
     const price = Math.max(1, Number(item.price) || 1);
     const old = this._getHolding(u, ticker);
-    if (old.shares < shares) return { ok: false, error: "Недостаточно акций для продажи." };
+    if (old.shares < shares) return { ok: false, error: this._t(u, "stocks.err.not_enough_shares") };
 
     const feeRate = Math.max(0, Number(this._cfg().SELL_FEE) || 0);
     const gross = Math.floor(price * shares);

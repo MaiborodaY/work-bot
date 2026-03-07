@@ -52,14 +52,8 @@ import { FastForwardService } from "./FastForwardService.js";
 // --- Public links (RU only) ---
 const PRIVACY_URL = "https://sites.google.com/view/world-of-life-privacy/";
 
-const HELP_TEXT = `🎮 World of Life — текстовая игра про развитие и карьеру.
-💰 Нажимайте кнопки, чтобы зарабатывать, учиться и тренироваться.
-🛠 Команды: /start /play /help /privacy
-🤝 Поддержка: @WorldOfLifeGame`;
-
-const PRIVACY_TEXT = `🔒 Мы храним только ваш Telegram ID и прогресс в игре.
-Данные нужны для сохранения аккаунта и удаляются в течение 72 часов по запросу.
-Политика: ${PRIVACY_URL}`;
+const helpText = (lang) => t("worker.help", normalizeLang(lang || "ru"));
+const privacyText = (lang) => t("worker.privacy", normalizeLang(lang || "ru"), { url: PRIVACY_URL });
 
 const LANG_OPTIONS = [
   { code: "ru", label: "🇷🇺 Русский" },
@@ -319,12 +313,12 @@ export default {
 
       // /help
       if (/^\/help(?:@\w+)?$/i.test(text)) {
-        await send(HELP_TEXT);
+        await send(helpText(update?.message?.from?.language_code || "ru"));
         return new Response("ok");
       }
       // /privacy
       if (/^\/privacy(?:@\w+)?$/i.test(text)) {
-        await send(PRIVACY_TEXT);
+        await send(privacyText(update?.message?.from?.language_code || "ru"));
         return new Response("ok");
       }
 
@@ -427,13 +421,7 @@ export default {
           });
         } catch {}
 
-        const onboardingWelcome =
-          "👋 Привет! Это World of Life.\n\n" +
-          "Первые шаги:\n" +
-          "1) ▶️ Запусти первую минутную смену и получи $ и 1 кристалл.\n" +
-          "2) 💰 Забери награду.\n" +
-          "3) 🏋️ Зайди в зал и вложи награду в энергию.\n\n" +
-          "✨ Пока ты новичок, показываем только нужные кнопки.";
+        const onboardingWelcome = t("worker.onboarding.welcome", normalizeLang(u?.lang || "ru"));
         try {
           await bot.sendMessage(chatId, onboardingWelcome);
         } catch {}
@@ -466,7 +454,7 @@ export default {
           await labour.upsertFreePlayer(u);
         } catch {}
 
-        await goTo(u, route, `✔ Ник установлен: ${u.displayName}`);
+        await goTo(u, route, t("worker.name.set_ok", normalizeLang(u?.lang || "ru"), { name: u.displayName }));
         return new Response("ok");
       }
 
@@ -474,20 +462,17 @@ export default {
       if (u.awaitingClanName) {
         const textMsg = (update.message.text || "").trim();
         if (!textMsg || textMsg.startsWith("/")) {
-          await send(
-            "✍️ Введи название клана одним сообщением (2-24 символа). " +
-              "Можно буквы, цифры, пробел, _ . -"
-          );
+          await send(t("worker.clan.awaiting_name_prompt", normalizeLang(u?.lang || "ru")));
           return new Response("ok");
         }
 
         const res = await clans.createClan(u, textMsg);
         if (!res.ok) {
-          await send(`⚠️ ${res.error || "Не удалось создать клан."}`);
+          await send(`⚠️ ${res.error || t("worker.clan.create_failed", normalizeLang(u?.lang || "ru"))}`);
           return new Response("ok");
         }
 
-        await goTo(u, "Clan", `✅ Клан создан: ${res.clan?.name || ""}`);
+        await goTo(u, "Clan", t("worker.clan.create_ok", normalizeLang(u?.lang || "ru"), { name: res.clan?.name || "" }));
         return new Response("ok");
       }
 
@@ -550,11 +535,13 @@ export default {
             invoiceId: parsed?.nonce || ""
           });
 
-          await send(
-            `✔ Оплата прошла!\nЗачислено: ${CONFIG.PREMIUM.emoji}${credited}\nБаланс: ${CONFIG.PREMIUM.emoji}${u.premium}`
-          );
+          await send(t("worker.payment.success", normalizeLang(u?.lang || "ru"), {
+            emoji: CONFIG.PREMIUM.emoji,
+            credited,
+            premium: u.premium
+          }));
         } else {
-          await send("✔ Платёж уже был учтён. Спасибо!");
+          await send(t("worker.payment.duplicate", normalizeLang(u?.lang || "ru")));
         }
         return new Response("ok");
       }
@@ -572,7 +559,7 @@ export default {
         return new Response("ok");
 
       if (text === "/reset") {
-        await bot.sendMessage(chatId, "Сбрасываю клавиатуру…", {
+        await bot.sendMessage(chatId, t("worker.reset.in_progress", normalizeLang(u?.lang || "ru")), {
           reply_markup: { remove_keyboard: true }
         });
         if (u.study) u.study.active = false;
@@ -585,23 +572,27 @@ export default {
         await goTo(
           u,
           "Square",
-          "Сброс: остановили таймеры, возвращаем на Площадь."
+          t("worker.reset.done_intro", normalizeLang(u?.lang || "ru"))
         );
-        await bot.sendMessage(chatId, "Готово. Клавиатура обновлена.");
+        await bot.sendMessage(chatId, t("worker.reset.done_toast", normalizeLang(u?.lang || "ru")));
         return new Response("ok");
       }
 
-      if (text === "Меню" || text === "🧭 Меню") {
+      const langNow = normalizeLang(u?.lang || "ru");
+      const menuLabel = t("ui.reply.menu", langNow);
+      const profileLabel = t("ui.reply.profile", langNow);
+
+      if (text === "Меню" || text === "🧭 Меню" || text === menuLabel) {
         await goTo(u, "Square");
         return new Response("ok");
       }
 
-      if (text === "Профиль" || text === "👤 Профиль") {
+      if (text === "Профиль" || text === "👤 Профиль" || text === profileLabel) {
         await renderProfile(u);
         return new Response("ok");
       }
 
-      await locations.show(u, "👇 Используйте кнопки ниже для действий.");
+      await locations.show(u, t("worker.use_buttons", langNow));
       return new Response("ok");
     }
 
@@ -691,7 +682,7 @@ export default {
           const mark = opt.code === lang ? " ✅" : "";
           return [{ text: `${opt.label}${mark}`, callback_data: `profile:lang:set:${opt.code}` }];
         });
-        kb.push([{ text: "⬅️ Назад", callback_data: "profile:back" }]);
+        kb.push([{ text: t("worker.btn.back", lang), callback_data: "profile:back" }]);
         try {
           await edit(cb.message, title, kb);
         } catch {
@@ -783,15 +774,13 @@ export default {
           return new Response("ok");
         }
 
-        await answer(cb.id, "Сначала отправь название клана сообщением.");
+        const langAwaitClan = normalizeLang(u?.lang || "ru");
+        await answer(cb.id, t("worker.clan.send_name_first", langAwaitClan));
         await locations.media.show({
           sourceMsg: locations._sourceMsg || cb.message,
           place: "CityBoard",
-          caption:
-            "✍️ Введи название клана одним сообщением.\n" +
-            "Длина: 2-24 символа.\n" +
-            "Можно буквы, цифры, пробел, _ . -",
-          keyboard: [[{ text: "⬅️ Отмена", callback_data: "go:Clan" }]],
+          caption: t("worker.clan.awaiting_name_caption", langAwaitClan),
+          keyboard: [[{ text: t("worker.btn.cancel", langAwaitClan), callback_data: "go:Clan" }]],
           policy: "auto"
         });
         locations.setSourceMessage(null);

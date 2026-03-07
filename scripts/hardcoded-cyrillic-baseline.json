@@ -1,0 +1,1474 @@
+[
+  {
+    "file": "src/BarService.js",
+    "text": "— Без бизнеса деньги текут медленнее. Присмотрись к витрине."
+  },
+  {
+    "file": "src/BarService.js",
+    "text": "— Богатеешь. Слышал про наёмников? Чужими руками оно приятнее."
+  },
+  {
+    "file": "src/BarService.js",
+    "text": "— Вижу хватку. Продолжай в том же духе."
+  },
+  {
+    "file": "src/BarService.js",
+    "text": "— Всё при тебе. Садись, выпьем."
+  },
+  {
+    "file": "src/BarService.js",
+    "text": "— Выглядишь уставшим. Зал помогает, проверено."
+  },
+  {
+    "file": "src/BarService.js",
+    "text": "— Деньги есть, бизнеса нет. Ларёк за углом продаётся."
+  },
+  {
+    "file": "src/BarService.js",
+    "text": "— Деньги лежат мёртвым грузом? Биржа работает, я проверял."
+  },
+  {
+    "file": "src/BarService.js",
+    "text": "— Добей учёбу до 5 уровня. В Зале арканы шансы уже другие."
+  },
+  {
+    "file": "src/BarService.js",
+    "text": "— Загляни на Биржу. Для свободных денег это неплохая стоянка."
+  },
+  {
+    "file": "src/BarService.js",
+    "text": "— Купи слот работодателя. Наёмники умеют приносить сверху."
+  },
+  {
+    "file": "src/BarService.js",
+    "text": "— Пора открыть слот наёмника. Доход станет шире."
+  },
+  {
+    "file": "src/BarService.js",
+    "text": "— Пятый уровень зала быстро окупается в Работах."
+  },
+  {
+    "file": "src/BarService.js",
+    "text": "— Работаешь бодро. Теперь пора взять первый бизнес и пустить деньги в оборот."
+  },
+  {
+    "file": "src/BarService.js",
+    "text": "— Редко вижу такую дисциплину. Уважаю."
+  },
+  {
+    "file": "src/BarService.js",
+    "text": "— Сначала учёба, потом удача. Пятый уровень открывает Зал арканы."
+  },
+  {
+    "file": "src/BarService.js",
+    "text": "— Учёба хромает. Уровень 5 — и Зал арканы открыт."
+  },
+  {
+    "file": "src/BarService.js",
+    "text": "— Часть капитала можно отправить на Биржу. Пусть деньги двигаются."
+  },
+  {
+    "file": "src/BarService.js",
+    "text": "— Чуть больше тренировок — и смены пойдут легче."
+  },
+  {
+    "file": "src/BarService.js",
+    "text": "Задача ещё не выполнена."
+  },
+  {
+    "file": "src/BarService.js",
+    "text": "Задача не найдена."
+  },
+  {
+    "file": "src/BarService.js",
+    "text": "Заработай $60 на работах"
+  },
+  {
+    "file": "src/BarService.js",
+    "text": "Сделай 1 попытку в Зале арканы"
+  },
+  {
+    "file": "src/BarService.js",
+    "text": "Сделай 2 работы"
+  },
+  {
+    "file": "src/BarService.js",
+    "text": "Сделай 3 попытки в Зале арканы"
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": " · Выполнено контрактов: "
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": " · Контракты: "
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": " · Топ-1: "
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": " очков"
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "• 1 всегда про доход с работ"
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "• 2 случайных контракта"
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "✅ Вступить: "
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "⬅️ Назад"
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "🌐 Открытые кланы"
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "🎖️ Доп. награда за топ-1/2/3:"
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "🏆 Призы за неделю (на каждого участника, кто прошел условие):"
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "🏆 Рейтинг кланов за неделю"
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "🏆 Рейтинг недели"
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "👑 Рейтинг кланов all-time"
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "👑 Рейтинг all-time"
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "👥 Кланы"
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "👥 Участники"
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "📜 Контракты недели"
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "🚪 Выйти из клана"
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "🛡️ Создать клан"
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "1 место: $5000 + 💎5"
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "10 место: $300"
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "2 место: $3000 + 💎3"
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "3 место: $2000 + 💎2"
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "4 место: $1500"
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "5 место: $1200"
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "6 место: $1000"
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "7 место: $800"
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "8 место: $600"
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "9 место: $400"
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "В названии нельзя использовать ссылки и @."
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "В процессе"
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "Вклад в очки: "
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "Готово"
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "Если очков поровну — выше клан, который раньше набрал этот результат."
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "Игрок #"
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "Итог недели = сумма очков по всем 3 контрактам (максимум 300)."
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "Итог прошлой недели ("
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "Каждую неделю у клана 3 контракта:"
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "Каждую неделю у клана 3 контракта: всегда доход с работ + 2 случайных."
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "Как считается: "
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "Клан"
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "Клан закрыт для вступления."
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "Клан не найден."
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "Клан уже заполнен."
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "Клан: "
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "Контракты недели: "
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "Контракты: "
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "Награду внутри клана получают те, у кого вклад >=1% ИЛИ полезных событий >=3."
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "Награды выдаются после недельных выплат."
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "Название клана должно быть 2-24 символа."
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "Название клана должно быть текстом."
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "Недели: "
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "Очки недели: "
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "Очки: "
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "По каждому контракту максимум 100 очков."
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "Пока нет открытых кланов. Можно создать первый."
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "Пока пусто."
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "Полезные события: "
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "После выхода можно вступить только на следующей неделе (после выплат)."
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "После недельного расчета статус снимается и выдается новому топу."
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "Прогресс: "
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "Разрешены буквы/цифры/пробел/._- (латиница/кириллица/украинский)."
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "Сначала выйди из текущего клана."
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "Создай открытый клан или вступи в существующий."
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "Статус недели: "
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "Счёт клана: "
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "Топ-1 недели"
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "Топ-2 недели"
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "Топ-3 недели"
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "Ты не состоишь в клане."
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "Участники клана "
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "участники клана получают временный статус у ника (🥇/🥈/🥉) на текущую неделю."
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "Участники: "
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "Цель: "
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "All-time рейтинг = сумма недельных очков за всё время."
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "ℹ️ Как считается рейтинг"
+  },
+  {
+    "file": "src/ClanService.js",
+    "text": "ℹ️ Как считается рейтинг кланов"
+  },
+  {
+    "file": "src/EconomyService.js",
+    "text": " мин"
+  },
+  {
+    "file": "src/EconomyService.js",
+    "text": ") достигнут"
+  },
+  {
+    "file": "src/EconomyService.js",
+    "text": "максимум уровня ("
+  },
+  {
+    "file": "src/FastForwardService.js",
+    "text": "Активной работы нет."
+  },
+  {
+    "file": "src/FastForwardService.js",
+    "text": "Лимит ускорений на сегодня исчерпан ("
+  },
+  {
+    "file": "src/FastForwardService.js",
+    "text": "Недостаточно кристаллов."
+  },
+  {
+    "file": "src/FastForwardService.js",
+    "text": "Тренировка не идёт."
+  },
+  {
+    "file": "src/FastForwardService.js",
+    "text": "Тренировка уже завершена."
+  },
+  {
+    "file": "src/FastForwardService.js",
+    "text": "Уже готово — забери выплату."
+  },
+  {
+    "file": "src/FastForwardService.js",
+    "text": "Уже готово — просто забери результат."
+  },
+  {
+    "file": "src/FastForwardService.js",
+    "text": "Уже завершено или не запущено."
+  },
+  {
+    "file": "src/FastForwardService.js",
+    "text": "Учёба не идёт."
+  },
+  {
+    "file": "src/FastForwardService.js",
+    "text": "Учёба уже завершена."
+  },
+  {
+    "file": "src/Formatters.js",
+    "text": " — это ускорит рост дохода."
+  },
+  {
+    "file": "src/Formatters.js",
+    "text": " · итог "
+  },
+  {
+    "file": "src/Formatters.js",
+    "text": " · траты "
+  },
+  {
+    "file": "src/Formatters.js",
+    "text": " Кристаллы: "
+  },
+  {
+    "file": "src/Formatters.js",
+    "text": " мин)"
+  },
+  {
+    "file": "src/Formatters.js",
+    "text": " раз"
+  },
+  {
+    "file": "src/Formatters.js",
+    "text": "\\n🏅 Лучшая попытка: "
+  },
+  {
+    "file": "src/Formatters.js",
+    "text": "% к оплате"
+  },
+  {
+    "file": "src/Formatters.js",
+    "text": "% к расходу энергии"
+  },
+  {
+    "file": "src/Formatters.js",
+    "text": "% к скорости смены"
+  },
+  {
+    "file": "src/Formatters.js",
+    "text": "% скорость работы)"
+  },
+  {
+    "file": "src/Formatters.js",
+    "text": "⏸️ Смена не запущена"
+  },
+  {
+    "file": "src/Formatters.js",
+    "text": "☕ Кофемашина: -"
+  },
+  {
+    "file": "src/Formatters.js",
+    "text": "☕ Кофемашина: -5% к расходу энергии"
+  },
+  {
+    "file": "src/Formatters.js",
+    "text": "⚡ Энергия: "
+  },
+  {
+    "file": "src/Formatters.js",
+    "text": "🎭 Имя: "
+  },
+  {
+    "file": "src/Formatters.js",
+    "text": "🏅 Лучший выигрыш за попытку: $"
+  },
+  {
+    "file": "src/Formatters.js",
+    "text": "🏅 Топ-10 дня: "
+  },
+  {
+    "file": "src/Formatters.js",
+    "text": "👤 Мой профиль"
+  },
+  {
+    "file": "src/Formatters.js",
+    "text": "👥 Клан: "
+  },
+  {
+    "file": "src/Formatters.js",
+    "text": "👥 Клан: не выбран"
+  },
+  {
+    "file": "src/Formatters.js",
+    "text": "💡 Совет: собери "
+  },
+  {
+    "file": "src/Formatters.js",
+    "text": "💰 Деньги: $"
+  },
+  {
+    "file": "src/Formatters.js",
+    "text": "💻 Ноутбук: +"
+  },
+  {
+    "file": "src/Formatters.js",
+    "text": "💻 Ноутбук: +10% к оплате"
+  },
+  {
+    "file": "src/Formatters.js",
+    "text": "💼 Смена: "
+  },
+  {
+    "file": "src/Formatters.js",
+    "text": "📊 День: выигрыш "
+  },
+  {
+    "file": "src/Formatters.js",
+    "text": "📚 Учеба: уровень "
+  },
+  {
+    "file": "src/Formatters.js",
+    "text": "🗓️ Неделя: выигрыш "
+  },
+  {
+    "file": "src/Formatters.js",
+    "text": "🥈 Топ-3 дня: "
+  },
+  {
+    "file": "src/Formatters.js",
+    "text": "🧲 Магнит дня (1 место): "
+  },
+  {
+    "file": "src/Formatters.js",
+    "text": "🚗 Авто: +"
+  },
+  {
+    "file": "src/Formatters.js",
+    "text": "🚗 Авто: +10% к скорости смены"
+  },
+  {
+    "file": "src/Formatters.js",
+    "text": "авто"
+  },
+  {
+    "file": "src/Formatters.js",
+    "text": "Игрок"
+  },
+  {
+    "file": "src/Formatters.js",
+    "text": "кофемашина"
+  },
+  {
+    "file": "src/Formatters.js",
+    "text": "ноутбук"
+  },
+  {
+    "file": "src/Formatters.js",
+    "text": "Смена"
+  },
+  {
+    "file": "src/GymService.js",
+    "text": ". (Уровень зала: "
+  },
+  {
+    "file": "src/GymService.js",
+    "text": "💪 Тренировка завершена! Энергокап: "
+  },
+  {
+    "file": "src/GymService.js",
+    "text": "Недостаточно денег."
+  },
+  {
+    "file": "src/GymService.js",
+    "text": "Недостаточно энергии."
+  },
+  {
+    "file": "src/GymService.js",
+    "text": "Тренировка уже идет."
+  },
+  {
+    "file": "src/handlers/bar.js",
+    "text": "✅ Награда получена!"
+  },
+  {
+    "file": "src/handlers/bar.js",
+    "text": "✅ Я подписался"
+  },
+  {
+    "file": "src/handlers/bar.js",
+    "text": "🍻 Назад в бар «Две Лисы»"
+  },
+  {
+    "file": "src/handlers/bar.js",
+    "text": "🎁 Ежедневная награда за подписку\\n\\n"
+  },
+  {
+    "file": "src/handlers/bar.js",
+    "text": "🔗 Подписаться"
+  },
+  {
+    "file": "src/handlers/bar.js",
+    "text": "Готово! Бесплатная попытка доступна сегодня в Зале арканы."
+  },
+  {
+    "file": "src/handlers/bar.js",
+    "text": "Не удалось выдать награду."
+  },
+  {
+    "file": "src/handlers/bar.js",
+    "text": "Подписка не найдена. Подпишитесь на канал и попробуйте ещё раз."
+  },
+  {
+    "file": "src/handlers/bar.js",
+    "text": "Подпишись на канал — откроется 1 бесплатная попытка в Зале арканы сегодня.\\n"
+  },
+  {
+    "file": "src/handlers/bar.js",
+    "text": "После использования — право исчезает до завтра."
+  },
+  {
+    "file": "src/handlers/bar.js",
+    "text": "Сегодня награда уже получена. Приходите завтра!"
+  },
+  {
+    "file": "src/handlers/casino.js",
+    "text": ", без списания)"
+  },
+  {
+    "file": "src/handlers/casino.js",
+    "text": "\\n💰 Деньги: $"
+  },
+  {
+    "file": "src/handlers/casino.js",
+    "text": "\\nПопыток сегодня: "
+  },
+  {
+    "file": "src/handlers/casino.js",
+    "text": "\\nСтавка: $"
+  },
+  {
+    "file": "src/handlers/casino.js",
+    "text": "✅ Да, all in"
+  },
+  {
+    "file": "src/handlers/casino.js",
+    "text": "✖️ Нет"
+  },
+  {
+    "file": "src/handlers/casino.js",
+    "text": "⬅️ В бар"
+  },
+  {
+    "file": "src/handlers/casino.js",
+    "text": "🃏 Поставить всё?\\n"
+  },
+  {
+    "file": "src/handlers/casino.js",
+    "text": "🃏 All in! Крутим…"
+  },
+  {
+    "file": "src/handlers/casino.js",
+    "text": "🌀 Бесплатная попытка (ставка $"
+  },
+  {
+    "file": "src/handlers/casino.js",
+    "text": "🌀 Бесплатная попытка уже использована. Доступна завтра."
+  },
+  {
+    "file": "src/handlers/casino.js",
+    "text": "🌀 Бесплатная попытка!"
+  },
+  {
+    "file": "src/handlers/casino.js",
+    "text": "🍻 В бар «Две Лисы»"
+  },
+  {
+    "file": "src/handlers/casino.js",
+    "text": "🎉 Выигрыш: $"
+  },
+  {
+    "file": "src/handlers/casino.js",
+    "text": "💸 Денег нет — all in невозможен."
+  },
+  {
+    "file": "src/handlers/casino.js",
+    "text": "💸 Недостаточно денег для попытки."
+  },
+  {
+    "file": "src/handlers/casino.js",
+    "text": "💸 Недостаточно денег для этой попытки."
+  },
+  {
+    "file": "src/handlers/casino.js",
+    "text": "🙃 Мимо. Попробуй ещё!"
+  },
+  {
+    "file": "src/handlers/casino.js",
+    "text": "Больше попыток доступно с уровня учебы "
+  },
+  {
+    "file": "src/handlers/casino.js",
+    "text": "Выбери ставку:"
+  },
+  {
+    "file": "src/handlers/casino.js",
+    "text": "Крутим…"
+  },
+  {
+    "file": "src/handlers/casino.js",
+    "text": "Лимит попыток на сегодня исчерпан."
+  },
+  {
+    "file": "src/handlers/casino.js",
+    "text": "Отменено."
+  },
+  {
+    "file": "src/handlers/casino.js",
+    "text": "Подожди несколько секунд…"
+  },
+  {
+    "file": "src/handlers/casino.js",
+    "text": "Чтобы получить бесплатную попытку, зайдите в Бар и заберите ежедневную награду за подписку."
+  },
+  {
+    "file": "src/handlers/casino.js",
+    "text": "ℹ️ Таблица выплат"
+  },
+  {
+    "file": "src/handlers/casino.js",
+    "text": "ℹ️ Таблица выплат (средний ряд)\\n"
+  },
+  {
+    "file": "src/handlers/clan.js",
+    "text": "⬅️ Назад"
+  },
+  {
+    "file": "src/handlers/clan.js",
+    "text": "Введи название клана одним сообщением.\\n"
+  },
+  {
+    "file": "src/handlers/clan.js",
+    "text": "Вступить в новый можно после недельных выплат: "
+  },
+  {
+    "file": "src/handlers/clan.js",
+    "text": "Длина: 2-24 символа.\\n"
+  },
+  {
+    "file": "src/handlers/clan.js",
+    "text": "Можно буквы, цифры, пробел, _ . -"
+  },
+  {
+    "file": "src/handlers/clan.js",
+    "text": "Не удалось вступить в клан."
+  },
+  {
+    "file": "src/handlers/clan.js",
+    "text": "Не удалось выйти из клана."
+  },
+  {
+    "file": "src/handlers/clan.js",
+    "text": "Сначала выйди из текущего клана."
+  },
+  {
+    "file": "src/handlers/clan.js",
+    "text": "Ты вступил в клан: "
+  },
+  {
+    "file": "src/handlers/clan.js",
+    "text": "Ты вышел из клана.\\n"
+  },
+  {
+    "file": "src/handlers/daily.js",
+    "text": " (стрик: "
+  },
+  {
+    "file": "src/handlers/daily.js",
+    "text": "Бонус уже забран сегодня. Возвращайся завтра!"
+  },
+  {
+    "file": "src/handlers/daily.js",
+    "text": "Ежедневный бонус: +$"
+  },
+  {
+    "file": "src/handlers/fastforward.js",
+    "text": "⏩ Готово: +$"
+  },
+  {
+    "file": "src/handlers/fastforward.js",
+    "text": "⏩ Тренировка завершена (−"
+  },
+  {
+    "file": "src/handlers/fastforward.js",
+    "text": "⏩ Учёба завершена (−"
+  },
+  {
+    "file": "src/handlers/fastforward.js",
+    "text": "Активной работы нет."
+  },
+  {
+    "file": "src/handlers/fastforward.js",
+    "text": "Лимит ускорений на сегодня исчерпан ("
+  },
+  {
+    "file": "src/handlers/fastforward.js",
+    "text": "Не удалось завершить."
+  },
+  {
+    "file": "src/handlers/fastforward.js",
+    "text": "Недостаточно кристаллов: нужно "
+  },
+  {
+    "file": "src/handlers/fastforward.js",
+    "text": "Неизвестная активность."
+  },
+  {
+    "file": "src/handlers/fastforward.js",
+    "text": "Тренировка не идёт."
+  },
+  {
+    "file": "src/handlers/fastforward.js",
+    "text": "Уже готово."
+  },
+  {
+    "file": "src/handlers/fastforward.js",
+    "text": "Учёба не идёт."
+  },
+  {
+    "file": "src/handlers/gym.js",
+    "text": "энерг"
+  },
+  {
+    "file": "src/handlers/home.js",
+    "text": " Отдых остановлен — полная энергия."
+  },
+  {
+    "file": "src/handlers/home.js",
+    "text": ". Энергия: "
+  },
+  {
+    "file": "src/handlers/home.js",
+    "text": "🍽️ Ты съел: "
+  },
+  {
+    "file": "src/handlers/home.js",
+    "text": "🛌 Отдых прерван: +"
+  },
+  {
+    "file": "src/handlers/home.js",
+    "text": "🛏️ Ты начал отдыхать."
+  },
+  {
+    "file": "src/handlers/home.js",
+    "text": "Начинаю отдых…"
+  },
+  {
+    "file": "src/handlers/home.js",
+    "text": "Останавливаю отдых…"
+  },
+  {
+    "file": "src/handlers/home.js",
+    "text": "Сейчас ты не отдыхаешь."
+  },
+  {
+    "file": "src/handlers/home.js",
+    "text": "Такой еды нет."
+  },
+  {
+    "file": "src/handlers/minigames.js",
+    "text": "Мини-игра временно недоступна. Попробуй позже."
+  },
+  {
+    "file": "src/handlers/minigames.js",
+    "text": "Не удалось открыть игру. Попробуй команду "
+  },
+  {
+    "file": "src/handlers/social.js",
+    "text": "\\nВсего: $"
+  },
+  {
+    "file": "src/handlers/social.js",
+    "text": "\\nНеделя: $"
+  },
+  {
+    "file": "src/handlers/social.js",
+    "text": "⬅️ На Площадь"
+  },
+  {
+    "file": "src/handlers/social.js",
+    "text": "🏙️ Впиши свое имя в список Лидеров!\\n\\nСегодня: $"
+  },
+  {
+    "file": "src/handlers/social.js",
+    "text": "Игрок #"
+  },
+  {
+    "file": "src/handlers/social.js",
+    "text": "Нужно указать ник для игры."
+  },
+  {
+    "file": "src/handlers/study.js",
+    "text": "энерг"
+  },
+  {
+    "file": "src/handlers/upgrades.js",
+    "text": " — за "
+  },
+  {
+    "file": "src/handlers/upgrades.js",
+    "text": ". Недостаточно средств."
+  },
+  {
+    "file": "src/handlers/upgrades.js",
+    "text": ". Недостаточно."
+  },
+  {
+    "file": "src/handlers/upgrades.js",
+    "text": "Куплено: "
+  },
+  {
+    "file": "src/handlers/upgrades.js",
+    "text": "Неизвестное улучшение."
+  },
+  {
+    "file": "src/handlers/upgrades.js",
+    "text": "Нужно "
+  },
+  {
+    "file": "src/handlers/upgrades.js",
+    "text": "Нужно $"
+  },
+  {
+    "file": "src/handlers/upgrades.js",
+    "text": "У тебя уже есть кровать более высокого уровня."
+  },
+  {
+    "file": "src/handlers/upgrades.js",
+    "text": "У тебя уже есть это улучшение."
+  },
+  {
+    "file": "src/handlers/upgrades.js",
+    "text": "Уже куплено."
+  },
+  {
+    "file": "src/handlers/upgrades.js",
+    "text": "Этот предмет нельзя купить за 💎."
+  },
+  {
+    "file": "src/handlers/work.js",
+    "text": "энерг"
+  },
+  {
+    "file": "src/HomeService.js",
+    "text": "(восст. x"
+  },
+  {
+    "file": "src/JobService.js",
+    "text": "Активной работы нет."
+  },
+  {
+    "file": "src/JobService.js",
+    "text": "Выплата уже получена."
+  },
+  {
+    "file": "src/JobService.js",
+    "text": "Недостаточно энергии."
+  },
+  {
+    "file": "src/JobService.js",
+    "text": "Неизвестный тип работы."
+  },
+  {
+    "file": "src/JobService.js",
+    "text": "Работа уже завершена — забери выплату."
+  },
+  {
+    "file": "src/JobService.js",
+    "text": "Работа уже закрыта."
+  },
+  {
+    "file": "src/JobService.js",
+    "text": "Слишком рано. Работа ещё не завершена."
+  },
+  {
+    "file": "src/JobService.js",
+    "text": "Сначала укажи никнейм для игры (2–16 символов). Напиши его одним сообщением."
+  },
+  {
+    "file": "src/JobService.js",
+    "text": "У тебя уже есть активная работа."
+  },
+  {
+    "file": "src/Locations.js",
+    "text": " (получил "
+  },
+  {
+    "file": "src/Locations.js",
+    "text": " в день"
+  },
+  {
+    "file": "src/Locations.js",
+    "text": " в день\\n"
+  },
+  {
+    "file": "src/Locations.js",
+    "text": " за $"
+  },
+  {
+    "file": "src/Locations.js",
+    "text": " за сегодня"
+  },
+  {
+    "file": "src/Locations.js",
+    "text": " мин)\\n\\n💡 Совет: можно открыть другие разделы.\\n\\n"
+  },
+  {
+    "file": "src/Locations.js",
+    "text": "⏳ Идет смена: "
+  },
+  {
+    "file": "src/Locations.js",
+    "text": "✓ Сегодня уже забрано"
+  },
+  {
+    "file": "src/Locations.js",
+    "text": "⬅️ На Площадь"
+  },
+  {
+    "file": "src/Locations.js",
+    "text": "⬅️ Назад"
+  },
+  {
+    "file": "src/Locations.js",
+    "text": "⬅️ Назад к бизнесам"
+  },
+  {
+    "file": "src/Locations.js",
+    "text": "⬅️ Назад к заработку"
+  },
+  {
+    "file": "src/Locations.js",
+    "text": "⬅️ Назад, к выбору смен"
+  },
+  {
+    "file": "src/Locations.js",
+    "text": "⬅️ Назад, к учебе"
+  },
+  {
+    "file": "src/Locations.js",
+    "text": "🏃 К заработку"
+  },
+  {
+    "file": "src/Locations.js",
+    "text": "🏢 Бизнес\\n"
+  },
+  {
+    "file": "src/Locations.js",
+    "text": "🏦 Забрать $"
+  },
+  {
+    "file": "src/Locations.js",
+    "text": "💰 Готово к выплате: "
+  },
+  {
+    "file": "src/Locations.js",
+    "text": "🛒 Купить за "
+  },
+  {
+    "file": "src/Locations.js",
+    "text": "Бизнес недоступен"
+  },
+  {
+    "file": "src/Locations.js",
+    "text": "Выбери бизнес:"
+  },
+  {
+    "file": "src/Locations.js",
+    "text": "Доход: "
+  },
+  {
+    "file": "src/Locations.js",
+    "text": "Доход: $"
+  },
+  {
+    "file": "src/Locations.js",
+    "text": "Ежедневный сброс прибыли: не накапливается\\n"
+  },
+  {
+    "file": "src/Locations.js",
+    "text": "Забрать $"
+  },
+  {
+    "file": "src/Locations.js",
+    "text": "Игрок"
+  },
+  {
+    "file": "src/Locations.js",
+    "text": "Игрок #"
+  },
+  {
+    "file": "src/Locations.js",
+    "text": "Купи слот работодателя и получай % с чужих смен сверху.\\n"
+  },
+  {
+    "file": "src/Locations.js",
+    "text": "Купи слот работодателя и получай % с чужих смен сверху.\\n\\n"
+  },
+  {
+    "file": "src/Locations.js",
+    "text": "Купить "
+  },
+  {
+    "file": "src/Locations.js",
+    "text": "Купить за $"
+  },
+  {
+    "file": "src/Locations.js",
+    "text": "Назад"
+  },
+  {
+    "file": "src/Locations.js",
+    "text": "Накопление между днями: не накапливается"
+  },
+  {
+    "file": "src/Locations.js",
+    "text": "Накопление между днями: не накапливается\\n"
+  },
+  {
+    "file": "src/Locations.js",
+    "text": "Пассивный доход раз в день — заходи и забирай.\\n"
+  },
+  {
+    "file": "src/Locations.js",
+    "text": "Сбор дохода: вручную\\n"
+  },
+  {
+    "file": "src/Locations.js",
+    "text": "Сегодня уже забрано"
+  },
+  {
+    "file": "src/Locations.js",
+    "text": "Сегодня уже забрано ("
+  },
+  {
+    "file": "src/Locations.js",
+    "text": "Смена"
+  },
+  {
+    "file": "src/Locations.js",
+    "text": "Статус: ✓ сегодня уже получено"
+  },
+  {
+    "file": "src/Locations.js",
+    "text": "Статус: доступно к получению: $"
+  },
+  {
+    "file": "src/Locations.js",
+    "text": "Статус: доступно к сбору сегодня — $"
+  },
+  {
+    "file": "src/Locations.js",
+    "text": "Статус: доступно сегодня: $"
+  },
+  {
+    "file": "src/Locations.js",
+    "text": "Статус: доход за сегодня забран"
+  },
+  {
+    "file": "src/Locations.js",
+    "text": "Статус: не куплено"
+  },
+  {
+    "file": "src/Locations.js",
+    "text": "Статус: прибыль уже получена"
+  },
+  {
+    "file": "src/Locations.js",
+    "text": "Уже забрано сегодня"
+  },
+  {
+    "file": "src/Locations.js",
+    "text": "Цена: "
+  },
+  {
+    "file": "src/Locations.js",
+    "text": "Цена: $"
+  },
+  {
+    "file": "src/Locations.js",
+    "text": "Чем дороже бизнес, тем больше приносит.\\n"
+  },
+  {
+    "file": "src/NameService.js",
+    "text": "⬅️ На Площадь"
+  },
+  {
+    "file": "src/NameService.js",
+    "text": "📋 Укажи свой никнейм для игры простым сообщением в ответ на это\\n\\n"
+  },
+  {
+    "file": "src/NameService.js",
+    "text": "Некорректный ник."
+  },
+  {
+    "file": "src/NameService.js",
+    "text": "Отправь текст с никнеймом."
+  },
+  {
+    "file": "src/NameService.js",
+    "text": "Требования: 2–16 символов; RU/UA/EN; можно цифры, пробел, «_», «.», «-»."
+  },
+  {
+    "file": "src/NotificationService.js",
+    "text": "✅ Принять выплату"
+  },
+  {
+    "file": "src/NotificationService.js",
+    "text": "✨ Поднять кассу"
+  },
+  {
+    "file": "src/NotificationService.js",
+    "text": "🏦 Налик сюда!"
+  },
+  {
+    "file": "src/NotificationService.js",
+    "text": "💰 Пора за зарплатой"
+  },
+  {
+    "file": "src/NotificationService.js",
+    "text": "💵 Хочу кэш"
+  },
+  {
+    "file": "src/NotificationService.js",
+    "text": "💸 Забрать деньги"
+  },
+  {
+    "file": "src/NotificationService.js",
+    "text": "📈 Забрать прибыль"
+  },
+  {
+    "file": "src/NotificationService.js",
+    "text": "🥳 Деньги ждут!"
+  },
+  {
+    "file": "src/NotificationService.js",
+    "text": "🧧 Взять конвертик"
+  },
+  {
+    "file": "src/NotificationService.js",
+    "text": "🧲 Притянуть деньги"
+  },
+  {
+    "file": "src/NotificationService.js",
+    "text": "🧿 Призвать денюжку"
+  },
+  {
+    "file": "src/payments/PremiumHandler.js",
+    "text": " Кристаллы"
+  },
+  {
+    "file": "src/payments/PremiumHandler.js",
+    "text": "⬅️ На Площадь"
+  },
+  {
+    "file": "src/payments/PremiumHandler.js",
+    "text": "⬅️ Назад"
+  },
+  {
+    "file": "src/payments/PremiumHandler.js",
+    "text": "🎁 Первая покупка — ×2 к выдаче!"
+  },
+  {
+    "file": "src/payments/PremiumHandler.js",
+    "text": "🎁 Первая покупка ×2 → ИТОГО: "
+  },
+  {
+    "file": "src/payments/PremiumHandler.js",
+    "text": "💎 Кристаллы"
+  },
+  {
+    "file": "src/payments/PremiumHandler.js",
+    "text": "💎 Магазин временно недоступен."
+  },
+  {
+    "file": "src/payments/PremiumHandler.js",
+    "text": "💎 Пакеты недоступны."
+  },
+  {
+    "file": "src/payments/PremiumHandler.js",
+    "text": "Баланс: "
+  },
+  {
+    "file": "src/payments/PremiumHandler.js",
+    "text": "Бонус пакета: +"
+  },
+  {
+    "file": "src/payments/PremiumHandler.js",
+    "text": "Бонус пакета: нет"
+  },
+  {
+    "file": "src/payments/PremiumHandler.js",
+    "text": "Выбери пакет:"
+  },
+  {
+    "file": "src/payments/PremiumHandler.js",
+    "text": "Итого получите сейчас: "
+  },
+  {
+    "file": "src/payments/PremiumHandler.js",
+    "text": "Не трать на мелочи — копи на слоты."
+  },
+  {
+    "file": "src/payments/PremiumHandler.js",
+    "text": "Нужны для премиум-покупок и слотов наёмников."
+  },
+  {
+    "file": "src/payments/PremiumHandler.js",
+    "text": "Ошибка магазина. Попробуй позже."
+  },
+  {
+    "file": "src/payments/PremiumHandler.js",
+    "text": "Пакет не найден."
+  },
+  {
+    "file": "src/payments/PremiumHandler.js",
+    "text": "Пакет: "
+  },
+  {
+    "file": "src/payments/PremiumHandler.js",
+    "text": "Редкая валюта — только из заданий и топов."
+  },
+  {
+    "file": "src/payments/StarsService.js",
+    "text": "Пакет 💎"
+  },
+  {
+    "file": "src/payments/StarsService.js",
+    "text": "Пакет кристаллов "
+  },
+  {
+    "file": "src/SocialService.js",
+    "text": "Игрок #"
+  },
+  {
+    "file": "src/StudyService.js",
+    "text": ". (+1% к скорости работ, максимум "
+  },
+  {
+    "file": "src/StudyService.js",
+    "text": ") уже достигнут."
+  },
+  {
+    "file": "src/StudyService.js",
+    "text": "🎓 Обучение завершено! Уровень: "
+  },
+  {
+    "file": "src/StudyService.js",
+    "text": "Максимальный уровень ("
+  },
+  {
+    "file": "src/StudyService.js",
+    "text": "Недостаточно денег."
+  },
+  {
+    "file": "src/StudyService.js",
+    "text": "Недостаточно энергии."
+  },
+  {
+    "file": "src/StudyService.js",
+    "text": "Учёба не активна."
+  },
+  {
+    "file": "src/StudyService.js",
+    "text": "Учёба уже идёт."
+  },
+  {
+    "file": "src/TelegramClient.js",
+    "text": "🔁 Обновляю клавиатуру…"
+  },
+  {
+    "file": "src/UserStore.js",
+    "text": "В нике не должно быть ссылок и @."
+  },
+  {
+    "file": "src/UserStore.js",
+    "text": "Ник должен быть 2–16 символов."
+  },
+  {
+    "file": "src/UserStore.js",
+    "text": "Отправь текст с никнеймом."
+  },
+  {
+    "file": "src/UserStore.js",
+    "text": "Разрешены буквы/цифры/пробел/._- (латиница/кириллица/украинский)."
+  },
+  {
+    "file": "src/worker.js",
+    "text": "🇷🇺 Русский"
+  },
+  {
+    "file": "src/worker.js",
+    "text": "🇺🇦 Українська"
+  },
+  {
+    "file": "src/worker.js",
+    "text": "👤 Профиль"
+  },
+  {
+    "file": "src/worker.js",
+    "text": "🧭 Меню"
+  },
+  {
+    "file": "src/worker.js",
+    "text": "Меню"
+  },
+  {
+    "file": "src/worker.js",
+    "text": "Профиль"
+  }
+]

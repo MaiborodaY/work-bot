@@ -3,6 +3,7 @@ import { NameService } from "./NameService.js";
 import { ASSETS, JOB_ASSETS } from "./Assets.js";
 import { BarService } from "./BarService.js";
 import { normalizeLang, t } from "./i18n/index.js";
+import { getBusinessNote, getBusinessTitle, getJobTitle } from "./I18nCatalog.js";
 
 export class Locations {
   /**
@@ -403,7 +404,7 @@ export class Locations {
 
         const typeId = active.typeId;
         const fileId = JOB_ASSETS[typeId] || ASSETS.WorkDefault;
-        const activeTitle = CONFIG?.JOBS?.[typeId]?.title || active.title || "Смена";
+        const activeTitle = getJobTitle(typeId, lang) || active.title || "Смена";
 
         const caption = ready
           ? `💰 Готово к выплате: ${activeTitle} [$${active.plannedPay}]`
@@ -749,7 +750,10 @@ export class Locations {
             "Чем дороже бизнес, тем больше приносит.\n" +
             "Купи слот работодателя и получай % с чужих смен сверху.\n\n" +
             "Выбери бизнес:";
-          const kb = items.map(B => [{ text: `${B.emoji} ${B.title}`, callback_data: `go:Biz_${B.id}` }]);
+          const kb = items.map(B => [{
+            text: `${B.emoji} ${getBusinessTitle(B.id, lang) || B.title}`,
+            callback_data: `go:Biz_${B.id}`
+          }]);
           kb.push([{ text: "⬅️ Назад к заработку", callback_data: "go:Earn" }]);
           await this.media.show({ sourceMsg: this._sourceMsg, place: "Business", caption, keyboard: kb, policy: "photo" });
           this._sourceMsg = null;
@@ -774,11 +778,13 @@ export class Locations {
           const kb = [];
           const ownedArr = Array.isArray(user?.biz?.owned) ? user.biz.owned : [];
           for (const B of items) {
+            const bizTitle = getBusinessTitle(B.id, lang) || B.title;
+            const bizNote = getBusinessNote(B.id, lang) || B.note;
             const ownedObj = ownedArr.find(it => (typeof it === "string" ? it === B.id : it?.id === B.id));
             const isOwned = !!ownedObj;
             const claimedToday = isOwned && (ownedObj.lastClaimDayUTC === todayUTC);
             const availableToday = isOwned && !claimedToday ? (Number(B.daily) || 0) : 0;
-            captionLines.push(`${B.emoji} ${B.title}`);
+            captionLines.push(`${B.emoji} ${bizTitle}`);
             captionLines.push(`Цена: $${B.price}`);
             captionLines.push(`Доход: $${B.daily} в день`);
             captionLines.push(`Накопление между днями: не накапливается`);
@@ -787,15 +793,15 @@ export class Locations {
                 ? (claimedToday ? "Статус: доход за сегодня забран" : `Статус: доступно сегодня: $${availableToday}`)
                 : "Статус: не куплено"
             );
-            if (B.note) captionLines.push(B.note);
+            if (bizNote) captionLines.push(bizNote);
             captionLines.push("");
             if (!isOwned) {
-              kb.push([{ text: `Купить ${B.title} за $${B.price}`, callback_data: `biz:buy:${B.id}` }]);
+              kb.push([{ text: `Купить ${bizTitle} за $${B.price}`, callback_data: `biz:buy:${B.id}` }]);
             } else {
               if (!claimedToday) {
-                kb.push([{ text: `Забрать $${B.daily} (${B.title})`, callback_data: `biz:claim:${B.id}` }]);
+                kb.push([{ text: `Забрать $${B.daily} (${bizTitle})`, callback_data: `biz:claim:${B.id}` }]);
               } else {
-                kb.push([{ text: `Сегодня уже забрано (${B.title})`, callback_data: "noop" }]);
+                kb.push([{ text: `Сегодня уже забрано (${bizTitle})`, callback_data: "noop" }]);
               }
             }
           }
@@ -807,7 +813,9 @@ export class Locations {
         }
       } catch {}
       const B = CONFIG.BUSINESS.shawarma;
-      const title = `${B.emoji} ${B.title}`;
+      const bizTitle = getBusinessTitle(B.id, lang) || B.title;
+      const bizNote = getBusinessNote(B.id, lang) || B.note;
+      const title = `${B.emoji} ${bizTitle}`;
       const price = `$${B.price}`;
       const daily = `$${B.daily}`;
 
@@ -855,7 +863,7 @@ export class Locations {
           `Доход: ${daily} в день\n` +
           `Сбор дохода: вручную\n` +
           statusLine + "\n\n" +
-          (B.note ? "ℹ️ " + B.note : ""),
+          (bizNote ? "ℹ️ " + bizNote : ""),
         keyboard: kb,
         policy: "photo", // показываем баннер Business
       });
@@ -881,6 +889,7 @@ export class Locations {
       }
 
       const ownedArr = Array.isArray(user?.biz?.owned) ? user.biz.owned : [];
+      const bizTitle = getBusinessTitle(B.id, lang) || B.title;
       const ownedObj = ownedArr.find(it => (typeof it === "string" ? it === B.id : it?.id === B.id));
       const isOwned = !!ownedObj;
       const todayUTC = new Date().toISOString().slice(0, 10);
@@ -911,7 +920,7 @@ export class Locations {
         asset: assetShaw,
         caption:
           (header || "") +
-          `${B.emoji} ${B.title}\n` +
+          `${B.emoji} ${bizTitle}\n` +
           `Цена: $${B.price}\n` +
           `Доход: $${B.daily} в день\n` +
           `Накопление между днями: не накапливается\n` +
@@ -941,6 +950,7 @@ export class Locations {
       }
 
       const ownedArr = Array.isArray(user?.biz?.owned) ? user.biz.owned : [];
+      const bizTitle = getBusinessTitle(B.id, lang) || B.title;
       const ownedObj = ownedArr.find(it => (typeof it === "string" ? it === B.id : it?.id === B.id));
       const isOwned = !!ownedObj;
       const todayUTC = new Date().toISOString().slice(0, 10);
@@ -971,7 +981,7 @@ export class Locations {
         asset: assetSto,
         caption:
           (header || "") +
-          `${B.emoji} ${B.title}\n` +
+          `${B.emoji} ${bizTitle}\n` +
           `Цена: $${B.price}\n` +
           `Доход: $${B.daily} в день\n` +
           `Накопление между днями: не накапливается\n` +
@@ -1001,6 +1011,7 @@ export class Locations {
       }
 
       const ownedArr = Array.isArray(user?.biz?.owned) ? user.biz.owned : [];
+      const bizTitle = getBusinessTitle(B.id, lang) || B.title;
       const ownedObj = ownedArr.find(it => (typeof it === "string" ? it === B.id : it?.id === B.id));
       const isOwned = !!ownedObj;
       const todayUTC = new Date().toISOString().slice(0, 10);
@@ -1031,7 +1042,7 @@ export class Locations {
         asset: assetRest,
         caption:
           (header || "") +
-          `${B.emoji} ${B.title}\n` +
+          `${B.emoji} ${bizTitle}\n` +
           `Цена: $${B.price}\n` +
           `Доход: $${B.daily} в день\n` +
           `Ежедневный сброс прибыли: не накапливается\n` +
@@ -1061,6 +1072,7 @@ export class Locations {
       }
 
       const ownedArr = Array.isArray(user?.biz?.owned) ? user.biz.owned : [];
+      const bizTitle = getBusinessTitle(B.id, lang) || B.title;
       const ownedObj = ownedArr.find(it => (typeof it === "string" ? it === B.id : it?.id === B.id));
       const isOwned = !!ownedObj;
       const todayUTC = new Date().toISOString().slice(0, 10);
@@ -1091,7 +1103,7 @@ export class Locations {
         asset: assetCourier,
         caption:
           (header || "") +
-          `${B.emoji} ${B.title}\n` +
+          `${B.emoji} ${bizTitle}\n` +
           `Цена: $${B.price}\n` +
           `Доход: $${B.daily} в день\n` +
           `Накопление между днями: не накапливается\n` +
@@ -1121,6 +1133,7 @@ export class Locations {
       }
 
       const ownedArr = Array.isArray(user?.biz?.owned) ? user.biz.owned : [];
+      const bizTitle = getBusinessTitle(B.id, lang) || B.title;
       const ownedObj = ownedArr.find(it => (typeof it === "string" ? it === B.id : it?.id === B.id));
       const isOwned = !!ownedObj;
       const todayUTC = new Date().toISOString().slice(0, 10);
@@ -1151,7 +1164,7 @@ export class Locations {
         asset: assetFitness,
         caption:
           (header || "") +
-          `${B.emoji} ${B.title}\n` +
+          `${B.emoji} ${bizTitle}\n` +
           `Цена: $${B.price}\n` +
           `Доход: $${B.daily} в день\n` +
           `Накопление между днями: не накапливается\n` +

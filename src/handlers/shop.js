@@ -1,25 +1,30 @@
 import { CONFIG } from "../GameConfig.js";
 import { HomeService } from "../HomeService.js";
+import { normalizeLang, t } from "../i18n/index.js";
+import { getShopTitle } from "../I18nCatalog.js";
 
 export const shopHandler = {
   match: (data) => data.startsWith("buy_"),
 
   async handle(ctx) {
     const { data, u, cb, answer, users, goTo } = ctx;
+    const lang = normalizeLang(u?.lang || "ru");
+    const tt = (key, vars = {}) => t(key, lang, vars);
 
     const key = data.replace("buy_","").trim();
     const it = CONFIG.SHOP[key];
-    if (!it) { await answer(cb.id,"Неизвестный товар."); return; }
+    if (!it) { await answer(cb.id, tt("handler.shop.unknown_item")); return; }
+    const itemTitle = getShopTitle(key, lang) || it.title;
 
     // ===== Покупка за обычные $ (еда — моменталка) =====
     if (typeof it.price === "number") {
       // Блокируем покупку, если уже полный кап энергии
       if ((u.energy || 0) >= (u.energy_max || CONFIG.ENERGY_MAX)) {
-        await answer(cb.id, "Энергия уже полная — покупать не нужно.");
+        await answer(cb.id, tt("handler.shop.energy_full_skip"));
         return;
       }
       if ((u.money || 0) < it.price) {
-        await answer(cb.id,"Недостаточно денег 💸");
+        await answer(cb.id, tt("handler.shop.not_enough_money"));
         return;
       }
 
@@ -32,7 +37,7 @@ export const shopHandler = {
       await goTo(
         u,
         "Shop",
-        `✅ Куплено: ${it.title}`
+        tt("handler.shop.bought_money_ok", { title: itemTitle })
       );
       return;
     }
@@ -40,13 +45,13 @@ export const shopHandler = {
     // ===== Покупка за 💎 (премиум) =====
     if (typeof it.price_premium === "number") {
       const need = it.price_premium;
-      if ((u.premium || 0) < need) { await answer(cb.id, `Недостаточно ${CONFIG.PREMIUM.emoji}${need}.`); return; }
+      if ((u.premium || 0) < need) { await answer(cb.id, tt("handler.shop.not_enough_gems", { emoji: CONFIG.PREMIUM.emoji, need })); return; }
 
       // Спец-логика для Coca-Cola Zero (полный рефил, 3/день UTC, блок при полном капе)
       if (key === "coke_zero") {
         // Блокируем, если уже полный кап
         if ((u.energy || 0) >= (u.energy_max || CONFIG.ENERGY_MAX)) {
-          await answer(cb.id, "Энергия уже полная — не трать кристаллы.");
+          await answer(cb.id, tt("handler.shop.energy_full_no_gems"));
           return;
         }
 
@@ -59,7 +64,7 @@ export const shopHandler = {
           u.premiumDaily.coke = 0;
         }
         if ((u.premiumDaily.coke || 0) >= 3) {
-          await answer(cb.id, "Лимит Coca-Cola Zero на сегодня исчерпан (3/день, UTC).");
+          await answer(cb.id, tt("handler.shop.coke_limit_reached"));
           return;
         }
 
@@ -75,7 +80,13 @@ export const shopHandler = {
         await goTo(
           u,
           "Shop",
-          `✅ Выпито: ${it.title}.\n⚡ ${u.energy}/${u.energy_max}\nБаланс: ${CONFIG.PREMIUM.emoji}${u.premium}`
+          tt("handler.shop.coke_drink_ok", {
+            title: itemTitle,
+            energy: u.energy,
+            energyMax: u.energy_max,
+            emoji: CONFIG.PREMIUM.emoji,
+            premium: u.premium
+          })
         );
         return;
       }
@@ -83,10 +94,15 @@ export const shopHandler = {
       // На будущее: другие прем-товары — дефолтная покупка без энергии
       u.premium -= need;
       await users.save(u);
-      await goTo(u, "Shop", `✅ Куплено за ${CONFIG.PREMIUM.emoji}${need}: ${it.title}. Баланс: ${CONFIG.PREMIUM.emoji}${u.premium}`);
+      await goTo(u, "Shop", tt("handler.shop.bought_gems_ok", {
+        emoji: CONFIG.PREMIUM.emoji,
+        need,
+        title: itemTitle,
+        premium: u.premium
+      }));
       return;
     }
 
-    await answer(cb.id,"Товар недоступен для покупки.");
+    await answer(cb.id, tt("handler.shop.unavailable"));
   }
 };

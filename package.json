@@ -5,7 +5,10 @@
 	"scripts": {
 		"deploy": "wrangler deploy",
 		"dev": "wrangler dev",
-		"start": "wrangler dev"
+		"start": "wrangler dev",
+		"check:i18n": "node scripts/check-i18n-keys.cjs",
+		"check:cyrillic": "node scripts/check-hardcoded-cyrillic.cjs",
+		"check:cyrillic:update": "node scripts/check-hardcoded-cyrillic.cjs --update-baseline"
 	},
 	"devDependencies": {
 		"wrangler": "^4.45.0"
