@@ -17,10 +17,11 @@ export class Locations {
    *  users?:any
    *  clans?:any
    *  stocks?:any,
-   *  labour?:any
+   *  labour?:any,
+   *  referrals?:any
    * }} deps
    */
-  constructor({ media, ui, economy, formatters, pct, now, maybeFinishStudy, daily, fastForward, users, social, clans, stocks, labour }) {
+  constructor({ media, ui, economy, formatters, pct, now, maybeFinishStudy, daily, fastForward, users, social, clans, stocks, labour, referrals }) {
     this.media = media;
     this.ui = ui;
     this.economy = economy;
@@ -35,6 +36,7 @@ export class Locations {
     this.clans = clans || null;
     this.stocks = stocks || null;
     this.labour = labour || null;
+    this.referrals = referrals || null;
 
 
     this._sourceMsg = null;
@@ -308,6 +310,34 @@ export class Locations {
       });
       this._sourceMsg = null;
       this._route = "Clan";
+      return;
+    }
+    // ---------- Referral ----------
+    if (route === "Referral") {
+      let view = null;
+      try {
+        if (this.referrals && typeof this.referrals.buildView === "function") {
+          view = await this.referrals.buildView(user);
+        }
+      } catch {}
+
+      if (!view) {
+        view = {
+          caption: this._t(user, "loc.referral.unavailable"),
+          keyboard: [[{ text: this._t(user, "ui.back.default"), callback_data: "go:City" }]]
+        };
+      }
+
+      const caption = (header || "") + (view.caption || "");
+      await this.media.show({
+        sourceMsg: this._sourceMsg,
+        place: "CityBoard",
+        caption,
+        keyboard: view.keyboard || [[{ text: this._t(user, "ui.back.default"), callback_data: "go:City" }]],
+        policy: "auto",
+      });
+      this._sourceMsg = null;
+      this._route = "Referral";
       return;
     }
     // ---------- CityBoard ----------

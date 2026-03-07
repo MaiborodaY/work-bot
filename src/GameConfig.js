@@ -91,6 +91,12 @@ export const CONFIG = {
     ]
   },
 
+  REFERRAL: {
+    REWARD_GEMS: 10,
+    INVITED_LIMIT: 100,
+    VIEW_LIST_LIMIT: 20
+  },
+
   DAILY_TOP_REWARDS: {
     1:  { stars: 3, money: 0 },
     2:  { stars: 2, money: 0 },

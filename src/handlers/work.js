@@ -16,7 +16,7 @@ export const workHandler = {
     data === "work:goto:shop",
 
   async handle(ctx) {
-    const { data, u, cb, answer, users, now, social, clans, labour, goTo, orders, send, sendWithInline } = ctx;
+    const { data, u, cb, answer, users, now, social, clans, labour, referrals, goTo, orders, send, sendWithInline } = ctx;
     const lang = normalizeLang(u?.lang || "ru");
     const tt = (key, vars = {}) => t(key, lang, vars);
 
@@ -127,6 +127,11 @@ export const workHandler = {
           await labour.onEmployeePaid(u, res.pay, res.endAt);
         }
       } catch {}
+      try {
+        if (referrals?.tryRewardReferral) {
+          await referrals.tryRewardReferral(u);
+        }
+      } catch {}
       await answer(cb.id, tt("handler.work.claim_ok", { pay: res.pay }));
       await render();
       return;
@@ -155,6 +160,11 @@ export const workHandler = {
       try {
         if (labour?.onEmployeePaid) {
           await labour.onEmployeePaid(u, claim.pay, claim.endAt);
+        }
+      } catch {}
+      try {
+        if (referrals?.tryRewardReferral) {
+          await referrals.tryRewardReferral(u);
         }
       } catch {}
 

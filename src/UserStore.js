@@ -252,6 +252,29 @@ export class UserStore {
       if (typeof u.employment.contractEnd !== "number") { u.employment.contractEnd = 0; dirty = true; }
     }
 
+    // Рефералы
+    if (!u.referral || typeof u.referral !== "object") {
+      u.referral = { referredBy: "", rewarded: false, invited: [], totalGemsEarned: 0 };
+      dirty = true;
+    } else {
+      if (typeof u.referral.referredBy !== "string") { u.referral.referredBy = ""; dirty = true; }
+      if (typeof u.referral.rewarded !== "boolean") { u.referral.rewarded = false; dirty = true; }
+      if (!Array.isArray(u.referral.invited)) { u.referral.invited = []; dirty = true; }
+      if (typeof u.referral.totalGemsEarned !== "number") { u.referral.totalGemsEarned = 0; dirty = true; }
+
+      const invitedNorm = [];
+      for (const raw of u.referral.invited) {
+        const idRef = String(raw?.id || "").trim();
+        if (!idRef) { dirty = true; continue; }
+        const rewardedAt = Math.max(0, Number(raw?.rewardedAt) || 0);
+        invitedNorm.push({ id: idRef, rewardedAt });
+      }
+      if (invitedNorm.length !== u.referral.invited.length) dirty = true;
+      invitedNorm.sort((a, b) => (Number(b.rewardedAt) || 0) - (Number(a.rewardedAt) || 0));
+      u.referral.invited = invitedNorm.slice(0, 100);
+      u.referral.totalGemsEarned = Math.max(0, Math.round(Number(u.referral.totalGemsEarned) || 0));
+    }
+
     // ===== LEGACY — мягко удаляем устаревшие ключи =====
     const dropKeys = [
       "status","last_work_start","shifts","goals","last_daily",
@@ -336,6 +359,7 @@ export class UserStore {
       clan: { clanId: "", joinedAt: 0, joinAvailableFromWeek: "", lastPresenceDay: "" },
       clanCosmetic: null,
       employment: { active: false, ownerId: "", bizId: "", ownerPct: 0, contractEnd: 0 },
+      referral: { referredBy: "", rewarded: false, invited: [], totalGemsEarned: 0 },
 
       // Flags
       flags: { onboarding: false, onboardingStartedAt: 0, onboardingStep: "", firstJobGemGiven: false }

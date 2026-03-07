@@ -14,6 +14,7 @@ import { ClanService } from "./ClanService.js";
 import { DailyBonusService } from "./DailyBonusService.js";
 import { StockService } from "./StockService.js";
 import { LabourService } from "./LabourService.js";
+import { ReferralService } from "./ReferralService.js";
 import { ASSETS, JOB_ASSETS } from "./Assets.js";
 import { normalizeLang, t } from "./i18n/index.js";
 
@@ -34,6 +35,7 @@ import { miniGamesHandler } from "./handlers/minigames.js";
 import { clanHandler } from "./handlers/clan.js";
 import { stocksHandler } from "./handlers/stocks.js";
 import { labourHandler } from "./handlers/labour.js";
+import { referralHandler } from "./handlers/referral.js";
 
 // платежи Stars
 import { OrdersStore as StarsOrdersStore } from "./payments/OrdersStore.js";
@@ -112,6 +114,12 @@ export default {
     const clans = new ClanService({ db: env.DB, users, now, economy });
     const stocks = new StockService({ db: env.DB, users, now });
     const labour = new LabourService({ db: env.DB, users, now, bot });
+    const referrals = new ReferralService({
+      users,
+      now,
+      bot,
+      botUsername: env.BOT_USERNAME
+    });
 
     const orders = new StarsOrdersStore(env.DB, now);
     const stars = new StarsPayService({ botToken: env.BOT_TOKEN, orders, now });
@@ -237,7 +245,8 @@ export default {
       social,
       clans,
       stocks,
-      labour
+      labour,
+      referrals
     });
 
     // статлесс переход — ничего не пишем в KV
@@ -399,6 +408,11 @@ export default {
       const mStart = text.match(/^\/start(?:@\w+)?(?:\s+(\S+))?$/i);
       if (mStart) {
         const startPayload = (mStart[1] || "").trim();
+        try {
+          if (referrals && typeof referrals.bindFromStartPayload === "function") {
+            await referrals.bindFromStartPayload(u, startPayload);
+          }
+        } catch {}
 
         u.flags = u.flags || {};
         if (/^ads_/i.test(startPayload) || u.__isNew) {
@@ -825,6 +839,7 @@ export default {
         clans,
         stocks,
         labour,
+        referrals,
         // ui
         ui,
         // payments
@@ -839,6 +854,7 @@ export default {
         clanHandler,
         premiumShopHandler,
         socialHandler,
+        referralHandler,
         barHandler,
         dailyHandler,
         miniGamesHandler,
