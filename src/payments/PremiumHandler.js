@@ -1,4 +1,5 @@
 import { CONFIG } from "../GameConfig.js";
+import { normalizeLang, t } from "../i18n/index.js";
 
 function packCreditedWithPct(pack) {
   const base = Number(pack.gems) || 0;
@@ -14,6 +15,8 @@ export const premiumHandler = {
 
   async handle(ctx) {
     const { data, cb, answer, sendWithInline, stars, chatId, u, locations  } = ctx;
+    const lang = normalizeLang(u?.lang || "ru");
+    const tt = (key, vars = {}) => t(key, lang, vars);
 
     try {
       const packs = Array.isArray(CONFIG.PREMIUM?.PACKS) ? CONFIG.PREMIUM.PACKS : [];
@@ -26,8 +29,8 @@ export const premiumHandler = {
           await locations.media.show({
             sourceMsg: cb.message,
             place: "Premium", // 🆕 баннер из ASSETS.Premium
-            caption: "💎 Магазин временно недоступен.",
-            keyboard: [[{ text: "⬅️ Назад", callback_data: "go:ShopHub" }]], // 🆕 назад в хаб магазинов
+            caption: tt("premium.shop.unavailable"),
+            keyboard: [[{ text: tt("worker.btn.back"), callback_data: "go:ShopHub" }]], // 🆕 назад в хаб магазинов
             policy: "photo",
           });
           return;
@@ -35,15 +38,15 @@ export const premiumHandler = {
       
         const firstX2Active = !u.firstPurchaseBonusUsed;
         const headLines = [
-          "💎 Кристаллы",
-          "Редкая валюта — только из заданий и топов.",
-          "Нужны для премиум-покупок и слотов наёмников.",
-          "Не трать на мелочи — копи на слоты.",
+          tt("premium.shop.title"),
+          tt("premium.shop.line1"),
+          tt("premium.shop.line2"),
+          tt("premium.shop.line3"),
           "",
-          `Баланс: ${CONFIG.PREMIUM.emoji}${u.premium || 0}`,
-          `Выбери пакет:`,
+          tt("premium.shop.balance", { emoji: CONFIG.PREMIUM.emoji, amount: u.premium || 0 }),
+          tt("premium.shop.choose"),
         ];
-        if (firstX2Active) headLines.splice(1, 0, "🎁 Первая покупка — ×2 к выдаче!");
+        if (firstX2Active) headLines.splice(1, 0, tt("premium.shop.first_x2"));
         const caption = headLines.join("\n");
       
         const keyboard = packs.map(p => {
@@ -55,7 +58,7 @@ export const premiumHandler = {
             callback_data: `premium:buy:${p.id}`
           }];
         });
-        keyboard.push([{ text: "⬅️ Назад", callback_data: "go:ShopHub" }]); // 🆕
+        keyboard.push([{ text: tt("worker.btn.back"), callback_data: "go:ShopHub" }]); // 🆕
       
         await locations.media.show({
           sourceMsg: cb.message,
@@ -74,8 +77,8 @@ export const premiumHandler = {
 
         if (!packs.length) {
           await sendWithInline(
-            "💎 Пакеты недоступны.",
-            [[{ text: "⬅️ На Площадь", callback_data: "go:Square" }]]
+            tt("premium.buy.packs_unavailable"),
+            [[{ text: tt("ui.back.square"), callback_data: "go:Square" }]]
           );
           return;
         }
@@ -84,8 +87,8 @@ export const premiumHandler = {
         const pack = packs.find(p => String(p.id) === String(packId));
         if (!pack) {
           await sendWithInline(
-            "Пакет не найден.",
-            [[{ text: "⬅️ Назад", callback_data: "go:Premium" }]]
+            tt("premium.buy.pack_not_found"),
+            [[{ text: tt("worker.btn.back"), callback_data: "go:Premium" }]]
           );
           return;
         }
@@ -98,15 +101,17 @@ export const premiumHandler = {
         const amount = Number(pack.price_stars || pack.gems) || 0;
 
         const descLines = [
-          `Пакет: ${CONFIG.PREMIUM.emoji}${base}`,
-          pct > 0 ? `Бонус пакета: +${pct}% → +${bonus}` : `Бонус пакета: нет`,
-          `Итого получите сейчас: ${CONFIG.PREMIUM.emoji}${credited}`,
+          tt("premium.invoice.pack", { emoji: CONFIG.PREMIUM.emoji, base }),
+          pct > 0
+            ? tt("premium.invoice.bonus_yes", { pct, bonus })
+            : tt("premium.invoice.bonus_no"),
+          tt("premium.invoice.total_now", { emoji: CONFIG.PREMIUM.emoji, credited }),
         ];
-        if (isFirst) descLines.push(`🎁 Первая покупка ×2 → ИТОГО: ${CONFIG.PREMIUM.emoji}${totalGet}`);
+        if (isFirst) descLines.push(tt("premium.invoice.first_x2_total", { emoji: CONFIG.PREMIUM.emoji, totalGet }));
 
         await stars.sendStarsInvoice({
           chatId,
-          title: `${CONFIG.PREMIUM.emoji} Кристаллы`,
+          title: tt("premium.invoice.title", { emoji: CONFIG.PREMIUM.emoji }),
           description: descLines.join("\n"),
           payload: stars.buildPayload({ packId: pack.id, userId: u.id }),
           currency: "XTR",
@@ -115,7 +120,7 @@ export const premiumHandler = {
         return;
       }
     } catch {
-      try { await answer(cb.id, "Ошибка магазина. Попробуй позже."); } catch {}
+      try { await answer(cb.id, tt("premium.error.try_later")); } catch {}
       return;
     }
   }

@@ -1,5 +1,6 @@
 // handlers/social.js — стопор ника + нормализация имён в старых записях
 import { NameService } from "../NameService.js";
+import { normalizeLang, t } from "../i18n/index.js";
 
 export const socialHandler = {
   match: (data) =>
@@ -14,6 +15,8 @@ export const socialHandler = {
 
   async handle(ctx) {
     const { data, cb, u, answer, locations, ui, social, goTo, users } = ctx;
+    const lang = normalizeLang(u?.lang || "ru");
+    const tt = (key, vars = {}) => t(key, lang, vars);
 
         // ===== ручная смена ника по кнопке в табло =====
         if (data === "social:name") {
@@ -29,11 +32,11 @@ export const socialHandler = {
               sourceMsg: locations._sourceMsg,
               place: "CityBoard",
               caption: text,
-              keyboard: extra?.reply_markup?.inline_keyboard || [[{ text: "⬅️ На Площадь", callback_data: "go:Square" }]],
+              keyboard: extra?.reply_markup?.inline_keyboard || [[{ text: tt("ui.back.square"), callback_data: "go:Square" }]],
               policy: "auto",
             });
             locations.setSourceMessage(null);
-          });
+          }, "", lang);
           return;
         }
 
@@ -43,8 +46,8 @@ export const socialHandler = {
       await locations.media.show({
         sourceMsg: locations._sourceMsg,
         place: "CityBoard",
-        caption: ui.cityTopLuckyCaption(list),
-        keyboard: ui.cityTopLucky(),
+        caption: ui.cityTopLuckyCaption(list, lang),
+        keyboard: ui.cityTopLucky(lang),
         policy: "auto",
       });
       locations.setSourceMessage(null);
@@ -63,7 +66,7 @@ export const socialHandler = {
       u.awaitingName = true;
       u.afterNameRoute = data;
       await users.save(u);
-      await answer(cb.id, "Нужно указать ник для игры.");
+      await answer(cb.id, tt("handler.social.need_nick"));
 
       // единая точка показа промпта ника
       const ns = new NameService({ users });
@@ -72,11 +75,11 @@ export const socialHandler = {
           sourceMsg: locations._sourceMsg,
           place: "CityBoard",
           caption: text,
-          keyboard: extra?.reply_markup?.inline_keyboard || [[{ text: "⬅️ На Площадь", callback_data: "go:Square" }]],
+          keyboard: extra?.reply_markup?.inline_keyboard || [[{ text: tt("ui.back.square"), callback_data: "go:Square" }]],
           policy: "auto",
         });
         locations.setSourceMessage(null);
-      });
+      }, "", lang);
 
       return;
     }
@@ -87,8 +90,8 @@ export const socialHandler = {
       await locations.media.show({
         sourceMsg: locations._sourceMsg,
         place: "CityBoard",
-        caption: `🏙️ Впиши свое имя в список Лидеров!\n\nСегодня: $${totals.day}\nНеделя: $${totals.week}\nВсего: $${totals.all}`,
-        keyboard: ui.cityBoard(),
+        caption: tt("handler.social.board_caption", { day: totals.day, week: totals.week, all: totals.all }),
+        keyboard: ui.cityBoard(lang),
         policy: "auto",
       });
       locations.setSourceMessage(null);
@@ -102,7 +105,7 @@ export const socialHandler = {
         const idStr = String(item.userId || "");
         const looksLikeId = typeof item.name === "string" && /^[0-9]+$/.test(item.name.trim());
         const empty = !item.name || !String(item.name).trim();
-        const masked = `Игрок #${idStr.slice(-4).padStart(4, "0")}`;
+        const masked = tt("loc.square.player_fallback_id", { id: idStr.slice(-4).padStart(4, "0") });
         return { ...item, name: (empty || looksLikeId) ? masked : String(item.name).trim() };
       };
       const top = Array.isArray(raw) ? raw.map(norm) : [];
@@ -110,8 +113,8 @@ export const socialHandler = {
       await locations.media.show({
         sourceMsg: locations._sourceMsg,
         place: "CityBoard",
-        caption: ui.cityTopDayCaption(top),
-        keyboard: ui.cityTopDay(),
+        caption: ui.cityTopDayCaption(top, lang),
+        keyboard: ui.cityTopDay(lang),
         policy: "auto",
       });
       locations.setSourceMessage(null);
@@ -125,7 +128,7 @@ export const socialHandler = {
         const idStr = String(item.userId || "");
         const looksLikeId = typeof item.name === "string" && /^[0-9]+$/.test(item.name.trim());
         const empty = !item.name || !String(item.name).trim();
-        const masked = `Игрок #${idStr.slice(-4).padStart(4, "0")}`;
+        const masked = tt("loc.square.player_fallback_id", { id: idStr.slice(-4).padStart(4, "0") });
         return { ...item, name: (empty || looksLikeId) ? masked : String(item.name).trim() };
       };
       const top = Array.isArray(raw) ? raw.map(norm) : [];
@@ -133,8 +136,8 @@ export const socialHandler = {
       await locations.media.show({
         sourceMsg: locations._sourceMsg,
         place: "CityBoard",
-        caption: ui.cityTopWeekCaption(top),
-        keyboard: ui.cityTopDay(), // можно переиспользовать ту же «Назад»-клавиатуру
+        caption: ui.cityTopWeekCaption(top, lang),
+        keyboard: ui.cityTopDay(lang), // можно переиспользовать ту же «Назад»-клавиатуру
         policy: "auto",
       });
       locations.setSourceMessage(null);
@@ -148,7 +151,7 @@ export const socialHandler = {
         const idStr = String(item.userId || "");
         const looksLikeId = typeof item.name === "string" && /^[0-9]+$/.test(item.name.trim());
         const empty = !item.name || !String(item.name).trim();
-        const masked = `Игрок #${idStr.slice(-4).padStart(4, "0")}`;
+        const masked = tt("loc.square.player_fallback_id", { id: idStr.slice(-4).padStart(4, "0") });
         return {
           ...item,
           name: (empty || looksLikeId) ? masked : String(item.name).trim()
@@ -159,8 +162,8 @@ export const socialHandler = {
       await locations.media.show({
         sourceMsg: locations._sourceMsg,
         place: "CityBoard",
-        caption: ui.cityTopSmartCaption(top),
-        keyboard: ui.cityTopDay(), // можем переиспользовать ту же "назад"-клаву
+        caption: ui.cityTopSmartCaption(top, lang),
+        keyboard: ui.cityTopDay(lang), // можем переиспользовать ту же "назад"-клаву
         policy: "auto",
       });
       locations.setSourceMessage(null);
@@ -181,11 +184,11 @@ export const socialHandler = {
             sourceMsg: locations._sourceMsg,
             place: "CityBoard",
             caption: text,
-            keyboard: extra?.reply_markup?.inline_keyboard || [[{ text: "⬅️ На Площадь", callback_data: "go:Square" }]],
+            keyboard: extra?.reply_markup?.inline_keyboard || [[{ text: tt("ui.back.square"), callback_data: "go:Square" }]],
             policy: "auto",
           });
           locations.setSourceMessage(null);
-        });
+        }, "", lang);
         return;
       }
     
@@ -195,7 +198,7 @@ export const socialHandler = {
         const idStr = String(item.userId || "");
         const looksLikeId = typeof item.name === "string" && /^[0-9]+$/.test(item.name.trim());
         const empty = !item.name || !String(item.name).trim();
-        const masked = `Игрок #${idStr.slice(-4).padStart(4, "0")}`;
+        const masked = tt("loc.square.player_fallback_id", { id: idStr.slice(-4).padStart(4, "0") });
         return { ...item, name: (empty || looksLikeId) ? masked : String(item.name).trim() };
       };
       const top = Array.isArray(raw) ? raw.map(norm) : [];
@@ -203,8 +206,8 @@ export const socialHandler = {
       await locations.media.show({
         sourceMsg: locations._sourceMsg,
         place: "CityBoard",
-        caption: ui.cityTopStrongCaption(top),
-        keyboard: ui.cityTopStrong(),
+        caption: ui.cityTopStrongCaption(top, lang),
+        keyboard: ui.cityTopStrong(lang),
         policy: "auto",
       });
       locations.setSourceMessage(null);

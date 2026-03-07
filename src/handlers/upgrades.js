@@ -1,4 +1,6 @@
 import { CONFIG } from "../GameConfig.js";
+import { normalizeLang, t } from "../i18n/index.js";
+import { getUpgradeTitle } from "../I18nCatalog.js";
 
 function bedTier(key) {
   if (key === "bed3") return 3;
@@ -33,16 +35,19 @@ export const upgradesHandler = {
 
   async handle(ctx) {
     const { data, u, cb, answer, users, goTo, locations } = ctx;
+    const lang = normalizeLang(u?.lang || "ru");
+    const tt = (key, vars = {}) => t(key, lang, vars);
 
     if (data === "noop") {
-      await answer(cb.id, "Уже куплено.");
+      await answer(cb.id, tt("handler.upgrades.already_bought"));
       return;
     }
 
     const routeNow = (locations && locations._route) ? locations._route : "Upgrades";
     const key = (data.split(":")[2] || "").trim();
     const item = CONFIG.UPGRADES[key];
-    if (!item) { await answer(cb.id, "Неизвестное улучшение."); return; }
+    if (!item) { await answer(cb.id, tt("handler.upgrades.unknown")); return; }
+    const title = getUpgradeTitle(key, lang) || item.title || key;
 
     const isBed = bedTier(key) > 0;
     const backRoute = isBed ? "Home" : (routeNow === "Home" ? "Home" : "Upgrades");
@@ -51,7 +56,7 @@ export const upgradesHandler = {
     const owned = new Set(u.upgrades);
 
     if (owned.has(key)) {
-      await answer(cb.id, "У тебя уже есть это улучшение.");
+      await answer(cb.id, tt("handler.upgrades.you_already_have"));
       return;
     }
 
@@ -60,7 +65,7 @@ export const upgradesHandler = {
       const curTier = maxOwnedBedTier(u);
       const wantTier = bedTier(key);
       if (curTier > 0 && wantTier <= curTier) {
-        await answer(cb.id, "У тебя уже есть кровать более высокого уровня.");
+        await answer(cb.id, tt("handler.upgrades.bed_higher_owned"));
         return;
       }
     }
@@ -68,7 +73,7 @@ export const upgradesHandler = {
     // покупка за $
     if (data.startsWith("upg:buy:") && !data.startsWith("upg:buy_p:")) {
       if ((u.money || 0) < item.price) {
-        await answer(cb.id, `Нужно $${item.price}. Недостаточно средств.`);
+        await answer(cb.id, tt("handler.upgrades.not_enough_money", { price: item.price }));
         return;
       }
       u.money -= item.price;
@@ -76,7 +81,7 @@ export const upgradesHandler = {
       if (isBed) purgeLowerBeds(u);
       await users.save(u);
 
-      await answer(cb.id, `Куплено: ${item.title} — $${item.price}`);
+      await answer(cb.id, tt("handler.upgrades.buy_money_ok", { title, price: item.price }));
       await goTo(u, backRoute);
       return;
     }
@@ -85,11 +90,11 @@ export const upgradesHandler = {
     if (data.startsWith("upg:buy_p:")) {
       const need = item.price_premium;
       if (typeof need !== "number") {
-        await answer(cb.id, "Этот предмет нельзя купить за 💎.");
+        await answer(cb.id, tt("handler.upgrades.cannot_buy_with_gems"));
         return;
       }
       if ((u.premium || 0) < need) {
-        await answer(cb.id, `Нужно ${CONFIG.PREMIUM.emoji}${need}. Недостаточно.`);
+        await answer(cb.id, tt("handler.upgrades.not_enough_gems", { emoji: CONFIG.PREMIUM.emoji, need }));
         return;
       }
       u.premium -= need;
@@ -97,7 +102,7 @@ export const upgradesHandler = {
       if (isBed) purgeLowerBeds(u);
       await users.save(u);
 
-      await answer(cb.id, `Куплено: ${item.title} — за ${CONFIG.PREMIUM.emoji}${need}`);
+      await answer(cb.id, tt("handler.upgrades.buy_gems_ok", { title, emoji: CONFIG.PREMIUM.emoji, need }));
       await goTo(u, backRoute);
       return;
     }

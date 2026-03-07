@@ -1,3 +1,5 @@
+import { normalizeLang, t } from "../i18n/index.js";
+
 export const clanHandler = {
   match: (data) =>
     data === "clan:create_prompt" ||
@@ -8,10 +10,13 @@ export const clanHandler = {
     data === "clan:all_time" ||
     data === "clan:rating_info" ||
     data === "clan:leave" ||
+    data === "clan:leave_confirm" ||
     data.startsWith("clan:join:"),
 
   async handle(ctx) {
     const { data, u, cb, answer, users, locations, clans, goTo } = ctx;
+    const lang = normalizeLang(u?.lang || "ru");
+    const tt = (key, vars = {}) => t(key, lang, vars);
 
     const show = async (view, place = "Clan") => {
       await locations.media.show({
@@ -27,7 +32,7 @@ export const clanHandler = {
     if (data === "clan:create_prompt") {
       await answer(cb.id);
       if (u?.clan?.clanId) {
-        await answer(cb.id, "Сначала выйди из текущего клана.");
+        await answer(cb.id, tt("clan.err.leave_current"));
         await goTo(u, "Clan");
         return;
       }
@@ -42,11 +47,8 @@ export const clanHandler = {
       await users.save(u);
 
       await show({
-        caption:
-          "Введи название клана одним сообщением.\n" +
-          "Длина: 2-24 символа.\n" +
-          "Можно буквы, цифры, пробел, _ . -",
-        keyboard: [[{ text: "⬅️ Назад", callback_data: "go:Clan" }]]
+        caption: tt("worker.clan.awaiting_name_caption"),
+        keyboard: [[{ text: tt("worker.btn.back"), callback_data: "go:Clan" }]]
       });
       return;
     }
@@ -56,26 +58,36 @@ export const clanHandler = {
       const clanId = data.split(":")[2] || "";
       const res = await clans.joinClan(u, clanId);
       if (!res.ok) {
-        await answer(cb.id, res.error || "Не удалось вступить в клан.");
+        await answer(cb.id, res.error || tt("handler.clan.join_failed"));
         await goTo(u, "Clan");
         return;
       }
-      await answer(cb.id, `Ты вступил в клан: ${res.clan?.name || ""}`);
+      await answer(cb.id, tt("handler.clan.join_ok", { name: res.clan?.name || "" }));
       await goTo(u, "Clan");
       return;
     }
 
     if (data === "clan:leave") {
       await answer(cb.id);
+      await show({
+        caption: tt("handler.clan.leave_confirm_caption"),
+        keyboard: [
+          [{ text: tt("handler.clan.leave_confirm_btn"), callback_data: "clan:leave_confirm" }],
+          [{ text: tt("worker.btn.cancel"), callback_data: "go:Clan" }]
+        ]
+      });
+      return;
+    }
+
+    if (data === "clan:leave_confirm") {
+      await answer(cb.id);
       const res = await clans.leaveClan(u);
       if (!res.ok) {
-        await answer(cb.id, res.error || "Не удалось выйти из клана.");
+        await answer(cb.id, res.error || tt("handler.clan.leave_failed"));
         await goTo(u, "Clan");
         return;
       }
-      const note =
-        "Ты вышел из клана.\n" +
-        `Вступить в новый можно после недельных выплат: ${res.nextWeekStart}.`;
+      const note = tt("handler.clan.leave_note", { date: res.nextWeekStart });
       await goTo(u, "Clan", note);
       return;
     }
@@ -103,21 +115,21 @@ export const clanHandler = {
 
     if (data === "clan:weekly_top") {
       await answer(cb.id);
-      const view = await clans.buildWeeklyTopView();
+      const view = await clans.buildWeeklyTopView(u);
       await show(view);
       return;
     }
 
     if (data === "clan:all_time") {
       await answer(cb.id);
-      const view = await clans.buildAllTimeTopView();
+      const view = await clans.buildAllTimeTopView(u);
       await show(view);
       return;
     }
 
     if (data === "clan:rating_info") {
       await answer(cb.id);
-      const view = clans.buildRatingInfoView();
+      const view = clans.buildRatingInfoView(u);
       await show(view);
       return;
     }

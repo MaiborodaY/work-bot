@@ -434,15 +434,16 @@ export default {
       if (u.awaitingName) {
         const ns = new NameService({ users });
         const textMsg = (update.message.text || "").trim();
+        const langNow = normalizeLang(u?.lang || "ru");
 
         if (!textMsg || textMsg.startsWith("/")) {
-          await ns.prompt(send);
+          await ns.prompt(send, "", langNow);
           return new Response("ok");
         }
 
-        const res = await ns.tryHandleText(u, textMsg);
+        const res = await ns.tryHandleText(u, textMsg, langNow);
         if (!res.ok) {
-          await ns.prompt(send, res.error);
+          await ns.prompt(send, res.error, langNow);
           return new Response("ok");
         }
 
@@ -760,7 +761,7 @@ export default {
 
         // ✖ Любые другие нажатия — продолжаем просить ник
         const ns = new NameService({ users });
-        await ns.prompt(send);
+        await ns.prompt(send, "", normalizeLang(u?.lang || "ru"));
         return new Response("ok");
       }
 

@@ -45,17 +45,12 @@ export class NotificationService {
     this.ctaList = Array.isArray(CONFIG?.NOTIFY?.CLAIM_CTA)
       ? CONFIG.NOTIFY.CLAIM_CTA
       : [
-          "💰 Пора за зарплатой",
-          "🏦 Налик сюда!",
-          "🧲 Притянуть деньги",
-          "🥳 Деньги ждут!",
-          "✨ Поднять кассу",
-          "💵 Хочу кэш",
-          "📈 Забрать прибыль",
-          "🧧 Взять конвертик",
-          "🧿 Призвать денюжку",
-          "✅ Принять выплату",
-          "💸 Забрать деньги",
+          "notify.cta.1",
+          "notify.cta.2",
+          "notify.cta.3",
+          "notify.cta.4",
+          "notify.cta.5",
+          "notify.cta.6",
         ];
   }
 
@@ -282,9 +277,15 @@ export class NotificationService {
     const i = Number.isInteger(u.notify.ctaIndex) ? u.notify.ctaIndex : 0;
     const idx = (i % arr.length + arr.length) % arr.length;
     const fallbackText = arr[idx];
+    if (typeof fallbackText === "string" && /^notify\.cta\.\d+$/.test(fallbackText)) {
+      u.notify.ctaIndex = (i + 1) % arr.length;
+      return this._t(u, fallbackText);
+    }
     const key = `notify.cta.${idx + 1}`;
     const localized = this._t(u, key);
-    const text = localized && localized !== key ? localized : fallbackText;
+    const text = localized && localized !== key
+      ? localized
+      : (this._lang(u) === "ru" ? fallbackText : this._t(u, "notify.cta.fallback"));
     u.notify.ctaIndex = (i + 1) % arr.length;
     return text;
   }
