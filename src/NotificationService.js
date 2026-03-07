@@ -8,7 +8,7 @@ const FALLBACK_SCAN_EVERY_HOURS = 6;
 /**
  * Фоновые уведомления: «смена закончилась — забери деньги».
  * Поддерживает только новую схему:
- *  u.jobs.active[0] { endAt, claimed, notified, title }
+ *  u.jobs.active[0] { endAt, claimed, notified, typeId }
  *
  * Требования к отправке:
  *  - u.chatId есть
@@ -74,7 +74,7 @@ export class NotificationService {
 
         const inst = u?.jobs?.active?.[0];
         if (this._hasReadyWork(u, now)) {
-          const jobTitle = inst?.title || "Смена";
+          const jobTitle = CONFIG?.JOBS?.[inst?.typeId]?.title || inst?.title || "Смена";
           const text = `✅ Работа завершена: ${jobTitle} — готово к выплате.`;
           const cta = this._nextCta(u);
           await this.bot.sendWithInline(u.chatId, text, [[{ text: cta, callback_data: "go:Work" }]]);

@@ -15,6 +15,7 @@ import { DailyBonusService } from "./DailyBonusService.js";
 import { StockService } from "./StockService.js";
 import { LabourService } from "./LabourService.js";
 import { ASSETS, JOB_ASSETS } from "./Assets.js";
+import { normalizeLang, t } from "./i18n/index.js";
 
 // handlers test comm
 import { workHandler } from "./handlers/work.js";
@@ -59,6 +60,12 @@ const HELP_TEXT = `🎮 World of Life — текстовая игра про р�
 const PRIVACY_TEXT = `🔒 Мы храним только ваш Telegram ID и прогресс в игре.
 Данные нужны для сохранения аккаунта и удаляются в течение 72 часов по запросу.
 Политика: ${PRIVACY_URL}`;
+
+const LANG_OPTIONS = [
+  { code: "ru", label: "🇷🇺 Русский" },
+  { code: "uk", label: "🇺🇦 Українська" },
+  { code: "en", label: "🇬🇧 English" }
+];
 
 export default {
   async fetch(request, env, ctx) {
@@ -247,6 +254,32 @@ export default {
       await locations.show(u, intro, place);
     }
 
+    const profileLangButtonText = (u) => {
+      const lang = normalizeLang(u?.lang || "ru");
+      return t("profile.lang.button", lang, { lang: lang.toUpperCase() });
+    };
+
+    const langOptionLabel = (code) => {
+      const found = LANG_OPTIONS.find((x) => x.code === code);
+      return found ? found.label : code.toUpperCase();
+    };
+
+    async function renderProfile(u, sourceMsg = null) {
+      const clan = await clans.getClanForUser(u).catch(() => null);
+      const clanName = clan?.name ? String(clan.name) : "";
+      const clanWeekKey = await clans.ensureWeek().catch(() => "");
+      const employmentLine = await labour.buildProfileEmploymentLine(u).catch(() => "");
+      const statusText = Formatters.status(u, { economy, now, pct, clanName, clanWeekKey, employmentLine });
+      const kb = [[{ text: profileLangButtonText(u), callback_data: "profile:lang" }]];
+      if (sourceMsg) {
+        try {
+          await edit(sourceMsg, statusText, kb);
+          return;
+        } catch {}
+      }
+      await sendWithInline(statusText, kb);
+    }
+
     // Support multiple admin IDs via env variables: ADMIN_ID, ADMIN2, ADMIN_IDS (comma/space-separated)
     const __adminIdSet = new Set(
       [
@@ -317,9 +350,17 @@ export default {
         await clans.touchDailyPresence(u);
       } catch {}
 
-      // chatId для пушей
+      let shouldSaveMeta = false;
       if (u.chatId !== chatId) {
         u.chatId = chatId;
+        shouldSaveMeta = true;
+      }
+      if (!u.lang) {
+        const detectedLang = normalizeLang(update?.message?.from?.language_code || "");
+        u.lang = detectedLang;
+        shouldSaveMeta = true;
+      }
+      if (shouldSaveMeta) {
         await users.save(u);
       }
 
@@ -556,12 +597,7 @@ export default {
       }
 
       if (text === "Профиль" || text === "👤 Профиль") {
-        const clan = await clans.getClanForUser(u).catch(() => null);
-        const clanName = clan?.name ? String(clan.name) : "";
-        const clanWeekKey = await clans.ensureWeek().catch(() => "");
-        const employmentLine = await labour.buildProfileEmploymentLine(u).catch(() => "");
-        const statusText = Formatters.status(u, { economy, now, pct, clanName, clanWeekKey, employmentLine });
-        await send(statusText);
+        await renderProfile(u);
         return new Response("ok");
       }
 
@@ -633,10 +669,53 @@ export default {
         await clans.touchDailyPresence(u);
       } catch {}
 
-      // подстрахуем chatId
+      let shouldSaveMetaCb = false;
       if (u.chatId !== chatId) {
         u.chatId = chatId;
+        shouldSaveMetaCb = true;
+      }
+      if (!u.lang) {
+        const detectedLangCb = normalizeLang(cb?.from?.language_code || "");
+        u.lang = detectedLangCb;
+        shouldSaveMetaCb = true;
+      }
+      if (shouldSaveMetaCb) {
         await users.save(u);
+      }
+
+      if (data === "profile:lang") {
+        await answer(cb.id);
+        const lang = normalizeLang(u.lang || "ru");
+        const title = t("profile.lang.title", lang);
+        const kb = LANG_OPTIONS.map((opt) => {
+          const mark = opt.code === lang ? " ✅" : "";
+          return [{ text: `${opt.label}${mark}`, callback_data: `profile:lang:set:${opt.code}` }];
+        });
+        kb.push([{ text: "⬅️ Назад", callback_data: "profile:back" }]);
+        try {
+          await edit(cb.message, title, kb);
+        } catch {
+          await sendWithInline(title, kb);
+        }
+        return new Response("ok");
+      }
+
+      if (data.startsWith("profile:lang:set:")) {
+        const next = normalizeLang(data.split(":")[3] || "");
+        const prev = normalizeLang(u.lang || "ru");
+        if (next !== prev) {
+          u.lang = next;
+          await users.save(u);
+        }
+        await answer(cb.id, t("profile.lang.changed", next, { lang: langOptionLabel(next) }));
+        await renderProfile(u, cb.message);
+        return new Response("ok");
+      }
+
+      if (data === "profile:back") {
+        await answer(cb.id);
+        await renderProfile(u, cb.message);
+        return new Response("ok");
       }
 
       // 🔹 Легаси: если ник пуст и не ждём ручной ввод — автоподстановка

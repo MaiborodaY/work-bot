@@ -60,7 +60,6 @@ export class JobService {
     const inst = {
       id: String(startAt) + ":" + typeId,
       typeId,
-      title: type.title,
       startAt,
       endAt,
       energySpent: mod.energy,

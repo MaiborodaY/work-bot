@@ -1,6 +1,7 @@
 import { CONFIG } from "./GameConfig.js";
 import { NameService } from "./NameService.js";
 import { ASSETS, JOB_ASSETS } from "./Assets.js";
+import { BarService } from "./BarService.js";
 
 // Helper for gym active title
 const titleActive = (mins) => `🏋️ Тренировка идёт: ~${mins} мин`;
@@ -48,6 +49,20 @@ export class Locations {
   }
   setBack(to) {
     this._backToRoute = (typeof to === "string" && to) ? to : null;
+  }
+
+  _getSquareHint(u) {
+    const now = this.now();
+    const active = Array.isArray(u?.jobs?.active) && u.jobs.active.length ? u.jobs.active[0] : null;
+    const hasActiveJob = !!active;
+    const jobReady = hasActiveJob && Number(active?.endAt || 0) <= now;
+
+    if (jobReady) return "💵 Смена закончена — деньги ждут тебя в Работах.";
+    if (hasActiveJob) return "⏳ Смена идёт. Загляни в Бар — там есть чем заняться.";
+    if ((Number(u?.energy) || 0) <= 0) return "😮‍💨 Энергия на нуле. Домой — отдыхать.";
+    if (!String(u?.clan?.clanId || "").trim()) return "🤝 Ты без клана. В Городе можно вступить — вместе веселее.";
+    if (!hasActiveJob && (Number(u?.energy) || 0) > 0) return "🏙️ Город не спит. Иди работай или загляни в Бар.";
+    return "🏙️ Город не спит. Иди работай или загляни в Бар.";
   }
 
   async show(user, introText = null, routeOverride = null) {
@@ -138,7 +153,10 @@ export class Locations {
         } catch {}
       }
 
-      const captionBase = (header || "") + "🏙️ Площадь: выберите, куда пойти дальше, или загляните в магазин.";
+      const captionBase =
+        (header || "") +
+        "🏙️ Площадь: выберите, куда пойти дальше, или загляните в магазин.\n" +
+        this._getSquareHint(user);
       const captionSquare = yesterdayBlock ? `${captionBase}\n\n${yesterdayBlock}` : captionBase;
 
       await this.media.show({
@@ -378,10 +396,11 @@ export class Locations {
 
         const typeId = active.typeId;
         const fileId = JOB_ASSETS[typeId] || ASSETS.WorkDefault;
+        const activeTitle = CONFIG?.JOBS?.[typeId]?.title || active.title || "Смена";
 
         const caption = ready
-          ? `💰 Готово к выплате: ${active.title} [$${active.plannedPay}]`
-          : `⏳ Идет смена: ${active.title} (~${leftMin} мин)\n\n💡 Совет: можно открыть другие разделы.\n\n` +
+          ? `💰 Готово к выплате: ${activeTitle} [$${active.plannedPay}]`
+          : `⏳ Идет смена: ${activeTitle} (~${leftMin} мин)\n\n💡 Совет: можно открыть другие разделы.\n\n` +
             this.formatters.balance(user);
 
         await this.media.show({
@@ -487,7 +506,7 @@ export class Locations {
           caption: header +
             "🎓 Учёба\n" +
             "+1% к скорости каждой смены за уровень.\n" +
-            "Уровень 5 открывает казино.\n" +
+            "Уровень 5 открывает Зал арканы.\n" +
             "Чем выше уровень — тем дороже бизнесы ты сможешь купить.\n\n" +
             this.formatters.balance(user) + "\n" + this.formatters.studyLine(user),
           keyboard: this.ui.studyIdle(this.economy.fmtStudyEffects(user)),
@@ -589,6 +608,7 @@ export class Locations {
 
     // ---------- Bar ----------
     if (route === "Bar") {
+      const barmanQuote = BarService.getBarmanQuote(user, this.now());
       await this.media.show({
         sourceMsg: this._sourceMsg,
         place: "Bar",
@@ -596,6 +616,7 @@ export class Locations {
           "🍻 Бар\n" +
           "Ежедневные задания — выполняй и получай кристаллы.\n" +
           "Задания обновляются каждый день.\n\n" +
+          `${barmanQuote}\n\n` +
           this.formatters.balance(user),
         keyboard: this.ui.bar(user, this.now()),
         policy: "auto",

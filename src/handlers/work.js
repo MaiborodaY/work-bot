@@ -83,9 +83,10 @@ export const workHandler = {
         }
       } catch {}
 
+      const startedTitle = CONFIG?.JOBS?.[res?.inst?.typeId]?.title || "Смена";
       await answer(
         cb.id,
-        `▶️ Начало: ${res.inst.title} (~${Math.ceil((res.inst.endAt - now()) / 60000)} мин)`
+        `▶️ Начало: ${startedTitle} (~${Math.ceil((res.inst.endAt - now()) / 60000)} мин)`
       );
       await render();
       return;

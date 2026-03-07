@@ -103,6 +103,8 @@ export class UserStore {
 
     // Ник/онбординг
     if (typeof u.displayName !== "string") { u.displayName = ""; dirty = true; }
+    if (typeof u.lang !== "string") { u.lang = ""; dirty = true; }
+    if (u.lang && !["ru", "uk", "en"].includes(u.lang)) { u.lang = "ru"; dirty = true; }
     u.awaitingName = !!u.awaitingName;
     if (typeof u.afterNameRoute !== "string") { u.afterNameRoute = ""; dirty = true; }
     u.awaitingClanName = !!u.awaitingClanName;
@@ -159,6 +161,31 @@ export class UserStore {
     } else {
       if (!Array.isArray(u.jobs.active)) { u.jobs.active = []; dirty = true; }
       if (typeof u.jobs.slotMax !== "number") { u.jobs.slotMax = 1; dirty = true; }
+      const normalizedActive = [];
+      for (const it of u.jobs.active) {
+        if (!it || typeof it !== "object") { dirty = true; continue; }
+        const inst = { ...it };
+        if (typeof inst.typeId !== "string" || !inst.typeId) {
+          const fromId = String(inst.id || "");
+          const parts = fromId.split(":");
+          inst.typeId = parts.length >= 2 ? String(parts[1] || "") : "";
+          dirty = true;
+        }
+        if (Object.prototype.hasOwnProperty.call(inst, "title")) {
+          delete inst.title;
+          dirty = true;
+        }
+        if (!Number.isFinite(inst.plannedPay)) {
+          const cfgPay = inst.typeId ? Number(CONFIG?.JOBS?.[inst.typeId]?.pay) : NaN;
+          inst.plannedPay = Number.isFinite(cfgPay) ? cfgPay : Math.max(0, Number(inst.plannedPay) || 0);
+          dirty = true;
+        }
+        if (typeof inst.claimed !== "boolean") { inst.claimed = false; dirty = true; }
+        if (typeof inst.notified !== "boolean") { inst.notified = false; dirty = true; }
+        normalizedActive.push(inst);
+      }
+      if (normalizedActive.length !== u.jobs.active.length) dirty = true;
+      u.jobs.active = normalizedActive;
     }
 
     // ==== Новый Бар ====
@@ -280,6 +307,7 @@ export class UserStore {
       subReward: { day: "", eligible: false },
 
       displayName: "",
+      lang: "",
       awaitingName: true,
       afterNameRoute: "",
       awaitingClanName: false,

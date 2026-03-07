@@ -118,7 +118,8 @@ export const Formatters = {
       const total   = Math.max(1, (inst.endAt || 0) - (inst.startAt || 0));
       const elapsed = Math.max(0, total - leftMs);
       const progress = pct(elapsed, total);
-      lines.push(`💼 Смена: ${inst.title} · ${progress}% (~${mins} мин)`);
+      const jobTitle = CONFIG?.JOBS?.[inst.typeId]?.title || inst.title || "Смена";
+      lines.push(`💼 Смена: ${jobTitle} · ${progress}% (~${mins} мин)`);
     } else {
       lines.push("⏸️ Смена не запущена");
     }

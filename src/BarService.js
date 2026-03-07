@@ -87,6 +87,83 @@ export class BarService {
     ];
   }
 
+  static _pickVariant(variants, nowTs = Date.now()) {
+    const arr = Array.isArray(variants) ? variants : [];
+    if (!arr.length) return "";
+    const idx = Math.abs(new Date(nowTs).getDay()) % arr.length;
+    return String(arr[idx] || arr[0] || "");
+  }
+
+  static _hasEmployerSlot(u) {
+    const owned = Array.isArray(u?.biz?.owned) ? u.biz.owned : [];
+    return owned.some((b) => {
+      if (!b || typeof b !== "object") return false;
+      return !!b?.slot?.purchased;
+    });
+  }
+
+  static _hasAnyBusiness(u) {
+    const owned = Array.isArray(u?.biz?.owned) ? u.biz.owned : [];
+    return owned.length > 0;
+  }
+
+  static _hasAnyStockHoldings(u) {
+    const holdings = u?.stocks?.holdings;
+    if (!holdings || typeof holdings !== "object") return false;
+    return Object.keys(holdings).length > 0;
+  }
+
+  static getBarmanQuote(u, nowTs = Date.now()) {
+    const studyLevel = Math.max(0, Number(u?.study?.level) || 0);
+    const gymLevel = Math.max(0, Number(u?.gym?.level) || 0);
+
+    if (!BarService._hasAnyBusiness(u)) {
+      return BarService._pickVariant([
+        "— Деньги есть, бизнеса нет. Ларёк за углом продаётся.",
+        "— Работаешь бодро. Теперь пора взять первый бизнес и пустить деньги в оборот.",
+        "— Без бизнеса деньги текут медленнее. Присмотрись к витрине."
+      ], nowTs);
+    }
+
+    if (studyLevel < 5) {
+      return BarService._pickVariant([
+        "— Учёба хромает. Уровень 5 — и Зал арканы открыт.",
+        "— Добей учёбу до 5 уровня. В Зале арканы шансы уже другие.",
+        "— Сначала учёба, потом удача. Пятый уровень открывает Зал арканы."
+      ], nowTs);
+    }
+
+    if (gymLevel < 5) {
+      return BarService._pickVariant([
+        "— Выглядишь уставшим. Зал помогает, проверено.",
+        "— Чуть больше тренировок — и смены пойдут легче.",
+        "— Пятый уровень зала быстро окупается в Работах."
+      ], nowTs);
+    }
+
+    if (!BarService._hasEmployerSlot(u)) {
+      return BarService._pickVariant([
+        "— Богатеешь. Слышал про наёмников? Чужими руками оно приятнее.",
+        "— Купи слот работодателя. Наёмники умеют приносить сверху.",
+        "— Пора открыть слот наёмника. Доход станет шире."
+      ], nowTs);
+    }
+
+    if (!BarService._hasAnyStockHoldings(u)) {
+      return BarService._pickVariant([
+        "— Деньги лежат мёртвым грузом? Биржа работает, я проверял.",
+        "— Часть капитала можно отправить на Биржу. Пусть деньги двигаются.",
+        "— Загляни на Биржу. Для свободных денег это неплохая стоянка."
+      ], nowTs);
+    }
+
+    return BarService._pickVariant([
+      "— Всё при тебе. Садись, выпьем.",
+      "— Вижу хватку. Продолжай в том же духе.",
+      "— Редко вижу такую дисциплину. Уважаю."
+    ], nowTs);
+  }
+
   /**
    * Гарантирует актуальный "дневной пакет" задач.
    * Если день поменялся — создаёт свежие две задачи. Ничего не перевыдаёт внутри одного дня.
