@@ -96,15 +96,22 @@ export class Locations {
     // ---------- Square ----------
     // Onboarding: single CTA for first job, then gym
     if (route === "Square" && user?.flags?.onboarding) {
-      const goGym = onboardingStage === "go_gym";
+      const goGym = onboardingStage === "go_gym" || onboardingStage === "gym_started";
+      const goWorkForClaim = onboardingStage === "job_claim";
       const kbOnboarding = [[{
-        text: goGym ? this._t(user, "loc.onboarding.to_gym") : this._t(user, "loc.onboarding.start_first_shift"),
+        text: goGym
+          ? this._t(user, "loc.onboarding.to_gym")
+          : (goWorkForClaim ? this._t(user, "loc.onboarding.claim_shift") : this._t(user, "loc.onboarding.start_first_shift")),
         callback_data: goGym ? "go:Gym" : "go:Work"
       }]];
 
       const caption = (header || "") + (goGym
-        ? this._t(user, "loc.onboarding.caption_gym")
-        : this._t(user, "loc.onboarding.caption_first_shift"));
+        ? (onboardingStage === "gym_started"
+          ? this._t(user, "loc.onboarding.caption_finish_gym")
+          : this._t(user, "loc.onboarding.caption_gym"))
+        : (goWorkForClaim
+          ? this._t(user, "loc.onboarding.caption_claim_shift")
+          : this._t(user, "loc.onboarding.caption_first_shift")));
 
       await this.media.show({
         sourceMsg: this._sourceMsg,
@@ -385,7 +392,7 @@ export class Locations {
     // ---------- Work ----------
     // Онбординг: первое открытие списка заданий
     if (route === "Work" && user?.flags?.onboarding && !(user.jobs?.active?.[0])) {
-      if (onboardingStage === "go_gym") {
+      if (onboardingStage === "go_gym" || onboardingStage === "gym_started") {
         const kbGym = [[{ text: this._t(user, "loc.onboarding.to_gym"), callback_data: "go:Gym" }]];
         const captionGym = (header || "") + this._t(user, "loc.work.onboarding_to_gym");
         await this.media.show({
@@ -430,7 +437,8 @@ export class Locations {
 
         let ffCost = null;
         try {
-          if (this.fastForward && !ready) {
+          const shouldQuotePaidSkip = !onboarding || onboardingStage !== "job_claim";
+          if (this.fastForward && !ready && shouldQuotePaidSkip) {
             const q = this.fastForward.quote(user, "work");
             if (q?.ok) ffCost = q.cost;
           }
@@ -451,7 +459,7 @@ export class Locations {
           place: "Work",
           asset: fileId,
           caption,
-          keyboard: this.ui.workV2(user, { active, ready, ffCost }, lang),
+          keyboard: this.ui.workV2(user, { active, ready, ffCost, onboardingStep }, lang),
           policy: "photo",
         });
       } else {
@@ -660,15 +668,10 @@ export class Locations {
 
     // ---------- Gym ----------
     if (route === "Gym") {
-      if (user?.flags?.onboarding && onboardingStage === "go_gym") {
-        user.flags.onboarding = false;
-        user.flags.onboardingStep = "done";
-        try { if (this.users && typeof this.users.save === "function") { await this.users.save(user); } } catch {}
-      }
-
       let ffCost = null;
       try {
-        if (this.fastForward && user?.gym?.active) {
+        const shouldQuotePaidSkip = !(user?.flags?.onboarding && onboardingStage === "gym_started");
+        if (this.fastForward && user?.gym?.active && shouldQuotePaidSkip) {
           const q = this.fastForward.quote(user, "gym");
           if (q?.ok) ffCost = q.cost;
         }

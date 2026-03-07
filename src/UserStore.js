@@ -291,6 +291,10 @@ export class UserStore {
     if (typeof u.flags.onboardingStartedAt !== "number") { u.flags.onboardingStartedAt = 0; dirty = true; }
     if (typeof u.flags.onboardingStep !== "string") { u.flags.onboardingStep = ""; dirty = true; }
     if (typeof u.flags.firstJobGemGiven !== "boolean") { u.flags.firstJobGemGiven = false; dirty = true; }
+    if (typeof u.flags.onboardingDone !== "boolean") { u.flags.onboardingDone = false; dirty = true; }
+    if (typeof u.flags.onboardingFlowV2 !== "boolean") { u.flags.onboardingFlowV2 = false; dirty = true; }
+    if (typeof u.flags.freeSkipUsed_work !== "boolean") { u.flags.freeSkipUsed_work = false; dirty = true; }
+    if (typeof u.flags.freeSkipUsed_gym !== "boolean") { u.flags.freeSkipUsed_gym = false; dirty = true; }
 
     // Daily top stats and reward marker
     if (!u.stats || typeof u.stats !== "object") {
@@ -362,7 +366,16 @@ export class UserStore {
       referral: { referredBy: "", rewarded: false, invited: [], totalGemsEarned: 0 },
 
       // Flags
-      flags: { onboarding: false, onboardingStartedAt: 0, onboardingStep: "", firstJobGemGiven: false }
+      flags: {
+        onboarding: false,
+        onboardingStartedAt: 0,
+        onboardingStep: "",
+        firstJobGemGiven: false,
+        onboardingDone: false,
+        onboardingFlowV2: false,
+        freeSkipUsed_work: false,
+        freeSkipUsed_gym: false
+      }
     };
   }
 

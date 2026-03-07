@@ -153,18 +153,29 @@ export class UiFactory {
     const l = this._lang(lang || user?.lang);
     const { active = null, ready = false } = options;
     const kb = [];
+    const onboarding = !!(user?.flags?.onboarding);
+    const onboardingStep = String(user?.flags?.onboardingStep || options.onboardingStep || "");
+    const canUseFreeSkip = onboarding && onboardingStep === "job_claim" && !user?.flags?.freeSkipUsed_work;
 
     if (active) {
       if (ready) {
         kb.push([{ text: this._t(l, "ui.work.claim", { pay: active.plannedPay }), callback_data: "work:claim" }]);
-        kb.push([{ text: this._t(l, "ui.work.cancel_shift"), callback_data: "work:cancel" }]);
+        if (!onboarding) {
+          kb.push([{ text: this._t(l, "ui.work.cancel_shift"), callback_data: "work:cancel" }]);
+        }
       } else {
         const left = Math.max(0, Math.ceil((active.endAt - Date.now())/60000));
         kb.push([{ text: this._t(l, "ui.work.running", { mins: left }), callback_data: "noop" }]);
-        const costLabel = (typeof options.ffCost === "number" && options.ffCost > 0)
-          ? `${CONFIG.PREMIUM.emoji}${options.ffCost}` : `${CONFIG.PREMIUM.emoji}?`;
-        kb.push([{ text: this._t(l, "ui.work.skip_for", { cost: costLabel }), callback_data: "work:skip" }]);
-        kb.push([{ text: this._t(l, "ui.work.cancel_penalty"), callback_data: "work:cancel" }]);
+        if (canUseFreeSkip) {
+          kb.push([{ text: this._t(l, "ui.work.skip_free"), callback_data: "work:skip_free" }]);
+        } else {
+          const costLabel = (typeof options.ffCost === "number" && options.ffCost > 0)
+            ? `${CONFIG.PREMIUM.emoji}${options.ffCost}` : `${CONFIG.PREMIUM.emoji}?`;
+          kb.push([{ text: this._t(l, "ui.work.skip_for", { cost: costLabel }), callback_data: "work:skip" }]);
+        }
+        if (!onboarding) {
+          kb.push([{ text: this._t(l, "ui.work.cancel_penalty"), callback_data: "work:cancel" }]);
+        }
       }
       kb.push([{ text: this._t(l, "ui.back.earn"), callback_data: "go:Earn" }]);
       return kb;
@@ -338,6 +349,9 @@ export class UiFactory {
   // ===== Зал =====
   gym(user, now = Date.now(), ffCost = null, lang = null) {
     const l = this._lang(lang || user?.lang);
+    const onboarding = !!(user?.flags?.onboarding);
+    const onboardingStep = String(user?.flags?.onboardingStep || "");
+    const canUseFreeSkip = onboarding && onboardingStep === "gym_started" && !user?.flags?.freeSkipUsed_gym;
     if (user?.gym?.active) {
       const startAt = user.gym.startAt || 0;
       const endAt   = user.gym.endAt   || 1;
@@ -359,7 +373,12 @@ export class UiFactory {
         : `${CONFIG.PREMIUM.emoji}?`;
       return [
         [{ text: this._t(l, "ui.progress.line", { progress }), callback_data: "noop" }],
-        [{ text: this._t(l, "ui.gym.skip_for", { cost: costLabel }), callback_data: "gym:skip" }],
+        [{
+          text: canUseFreeSkip
+            ? this._t(l, "ui.gym.skip_free")
+            : this._t(l, "ui.gym.skip_for", { cost: costLabel }),
+          callback_data: canUseFreeSkip ? "gym:skip_free" : "gym:skip"
+        }],
         [{ text: this._t(l, "ui.back.progress"), callback_data: "go:Progress" }],
       ];
     }

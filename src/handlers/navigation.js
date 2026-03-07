@@ -12,7 +12,7 @@ export const navigationHandler = {
     if (u?.flags?.onboarding) {
       const step = u.flags.onboardingStep || "";
       const allowed =
-        step === "go_gym"
+        (step === "go_gym" || step === "gym_started")
           ? new Set(["Square", "Work", "Gym"])
           : new Set(["Square", "Work"]);
       if (!allowed.has(place)) {

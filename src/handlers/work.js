@@ -12,11 +12,12 @@ export const workHandler = {
     data === "work:claim" ||
     data === "work:cancel" ||
     data === "work:skip" ||
+    data === "work:skip_free" ||
     data === "work:goto:home" ||
     data === "work:goto:shop",
 
   async handle(ctx) {
-    const { data, u, cb, answer, users, now, social, clans, labour, referrals, goTo, orders, send, sendWithInline } = ctx;
+    const { data, u, cb, answer, users, now, social, clans, labour, referrals, goTo, orders, send } = ctx;
     const lang = normalizeLang(u?.lang || "ru");
     const tt = (key, vars = {}) => t(key, lang, vars);
 
@@ -25,6 +26,31 @@ export const workHandler = {
 
     async function render(intro) {
       await goTo(u, "Work", intro || null);
+    }
+
+    async function applyClaimSideEffects(pay, endAt) {
+      try {
+        if (clans?.recordWorkMoney) {
+          await clans.recordWorkMoney(u, pay);
+        }
+      } catch {}
+      try {
+        if (labour?.onEmployeePaid) {
+          await labour.onEmployeePaid(u, pay, endAt);
+        }
+      } catch {}
+      try {
+        if (referrals?.tryRewardReferral) {
+          await referrals.tryRewardReferral(u);
+        }
+      } catch {}
+    }
+
+    async function advanceOnboardingAfterClaimIfNeeded() {
+      if (u?.flags?.onboarding && String(u?.flags?.onboardingStep || "") === "job_claim") {
+        u.flags.onboardingStep = "go_gym";
+        await users.save(u);
+      }
     }
 
     if (data === "work:open") {
@@ -65,7 +91,7 @@ export const workHandler = {
 
       const res = await jobs.start(u, typeId);
       if (!res.ok) {
-        const lowEnergy = String(res.error || "").toLowerCase().includes("энерг");
+        const lowEnergy = /энерг|energy/i.test(String(res.error || ""));
         if (lowEnergy) {
           u.nav = typeof u.nav === "object" && u.nav ? u.nav : {};
           u.nav.backTo = "Work";
@@ -81,8 +107,13 @@ export const workHandler = {
 
       // Обновляем шаг онбординга после запуска первой смены
       try {
-        if (u?.flags?.onboarding) {
-          u.flags.onboardingStep = "go_gym";
+        if (u?.flags?.onboarding && String(u?.flags?.onboardingStep || "") === "first_job") {
+          u.flags.onboardingStep = "job_claim";
+          const spent = Math.max(0, Number(res?.inst?.energySpent) || 0);
+          if (spent > 0) {
+            const energyMax = Math.max(0, Number(u?.energy_max) || 0);
+            u.energy = Math.min(energyMax, Math.max(0, Number(u?.energy) || 0) + spent);
+          }
           await users.save(u);
         }
       } catch {}
@@ -117,27 +148,19 @@ export const workHandler = {
         await answer(cb.id, res.error || tt("handler.work.claim_failed"));
         return;
       }
-      try {
-        if (clans?.recordWorkMoney) {
-          await clans.recordWorkMoney(u, res.pay);
-        }
-      } catch {}
-      try {
-        if (labour?.onEmployeePaid) {
-          await labour.onEmployeePaid(u, res.pay, res.endAt);
-        }
-      } catch {}
-      try {
-        if (referrals?.tryRewardReferral) {
-          await referrals.tryRewardReferral(u);
-        }
-      } catch {}
+      await applyClaimSideEffects(res.pay, res.endAt);
+      await advanceOnboardingAfterClaimIfNeeded();
       await answer(cb.id, tt("handler.work.claim_ok", { pay: res.pay }));
       await render();
       return;
     }
 
     if (data === "work:skip") {
+      if (u?.flags?.onboarding) {
+        await answer(cb.id, tt("handler.work.onboarding_use_free_skip"));
+        await render();
+        return;
+      }
       const res = await ff.finishNow(u, "work");
       if (!res.ok) {
         await answer(cb.id, res.error || tt("handler.work.skip_failed"));
@@ -152,23 +175,41 @@ export const workHandler = {
         await render();
         return;
       }
-      try {
-        if (clans?.recordWorkMoney) {
-          await clans.recordWorkMoney(u, claim.pay);
-        }
-      } catch {}
-      try {
-        if (labour?.onEmployeePaid) {
-          await labour.onEmployeePaid(u, claim.pay, claim.endAt);
-        }
-      } catch {}
-      try {
-        if (referrals?.tryRewardReferral) {
-          await referrals.tryRewardReferral(u);
-        }
-      } catch {}
+      await applyClaimSideEffects(claim.pay, claim.endAt);
 
       await answer(cb.id, tt("handler.work.skip_ok", { cost: res.cost, pay: claim.pay }));
+      await render();
+      return;
+    }
+
+    if (data === "work:skip_free") {
+      const onboardingStep = String(u?.flags?.onboardingStep || "");
+      if (!u?.flags?.onboarding || onboardingStep !== "job_claim" || u?.flags?.freeSkipUsed_work) {
+        await answer(cb.id, tt("handler.work.skip_free_unavailable"));
+        await render();
+        return;
+      }
+      const active = u?.jobs?.active?.[0];
+      if (!active) {
+        await answer(cb.id, tt("handler.work.skip_free_unavailable"));
+        await render();
+        return;
+      }
+
+      u.flags.freeSkipUsed_work = true;
+      active.endAt = Math.min(Number(active.endAt) || now(), now());
+      await users.save(u);
+
+      const claim = await jobs.claim(u);
+      if (!claim.ok) {
+        await answer(cb.id, claim.error || tt("handler.work.claim_failed"));
+        await render();
+        return;
+      }
+      await applyClaimSideEffects(claim.pay, claim.endAt);
+      await advanceOnboardingAfterClaimIfNeeded();
+
+      await answer(cb.id, tt("handler.work.skip_free_ok", { pay: claim.pay }));
       await render();
       return;
     }
@@ -178,6 +219,10 @@ export const workHandler = {
       if (!res.ok) {
         await answer(cb.id, res.error || tt("handler.work.cancel_failed"));
         return;
+      }
+      if (u?.flags?.onboarding && String(u?.flags?.onboardingStep || "") === "job_claim") {
+        u.flags.onboardingStep = "first_job";
+        await users.save(u);
       }
       await answer(cb.id, tt("handler.work.cancel_ok"));
       await render();

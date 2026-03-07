@@ -363,6 +363,17 @@ export default {
         u.lang = detectedLang;
         shouldSaveMeta = true;
       }
+      // One-time migration for legacy stuck onboarding (pre-v2 flow).
+      // Legacy users with onboarding=true and no v2 marker are released immediately.
+      u.flags = (u.flags && typeof u.flags === "object") ? u.flags : {};
+      if (u.flags.onboarding && !u.flags.onboardingFlowV2) {
+        u.flags.onboarding = false;
+        u.flags.onboardingDone = true;
+        u.flags.onboardingStep = "done";
+        u.flags.freeSkipUsed_work = false;
+        u.flags.freeSkipUsed_gym = false;
+        shouldSaveMeta = true;
+      }
       if (shouldSaveMeta) {
         await users.save(u);
       }
@@ -415,10 +426,14 @@ export default {
         } catch {}
 
         u.flags = u.flags || {};
-        if (/^ads_/i.test(startPayload) || u.__isNew) {
+        if (u.__isNew) {
           u.flags.onboarding = true;
+          u.flags.onboardingDone = false;
           u.flags.onboardingStartedAt = now();
           u.flags.firstJobGemGiven = false;
+          u.flags.onboardingFlowV2 = true;
+          u.flags.freeSkipUsed_work = false;
+          u.flags.freeSkipUsed_gym = false;
         }
         if (u.flags.onboarding && !u.flags.onboardingStep) {
           u.flags.onboardingStep = "first_job";
@@ -875,7 +890,7 @@ export default {
       let handlers;
       if (u?.flags?.onboarding) {
         handlers = [...baseHandlers];
-        if (u.flags.onboardingStep === "go_gym") {
+        if (u.flags.onboardingStep === "go_gym" || u.flags.onboardingStep === "gym_started") {
           handlers.push(gymHandler);
         }
       } else {

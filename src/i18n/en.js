@@ -140,7 +140,6 @@ export const EN = {
 
   "worker.help": "🎮 World of Life is a text game about growth and career.\n💰 Use buttons to earn, study and train.\n🛠 Commands: /start /play /help /privacy\n🤝 Support: @WorldOfLifeGame",
   "worker.privacy": "🔒 We store only your Telegram ID and game progress.\nData is needed to save your account and is deleted within 72 hours upon request.\nPolicy: {{url}}",
-  "worker.onboarding.welcome": "👋 Welcome to World of Life.\n\nFirst steps:\n1) ▶️ Start your first 1-minute shift and get $ + 1 gem.\n2) 💰 Claim reward.\n3) 🏋️ Open gym and invest reward into energy.\n\n✨ While you're new, we show only essential buttons.",
   "worker.clan.awaiting_name_prompt": "✍️ Send clan name in one message (2-24 chars). Letters, digits, space, _ . - are allowed.",
   "worker.clan.send_name_first": "Send clan name as a message first.",
   "worker.clan.awaiting_name_caption": "✍️ Send clan name in one message.\nLength: 2-24 chars.\nAllowed: letters, digits, space, _ . -",
@@ -510,5 +509,18 @@ export const EN = {
   "worker.name.prompt": "📋 Send your in-game nickname as a regular message.\n\nRequirements: 2–16 chars; RU/UA/EN letters; digits, space, \"_\", \".\", \"-\" are allowed.",
   "worker.name.warn_prefix": "⚠️",
   "worker.name.send_text": "Send a text with nickname.",
-  "worker.name.invalid": "Invalid nickname."
+  "worker.name.invalid": "Invalid nickname.",
+  "ui.work.skip_free": "⚡ Finish now (free)",
+  "ui.gym.skip_free": "⚡ Finish now (free)",
+  "loc.onboarding.claim_shift": "Claim payout",
+  "loc.onboarding.caption_claim_shift": "💵 Shift is done. Claim money in Jobs - this is a key step.",
+  "loc.onboarding.caption_finish_gym": "🏋️ Training started. Finish it to unlock the full city.",
+  "handler.work.onboarding_use_free_skip": "Use the free finish in onboarding.",
+  "handler.work.skip_free_unavailable": "Free finish is unavailable right now.",
+  "handler.work.skip_free_ok": "⚡ Shift finished for free. +${{pay}}",
+  "handler.gym.onboarding_use_free_skip": "Use the free finish in onboarding.",
+  "handler.gym.skip_free_unavailable": "Free finish is unavailable right now.",
+  "handler.gym.skip_free_ok": "⚡ Training finished for free.",
+  "worker.onboarding.done": "🎉 That's it - the city is yours.\nFrom the main square you can go to:\n🍻 Bar - daily tasks and crystals\n🏋️ Gym - more energy means more earnings\n💰 Goal - save up $20,000 for your first business\n\nGood luck. Lekha is at the bar if you need anything.",
+  "worker.onboarding.welcome": "👋 Welcome to World of Life.\n\nFirst steps:\n1) ▶️ Start your first 1-minute shift.\n2) ⚡ Finish it for free and claim money.\n3) 🏋️ Go to gym, start training, and finish it for free too.\n\n✨ While you're new, we show only essential buttons."
 };
