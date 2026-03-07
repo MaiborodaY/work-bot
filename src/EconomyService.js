@@ -1,6 +1,15 @@
-﻿import { CONFIG } from "./GameConfig.js";
+import { CONFIG } from "./GameConfig.js";
+import { normalizeLang, t } from "./i18n/index.js";
 
 export class EconomyService {
+  _lang(u, lang = null) {
+    return normalizeLang(lang || u?.lang || "ru");
+  }
+
+  _t(u, key, vars = {}, lang = null) {
+    return t(key, this._lang(u, lang), vars);
+  }
+
   effectivePay(u, lvl) {
     let pay = CONFIG.PAY_BASE + (lvl?.bonus || 0);
     if (u.upgrades?.includes("laptop")) pay *= 1.1;
@@ -25,11 +34,11 @@ export class EconomyService {
     return CONFIG.SHIFT_MS * mult;
   }
 
-  // Text for the "Start studying" button — for the next level
-  fmtStudyEffects(u) {
+  // Text for the "Start studying" button - for the next level
+  fmtStudyEffects(u, lang = null) {
     const L = Math.max(0, u?.study?.level || 0);
     if (L >= CONFIG.STUDY.MAX_LEVEL) {
-      return `максимум уровня (${CONFIG.STUDY.MAX_LEVEL}) достигнут`;
+      return this._t(u, "eco.study.max_reached", { max: CONFIG.STUDY.MAX_LEVEL }, lang);
     }
 
     const FACTOR =
@@ -38,11 +47,11 @@ export class EconomyService {
         : 1.1;
 
     const pow = Math.pow(FACTOR, L);
-    const costMoney  = Math.round(CONFIG.STUDY.BASE_COST_MONEY  * pow);
+    const costMoney = Math.round(CONFIG.STUDY.BASE_COST_MONEY * pow);
     const costEnergy = Math.round(CONFIG.STUDY.BASE_COST_ENERGY * pow);
     const mins = Math.round((CONFIG.STUDY.BASE_TIME_MS * pow) / 60000);
 
-    return `-${costMoney}, -${costEnergy} ⚡, ~${mins} мин`;
+    return this._t(u, "eco.study.effects", { costMoney, costEnergy, mins }, lang);
   }
 
   fmtWorkEffects(u) {
@@ -64,4 +73,3 @@ export class EconomyService {
     return { money: addMoney, premium: addPremium, reason };
   }
 }
-

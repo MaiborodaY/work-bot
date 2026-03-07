@@ -1,6 +1,6 @@
-// BarService.js
 import { HomeService } from "./HomeService.js";
 import { CONFIG } from "./GameConfig.js";
+import { normalizeLang, t } from "./i18n/index.js";
 
 export class BarService {
   constructor({ users, now }) {
@@ -16,6 +16,14 @@ export class BarService {
     return `${y}${m}${day}`;
   }
 
+  static _lang(u, lang = null) {
+    return normalizeLang(lang || u?.lang || "ru");
+  }
+
+  static _t(lang, key, vars = {}) {
+    return t(key, normalizeLang(lang || "ru"), vars);
+  }
+
   _ensureBar(u) {
     if (!u.bar || typeof u.bar !== "object") {
       u.bar = { day: "", assigned: false, tasks: [] };
@@ -23,14 +31,13 @@ export class BarService {
       if (typeof u.bar.day !== "string") u.bar.day = "";
       if (typeof u.bar.assigned !== "boolean") u.bar.assigned = false;
       if (!Array.isArray(u.bar.tasks)) u.bar.tasks = [];
-      // на всякий случай чистим легаси
       if (u.bar.offered) delete u.bar.offered;
       if (u.bar.chosen) delete u.bar.chosen;
     }
   }
 
   _genTasksForDay(dayStr, u) {
-    // Чередование: нечётные дни → W1 + C1; чётные → W2 + C2
+    const lang = BarService._lang(u);
     const dayNum = Number(dayStr.slice(-2)) || 0;
     const odd = (dayNum % 2) === 1;
     const minStudyPaid = Number(CONFIG?.CASINO?.MIN_STUDY_FOR_PAID ?? 5);
@@ -39,51 +46,51 @@ export class BarService {
 
     if (odd) {
       return [
-        { // Work simple: 2 работы → +1💎
+        {
           id: "W1",
-          title: "Сделай 2 работы",
+          title: BarService._t(lang, "bar.task.w1.title"),
           goal: 2,
           progress: 0,
           reward: { t: "premium", n: 1 },
-          status: "active"
+          status: "active",
         },
-        { // Casino simple: 1 попытка → +10⚡
+        {
           id: "C1",
-          title: "Сделай 1 попытку в Зале арканы",
+          title: BarService._t(lang, "bar.task.c1.title"),
           goal: 1,
           progress: 0,
           reward: { t: "energy", n: 10 },
-          status: "active"
-        }
+          status: "active",
+        },
       ];
     }
 
     return [
-      { // Work mid: заработай $60 → +2💎
+      {
         id: "W2",
-        title: "Заработай $60 на работах",
+        title: BarService._t(lang, "bar.task.w2.title"),
         goal: 60,
         progress: 0,
         reward: { t: "premium", n: 2 },
-        status: "active"
+        status: "active",
       },
       allowC2
-        ? { // Casino mid: 3 попытки → +20⚡
+        ? {
             id: "C2",
-            title: "Сделай 3 попытки в Зале арканы",
+            title: BarService._t(lang, "bar.task.c2.title"),
             goal: 3,
             progress: 0,
             reward: { t: "energy", n: 20 },
-            status: "active"
+            status: "active",
           }
-        : { // Casino simple: 1 попытка → +10⚡
+        : {
             id: "C1",
-            title: "Сделай 1 попытку в Зале арканы",
+            title: BarService._t(lang, "bar.task.c1.title"),
             goal: 1,
             progress: 0,
             reward: { t: "energy", n: 10 },
-            status: "active"
-          }
+            status: "active",
+          },
     ];
   }
 
@@ -113,118 +120,108 @@ export class BarService {
     return Object.keys(holdings).length > 0;
   }
 
+  static _quoteSet(lang, prefix) {
+    return [1, 2, 3].map((i) => BarService._t(lang, `${prefix}.${i}`));
+  }
+
+  static _taskTitleById(taskId, lang) {
+    if (taskId === "W1") return BarService._t(lang, "bar.task.w1.title");
+    if (taskId === "W2") return BarService._t(lang, "bar.task.w2.title");
+    if (taskId === "C1") return BarService._t(lang, "bar.task.c1.title");
+    if (taskId === "C2") return BarService._t(lang, "bar.task.c2.title");
+    return "";
+  }
+
   static getBarmanQuote(u, nowTs = Date.now()) {
+    const lang = BarService._lang(u);
     const studyLevel = Math.max(0, Number(u?.study?.level) || 0);
     const gymLevel = Math.max(0, Number(u?.gym?.level) || 0);
 
     if (!BarService._hasAnyBusiness(u)) {
-      return BarService._pickVariant([
-        "— Деньги есть, бизнеса нет. Ларёк за углом продаётся.",
-        "— Работаешь бодро. Теперь пора взять первый бизнес и пустить деньги в оборот.",
-        "— Без бизнеса деньги текут медленнее. Присмотрись к витрине."
-      ], nowTs);
+      return BarService._pickVariant(BarService._quoteSet(lang, "bar.quote.no_business"), nowTs);
     }
 
     if (studyLevel < 5) {
-      return BarService._pickVariant([
-        "— Учёба хромает. Уровень 5 — и Зал арканы открыт.",
-        "— Добей учёбу до 5 уровня. В Зале арканы шансы уже другие.",
-        "— Сначала учёба, потом удача. Пятый уровень открывает Зал арканы."
-      ], nowTs);
+      return BarService._pickVariant(BarService._quoteSet(lang, "bar.quote.low_study"), nowTs);
     }
 
     if (gymLevel < 5) {
-      return BarService._pickVariant([
-        "— Выглядишь уставшим. Зал помогает, проверено.",
-        "— Чуть больше тренировок — и смены пойдут легче.",
-        "— Пятый уровень зала быстро окупается в Работах."
-      ], nowTs);
+      return BarService._pickVariant(BarService._quoteSet(lang, "bar.quote.low_gym"), nowTs);
     }
 
     if (!BarService._hasEmployerSlot(u)) {
-      return BarService._pickVariant([
-        "— Богатеешь. Слышал про наёмников? Чужими руками оно приятнее.",
-        "— Купи слот работодателя. Наёмники умеют приносить сверху.",
-        "— Пора открыть слот наёмника. Доход станет шире."
-      ], nowTs);
+      return BarService._pickVariant(BarService._quoteSet(lang, "bar.quote.no_slot"), nowTs);
     }
 
     if (!BarService._hasAnyStockHoldings(u)) {
-      return BarService._pickVariant([
-        "— Деньги лежат мёртвым грузом? Биржа работает, я проверял.",
-        "— Часть капитала можно отправить на Биржу. Пусть деньги двигаются.",
-        "— Загляни на Биржу. Для свободных денег это неплохая стоянка."
-      ], nowTs);
+      return BarService._pickVariant(BarService._quoteSet(lang, "bar.quote.no_stocks"), nowTs);
     }
 
-    return BarService._pickVariant([
-      "— Всё при тебе. Садись, выпьем.",
-      "— Вижу хватку. Продолжай в том же духе.",
-      "— Редко вижу такую дисциплину. Уважаю."
-    ], nowTs);
+    return BarService._pickVariant(BarService._quoteSet(lang, "bar.quote.default"), nowTs);
   }
 
-  /**
-   * Гарантирует актуальный "дневной пакет" задач.
-   * Если день поменялся — создаёт свежие две задачи. Ничего не перевыдаёт внутри одного дня.
-   */
   ensureToday(u) {
     this._ensureBar(u);
     const today = BarService._dayStr(this.now());
     if (u.bar.day !== today) {
       u.bar.day = today;
-      u.bar.assigned = true;          // авто-выдача пакета при первом открытии
+      u.bar.assigned = true;
       u.bar.tasks = this._genTasksForDay(today, u);
-      return true; // был ресет/создание
+      return true;
     }
-    // тот же день: если ещё не было assign — выдаём пакет сейчас
+
     if (!u.bar.assigned) {
       u.bar.assigned = true;
       u.bar.tasks = this._genTasksForDay(today, u);
       return true;
     }
-    // Мягкая миграция: если до фикса уже выдали C2 игроку с низким уровнем учёбы — заменяем на C1.
+
     const minStudyPaid = Number(CONFIG?.CASINO?.MIN_STUDY_FOR_PAID ?? 5);
     const studyLevel = Math.max(0, Number(u?.study?.level) || 0);
     if (studyLevel < minStudyPaid && Array.isArray(u.bar.tasks)) {
-      const idxC2 = u.bar.tasks.findIndex(t => t && t.id === "C2");
+      const idxC2 = u.bar.tasks.findIndex((x) => x && x.id === "C2");
       if (idxC2 !== -1) {
-        const t = u.bar.tasks[idxC2] || {};
-        const progress = Math.min(1, Math.max(0, Number(t.progress) || 0));
+        const tsk = u.bar.tasks[idxC2] || {};
+        const progress = Math.min(1, Math.max(0, Number(tsk.progress) || 0));
         const status =
-          t.status === "claimed" ? "claimed" :
+          tsk.status === "claimed" ? "claimed" :
           progress >= 1 ? "done" : "active";
 
         u.bar.tasks[idxC2] = {
           id: "C1",
-          title: "Сделай 1 попытку в Зале арканы",
+          title: BarService._t(BarService._lang(u), "bar.task.c1.title"),
           goal: 1,
           progress,
           reward: { t: "energy", n: 10 },
-          status
+          status,
         };
         return true;
       }
     }
 
+    if (Array.isArray(u.bar.tasks)) {
+      const l = BarService._lang(u);
+      let changed = false;
+      for (const task of u.bar.tasks) {
+        if (!task || typeof task !== "object") continue;
+        const localizedTitle = BarService._taskTitleById(task.id, l);
+        if (localizedTitle && task.title !== localizedTitle) {
+          task.title = localizedTitle;
+          changed = true;
+        }
+      }
+      if (changed) return true;
+    }
+
     return false;
   }
 
-  /**
-   * Вызывается при входе в Бар.
-   * Возвращает список задач дня (два элемента).
-   */
   async open(u) {
     const changed = this.ensureToday(u);
     if (changed) await this.users.save(u);
     return { ok: true, tasks: Array.isArray(u.bar.tasks) ? u.bar.tasks : [] };
   }
 
-  // === Хуки прогресса ===
-
-  /**
-   * Отработал (получил выплату). pay — начисленная сумма за работу (после модификаторов).
-   */
   static async onWorkClaim({ u, users, now, pay = 0 }) {
     if (!u) return;
     const svc = new BarService({ users, now });
@@ -233,30 +230,27 @@ export class BarService {
     if (!Array.isArray(u.bar.tasks)) u.bar.tasks = [];
 
     let changed = false;
-    for (const t of u.bar.tasks) {
-      if (t.status !== "active") continue;
-      if (t.id === "W1") {
-        const before = t.progress;
-        t.progress = Math.min(t.goal, (t.progress || 0) + 1);
-        if (t.progress !== before) changed = true;
-        if (t.progress >= t.goal) t.status = "done";
+    for (const tsk of u.bar.tasks) {
+      if (tsk.status !== "active") continue;
+      if (tsk.id === "W1") {
+        const before = tsk.progress;
+        tsk.progress = Math.min(tsk.goal, (tsk.progress || 0) + 1);
+        if (tsk.progress !== before) changed = true;
+        if (tsk.progress >= tsk.goal) tsk.status = "done";
       }
-      if (t.id === "W2") {
+      if (tsk.id === "W2") {
         const inc = Math.max(0, Math.round(Number(pay) || 0));
         if (inc > 0) {
-          const before = t.progress;
-          t.progress = Math.min(t.goal, (t.progress || 0) + inc);
-          if (t.progress !== before) changed = true;
-          if (t.progress >= t.goal) t.status = "done";
+          const before = tsk.progress;
+          tsk.progress = Math.min(tsk.goal, (tsk.progress || 0) + inc);
+          if (tsk.progress !== before) changed = true;
+          if (tsk.progress >= tsk.goal) tsk.status = "done";
         }
       }
     }
     if (changed) await users.save(u);
   }
 
-  /**
-   * Любой спин казино (платный/бесплатный).
-   */
   static async onCasinoSpin({ u, users, now }) {
     if (!u) return;
     const svc = new BarService({ users, now });
@@ -265,43 +259,40 @@ export class BarService {
     if (!Array.isArray(u.bar.tasks)) u.bar.tasks = [];
 
     let changed = false;
-    for (const t of u.bar.tasks) {
-      if (t.status !== "active") continue;
-      if (t.id === "C1" || t.id === "C2") {
-        const before = t.progress;
-        t.progress = Math.min(t.goal, (t.progress || 0) + 1);
-        if (t.progress !== before) changed = true;
-        if (t.progress >= t.goal) t.status = "done";
+    for (const tsk of u.bar.tasks) {
+      if (tsk.status !== "active") continue;
+      if (tsk.id === "C1" || tsk.id === "C2") {
+        const before = tsk.progress;
+        tsk.progress = Math.min(tsk.goal, (tsk.progress || 0) + 1);
+        if (tsk.progress !== before) changed = true;
+        if (tsk.progress >= tsk.goal) tsk.status = "done";
       }
     }
     if (changed) await users.save(u);
   }
 
-  /**
-   * Выдача награды по конкретной задаче.
-   */
-  async claim(u, taskId) {
+  async claim(u, taskId, lang = null) {
+    const l = BarService._lang(u, lang);
     this._ensureBar(u);
     this.ensureToday(u);
 
-    const t = (u.bar.tasks || []).find(x => x && x.id === taskId);
-    if (!t) return { ok: false, error: "Задача не найдена." };
-    if (t.status !== "done") return { ok: false, error: "Задача ещё не выполнена." };
+    const tsk = (u.bar.tasks || []).find((x) => x && x.id === taskId);
+    if (!tsk) return { ok: false, error: BarService._t(l, "bar.err.task_not_found") };
+    if (tsk.status !== "done") return { ok: false, error: BarService._t(l, "bar.err.task_not_done") };
 
-    // Награда
-    if (t.reward?.t === "premium") {
-      const n = Number(t.reward?.n || 0);
+    if (tsk.reward?.t === "premium") {
+      const n = Number(tsk.reward?.n || 0);
       u.premium = (u.premium || 0) + n;
-    } else if (t.reward?.t === "energy") {
-      const n = Number(t.reward?.n || 0);
+    } else if (tsk.reward?.t === "energy") {
+      const n = Number(tsk.reward?.n || 0);
       HomeService.applyEnergy(u, n, { autoStopRest: true });
-    } else if (t.reward?.t === "money") {
-      const n = Number(t.reward?.n || 0);
+    } else if (tsk.reward?.t === "money") {
+      const n = Number(tsk.reward?.n || 0);
       u.money = (u.money || 0) + n;
     }
 
-    t.status = "claimed";
+    tsk.status = "claimed";
     await this.users.save(u);
-    return { ok: true, reward: t.reward };
+    return { ok: true, reward: tsk.reward };
   }
 }

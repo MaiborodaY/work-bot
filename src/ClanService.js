@@ -1,6 +1,7 @@
 
 import { CONFIG } from "./GameConfig.js";
 import { EconomyService } from "./EconomyService.js";
+import { normalizeLang, t } from "./i18n/index.js";
 
 const CLAN_INDEX_KEY = "clan:index";
 const CLAN_STATE_WEEK_KEY = "clan:state:weekKey";
@@ -44,6 +45,14 @@ export class ClanService {
 
   _alwaysContractId() {
     return String(this._cfg().ALWAYS_CONTRACT || "work_money");
+  }
+
+  _lang(u, lang = null) {
+    return normalizeLang(lang || u?.lang || "ru");
+  }
+
+  _t(u, key, vars = {}, lang = null) {
+    return t(key, this._lang(u, lang), vars);
   }
 
   _dateStr(offsetMs = 0) {

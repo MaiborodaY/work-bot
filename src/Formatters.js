@@ -1,9 +1,19 @@
 // Formatters.js
 import { CONFIG } from "./GameConfig.js";
 import { EconomyService } from "./EconomyService.js";
+import { normalizeLang, t } from "./i18n/index.js";
+import { getJobTitle } from "./I18nCatalog.js";
 
 export const Formatters = {
-  balance(u) {
+  _lang(u, lang = null) {
+    return normalizeLang(lang || u?.lang || "ru");
+  },
+
+  _t(u, key, vars = {}, lang = null) {
+    return t(key, this._lang(u, lang), vars);
+  },
+
+  balance(u, lang = null) {
     const money     = Number.isFinite(u?.money) ? u.money : 0;
     const energy    = Number.isFinite(u?.energy) ? u.energy : 0;
     const energyMax = Number.isFinite(u?.energy_max) ? u.energy_max : (CONFIG?.ENERGY_MAX ?? 100);
@@ -11,58 +21,59 @@ export const Formatters = {
     const gemEmoji  = CONFIG?.PREMIUM?.emoji ?? "💎";
 
     return (
-      `💰 Деньги: $${money}\n` +
-      `⚡ Энергия: ${energy}/${energyMax}\n` +
-      `${gemEmoji} Кристаллы: ${premium}`
+      this._t(u, "fmt.balance.money", { money }, lang) + "\n" +
+      this._t(u, "fmt.balance.energy", { energy, energyMax }, lang) + "\n" +
+      this._t(u, "fmt.balance.gems", { gemEmoji, premium }, lang)
     );
   },
 
-  moneyLine(u) {
+  moneyLine(u, lang = null) {
     const money = Number.isFinite(u?.money) ? u.money : 0;
-    return `💰 Деньги: $${money}`;
+    return this._t(u, "fmt.money_line", { money }, lang);
   },
 
-  studyLine(u) {
+  studyLine(u, lang = null) {
     const level = Math.min(Math.max(Number(u?.study?.level) || 0, 0), CONFIG?.STUDY?.MAX_LEVEL ?? 50);
-    return `📚 Учеба: уровень ${level} (+${level}% скорость работы)`;
+    return this._t(u, "fmt.study_line", { level }, lang);
   },
 
-  laptopLine(u) {
+  laptopLine(u, lang = null) {
     const has = Array.isArray(u?.upgrades) && u.upgrades.includes("laptop");
-    return `💻 Ноутбук: +${has ? 10 : 0}% к оплате`;
+    return this._t(u, "fmt.laptop_line", { pct: has ? 10 : 0 }, lang);
   },
 
-  coffeeLine(u) {
+  coffeeLine(u, lang = null) {
     const has = Array.isArray(u?.upgrades) && u.upgrades.includes("coffee");
-    return `☕ Кофемашина: -${has ? 5 : 0}% к расходу энергии`;
+    return this._t(u, "fmt.coffee_line", { pct: has ? 5 : 0 }, lang);
   },
 
-  carLine(u) {
+  carLine(u, lang = null) {
     const has = Array.isArray(u?.upgrades) && u.upgrades.includes("car");
-    return `🚗 Авто: +${has ? 10 : 0}% к скорости смены`;
+    return this._t(u, "fmt.car_line", { pct: has ? 10 : 0 }, lang);
   },
 
-  workPerks(u, opts = {}) {
+  workPerks(u, opts = {}, lang = null) {
     const hints = !!opts.hints;
     const lines = [];
+    const l = this._lang(u, lang);
 
-    lines.push(this.studyLine(u));
+    lines.push(this.studyLine(u, l));
 
     const hasLaptop = this._hasUpgrade(u, "laptop");
     const hasCoffee = this._hasUpgrade(u, "coffee");
     const hasCar    = this._hasUpgrade(u, "car");
 
-    if (hasLaptop) lines.push("💻 Ноутбук: +10% к оплате");
-    if (hasCoffee) lines.push("☕ Кофемашина: -5% к расходу энергии");
-    if (hasCar)    lines.push("🚗 Авто: +10% к скорости смены");
+    if (hasLaptop) lines.push(this._t(u, "fmt.laptop_line", { pct: 10 }, l));
+    if (hasCoffee) lines.push(this._t(u, "fmt.coffee_line", { pct: 5 }, l));
+    if (hasCar)    lines.push(this._t(u, "fmt.car_line", { pct: 10 }, l));
 
     if (hints) {
       const missing = [];
-      if (!hasLaptop) missing.push("ноутбук");
-      if (!hasCoffee) missing.push("кофемашина");
-      if (!hasCar)    missing.push("авто");
+      if (!hasLaptop) missing.push(this._t(u, "fmt.upgrade_name.laptop", {}, l));
+      if (!hasCoffee) missing.push(this._t(u, "fmt.upgrade_name.coffee", {}, l));
+      if (!hasCar)    missing.push(this._t(u, "fmt.upgrade_name.car", {}, l));
       if (missing.length) {
-        lines.push("💡 Совет: собери " + missing.join(", ") + " — это ускорит рост дохода.");
+        lines.push(this._t(u, "fmt.work_perks.tip", { list: missing.join(", ") }, l));
       }
     }
 
@@ -83,7 +94,7 @@ export const Formatters = {
     return "";
   },
 
-  status(u, deps = {}) {
+  status(u, deps = {}, lang = null) {
     const economy =
       deps.economy instanceof EconomyService ? deps.economy : new EconomyService();
     const now = typeof deps.now === "function" ? deps.now : () => Date.now();
@@ -93,23 +104,24 @@ export const Formatters = {
         : (a, b) => (b > 0 ? Math.min(100, Math.floor((a / b) * 100)) : 0);
 
     const lines = [];
-    lines.push("👤 Мой профиль");
+    const l = this._lang(u, lang);
+    lines.push(this._t(u, "fmt.status.title", {}, l));
 
     const nick = u?.displayName && String(u.displayName).trim()
       ? u.displayName
-      : "Игрок";
+      : this._t(u, "fmt.status.player_fallback", {}, l);
     const cosmeticPrefix = this._playerCosmeticPrefix(u?.clanCosmetic, deps?.clanWeekKey || "");
     const shownNick = cosmeticPrefix ? `${cosmeticPrefix} ${nick}` : nick;
-    lines.push(`🎭 Имя: ${shownNick}`);
+    lines.push(this._t(u, "fmt.status.name", { shownNick }, l));
     const clanName = typeof deps?.clanName === "string" ? deps.clanName.trim() : "";
     const clanId = String(u?.clan?.clanId || "");
     if (u?.clan?.clanId) {
-      lines.push(`👥 Клан: ${clanName || `#${clanId}`}`);
+      lines.push(this._t(u, "fmt.status.clan_selected", { clan: clanName || `#${clanId}` }, l));
     } else {
-      lines.push("👥 Клан: не выбран");
+      lines.push(this._t(u, "fmt.status.clan_none", {}, l));
     }
 
-    lines.push(Formatters.balance(u));
+    lines.push(Formatters.balance(u, l));
 
     const inst = u?.jobs?.active?.[0] || null;
     if (inst) {
@@ -118,35 +130,35 @@ export const Formatters = {
       const total   = Math.max(1, (inst.endAt || 0) - (inst.startAt || 0));
       const elapsed = Math.max(0, total - leftMs);
       const progress = pct(elapsed, total);
-      const jobTitle = CONFIG?.JOBS?.[inst.typeId]?.title || inst.title || "Смена";
-      lines.push(`💼 Смена: ${jobTitle} · ${progress}% (~${mins} мин)`);
+      const jobTitle = getJobTitle(inst.typeId, l) || inst.title || this._t(u, "fmt.status.shift_fallback", {}, l);
+      lines.push(this._t(u, "fmt.status.shift_active", { jobTitle, progress, mins }, l));
     } else {
-      lines.push("⏸️ Смена не запущена");
+      lines.push(this._t(u, "fmt.status.shift_none", {}, l));
     }
 
     if (deps?.employmentLine && String(deps.employmentLine).trim()) {
       lines.push(String(deps.employmentLine).trim());
     }
 
-    lines.push(Formatters.studyLine(u));
+    lines.push(Formatters.studyLine(u, l));
 
     const stats = (u?.stats && typeof u.stats === "object") ? u.stats : {};
     const top1 = Number(stats.dailyTop1Count || 0);
     const top3 = Number(stats.dailyTop3Count || 0);
     const top10 = Number(stats.dailyTop10Count || 0);
-    lines.push(`🧲 Магнит дня (1 место): ${top1} раз`);
-    lines.push(`🥈 Топ-3 дня: ${top3} раз`);
-    lines.push(`🏅 Топ-10 дня: ${top10} раз`);
+    lines.push(this._t(u, "fmt.status.top1", { count: top1 }, l));
+    lines.push(this._t(u, "fmt.status.top3", { count: top3 }, l));
+    lines.push(this._t(u, "fmt.status.top10", { count: top10 }, l));
 
     return lines.join("\n");
   },
 
-  casinoBestLine(u) {
+  casinoBestLine(u, lang = null) {
     const best = Math.max(0, Number(u?.casino?.bestSingleWin) || 0);
-    return `🏅 Лучший выигрыш за попытку: $${best}`;
+    return this._t(u, "fmt.casino.best_line", { best }, lang);
   },
 
-  casinoStatsLines(u) {
+  casinoStatsLines(u, lang = null) {
     const fmt = (n) => `$${Number(n || 0)}`;
     const today = new Date().toISOString().slice(0, 10);
     const weekKeyUTC = () => {
@@ -175,9 +187,14 @@ export const Formatters = {
 
     const best = Math.max(0, Number(u?.casino?.bestSingleWin) || 0);
 
-    const lineDay   = `📊 День: выигрыш ${fmt(wonD)} · траты ${fmt(lostD)} · итог ${fmt(netD)}`;
-    const lineWeek  = `🗓️ Неделя: выигрыш ${fmt(wonW)} · траты ${fmt(lostW)} · итог ${fmt(netW)}`;
-    const lineBest  = `\n🏅 Лучшая попытка: ${fmt(best)}`;
+    const l = this._lang(u, lang);
+    const lineDay = this._t(u, "fmt.casino.day_line", {
+      won: fmt(wonD), lost: fmt(lostD), net: fmt(netD)
+    }, l);
+    const lineWeek = this._t(u, "fmt.casino.week_line", {
+      won: fmt(wonW), lost: fmt(lostW), net: fmt(netW)
+    }, l);
+    const lineBest = `\n${this._t(u, "fmt.casino.best_line_compact", { best: fmt(best) }, l)}`;
 
     return `${lineDay}\n${lineWeek}\n${lineBest}`;
   },

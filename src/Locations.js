@@ -138,7 +138,9 @@ export class Locations {
                 if (key) nameCache.set(key, fromSnap);
                 return fromSnap;
               }
-              const fallback = key ? `Игрок #${key.slice(-4).padStart(4, "0")}` : "Игрок";
+              const fallback = key
+                ? this._t(user, "loc.square.player_fallback_id", { id: key.slice(-4).padStart(4, "0") })
+                : this._t(user, "loc.square.player_fallback");
               if (key) nameCache.set(key, fallback);
               return fallback;
             };
@@ -153,7 +155,9 @@ export class Locations {
               const rewardParts = [];
               if (stars) rewardParts.push(`${stars}${CONFIG.PREMIUM?.emoji || "💎"}`);
               if (money) rewardParts.push(`$${money}`);
-              const rewardText = rewardParts.length ? ` (получил ${rewardParts.join(" + ")})` : "";
+              const rewardText = rewardParts.length
+                ? this._t(user, "loc.square.reward_received", { reward: rewardParts.join(" + ") })
+                : "";
               lines.push(`${mark} ${name} — $${earned}${rewardText}`);
             }
             yesterdayBlock = lines.join("\n");
@@ -404,11 +408,12 @@ export class Locations {
 
         const typeId = active.typeId;
         const fileId = JOB_ASSETS[typeId] || ASSETS.WorkDefault;
-        const activeTitle = getJobTitle(typeId, lang) || active.title || "Смена";
+        const activeTitle = getJobTitle(typeId, lang) || active.title || this._t(user, "loc.work.shift_fallback");
 
         const caption = ready
-          ? `💰 Готово к выплате: ${activeTitle} [$${active.plannedPay}]`
-          : `⏳ Идет смена: ${activeTitle} (~${leftMin} мин)\n\n💡 Совет: можно открыть другие разделы.\n\n` +
+          ? this._t(user, "loc.work.active_ready", { title: activeTitle, pay: active.plannedPay })
+          : this._t(user, "loc.work.active_running", { title: activeTitle, mins: leftMin }) + "\n\n" +
+            this._t(user, "loc.work.active_tip") + "\n\n" +
             this.formatters.balance(user);
 
         await this.media.show({
@@ -460,7 +465,7 @@ export class Locations {
             sourceMsg: this._sourceMsg,
             place: "Study",
             caption: text,
-            keyboard: extra?.reply_markup?.inline_keyboard || [[{ text: "⬅️ На Площадь", callback_data: "go:Square" }]],
+            keyboard: extra?.reply_markup?.inline_keyboard || [[{ text: this._t(user, "ui.back.square"), callback_data: "go:Square" }]],
             policy: "photo",
           });
           this.setSourceMessage(null);
@@ -643,9 +648,9 @@ export class Locations {
       try {
         const backToGym = (user?.nav?.backTo || null) || "Progress";
         const backText =
-          backToGym === "Work"  ? "⬅️ Назад, к выбору смен" :
-          backToGym === "Study" ? "⬅️ Назад, к учебе" :
-          backToGym === "Gym"   ? "⬅️ Назад" : "⬅️ Назад";
+          backToGym === "Work"  ? this._t(user, "loc.gym.back_work") :
+          backToGym === "Study" ? this._t(user, "loc.gym.back_study") :
+          this._t(user, "ui.back.default");
         const backCb = "go:" + (backToGym === "Gym" ? "Progress" : backToGym);
         if (Array.isArray(kb) && kb.length > 0) {
           kb[kb.length - 1] = [{ text: backText, callback_data: backCb }];
@@ -736,445 +741,147 @@ export class Locations {
       return;
     }
 
-    // ---------- Business ----------
-    if (route === "Business") {
-      // Selection-first version when multiple businesses exist
-      try {
-        const all = CONFIG?.BUSINESS || {};
-        const items = Object.keys(all).map(k => all[k]);
+    // ---------- Business (i18n-first) ----------
+    {
+      const bizRouteMeta = {
+        Biz_shawarma: {
+          id: "shawarma",
+          asset: ASSETS?.BusinessShawarma || JOB_ASSETS?.shawarma_seller || ASSETS?.Business,
+        },
+        Biz_stomatology: {
+          id: "stomatology",
+          asset: ASSETS?.BusinessStomatology || JOB_ASSETS?.dentist || ASSETS?.Business,
+        },
+        Biz_restaurant: {
+          id: "restaurant",
+          asset: ASSETS?.BusinessRestaurant || JOB_ASSETS?.waiter || ASSETS?.Business,
+        },
+        Biz_courier_service: {
+          id: "courier_service",
+          asset: ASSETS?.BusinessCourier || JOB_ASSETS?.courier || ASSETS?.Business,
+        },
+        Biz_fitness_club: {
+          id: "fitness_club",
+          asset: ASSETS?.BusinessFitness || ASSETS?.Gym || ASSETS?.Business,
+        },
+      };
+
+      const renderBusinessCard = async (B, options = {}) => {
+        const opts = options || {};
+        if (!B) {
+          await this.media.show({
+            sourceMsg: this._sourceMsg,
+            place: "Business",
+            caption: (header || "") + this._t(user, "loc.business.unavailable"),
+            keyboard: [[{ text: this._t(user, "loc.business.btn.back"), callback_data: "go:Business" }]],
+            policy: "auto",
+          });
+          this._sourceMsg = null;
+          this._route = "Business";
+          return;
+        }
+
+        const ownedArr = Array.isArray(user?.biz?.owned) ? user.biz.owned : [];
+        const ownedObj = ownedArr.find((it) => (typeof it === "string" ? it === B.id : it?.id === B.id));
+        const isOwned = !!ownedObj;
+        const todayUTC = new Date().toISOString().slice(0, 10);
+        const claimedToday = isOwned && (ownedObj.lastClaimDayUTC === todayUTC);
+        const availableToday = isOwned && !claimedToday ? (Number(B.daily) || 0) : 0;
+        const bizTitle = getBusinessTitle(B.id, lang) || B.title;
+        const bizNote = getBusinessNote(B.id, lang) || B.note;
+
+        const statusLine = !isOwned
+          ? this._t(user, "loc.business.status_unowned")
+          : (claimedToday
+              ? this._t(user, "loc.business.status_claimed_today")
+              : this._t(user, "loc.business.status_available_today", { amount: availableToday }));
+
+        const kb = [];
+        if (!isOwned) {
+          kb.push([{ text: this._t(user, "loc.business.btn.buy_for", { price: B.price }), callback_data: `biz:buy:${B.id}` }]);
+        } else if (!claimedToday) {
+          const claimKey = opts.claimKey || "loc.business.btn.claim";
+          kb.push([{ text: this._t(user, claimKey, { amount: B.daily }), callback_data: `biz:claim:${B.id}` }]);
+        } else {
+          kb.push([{ text: this._t(user, "loc.business.btn.claimed_today"), callback_data: "noop" }]);
+        }
+
+        if (opts.showBackToBusinesses) {
+          kb.push([{ text: this._t(user, "loc.business.btn.back_businesses"), callback_data: "go:Business" }]);
+        }
+        kb.push([{ text: this._t(user, "loc.business.btn.back_earn"), callback_data: "go:Earn" }]);
+
+        const intro = opts.includeIntro ? this._t(user, "loc.business.caption_intro") + "\n\n" : "";
+        const modeLine = opts.useManualClaim
+          ? this._t(user, "loc.business.manual_claim")
+          : this._t(user, "loc.business.no_accumulation");
+
+        await this.media.show({
+          sourceMsg: this._sourceMsg,
+          place: "Business",
+          asset: opts.asset || ASSETS?.Business,
+          caption:
+            (header || "") +
+            intro +
+            `${B.emoji} ${bizTitle}\n` +
+            this._t(user, "loc.business.price", { price: B.price }) + "\n" +
+            this._t(user, "loc.business.daily_income", { daily: B.daily }) + "\n" +
+            modeLine + "\n" +
+            statusLine +
+            (bizNote ? `\n\nℹ️ ${bizNote}` : ""),
+          keyboard: kb,
+          policy: "photo",
+        });
+        this._sourceMsg = null;
+        this._route = opts.routeName || "Business";
+      };
+
+      if (route === "Business") {
+        const items = Object.values(CONFIG?.BUSINESS || {}).filter(Boolean);
         if (items.length > 1) {
           const caption =
             (header || "") +
-            "🏢 Бизнес\n" +
-            "Пассивный доход раз в день — заходи и забирай.\n" +
-            "Чем дороже бизнес, тем больше приносит.\n" +
-            "Купи слот работодателя и получай % с чужих смен сверху.\n\n" +
-            "Выбери бизнес:";
-          const kb = items.map(B => [{
+            this._t(user, "loc.business.caption_intro") +
+            "\n\n" +
+            this._t(user, "loc.business.choose");
+          const kb = items.map((B) => [{
             text: `${B.emoji} ${getBusinessTitle(B.id, lang) || B.title}`,
-            callback_data: `go:Biz_${B.id}`
+            callback_data: `go:Biz_${B.id}`,
           }]);
-          kb.push([{ text: "⬅️ Назад к заработку", callback_data: "go:Earn" }]);
-          await this.media.show({ sourceMsg: this._sourceMsg, place: "Business", caption, keyboard: kb, policy: "photo" });
+          kb.push([{ text: this._t(user, "loc.business.btn.back_earn"), callback_data: "go:Earn" }]);
+          await this.media.show({
+            sourceMsg: this._sourceMsg,
+            place: "Business",
+            caption,
+            keyboard: kb,
+            policy: "photo",
+          });
           this._sourceMsg = null;
           this._route = "Business";
           return;
         }
-      } catch {}
-      // Multi-business overview when more than one type is configured
-      try {
-        const all = CONFIG?.BUSINESS || {};
-        const items = Object.keys(all).map(k => all[k]);
-        if (items.length > 1) {
-          const todayUTC = new Date().toISOString().slice(0, 10);
-          const captionLines = [];
-          captionLines.push(
-            (header || "") +
-            "🏢 Бизнес\n" +
-            "Пассивный доход раз в день — заходи и забирай.\n" +
-            "Чем дороже бизнес, тем больше приносит.\n" +
-            "Купи слот работодателя и получай % с чужих смен сверху.\n"
-          );
-          const kb = [];
-          const ownedArr = Array.isArray(user?.biz?.owned) ? user.biz.owned : [];
-          for (const B of items) {
-            const bizTitle = getBusinessTitle(B.id, lang) || B.title;
-            const bizNote = getBusinessNote(B.id, lang) || B.note;
-            const ownedObj = ownedArr.find(it => (typeof it === "string" ? it === B.id : it?.id === B.id));
-            const isOwned = !!ownedObj;
-            const claimedToday = isOwned && (ownedObj.lastClaimDayUTC === todayUTC);
-            const availableToday = isOwned && !claimedToday ? (Number(B.daily) || 0) : 0;
-            captionLines.push(`${B.emoji} ${bizTitle}`);
-            captionLines.push(`Цена: $${B.price}`);
-            captionLines.push(`Доход: $${B.daily} в день`);
-            captionLines.push(`Накопление между днями: не накапливается`);
-            captionLines.push(
-              isOwned
-                ? (claimedToday ? "Статус: доход за сегодня забран" : `Статус: доступно сегодня: $${availableToday}`)
-                : "Статус: не куплено"
-            );
-            if (bizNote) captionLines.push(bizNote);
-            captionLines.push("");
-            if (!isOwned) {
-              kb.push([{ text: `Купить ${bizTitle} за $${B.price}`, callback_data: `biz:buy:${B.id}` }]);
-            } else {
-              if (!claimedToday) {
-                kb.push([{ text: `Забрать $${B.daily} (${bizTitle})`, callback_data: `biz:claim:${B.id}` }]);
-              } else {
-                kb.push([{ text: `Сегодня уже забрано (${bizTitle})`, callback_data: "noop" }]);
-              }
-            }
-          }
-          kb.push([{ text: "⬅️ Назад к заработку", callback_data: "go:Earn" }]);
-          await this.media.show({ sourceMsg: this._sourceMsg, place: "Business", caption: captionLines.join("\n"), keyboard: kb, policy: "photo" });
-          this._sourceMsg = null;
-          this._route = "Business";
-          return;
-        }
-      } catch {}
-      const B = CONFIG.BUSINESS.shawarma;
-      const bizTitle = getBusinessTitle(B.id, lang) || B.title;
-      const bizNote = getBusinessNote(B.id, lang) || B.note;
-      const title = `${B.emoji} ${bizTitle}`;
-      const price = `$${B.price}`;
-      const daily = `$${B.daily}`;
 
-      const ownedArr = Array.isArray(user?.biz?.owned) ? user.biz.owned : [];
-      const ownedObj = ownedArr.find(it => (typeof it === "string" ? it === B.id : it?.id === B.id));
-      const isOwned = !!ownedObj;
-
-      // День по UTC в формате YYYY-MM-DD
-      const todayUTC = new Date().toISOString().slice(0, 10);
-      // уже собрал сегодня?
-      const claimedToday = isOwned && (ownedObj.lastClaimDayUTC === todayUTC);
-
-      // сколько доступно сегодня (MVP: всегда весь дневной доход или 0)
-      const availableToday = isOwned && !claimedToday ? B.daily : 0;
-
-      const kb = [];
-      if (!isOwned) {
-        kb.push([{ text: `🛒 Купить за ${price}`, callback_data: `biz:buy:${B.id}` }]);
-      } else {
-        if (!claimedToday) {
-          kb.push([{ text: `🏦 Забрать $${B.daily} за сегодня`, callback_data: `biz:claim:${B.id}` }]);
-        } else {
-          kb.push([{ text: "✓ Сегодня уже забрано", callback_data: "noop" }]);
-        }
-      }
-      kb.push([{ text: "⬅️ Назад", callback_data: "go:Earn" }]);
-
-      const statusLine = isOwned
-        ? (claimedToday
-            ? "Статус: ✓ сегодня уже получено"
-            : `Статус: доступно к сбору сегодня — $${availableToday}`)
-        : "Статус: не куплено";
-
-      await this.media.show({
-        sourceMsg: this._sourceMsg,
-        place: "Business",
-        caption:
-          (header || "") +
-          "🏢 Бизнес\n" +
-          "Пассивный доход раз в день — заходи и забирай.\n" +
-          "Чем дороже бизнес, тем больше приносит.\n" +
-          "Купи слот работодателя и получай % с чужих смен сверху.\n\n" +
-          `${title}\n` +
-          `Цена: ${price}\n` +
-          `Доход: ${daily} в день\n` +
-          `Сбор дохода: вручную\n` +
-          statusLine + "\n\n" +
-          (bizNote ? "ℹ️ " + bizNote : ""),
-        keyboard: kb,
-        policy: "photo", // показываем баннер Business
-      });
-      this._sourceMsg = null;
-      this._route = "Business";
-      return;
-    }
-
-    // ---------- Biz_shawarma ----------
-    if (route === "Biz_shawarma") {
-      const B = CONFIG?.BUSINESS?.shawarma;
-      if (!B) {
-        await this.media.show({
-          sourceMsg: this._sourceMsg,
-          place: "Business",
-          caption: (header || "") + "Бизнес недоступен",
-          keyboard: [[{ text: "Назад", callback_data: "go:Business" }]],
-          policy: "auto"
+        const B = items[0] || CONFIG?.BUSINESS?.shawarma;
+        await renderBusinessCard(B, {
+          includeIntro: true,
+          useManualClaim: true,
+          claimKey: "loc.business.btn.claim_today",
         });
-        this._sourceMsg = null;
-        this._route = "Business";
         return;
       }
 
-      const ownedArr = Array.isArray(user?.biz?.owned) ? user.biz.owned : [];
-      const bizTitle = getBusinessTitle(B.id, lang) || B.title;
-      const ownedObj = ownedArr.find(it => (typeof it === "string" ? it === B.id : it?.id === B.id));
-      const isOwned = !!ownedObj;
-      const todayUTC = new Date().toISOString().slice(0, 10);
-      const claimedToday = isOwned && (ownedObj.lastClaimDayUTC === todayUTC);
-      const availableToday = isOwned && !claimedToday ? (Number(B.daily)||0) : 0;
-
-      const kb = [];
-      if (!isOwned) {
-        kb.push([{ text: `Купить за $${B.price}`, callback_data: `biz:buy:${B.id}` }]);
-      } else {
-        if (!claimedToday) {
-          kb.push([{ text: `Забрать $${B.daily}`, callback_data: `biz:claim:${B.id}` }]);
-        } else {
-          kb.push([{ text: "Сегодня уже забрано", callback_data: "noop" }]);
-        }
-      }
-      kb.push([{ text: "⬅️ Назад к бизнесам", callback_data: "go:Business" }]);
-      kb.push([{ text: "⬅️ Назад к заработку", callback_data: "go:Earn" }]);
-
-      const statusLine = isOwned
-        ? (claimedToday ? "Статус: доход за сегодня забран" : `Статус: доступно сегодня: $${availableToday}`)
-        : "Статус: не куплено";
-
-      const assetShaw = (ASSETS?.BusinessShawarma || JOB_ASSETS?.shawarma_seller || ASSETS?.Business);
-      await this.media.show({
-        sourceMsg: this._sourceMsg,
-        place: "Business",
-        asset: assetShaw,
-        caption:
-          (header || "") +
-          `${B.emoji} ${bizTitle}\n` +
-          `Цена: $${B.price}\n` +
-          `Доход: $${B.daily} в день\n` +
-          `Накопление между днями: не накапливается\n` +
-          statusLine,
-        keyboard: kb,
-        policy: "photo",
-      });
-      this._sourceMsg = null;
-      this._route = "Biz_shawarma";
-      return;
-    }
-
-    // ---------- Biz_stomatology ----------
-    if (route === "Biz_stomatology") {
-      const B = CONFIG?.BUSINESS?.stomatology;
-      if (!B) {
-        await this.media.show({
-          sourceMsg: this._sourceMsg,
-          place: "Business",
-          caption: (header || "") + "Бизнес недоступен",
-          keyboard: [[{ text: "Назад", callback_data: "go:Business" }]],
-          policy: "auto"
+      if (route.startsWith("Biz_")) {
+        const bizId = String(route.slice(4) || "").trim();
+        const B = CONFIG?.BUSINESS?.[bizId] || null;
+        const meta = Object.values(bizRouteMeta).find((it) => it.id === bizId);
+        await renderBusinessCard(B, {
+          routeName: route,
+          asset: meta?.asset || ASSETS?.Business,
+          showBackToBusinesses: true,
+          useManualClaim: false,
         });
-        this._sourceMsg = null;
-        this._route = "Business";
         return;
       }
-
-      const ownedArr = Array.isArray(user?.biz?.owned) ? user.biz.owned : [];
-      const bizTitle = getBusinessTitle(B.id, lang) || B.title;
-      const ownedObj = ownedArr.find(it => (typeof it === "string" ? it === B.id : it?.id === B.id));
-      const isOwned = !!ownedObj;
-      const todayUTC = new Date().toISOString().slice(0, 10);
-      const claimedToday = isOwned && (ownedObj.lastClaimDayUTC === todayUTC);
-      const availableToday = isOwned && !claimedToday ? (Number(B.daily)||0) : 0;
-
-      const kb = [];
-      if (!isOwned) {
-        kb.push([{ text: `Купить за $${B.price}`, callback_data: `biz:buy:${B.id}` }]);
-      } else {
-        if (!claimedToday) {
-          kb.push([{ text: `Забрать $${B.daily}`, callback_data: `biz:claim:${B.id}` }]);
-        } else {
-          kb.push([{ text: "Сегодня уже забрано", callback_data: "noop" }]);
-        }
-      }
-      kb.push([{ text: "⬅️ Назад к бизнесам", callback_data: "go:Business" }]);
-      kb.push([{ text: "⬅️ Назад к заработку", callback_data: "go:Earn" }]);
-
-      const statusLine = isOwned
-        ? (claimedToday ? "Статус: доход за сегодня забран" : `Статус: доступно сегодня: $${availableToday}`)
-        : "Статус: не куплено";
-
-      const assetSto = (ASSETS?.BusinessStomatology || JOB_ASSETS?.dentist || ASSETS?.Business);
-      await this.media.show({
-        sourceMsg: this._sourceMsg,
-        place: "Business",
-        asset: assetSto,
-        caption:
-          (header || "") +
-          `${B.emoji} ${bizTitle}\n` +
-          `Цена: $${B.price}\n` +
-          `Доход: $${B.daily} в день\n` +
-          `Накопление между днями: не накапливается\n` +
-          statusLine,
-        keyboard: kb,
-        policy: "photo",
-      });
-      this._sourceMsg = null;
-      this._route = "Biz_stomatology";
-      return;
-    }
-
-    // ---------- Biz_restaurant ----------
-    if (route === "Biz_restaurant") {
-      const B = CONFIG?.BUSINESS?.restaurant;
-      if (!B) {
-        await this.media.show({
-          sourceMsg: this._sourceMsg,
-          place: "Business",
-          caption: (header || "") + "Бизнес недоступен",
-          keyboard: [[{ text: "Назад", callback_data: "go:Business" }]],
-          policy: "auto"
-        });
-        this._sourceMsg = null;
-        this._route = "Business";
-        return;
-      }
-
-      const ownedArr = Array.isArray(user?.biz?.owned) ? user.biz.owned : [];
-      const bizTitle = getBusinessTitle(B.id, lang) || B.title;
-      const ownedObj = ownedArr.find(it => (typeof it === "string" ? it === B.id : it?.id === B.id));
-      const isOwned = !!ownedObj;
-      const todayUTC = new Date().toISOString().slice(0, 10);
-      const claimedToday = isOwned && (ownedObj.lastClaimDayUTC === todayUTC);
-      const availableToday = isOwned && !claimedToday ? (Number(B.daily)||0) : 0;
-
-      const kb = [];
-      if (!isOwned) {
-        kb.push([{ text: `Купить за $${B.price}`, callback_data: `biz:buy:${B.id}` }]);
-      } else {
-        if (!claimedToday) {
-          kb.push([{ text: `Забрать $${B.daily}`, callback_data: `biz:claim:${B.id}` }]);
-        } else {
-          kb.push([{ text: "Уже забрано сегодня", callback_data: "noop" }]);
-        }
-      }
-      kb.push([{ text: "⬅️ Назад к бизнесам", callback_data: "go:Business" }]);
-      kb.push([{ text: "🏃 К заработку", callback_data: "go:Earn" }]);
-
-      const statusLine = isOwned
-        ? (claimedToday ? "Статус: прибыль уже получена" : `Статус: доступно к получению: $${availableToday}`)
-        : "Статус: не куплено";
-
-      const assetRest = (ASSETS?.BusinessRestaurant || JOB_ASSETS?.waiter || ASSETS?.Business);
-      await this.media.show({
-        sourceMsg: this._sourceMsg,
-        place: "Business",
-        asset: assetRest,
-        caption:
-          (header || "") +
-          `${B.emoji} ${bizTitle}\n` +
-          `Цена: $${B.price}\n` +
-          `Доход: $${B.daily} в день\n` +
-          `Ежедневный сброс прибыли: не накапливается\n` +
-          statusLine,
-        keyboard: kb,
-        policy: "photo",
-      });
-      this._sourceMsg = null;
-      this._route = "Biz_restaurant";
-      return;
-    }
-
-    // ---------- Biz_courier_service ----------
-    if (route === "Biz_courier_service") {
-      const B = CONFIG?.BUSINESS?.courier_service;
-      if (!B) {
-        await this.media.show({
-          sourceMsg: this._sourceMsg,
-          place: "Business",
-          caption: (header || "") + "Бизнес недоступен",
-          keyboard: [[{ text: "Назад", callback_data: "go:Business" }]],
-          policy: "auto"
-        });
-        this._sourceMsg = null;
-        this._route = "Business";
-        return;
-      }
-
-      const ownedArr = Array.isArray(user?.biz?.owned) ? user.biz.owned : [];
-      const bizTitle = getBusinessTitle(B.id, lang) || B.title;
-      const ownedObj = ownedArr.find(it => (typeof it === "string" ? it === B.id : it?.id === B.id));
-      const isOwned = !!ownedObj;
-      const todayUTC = new Date().toISOString().slice(0, 10);
-      const claimedToday = isOwned && (ownedObj.lastClaimDayUTC === todayUTC);
-      const availableToday = isOwned && !claimedToday ? (Number(B.daily)||0) : 0;
-
-      const kb = [];
-      if (!isOwned) {
-        kb.push([{ text: `Купить за $${B.price}`, callback_data: `biz:buy:${B.id}` }]);
-      } else {
-        if (!claimedToday) {
-          kb.push([{ text: `Забрать $${B.daily}`, callback_data: `biz:claim:${B.id}` }]);
-        } else {
-          kb.push([{ text: "Уже забрано сегодня", callback_data: "noop" }]);
-        }
-      }
-      kb.push([{ text: "⬅️ Назад к бизнесам", callback_data: "go:Business" }]);
-      kb.push([{ text: "🏃 К заработку", callback_data: "go:Earn" }]);
-
-      const statusLine = isOwned
-        ? (claimedToday ? "Статус: прибыль уже получена" : `Статус: доступно к получению: $${availableToday}`)
-        : "Статус: не куплено";
-
-      const assetCourier = (ASSETS?.BusinessCourier || JOB_ASSETS?.courier || ASSETS?.Business);
-      await this.media.show({
-        sourceMsg: this._sourceMsg,
-        place: "Business",
-        asset: assetCourier,
-        caption:
-          (header || "") +
-          `${B.emoji} ${bizTitle}\n` +
-          `Цена: $${B.price}\n` +
-          `Доход: $${B.daily} в день\n` +
-          `Накопление между днями: не накапливается\n` +
-          statusLine,
-        keyboard: kb,
-        policy: "photo",
-      });
-      this._sourceMsg = null;
-      this._route = "Biz_courier_service";
-      return;
-    }
-
-    // ---------- Biz_fitness_club ----------
-    if (route === "Biz_fitness_club") {
-      const B = CONFIG?.BUSINESS?.fitness_club;
-      if (!B) {
-        await this.media.show({
-          sourceMsg: this._sourceMsg,
-          place: "Business",
-          caption: (header || "") + "Бизнес недоступен",
-          keyboard: [[{ text: "Назад", callback_data: "go:Business" }]],
-          policy: "auto"
-        });
-        this._sourceMsg = null;
-        this._route = "Business";
-        return;
-      }
-
-      const ownedArr = Array.isArray(user?.biz?.owned) ? user.biz.owned : [];
-      const bizTitle = getBusinessTitle(B.id, lang) || B.title;
-      const ownedObj = ownedArr.find(it => (typeof it === "string" ? it === B.id : it?.id === B.id));
-      const isOwned = !!ownedObj;
-      const todayUTC = new Date().toISOString().slice(0, 10);
-      const claimedToday = isOwned && (ownedObj.lastClaimDayUTC === todayUTC);
-      const availableToday = isOwned && !claimedToday ? (Number(B.daily)||0) : 0;
-
-      const kb = [];
-      if (!isOwned) {
-        kb.push([{ text: `Купить за $${B.price}`, callback_data: `biz:buy:${B.id}` }]);
-      } else {
-        if (!claimedToday) {
-          kb.push([{ text: `Забрать $${B.daily}`, callback_data: `biz:claim:${B.id}` }]);
-        } else {
-          kb.push([{ text: "Уже забрано сегодня", callback_data: "noop" }]);
-        }
-      }
-      kb.push([{ text: "⬅️ Назад к бизнесам", callback_data: "go:Business" }]);
-      kb.push([{ text: "🏃 К заработку", callback_data: "go:Earn" }]);
-
-      const statusLine = isOwned
-        ? (claimedToday ? "Статус: прибыль уже получена" : `Статус: доступно к получению: $${availableToday}`)
-        : "Статус: не куплено";
-
-      const assetFitness = (ASSETS?.BusinessFitness || ASSETS?.Gym || ASSETS?.Business);
-      await this.media.show({
-        sourceMsg: this._sourceMsg,
-        place: "Business",
-        asset: assetFitness,
-        caption:
-          (header || "") +
-          `${B.emoji} ${bizTitle}\n` +
-          `Цена: $${B.price}\n` +
-          `Доход: $${B.daily} в день\n` +
-          `Накопление между днями: не накапливается\n` +
-          statusLine,
-        keyboard: kb,
-        policy: "photo",
-      });
-      this._sourceMsg = null;
-      this._route = "Biz_fitness_club";
-      return;
     }
 
     // ---------- Fallback → Square ----------

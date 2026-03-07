@@ -1,11 +1,14 @@
 // handlers/daily.js
+import { normalizeLang, t } from "../i18n/index.js";
+
 export const dailyHandler = {
   match: (data) => data === "daily:claim",
 
   async handle(ctx) {
     const { u, cb, answer, daily, locations, clans } = ctx;
+    const lang = normalizeLang(u?.lang || "ru");
+    const tt = (key, vars = {}) => t(key, lang, vars);
 
-    // отвечаем колбэку, чтобы Telegram не ретраил
     await answer(cb.id, "");
 
     const res = await daily.claim(u);
@@ -16,9 +19,13 @@ export const dailyHandler = {
         }
       } catch {}
 
-      await locations.show(u, `Ежедневный бонус: +$${res.amount} (стрик: ${res.streak})`);
+      await locations.show(
+        u,
+        tt("handler.daily.claim_ok", { amount: res.amount, streak: res.streak })
+      );
     } else {
-      await locations.show(u, "Бонус уже забран сегодня. Возвращайся завтра!");
+      await locations.show(u, tt("handler.daily.already_claimed"));
     }
   }
 };
+
