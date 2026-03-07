@@ -354,10 +354,38 @@ export class StockService {
       const cCfg = this._companies()[t] || {};
       return [{ text: `${cCfg.emoji || "📊"} ${cCfg.title || t}`, callback_data: `stocks:view:${t}` }];
     });
+    kb.push([{ text: "ℹ️ Как работает биржа", callback_data: "stocks:info" }]);
     kb.push([{ text: "🔄 Обновить", callback_data: "stocks:refresh" }]);
     kb.push([{ text: "⬅️ Назад к заработку", callback_data: "go:Earn" }]);
 
     return { caption: lines.join("\n").trim(), keyboard: kb };
+  }
+
+  buildInfoView() {
+    const cfg = this._cfg();
+    const updateHour = Math.max(0, Math.min(23, Number(cfg.UPDATE_HOUR_UTC) || 0));
+    const feePct = this._round2(Math.max(0, Number(cfg.SELL_FEE) || 0) * 100);
+    const dividendPct = this._round2(Math.max(0, Number(cfg.DIVIDEND_RATE_DAILY) || 0) * 100);
+    const historyDays = Math.max(1, Number(cfg.HISTORY_DAYS) || 7);
+
+    const lines = [
+      "ℹ️ Как работает биржа",
+      "",
+      "1) Акции можно покупать и продавать в любой момент.",
+      "2) Покупаются только целые акции (1, 2, 3...).",
+      `3) Цены пересчитываются раз в день в ${String(updateHour).padStart(2, "0")}:00 UTC.`,
+      `4) При продаже удерживается комиссия ${feePct}% (только с продажи).`,
+      `5) Дивиденды: ${dividendPct}% в день от текущей стоимости портфеля, выплата автоматом после пересчёта цен.`,
+      "6) LuckyHoldings дополнительно растёт от активности в Зале арканы (по числу спинов за прошлый день).",
+      `7) В карточке акции видно движение за день и история закрытия за ${historyDays} дней.`,
+      "",
+      "Важно: цены могут как расти, так и падать. Прибыль не гарантирована."
+    ];
+
+    return {
+      caption: lines.join("\n"),
+      keyboard: [[{ text: "⬅️ К бирже", callback_data: "go:Stocks" }]]
+    };
   }
 
   async buildTickerView(u, ticker) {
@@ -378,7 +406,6 @@ export class StockService {
 
     const lines = [
       `${cCfg.emoji || "📊"} ${cCfg.title || ticker}`,
-      `Тикер: ${ticker}`,
       "",
       `Цена: $${item.price} ${this._arrow(item.changePct)} ${this._fmtSignedPct(item.changePct)} (${this._fmtSignedMoney(item.changeAbs)})`,
       `База: $${Number(cCfg.basePrice) || 0}`,
@@ -386,7 +413,7 @@ export class StockService {
       `Ваши акции: ${shares}`,
       `Средняя цена: $${this._round2(avgPrice)}`,
       `Стоимость: $${marketValue}`,
-      `P/L: ${this._fmtSignedMoney(unrealized)} (${this._fmtSignedPct(unrealizedPct)})`
+      `Прибыль/убыток: ${this._fmtSignedMoney(unrealized)} (${this._fmtSignedPct(unrealizedPct)})`
     ];
 
     const kb = [];

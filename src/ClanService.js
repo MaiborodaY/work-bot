@@ -486,6 +486,18 @@ export class ClanService {
         if (money) u.money = (u.money || 0) + money;
         if (premium) u.premium = (u.premium || 0) + premium;
       }
+    }
+
+    const cosmeticTier = String(reward?.cosmeticTier || "");
+    if (cosmeticTier) {
+      u.clanCosmetic = {
+        tier: cosmeticTier,
+        weekKey: this._weekKey(),
+        label: this._cosmeticLabel(cosmeticTier)
+      };
+    }
+
+    if (money || premium || cosmeticTier) {
       await this.users.save(u);
     }
 
@@ -497,10 +509,21 @@ export class ClanService {
     if (!clans.length) return;
 
     const byId = new Map();
+    const memberIds = new Set();
     for (const clan of clans) {
       byId.set(String(clan.id), clan);
       this._ensureClanShape(clan);
       clan.cosmetic = null;
+      for (const uid of clan.members || []) {
+        memberIds.add(String(uid));
+      }
+    }
+
+    for (const uid of memberIds) {
+      const u = await this.users.load(uid).catch(() => null);
+      if (!u || !u.clanCosmetic) continue;
+      u.clanCosmetic = null;
+      await this.users.save(u);
     }
 
     const weekly = this._sortWeeklyEntries(
@@ -596,6 +619,7 @@ export class ClanService {
       u.clan.clanId = "";
       u.clan.joinedAt = 0;
       u.clan.lastPresenceDay = "";
+      u.clanCosmetic = null;
       await this.users.save(u);
       return null;
     }
@@ -606,6 +630,7 @@ export class ClanService {
       u.clan.clanId = "";
       u.clan.joinedAt = 0;
       u.clan.lastPresenceDay = "";
+      u.clanCosmetic = null;
       await this.users.save(u);
       return null;
     }
@@ -733,6 +758,7 @@ export class ClanService {
     u.clan.joinedAt = 0;
     u.clan.joinAvailableFromWeek = nextWeek;
     u.clan.lastPresenceDay = "";
+    u.clanCosmetic = null;
     u.awaitingClanName = false;
     await this.users.save(u);
 
@@ -1067,12 +1093,21 @@ export class ClanService {
       const name = user?.displayName && String(user.displayName).trim()
         ? String(user.displayName).trim()
         : `Игрок #${String(uid).slice(-4).padStart(4, "0")}`;
+      const tier = String(user?.clanCosmetic?.tier || "");
+      const cosmeticPrefix = tier === "top1"
+        ? "🥇"
+        : tier === "top2"
+          ? "🥈"
+          : tier === "top3"
+            ? "🥉"
+            : "";
+      const shownName = cosmeticPrefix ? `${cosmeticPrefix} ${name}` : name;
 
       const pts = Math.max(0, Number(m.points) || 0);
       const useful = Math.max(0, Number(m.usefulEvents) || 0);
       const share = weekScore > 0 ? Math.floor((pts / weekScore) * 1000) / 10 : 0;
 
-      lines.push(`${name}`);
+      lines.push(`${shownName}`);
       lines.push(`Вклад в очки: ${pts} (${share}%)`);
       lines.push(`Полезные события: ${useful}`);
       lines.push("");
@@ -1186,18 +1221,22 @@ export class ClanService {
       "All-time рейтинг = сумма недельных очков за всё время.",
       "",
       "🏆 Призы за неделю (на каждого участника, кто прошел условие):",
-      "1 место: $50000 + 💎50",
-      "2 место: $30000 + 💎30",
-      "3 место: $20000 + 💎20",
-      "4 место: $15000",
-      "5 место: $12000",
-      "6 место: $10000",
-      "7 место: $8000",
-      "8 место: $6000",
-      "9 место: $4000",
-      "10 место: $3000",
+      "1 место: $5000 + 💎5",
+      "2 место: $3000 + 💎3",
+      "3 место: $2000 + 💎2",
+      "4 место: $1500",
+      "5 место: $1200",
+      "6 место: $1000",
+      "7 место: $800",
+      "8 место: $600",
+      "9 место: $400",
+      "10 место: $300",
       "",
-      "Награду внутри клана получают те, у кого вклад >=1% ИЛИ полезных событий >=3."
+      "Награду внутри клана получают те, у кого вклад >=1% ИЛИ полезных событий >=3.",
+      "",
+      "🎖️ Доп. награда за топ-1/2/3:",
+      "участники клана получают временный статус у ника (🥇/🥈/🥉) на текущую неделю.",
+      "После недельного расчета статус снимается и выдается новому топу."
     ];
 
     return {

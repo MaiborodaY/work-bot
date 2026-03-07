@@ -1,6 +1,7 @@
 export const stocksHandler = {
   match: (data) =>
     data === "stocks:refresh" ||
+    data === "stocks:info" ||
     data.startsWith("stocks:view:") ||
     data.startsWith("stocks:buy:") ||
     data.startsWith("stocks:sell:") ||
@@ -16,7 +17,7 @@ export const stocksHandler = {
     const show = async (view) => {
       await locations.media.show({
         sourceMsg: locations._sourceMsg || cb?.message || null,
-        place: "Work",
+        place: "Stocks",
         caption: view.caption,
         keyboard: view.keyboard,
         policy: "auto"
@@ -27,6 +28,13 @@ export const stocksHandler = {
     if (data === "stocks:refresh") {
       await answer(cb.id);
       await goTo(u, "Stocks");
+      return;
+    }
+
+    if (data === "stocks:info") {
+      await answer(cb.id);
+      const view = stocks.buildInfoView();
+      await show(view);
       return;
     }
 

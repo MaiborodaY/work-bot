@@ -73,6 +73,16 @@ export const Formatters = {
     return Array.isArray(u?.upgrades) && u.upgrades.includes(key);
   },
 
+  _playerCosmeticPrefix(cosmetic, currentWeek = "") {
+    const tier = String(cosmetic?.tier || "");
+    const weekKey = String(cosmetic?.weekKey || "");
+    if (currentWeek && weekKey && weekKey !== currentWeek) return "";
+    if (tier === "top1") return "🥇";
+    if (tier === "top2") return "🥈";
+    if (tier === "top3") return "🥉";
+    return "";
+  },
+
   status(u, deps = {}) {
     const economy =
       deps.economy instanceof EconomyService ? deps.economy : new EconomyService();
@@ -88,9 +98,13 @@ export const Formatters = {
     const nick = u?.displayName && String(u.displayName).trim()
       ? u.displayName
       : "Игрок";
-    lines.push(`🎭 Имя: ${nick}`);
+    const cosmeticPrefix = this._playerCosmeticPrefix(u?.clanCosmetic, deps?.clanWeekKey || "");
+    const shownNick = cosmeticPrefix ? `${cosmeticPrefix} ${nick}` : nick;
+    lines.push(`🎭 Имя: ${shownNick}`);
+    const clanName = typeof deps?.clanName === "string" ? deps.clanName.trim() : "";
+    const clanId = String(u?.clan?.clanId || "");
     if (u?.clan?.clanId) {
-      lines.push(`👥 Клан: #${String(u.clan.clanId)}`);
+      lines.push(`👥 Клан: ${clanName || `#${clanId}`}`);
     } else {
       lines.push("👥 Клан: не выбран");
     }

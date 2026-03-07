@@ -159,16 +159,16 @@ export const CONFIG = {
       }
     },
     WEEKLY_REWARDS: {
-      1: { money: 50000, premium: 50, cosmeticTier: "top1" },
-      2: { money: 30000, premium: 30, cosmeticTier: "top2" },
-      3: { money: 20000, premium: 20, cosmeticTier: "top3" },
-      4: { money: 15000, premium: 0 },
-      5: { money: 12000, premium: 0 },
-      6: { money: 10000, premium: 0 },
-      7: { money: 8000, premium: 0 },
-      8: { money: 6000, premium: 0 },
-      9: { money: 4000, premium: 0 },
-      10: { money: 3000, premium: 0 }
+      1: { money: 5000, premium: 5, cosmeticTier: "top1" },
+      2: { money: 3000, premium: 3, cosmeticTier: "top2" },
+      3: { money: 2000, premium: 2, cosmeticTier: "top3" },
+      4: { money: 1500, premium: 0 },
+      5: { money: 1200, premium: 0 },
+      6: { money: 1000, premium: 0 },
+      7: { money: 800, premium: 0 },
+      8: { money: 600, premium: 0 },
+      9: { money: 400, premium: 0 },
+      10: { money: 300, premium: 0 }
     },
     ELIGIBILITY: {
       MIN_SHARE: 0.01,

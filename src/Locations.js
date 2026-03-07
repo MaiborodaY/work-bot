@@ -183,7 +183,7 @@ export class Locations {
       const caption = (header || "") + (view.caption || "");
       await this.media.show({
         sourceMsg: this._sourceMsg,
-        place: "Work",
+        place: "Stocks",
         caption,
         keyboard: view.keyboard || [[{ text: "⬅️ Назад к заработку", callback_data: "go:Earn" }]],
         policy: "auto",

@@ -538,7 +538,10 @@ export default {
       }
 
       if (text === "Профиль" || text === "👤 Профиль") {
-        const statusText = Formatters.status(u, { economy, now, pct });
+        const clan = await clans.getClanForUser(u).catch(() => null);
+        const clanName = clan?.name ? String(clan.name) : "";
+        const clanWeekKey = await clans.ensureWeek().catch(() => "");
+        const statusText = Formatters.status(u, { economy, now, pct, clanName, clanWeekKey });
         await send(statusText);
         return new Response("ok");
       }

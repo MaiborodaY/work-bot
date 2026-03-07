@@ -192,6 +192,20 @@ export class UserStore {
       if (typeof u.clan.joinAvailableFromWeek !== "string") { u.clan.joinAvailableFromWeek = ""; dirty = true; }
       if (typeof u.clan.lastPresenceDay !== "string") { u.clan.lastPresenceDay = ""; dirty = true; }
     }
+    if (u.clanCosmetic == null) {
+      u.clanCosmetic = null;
+    } else if (typeof u.clanCosmetic === "object") {
+      const tier = String(u.clanCosmetic.tier || "");
+      const weekKey = String(u.clanCosmetic.weekKey || "");
+      const label = String(u.clanCosmetic.label || "");
+      if (tier !== u.clanCosmetic.tier || weekKey !== u.clanCosmetic.weekKey || label !== u.clanCosmetic.label) {
+        u.clanCosmetic = { tier, weekKey, label };
+        dirty = true;
+      }
+    } else {
+      u.clanCosmetic = null;
+      dirty = true;
+    }
 
     // ===== LEGACY — мягко удаляем устаревшие ключи =====
     const dropKeys = [
@@ -274,6 +288,7 @@ export class UserStore {
       bar: { day: "", assigned: false, tasks: [] },
 
       clan: { clanId: "", joinedAt: 0, joinAvailableFromWeek: "", lastPresenceDay: "" },
+      clanCosmetic: null,
 
       // Flags
       flags: { onboarding: false, onboardingStartedAt: 0, onboardingStep: "", firstJobGemGiven: false }
