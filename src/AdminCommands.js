@@ -214,31 +214,29 @@ export class AdminCommands {
         return true;
       }
 
-      const fresh = this.users._newUser(targetId);
-      fresh.displayName = "";
-      fresh.awaitingName = true;
-      fresh.afterNameRoute = "Square";
+      // Hard wipe: remove user row so next /start goes through true "new user" flow.
+      const userKey = (this.users && typeof this.users._key === "function")
+        ? this.users._key(targetId)
+        : `u:${targetId}`;
+      await this._delete(userKey);
 
-      if (fresh.study) fresh.study.active = false;
-      if (fresh.rest) fresh.rest.active = false;
-      if (fresh.gym) fresh.gym.active = false;
-      if (fresh.jobs) fresh.jobs.active = [];
-      if (fresh.bar) {
-        fresh.bar.day = "";
-        fresh.bar.assigned = false;
-        fresh.bar.tasks = [];
+      // Best-effort: remove from labour free players index.
+      try {
+        const rows = await this._getJson(LABOUR_FREE_PLAYERS_KEY, []);
+        if (Array.isArray(rows)) {
+          const next = rows.filter((x) => String(x?.id || "") !== String(targetId));
+          if (next.length !== rows.length) {
+            await this._putJson(LABOUR_FREE_PLAYERS_KEY, next);
+          }
+        }
+      } catch {
+        // ignore index cleanup errors
       }
-      if (fresh.clan) {
-        fresh.clan.clanId = "";
-        fresh.clan.joinedAt = 0;
-      }
-
-      await this.users.save(fresh);
 
       await this.send(
         "Wipe done.\n" +
-        `User <code>${targetId}</code> reset to new state.\n` +
-        `Balance: $${fresh.money}, energy ${fresh.energy}/${fresh.energy_max}, gems ${fresh.premium}.`
+        `User <code>${targetId}</code> fully deleted from KV.\n` +
+        "Ask this user to send /start again - profile will be recreated as new and onboarding will start."
       );
       return true;
     }
