@@ -23,7 +23,7 @@ export const labourHandler = {
         place: "Business",
         caption: view.caption,
         keyboard: view.keyboard,
-        policy: "auto"
+        policy: "text"
       });
       locations.setSourceMessage(null);
     };

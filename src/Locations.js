@@ -256,7 +256,7 @@ export class Locations {
         place: "Business",
         caption,
         keyboard: view.keyboard || [[{ text: this._t(user, "ui.back.earn"), callback_data: "go:Earn" }]],
-        policy: "auto"
+        policy: "text"
       });
       this._sourceMsg = null;
       this._route = "Labour";

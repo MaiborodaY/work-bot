@@ -6,6 +6,30 @@ export class TelegramClient {
     this.base = `https://api.telegram.org/bot${this.token}`;
   }
 
+  async _call(method, body) {
+    const resp = await fetch(`${this.base}/${method}`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+
+    let payload = null;
+    try {
+      payload = await resp.json();
+    } catch {
+      payload = null;
+    }
+
+    if (!resp.ok) {
+      throw new Error(`Telegram HTTP ${resp.status} on ${method}`);
+    }
+    if (!payload || payload.ok !== true) {
+      const desc = String(payload?.description || "unknown telegram error");
+      throw new Error(`Telegram API ${method} failed: ${desc}`);
+    }
+    return payload;
+  }
+
   async sendMessage(chatId, text, extra = {}) {
     const body = {
       chat_id: chatId,
@@ -14,11 +38,7 @@ export class TelegramClient {
       reply_markup: this.defaultReplyMarkup || undefined,
       ...extra,
     };
-    await fetch(`${this.base}/sendMessage`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(body),
-    });
+    await this._call("sendMessage", body);
   }
 
   async sendWithInline(chatId, text, inline_keyboard) {
@@ -28,11 +48,7 @@ export class TelegramClient {
       parse_mode: "HTML",
       reply_markup: { inline_keyboard },
     };
-    await fetch(`${this.base}/sendMessage`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(body),
-    });
+    await this._call("sendMessage", body);
   }
 
   async sendPhoto(chatId, file_id, caption, inline_keyboard = null) {
@@ -43,11 +59,7 @@ export class TelegramClient {
       parse_mode: "HTML",
       reply_markup: inline_keyboard ? { inline_keyboard } : undefined,
     };
-    await fetch(`${this.base}/sendPhoto`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(body),
-    });
+    await this._call("sendPhoto", body);
   }
 
   async editMessageCaption(chatId, messageId, caption, inline_keyboard = null) {
@@ -58,11 +70,7 @@ export class TelegramClient {
       parse_mode: "HTML",
       reply_markup: inline_keyboard ? { inline_keyboard } : undefined,
     };
-    await fetch(`${this.base}/editMessageCaption`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(body),
-    });
+    await this._call("editMessageCaption", body);
   }
 
   async editMessageMedia(chatId, messageId, file_id, caption = null, inline_keyboard = null) {
@@ -77,58 +85,37 @@ export class TelegramClient {
       },
       reply_markup: inline_keyboard ? { inline_keyboard } : undefined,
     };
-    await fetch(`${this.base}/editMessageMedia`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(body),
-    });
+    await this._call("editMessageMedia", body);
   }
 
   async deleteMessage(chatId, messageId) {
-    await fetch(`${this.base}/deleteMessage`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ chat_id: chatId, message_id: messageId }),
-    });
+    await this._call("deleteMessage", { chat_id: chatId, message_id: messageId });
   }
 
   async answerCallback(callbackQueryId, text) {
-    await fetch(`${this.base}/answerCallbackQuery`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ callback_query_id: callbackQueryId, text }),
-    });
+    // answerCallbackQuery может падать, если query устарел; не ломаем основной flow.
+    try {
+      await this._call("answerCallbackQuery", { callback_query_id: callbackQueryId, text });
+    } catch {}
   }
 
   // Send a game message using Telegram Games platform
   async sendGame(chatId, gameShortName) {
     const body = { chat_id: chatId, game_short_name: gameShortName };
-    await fetch(`${this.base}/sendGame`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(body),
-    });
+    await this._call("sendGame", body);
   }
 
   // Answer callback_query with URL to open the game
   async answerCallbackUrl(callbackQueryId, url) {
     const body = { callback_query_id: callbackQueryId, url };
-    await fetch(`${this.base}/answerCallbackQuery`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(body),
-    });
+    await this._call("answerCallbackQuery", body);
   }
 
   // подтверждение pre_checkout_query (обязательно для Stars)
   async answerPreCheckoutQuery(preCheckoutQueryId, ok = true, error_message = undefined) {
     const body = { pre_checkout_query_id: preCheckoutQueryId, ok };
     if (!ok && error_message) body.error_message = error_message;
-    await fetch(`${this.base}/answerPreCheckoutQuery`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(body),
-    });
+    await this._call("answerPreCheckoutQuery", body);
   }
 
   async editMessage(chatId, messageId, text, inline_keyboard = null) {
@@ -139,20 +126,11 @@ export class TelegramClient {
       parse_mode: "HTML",
       reply_markup: inline_keyboard ? { inline_keyboard } : undefined,
     };
-    await fetch(`${this.base}/editMessageText`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(body),
-    });
+    await this._call("editMessageText", body);
   }
 
   async sendDice(chatId, emoji = "🎰") {
-    const resp = await fetch(`${this.base}/sendDice`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ chat_id: chatId, emoji }),
-    });
-    return resp.json().catch(() => ({}));
+    return this._call("sendDice", { chat_id: chatId, emoji });
   }
 
   async removeKeyboard(chatId, text = "🔁 Обновляю клавиатуру…") {
