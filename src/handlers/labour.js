@@ -2,6 +2,7 @@ import { normalizeLang, t } from "../i18n/index.js";
 
 export const labourHandler = {
   match: (data) =>
+    data === "labour:help" ||
     data.startsWith("labour:buy_slot:") ||
     data.startsWith("labour:hire_list:") ||
     data.startsWith("labour:hire:") ||
@@ -49,6 +50,13 @@ export const labourHandler = {
         "Labour",
         tt("handler.labour.buy_slot_ok", { money: res.money, gems: res.gems })
       );
+      return;
+    }
+
+    if (data === "labour:help") {
+      await answer(cb.id);
+      const view = await labour.buildHelpView(u);
+      await show(view);
       return;
     }
 

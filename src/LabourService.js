@@ -641,9 +641,30 @@ export class LabourService {
       lines.push("");
     }
 
+    kb.push([{ text: this._t(langSource, "labour.btn.help"), callback_data: "labour:help" }]);
     kb.push([{ text: this._t(langSource, "labour.btn.refresh"), callback_data: "go:Labour" }]);
     kb.push([{ text: this._t(langSource, "labour.btn.back_earn"), callback_data: "go:Earn" }]);
     return { caption: lines.join("\n").trim(), keyboard: kb };
+  }
+
+  async buildHelpView(owner) {
+    const langSource = owner;
+    const lines = [
+      this._t(langSource, "labour.help.title"),
+      "",
+      this._t(langSource, "labour.help.line1"),
+      this._t(langSource, "labour.help.line2"),
+      this._t(langSource, "labour.help.line3"),
+      this._t(langSource, "labour.help.line4"),
+      this._t(langSource, "labour.help.line5"),
+      "",
+      this._t(langSource, "labour.help.line6")
+    ];
+
+    return {
+      caption: lines.join("\n"),
+      keyboard: [[{ text: this._t(langSource, "labour.btn.back"), callback_data: "go:Labour" }]]
+    };
   }
 
   async buildHireListView(owner, bizId) {
