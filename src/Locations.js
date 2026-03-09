@@ -459,7 +459,7 @@ export class Locations {
           place: "Work",
           asset: fileId,
           caption,
-          keyboard: this.ui.workV2(user, { active, ready, ffCost, onboardingStep }, lang),
+          keyboard: this.ui.workV2(user, { active, ready, ffCost, onboardingStep: onboardingStage }, lang),
           policy: "photo",
         });
       } else {
