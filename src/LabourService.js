@@ -1,6 +1,6 @@
 import { CONFIG } from "./GameConfig.js";
 import { getBusinessTitle } from "./I18nCatalog.js";
-import { normalizeLang, t } from "./i18n/index.js";
+import { formatMoney, normalizeLang, t } from "./i18n/index.js";
 
 const LABOUR_FREE_PLAYERS_KEY = "labour:free_players";
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -106,6 +106,21 @@ export class LabourService {
     return this._t(source, "labour.player_short", {
       id: String(u?.id || "").slice(-4).padStart(4, "0")
     });
+  }
+
+  _money(source, amount) {
+    return formatMoney(amount, this._lang(source));
+  }
+
+  _businessesOrdered() {
+    const all = Object.values(CONFIG?.BUSINESS || {});
+    all.sort((a, b) => {
+      const pa = Number(a?.price) || 0;
+      const pb = Number(b?.price) || 0;
+      if (pa !== pb) return pa - pb;
+      return String(a?.id || "").localeCompare(String(b?.id || ""));
+    });
+    return all;
   }
 
   _inactiveEmployment() {
@@ -817,118 +832,157 @@ export class LabourService {
   async buildMainView(owner) {
     owner = await this.reconcileOwnerSlots(owner);
     const langSource = owner;
-    const arr = this._ownedArray(owner);
-    const lines = [
-      this._t(langSource, "labour.view.title"),
-      this._t(langSource, "labour.view.line1"),
-      this._t(langSource, "labour.view.line2"),
-      this._t(langSource, "labour.view.line3"),
-      ""
-    ];
+    const lines = [this._t(langSource, "labour.view.title"), ""];
     const kb = [];
-    const nowTs = this.now();
+    const allBiz = this._businessesOrdered();
 
-    if (!arr.length) {
-      lines.push(this._t(langSource, "labour.view.need_business"));
-      return {
-        caption: lines.join("\n"),
-        keyboard: [[{ text: this._t(langSource, "labour.btn.back_earn"), callback_data: "go:Earn" }]]
-      };
-    }
-
-    const allBiz = Object.values(CONFIG?.BUSINESS || {});
     for (const B of allBiz) {
-      const found = this._findOwnedEntry(owner, B.id);
-      if (found.idx < 0 || !found.entry) continue;
       const maxSlots = this._maxSlots(B.id);
       if (maxSlots <= 0) continue;
 
-      this._ensureSlots(found.entry, B.id);
-      const nextBuyIdx = this._nextBuySlotIndex(found.entry, maxSlots);
+      const found = this._findOwnedEntry(owner, B.id);
+      const emoji = B.emoji || "🏢";
       const bizTitle = this._bizTitle(B.id, langSource);
-
-      lines.push(`${B.emoji || "🏢"} ${bizTitle}`);
-      for (let slotIndex = 0; slotIndex < maxSlots; slotIndex++) {
-        const slot = this._slotAt(found.entry, slotIndex);
-        const slotNum = this._slotNum(slotIndex);
-        const levelCfg = this._slotLevelCfg(B.id, slotIndex);
-        const pct = Math.max(0, Math.floor((Number(slot?.ownerPct) || Number(levelCfg?.ownerPct) || 0) * 100));
-
-        if (!slot?.purchased) {
-          lines.push(this._t(langSource, "labour.view.slot_not_bought", { slotNum, pct }));
-          lines.push(this._t(langSource, "labour.view.slot_price", {
-            slotNum,
-            money: Math.max(0, Number(levelCfg?.slotMoney) || 0),
-            gemsEmoji: CONFIG?.PREMIUM?.emoji || "💎",
-            gems: Math.max(0, Number(levelCfg?.slotGems) || 0),
-            pct
+      if (found.idx < 0 || !found.entry) {
+        lines.push(this._t(langSource, "labour.main.row_unowned", { emoji, bizTitle }));
+      } else {
+        this._ensureSlots(found.entry, B.id);
+        const bought = this._countPurchasedSlots(found.entry);
+        if (bought <= 0) {
+          lines.push(this._t(langSource, "labour.main.row_no_slots", {
+            emoji,
+            bizTitle,
+            bought,
+            max: maxSlots
           }));
-          if (slotIndex === nextBuyIdx) {
-            kb.push([{
-              text: this._t(langSource, "labour.btn.buy_slot", { bizTitle, slotNum }),
-              callback_data: `labour:buy_slot:${B.id}:${slotIndex}`
-            }]);
-          }
-          continue;
-        }
-
-        if (slot.employeeId && Number(slot.contractEnd || 0) > nowTs) {
-          const employee = await this.users.load(slot.employeeId).catch(() => null);
-          const employeeName = employee
-            ? this._formatName(employee, langSource)
-            : this._t(langSource, "labour.player_short", {
-                id: String(slot.employeeId).slice(-4).padStart(4, "0")
-              });
-          const leftDays = Math.max(1, Math.ceil((Number(slot.contractEnd || 0) - nowTs) / DAY_MS));
-          lines.push(this._t(langSource, "labour.view.slot_busy", { slotNum, employeeName, leftDays, pct }));
-          lines.push(this._t(langSource, "labour.view.earned_total", {
-            total: Math.max(0, Math.floor(Number(slot.earnedTotal) || 0))
+        } else {
+          const active = found.entry.slots.filter((s) => !!s?.purchased && this._slotIsActive(s)).length;
+          lines.push(this._t(langSource, "labour.main.row_owned", {
+            emoji,
+            bizTitle,
+            active,
+            bought,
+            max: maxSlots
           }));
-          continue;
         }
+      }
 
-        lines.push(this._t(langSource, "labour.view.slot_free", { slotNum, pct }));
+      kb.push([{ text: `${emoji} ${bizTitle}`, callback_data: `labour:biz:${B.id}` }]);
+    }
+
+    kb.push([{ text: this._t(langSource, "labour.btn.refresh"), callback_data: "go:Labour" }]);
+    kb.push([{ text: this._t(langSource, "labour.btn.back_earn"), callback_data: "go:Earn" }]);
+    return { caption: lines.join("\n").trim(), keyboard: kb };
+  }
+
+  async buildBizView(owner, bizId) {
+    owner = await this.reconcileOwnerSlots(owner);
+    const langSource = owner;
+    const B = CONFIG?.BUSINESS?.[String(bizId || "")];
+    const maxSlots = this._maxSlots(bizId);
+    if (!B || maxSlots <= 0) {
+      return {
+        caption: this._t(langSource, "labour.err.slot_unavailable"),
+        keyboard: [[{ text: this._t(langSource, "labour.btn.back_to_businesses"), callback_data: "go:Labour" }]]
+      };
+    }
+
+    const emoji = B.emoji || "🏢";
+    const bizTitle = this._bizTitle(bizId, langSource);
+    const lines = [this._t(langSource, "labour.biz.title", { emoji, bizTitle }), ""];
+    const kb = [];
+    const found = this._findOwnedEntry(owner, bizId);
+
+    if (found.idx < 0 || !found.entry) {
+      lines.push(this._t(langSource, "labour.biz.unowned"));
+      lines.push(this._t(langSource, "labour.biz.price", {
+        price: this._money(langSource, Number(B.price) || 0)
+      }));
+
+      kb.push([{
+        text: this._t(langSource, "labour.btn.buy_business", {
+          price: this._money(langSource, Number(B.price) || 0)
+        }),
+        callback_data: `labour:buy_biz:${B.id}`
+      }]);
+      kb.push([{ text: this._t(langSource, "labour.btn.back_to_businesses"), callback_data: "go:Labour" }]);
+      return { caption: lines.join("\n").trim(), keyboard: kb };
+    }
+
+    this._ensureSlots(found.entry, bizId);
+    const bought = this._countPurchasedSlots(found.entry);
+    const nextBuyIdx = this._nextBuySlotIndex(found.entry, maxSlots);
+    const nowTs = this.now();
+
+    for (let i = 0; i < bought; i++) {
+      const slot = this._slotAt(found.entry, i);
+      if (!slot?.purchased) continue;
+      const slotNum = this._slotNum(i);
+      const levelCfg = this._slotLevelCfg(B.id, i);
+      const pct = Math.max(0, Math.floor((Number(slot.ownerPct) || Number(levelCfg?.ownerPct) || 0) * 100));
+
+      if (slot.employeeId && Number(slot.contractEnd || 0) > nowTs) {
+        const employee = await this.users.load(slot.employeeId).catch(() => null);
+        const employeeName = employee
+          ? this._formatName(employee, langSource)
+          : this._t(langSource, "labour.player_short", {
+              id: String(slot.employeeId).slice(-4).padStart(4, "0")
+            });
+        const leftDays = Math.max(1, Math.ceil((Number(slot.contractEnd || 0) - nowTs) / DAY_MS));
+        const earned = Math.max(0, Math.floor(Number(slot.earnedTotal) || 0));
+        const earnPart = earned > 0
+          ? this._t(langSource, "labour.biz.earned_part", { earned: this._money(langSource, earned) })
+          : "";
+        lines.push(this._t(langSource, "labour.biz.slot_busy", {
+          slotNum,
+          pct,
+          employeeName,
+          leftDays,
+          earnPart
+        }));
+      } else {
+        lines.push(this._t(langSource, "labour.biz.slot_free", { slotNum, pct }));
         kb.push([{
-          text: this._t(langSource, "labour.btn.hire", { bizTitle, slotNum }),
-          callback_data: `labour:hire_list:${B.id}:${slotIndex}`
+          text: this._t(langSource, "labour.btn.hire", { slotNum }),
+          callback_data: `labour:hire_list:${B.id}:${i}`
         }]);
+
         if (slot.lastEmployeeId) {
           const lastEmployee = await this.users.load(slot.lastEmployeeId).catch(() => null);
           const rehireName = lastEmployee
             ? this._formatName(lastEmployee, langSource)
             : this._t(langSource, "labour.player_generic");
           kb.push([{
-            text: this._t(langSource, "labour.btn.rehire", { bizTitle, slotNum, name: rehireName }),
-            callback_data: `labour:rehire:${B.id}:${slotIndex}`
+            text: this._t(langSource, "labour.btn.rehire", { slotNum, name: rehireName }),
+            callback_data: `labour:rehire:${B.id}:${i}`
           }]);
         }
       }
-      lines.push("");
     }
 
-    kb.push([{ text: this._t(langSource, "labour.btn.help"), callback_data: "labour:help" }]);
-    kb.push([{ text: this._t(langSource, "labour.btn.refresh"), callback_data: "go:Labour" }]);
-    kb.push([{ text: this._t(langSource, "labour.btn.back_earn"), callback_data: "go:Earn" }]);
-    return { caption: lines.join("\n").trim(), keyboard: kb };
-  }
-
-  async buildHelpView(owner) {
-    const langSource = owner;
-    const lines = [
-      this._t(langSource, "labour.help.title"),
-      "",
-      this._t(langSource, "labour.help.line1"),
-      this._t(langSource, "labour.help.line2"),
-      this._t(langSource, "labour.help.line3"),
-      this._t(langSource, "labour.help.line4"),
-      this._t(langSource, "labour.help.line5"),
-      "",
-      this._t(langSource, "labour.help.line6")
-    ];
+    if (nextBuyIdx >= 0) {
+      const levelCfg = this._slotLevelCfg(B.id, nextBuyIdx);
+      const slotNum = this._slotNum(nextBuyIdx);
+      const pct = Math.max(0, Math.floor(Number(levelCfg?.ownerPct || 0) * 100));
+      lines.push(this._t(langSource, "labour.biz.slot_next_buy", { slotNum, pct }));
+      kb.push([{
+        text: this._t(langSource, "labour.btn.buy_slot_compact", {
+          slotNum,
+          money: this._money(langSource, Number(levelCfg?.slotMoney) || 0),
+          gemsEmoji: CONFIG?.PREMIUM?.emoji || "💎",
+          gems: Math.max(0, Number(levelCfg?.slotGems) || 0)
+        }),
+        callback_data: `labour:buy_slot:${B.id}:${nextBuyIdx}`
+      }]);
+    }
 
     return {
-      caption: lines.join("\n"),
-      keyboard: [[{ text: this._t(langSource, "labour.btn.back"), callback_data: "go:Labour" }]]
+      caption: lines.join("\n").trim(),
+      keyboard: [
+        ...kb,
+        [{ text: this._t(langSource, "labour.btn.refresh"), callback_data: `labour:biz:${B.id}` }],
+        [{ text: this._t(langSource, "labour.btn.back_to_businesses"), callback_data: "go:Labour" }]
+      ]
     };
   }
 
@@ -938,10 +992,11 @@ export class LabourService {
     const maxSlots = this._maxSlots(bizId);
     const B = CONFIG?.BUSINESS?.[String(bizId || "")];
     const bizTitle = this._bizTitle(bizId, langSource);
+    const backBtn = [{ text: this._t(langSource, "labour.btn.back_to_businesses"), callback_data: `labour:biz:${B?.id || bizId}` }];
     if (maxSlots <= 0 || !B) {
       return {
         caption: this._t(langSource, "labour.err.slot_unavailable"),
-        keyboard: [[{ text: this._t(langSource, "labour.btn.back"), callback_data: "go:Labour" }]]
+        keyboard: [backBtn]
       };
     }
 
@@ -949,7 +1004,7 @@ export class LabourService {
     if (found.idx < 0 || !found.entry) {
       return {
         caption: this._t(langSource, "labour.err.buy_business_first"),
-        keyboard: [[{ text: this._t(langSource, "labour.btn.back"), callback_data: "go:Labour" }]]
+        keyboard: [backBtn]
       };
     }
     this._ensureSlots(found.entry, bizId);
@@ -962,7 +1017,7 @@ export class LabourService {
     if (targetIdx < 0 || targetIdx >= maxSlots) {
       return {
         caption: this._t(langSource, "labour.err.slot_unavailable"),
-        keyboard: [[{ text: this._t(langSource, "labour.btn.back"), callback_data: "go:Labour" }]]
+        keyboard: [backBtn]
       };
     }
 
@@ -970,13 +1025,13 @@ export class LabourService {
     if (!slot.purchased) {
       return {
         caption: this._t(langSource, "labour.err.buy_slot_for_business_first"),
-        keyboard: [[{ text: this._t(langSource, "labour.btn.back"), callback_data: "go:Labour" }]]
+        keyboard: [backBtn]
       };
     }
     if (this._slotIsActive(slot)) {
       return {
         caption: this._t(langSource, "labour.err.slot_busy_wait"),
-        keyboard: [[{ text: this._t(langSource, "labour.btn.back"), callback_data: "go:Labour" }]]
+        keyboard: [backBtn]
       };
     }
 
@@ -1002,7 +1057,7 @@ export class LabourService {
       }
     }
 
-    kb.push([{ text: this._t(langSource, "labour.btn.back"), callback_data: "go:Labour" }]);
+    kb.push(backBtn);
     return { caption: lines.join("\n").trim(), keyboard: kb };
   }
 }

@@ -1,8 +1,11 @@
+import { CONFIG } from "../GameConfig.js";
 import { normalizeLang, t } from "../i18n/index.js";
 
 export const labourHandler = {
   match: (data) =>
     data === "labour:help" ||
+    data.startsWith("labour:biz:") ||
+    data.startsWith("labour:buy_biz:") ||
     data.startsWith("labour:buy_slot:") ||
     data.startsWith("labour:hire_list:") ||
     data.startsWith("labour:hire:") ||
@@ -35,6 +38,57 @@ export const labourHandler = {
       Object.assign(u, fresh);
     };
 
+    const showBiz = async (bizId) => {
+      const view = await labour.buildBizView(u, bizId);
+      await show(view);
+    };
+
+    if (data === "labour:help") {
+      await answer(cb.id);
+      await goTo(u, "Labour");
+      return;
+    }
+
+    if (data.startsWith("labour:biz:")) {
+      await answer(cb.id);
+      const bizId = String(data.split(":")[2] || "");
+      await showBiz(bizId);
+      return;
+    }
+
+    if (data.startsWith("labour:buy_biz:")) {
+      await answer(cb.id);
+      const bizId = String(data.split(":")[2] || "");
+      const B = CONFIG?.BUSINESS?.[bizId] || null;
+      if (!B) {
+        await answer(cb.id, tt("handler.business.not_found"));
+        await showBiz(bizId);
+        return;
+      }
+
+      const ownedArr = Array.isArray(u?.biz?.owned) ? u.biz.owned : [];
+      const isOwned = ownedArr.some((it) => (typeof it === "string" ? it === B.id : it?.id === B.id));
+      if (!isOwned) {
+        const price = Number(B.price) || 0;
+        const money = Math.max(0, Number(u?.money) || 0);
+        if (money < price) {
+          await answer(cb.id, tt("handler.business.not_enough_money"));
+          await showBiz(bizId);
+          return;
+        }
+
+        u.money = money - price;
+        if (!u.biz) u.biz = {};
+        if (!Array.isArray(u.biz.owned)) u.biz.owned = [];
+        u.biz.owned.push({ id: B.id, boughtAt: Date.now(), lastClaimDayUTC: "" });
+        await users.save(u);
+      }
+
+      await reloadSelf();
+      await showBiz(bizId);
+      return;
+    }
+
     if (data.startsWith("labour:buy_slot:")) {
       await answer(cb.id);
       const parts = data.split(":");
@@ -43,27 +97,11 @@ export const labourHandler = {
       const res = await labour.buySlot(u, bizId, Number.isFinite(slotIndex) ? slotIndex : -1);
       if (!res.ok) {
         await answer(cb.id, res.error || tt("handler.labour.buy_slot_failed"));
-        await goTo(u, "Labour");
+        await showBiz(bizId);
         return;
       }
       await reloadSelf();
-      await goTo(
-        u,
-        "Labour",
-        tt("handler.labour.buy_slot_ok", {
-          slotNum: res.slotNum,
-          money: res.money,
-          gems: res.gems,
-          pct: Math.max(0, Math.floor((Number(res.ownerPct) || 0) * 100))
-        })
-      );
-      return;
-    }
-
-    if (data === "labour:help") {
-      await answer(cb.id);
-      const view = await labour.buildHelpView(u);
-      await show(view);
+      await showBiz(bizId);
       return;
     }
 
@@ -92,11 +130,11 @@ export const labourHandler = {
       const res = await labour.hire(u, bizId, Number.isFinite(slotIndex) ? slotIndex : -1, employeeId);
       if (!res.ok) {
         await answer(cb.id, res.error || tt("handler.labour.hire_failed"));
-        await goTo(u, "Labour");
+        await showBiz(bizId);
         return;
       }
       await reloadSelf();
-      await goTo(u, "Labour", tt("handler.labour.hire_ok", { name: res.employeeName, slotNum: res.slotNum }));
+      await showBiz(bizId);
       return;
     }
 
@@ -108,11 +146,11 @@ export const labourHandler = {
       const res = await labour.hireLast(u, bizId, Number.isFinite(slotIndex) ? slotIndex : -1);
       if (!res.ok) {
         await answer(cb.id, res.error || tt("handler.labour.rehire_failed"));
-        await goTo(u, "Labour");
+        await showBiz(bizId);
         return;
       }
       await reloadSelf();
-      await goTo(u, "Labour", tt("handler.labour.hire_ok", { name: res.employeeName, slotNum: res.slotNum }));
+      await showBiz(bizId);
       return;
     }
   }

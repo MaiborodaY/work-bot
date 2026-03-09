@@ -72,3 +72,31 @@ export function tHtml(key, lang = "ru", vars = {}) {
   return interpolate(text, vars, { html: true });
 }
 
+export function formatMoney(n, lang = "ru") {
+  const l = normalizeLang(lang);
+  const isEn = l === "en";
+  const suffixK = isEn ? "k" : "к";
+  const suffixM = isEn ? "m" : "м";
+
+  const raw = Number(n) || 0;
+  const sign = raw < 0 ? "-" : "";
+  const abs = Math.abs(raw);
+
+  if (abs < 1000) {
+    return `${sign}$${Math.floor(abs)}`;
+  }
+
+  const toShort = (value, suffix) => {
+    const rounded = Math.round(value * 10) / 10;
+    const shown = Number.isInteger(rounded)
+      ? String(rounded)
+      : String(rounded.toFixed(1)).replace(/\.0$/, "");
+    return `${sign}$${shown}${suffix}`;
+  };
+
+  if (abs < 1_000_000) {
+    return toShort(abs / 1000, suffixK);
+  }
+
+  return toShort(abs / 1_000_000, suffixM);
+}
