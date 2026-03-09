@@ -872,6 +872,23 @@ export class Locations {
       if (route === "Business") {
         const items = Object.values(CONFIG?.BUSINESS || {}).filter(Boolean);
         if (items.length > 1) {
+          const ownedArr = Array.isArray(user?.biz?.owned) ? user.biz.owned : [];
+          const ownedMap = new Map(
+            ownedArr.map((it) => (typeof it === "string" ? [it, { id: it, lastClaimDayUTC: "" }] : [String(it?.id || ""), it]))
+          );
+          const todayUTC = new Date().toISOString().slice(0, 10);
+          let claimAllCount = 0;
+          let claimAllAmount = 0;
+          for (const B of items) {
+            const entry = ownedMap.get(String(B.id || ""));
+            if (!entry) continue;
+            if (String(entry.lastClaimDayUTC || "") === todayUTC) continue;
+            const reward = Math.max(0, Number(B.daily) || 0);
+            if (reward <= 0) continue;
+            claimAllCount += 1;
+            claimAllAmount += reward;
+          }
+
           const caption =
             (header || "") +
             this._t(user, "loc.business.caption_intro") +
@@ -880,6 +897,13 @@ export class Locations {
           const kb = items.map((B) => [{
             text: `${B.emoji} ${getBusinessTitle(B.id, lang) || B.title}`,
             callback_data: `go:Biz_${B.id}`,
+          }]);
+          kb.push([{
+            text: this._t(user, "loc.business.btn.claim_all", {
+              amount: claimAllAmount,
+              count: claimAllCount
+            }),
+            callback_data: "biz:claim_all"
           }]);
           kb.push([{ text: this._t(user, "loc.business.btn.back_earn"), callback_data: "go:Earn" }]);
           await this.media.show({

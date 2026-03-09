@@ -102,6 +102,59 @@ export const businessHandler = {
       await goTo(u, bizRoute(id));
       return;
     }
+
+    if (action === "claim_all") {
+      const ownedArr = Array.isArray(u?.biz?.owned) ? u.biz.owned : [];
+      if (!ownedArr.length) {
+        await answer(tt("handler.business.not_owned"));
+        await goTo(u, "Business");
+        return;
+      }
+
+      const todayUTC = new Date().toISOString().slice(0, 10);
+      const normalizedOwned = ownedArr.map((it) => (typeof it === "string" ? { id: it, boughtAt: 0, lastClaimDayUTC: "" } : { ...it }));
+
+      let total = 0;
+      let count = 0;
+      for (const entry of normalizedOwned) {
+        const bizId = String(entry?.id || "");
+        const B = CONFIG.BUSINESS[bizId];
+        if (!B) continue;
+        if (entry.lastClaimDayUTC === todayUTC) continue;
+
+        const reward = Math.max(0, Number(B.daily) || 0);
+        if (reward > 0) {
+          total += reward;
+          count += 1;
+        }
+        entry.lastClaimDayUTC = todayUTC;
+      }
+
+      if (count <= 0 || total <= 0) {
+        await answer(tt("handler.business.claim_all_none"));
+        await goTo(u, "Business");
+        return;
+      }
+
+      u.money = Math.max(0, Number(u.money) || 0) + total;
+      u.biz = u.biz || {};
+      u.biz.owned = normalizedOwned;
+      await users.save(u);
+
+      try {
+        if (clans?.recordBusinessMoney) {
+          await clans.recordBusinessMoney(u, total);
+        }
+      } catch {}
+
+      await send(tt("handler.business.claim_all_ok", {
+        count,
+        reward: total,
+        money: u.money
+      }));
+      await goTo(u, "Business");
+      return;
+    }
     await answer(tt("handler.common.unknown_command"));
   }
 };

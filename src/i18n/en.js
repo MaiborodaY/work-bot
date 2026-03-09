@@ -99,6 +99,8 @@ export const EN = {
   "handler.labour.hire_failed": "Failed to hire player.",
   "handler.labour.hire_ok": "✅ Hired: {{name}} (slot {{slotNum}}).",
   "handler.labour.rehire_failed": "Failed to rehire.",
+  "handler.business.claim_all_none": "Nothing to claim: all business income for today is already collected.",
+  "handler.business.claim_all_ok": "💰 Collected from all businesses: ${{reward}}\n📦 Businesses processed: {{count}}\nBalance: ${{money}}",
 
   "labour.biz_fallback": "business",
   "labour.player_short": "Player #{{id}}",
@@ -454,6 +456,7 @@ export const EN = {
   "loc.business.status_claimed_today": "Status: today's income already claimed",
   "loc.business.status_available_today": "Status: available today: ${{amount}}",
   "loc.business.btn.buy_for": "Buy for ${{price}}",
+  "loc.business.btn.claim_all": "💰 Claim from all: ${{amount}}",
   "loc.business.btn.claim_today": "Claim ${{amount}} for today",
   "loc.business.btn.claim": "Claim ${{amount}}",
   "loc.business.btn.claimed_today": "Already claimed today",

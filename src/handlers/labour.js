@@ -45,7 +45,8 @@ export const labourHandler = {
 
     if (data === "labour:help") {
       await answer(cb.id);
-      await goTo(u, "Labour");
+      const view = await labour.buildHelpView(u);
+      await show(view);
       return;
     }
 

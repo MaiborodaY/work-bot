@@ -99,6 +99,8 @@ export const UK = {
   "handler.labour.hire_failed": "Не вдалося найняти гравця.",
   "handler.labour.hire_ok": "✅ Найнято: {{name}} (слот {{slotNum}}).",
   "handler.labour.rehire_failed": "Не вдалося найняти знову.",
+  "handler.business.claim_all_none": "Нічого збирати: дохід по всіх бізнесах за сьогодні вже отримано.",
+  "handler.business.claim_all_ok": "💰 Зібрано з усіх бізнесів: ${{reward}}\n📦 Оброблено бізнесів: {{count}}\nБаланс: ${{money}}",
 
   "labour.biz_fallback": "бізнес",
   "labour.player_short": "Гравець #{{id}}",
@@ -454,6 +456,7 @@ export const UK = {
   "loc.business.status_claimed_today": "Статус: дохід за сьогодні вже забрано",
   "loc.business.status_available_today": "Статус: доступно сьогодні: ${{amount}}",
   "loc.business.btn.buy_for": "Купити за ${{price}}",
+  "loc.business.btn.claim_all": "💰 Забрати з усіх: ${{amount}}",
   "loc.business.btn.claim_today": "Забрати ${{amount}} за сьогодні",
   "loc.business.btn.claim": "Забрати ${{amount}}",
   "loc.business.btn.claimed_today": "Сьогодні вже забрано",

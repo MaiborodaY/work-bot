@@ -279,6 +279,8 @@ export const RU = {
   "handler.business.not_owned": "У вас нет такого бизнеса",
   "handler.business.already_claimed": "Прибыль уже собрана",
   "handler.business.claim_ok": "💰 {{emoji}} {{title}}\n🤑 Прибыль за сутки: ${{reward}}\nБаланс: ${{money}}",
+  "handler.business.claim_all_none": "Собирать нечего: доход по всем бизнесам за сегодня уже забран.",
+  "handler.business.claim_all_ok": "💰 Собрано со всех бизнесов: ${{reward}}\n📦 Бизнесов обработано: {{count}}\nБаланс: ${{money}}",
 
   "handler.stocks.unavailable": "Биржа временно недоступна.",
   "handler.stocks.not_found": "Акция не найдена.",
@@ -603,6 +605,7 @@ export const RU = {
   "loc.business.status_claimed_today": "Статус: доход за сегодня забран",
   "loc.business.status_available_today": "Статус: доступно сегодня: ${{amount}}",
   "loc.business.btn.buy_for": "Купить за ${{price}}",
+  "loc.business.btn.claim_all": "💰 Забрать со всех: ${{amount}}",
   "loc.business.btn.claim_today": "Забрать ${{amount}} за сегодня",
   "loc.business.btn.claim": "Забрать ${{amount}}",
   "loc.business.btn.claimed_today": "Сегодня уже забрано",
