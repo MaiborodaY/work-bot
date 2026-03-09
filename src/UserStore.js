@@ -234,6 +234,45 @@ export class UserStore {
       dirty = true;
     }
 
+    // Наемники (слоты в бизнесах): миграция slot -> slots[0]
+    if (u.biz && typeof u.biz === "object" && Array.isArray(u.biz.owned)) {
+      for (const entry of u.biz.owned) {
+        if (!entry || typeof entry !== "object") continue;
+
+        if (entry.slot && typeof entry.slot === "object" && !Array.isArray(entry.slots)) {
+          entry.slots = [entry.slot];
+          delete entry.slot;
+          dirty = true;
+        }
+
+        if (!Array.isArray(entry.slots)) continue;
+        const norm = [];
+        for (const rawSlot of entry.slots) {
+          if (!rawSlot || typeof rawSlot !== "object") { dirty = true; continue; }
+          const purchased = !!rawSlot.purchased;
+          const employeeId = purchased ? String(rawSlot.employeeId || "") : "";
+          const contractStart = purchased ? Math.max(0, Number(rawSlot.contractStart) || 0) : 0;
+          const contractEnd = purchased ? Math.max(0, Number(rawSlot.contractEnd) || 0) : 0;
+          const earnedTotal = purchased ? Math.max(0, Math.floor(Number(rawSlot.earnedTotal) || 0)) : 0;
+          const lastEmployeeId = String(rawSlot.lastEmployeeId || "");
+          const ownerPct = purchased ? Math.max(0, Number(rawSlot.ownerPct) || 0) : 0;
+
+          norm.push({
+            purchased,
+            employeeId,
+            contractStart,
+            contractEnd,
+            earnedTotal,
+            lastEmployeeId,
+            ownerPct
+          });
+        }
+        if (norm.length !== entry.slots.length) dirty = true;
+        if (norm.length > 5) dirty = true;
+        entry.slots = norm.slice(0, 5);
+      }
+    }
+
     // Наемники (статус игрока как сотрудника)
     if (!u.employment || typeof u.employment !== "object") {
       u.employment = {
@@ -241,7 +280,8 @@ export class UserStore {
         ownerId: "",
         bizId: "",
         ownerPct: 0,
-        contractEnd: 0
+        contractEnd: 0,
+        slotIndex: -1
       };
       dirty = true;
     } else {
@@ -250,6 +290,20 @@ export class UserStore {
       if (typeof u.employment.bizId !== "string") { u.employment.bizId = ""; dirty = true; }
       if (typeof u.employment.ownerPct !== "number") { u.employment.ownerPct = 0; dirty = true; }
       if (typeof u.employment.contractEnd !== "number") { u.employment.contractEnd = 0; dirty = true; }
+      if (typeof u.employment.slotIndex !== "number" || !Number.isFinite(u.employment.slotIndex)) {
+        u.employment.slotIndex = -1;
+        dirty = true;
+      } else {
+        const slotIndex = Math.floor(Number(u.employment.slotIndex));
+        if (slotIndex !== u.employment.slotIndex || slotIndex < -1) {
+          u.employment.slotIndex = Math.max(-1, slotIndex);
+          dirty = true;
+        }
+      }
+      if (!u.employment.active && u.employment.slotIndex !== -1) {
+        u.employment.slotIndex = -1;
+        dirty = true;
+      }
     }
 
     // Рефералы
@@ -362,7 +416,7 @@ export class UserStore {
 
       clan: { clanId: "", joinedAt: 0, joinAvailableFromWeek: "", lastPresenceDay: "" },
       clanCosmetic: null,
-      employment: { active: false, ownerId: "", bizId: "", ownerPct: 0, contractEnd: 0 },
+      employment: { active: false, ownerId: "", bizId: "", ownerPct: 0, contractEnd: 0, slotIndex: -1 },
       referral: { referredBy: "", rewarded: false, invited: [], totalGemsEarned: 0 },
 
       // Flags

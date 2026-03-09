@@ -37,8 +37,10 @@ export const labourHandler = {
 
     if (data.startsWith("labour:buy_slot:")) {
       await answer(cb.id);
-      const bizId = String(data.split(":")[2] || "");
-      const res = await labour.buySlot(u, bizId);
+      const parts = data.split(":");
+      const bizId = String(parts[2] || "");
+      const slotIndex = Number(parts[3]);
+      const res = await labour.buySlot(u, bizId, Number.isFinite(slotIndex) ? slotIndex : -1);
       if (!res.ok) {
         await answer(cb.id, res.error || tt("handler.labour.buy_slot_failed"));
         await goTo(u, "Labour");
@@ -48,7 +50,12 @@ export const labourHandler = {
       await goTo(
         u,
         "Labour",
-        tt("handler.labour.buy_slot_ok", { money: res.money, gems: res.gems })
+        tt("handler.labour.buy_slot_ok", {
+          slotNum: res.slotNum,
+          money: res.money,
+          gems: res.gems,
+          pct: Math.max(0, Math.floor((Number(res.ownerPct) || 0) * 100))
+        })
       );
       return;
     }
@@ -62,38 +69,50 @@ export const labourHandler = {
 
     if (data.startsWith("labour:hire_list:")) {
       await answer(cb.id);
-      const bizId = String(data.split(":")[2] || "");
-      const view = await labour.buildHireListView(u, bizId);
+      const parts = data.split(":");
+      const bizId = String(parts[2] || "");
+      const slotIndex = Number(parts[3]);
+      const view = await labour.buildHireListView(u, bizId, Number.isFinite(slotIndex) ? slotIndex : -1);
       await show(view);
       return;
     }
 
     if (data.startsWith("labour:hire:")) {
       await answer(cb.id);
-      const bizId = String(data.split(":")[2] || "");
-      const employeeId = String(data.split(":")[3] || "");
-      const res = await labour.hire(u, bizId, employeeId);
+      const parts = data.split(":");
+      const bizId = String(parts[2] || "");
+      let slotIndex = -1;
+      let employeeId = "";
+      if (parts.length >= 5) {
+        slotIndex = Number(parts[3]);
+        employeeId = String(parts[4] || "");
+      } else {
+        employeeId = String(parts[3] || "");
+      }
+      const res = await labour.hire(u, bizId, Number.isFinite(slotIndex) ? slotIndex : -1, employeeId);
       if (!res.ok) {
         await answer(cb.id, res.error || tt("handler.labour.hire_failed"));
         await goTo(u, "Labour");
         return;
       }
       await reloadSelf();
-      await goTo(u, "Labour", tt("handler.labour.hire_ok", { name: res.employeeName }));
+      await goTo(u, "Labour", tt("handler.labour.hire_ok", { name: res.employeeName, slotNum: res.slotNum }));
       return;
     }
 
     if (data.startsWith("labour:rehire:")) {
       await answer(cb.id);
-      const bizId = String(data.split(":")[2] || "");
-      const res = await labour.hireLast(u, bizId);
+      const parts = data.split(":");
+      const bizId = String(parts[2] || "");
+      const slotIndex = Number(parts[3]);
+      const res = await labour.hireLast(u, bizId, Number.isFinite(slotIndex) ? slotIndex : -1);
       if (!res.ok) {
         await answer(cb.id, res.error || tt("handler.labour.rehire_failed"));
         await goTo(u, "Labour");
         return;
       }
       await reloadSelf();
-      await goTo(u, "Labour", tt("handler.labour.hire_ok", { name: res.employeeName }));
+      await goTo(u, "Labour", tt("handler.labour.hire_ok", { name: res.employeeName, slotNum: res.slotNum }));
       return;
     }
   }

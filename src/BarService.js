@@ -105,6 +105,9 @@ export class BarService {
     const owned = Array.isArray(u?.biz?.owned) ? u.biz.owned : [];
     return owned.some((b) => {
       if (!b || typeof b !== "object") return false;
+      if (Array.isArray(b.slots)) {
+        return b.slots.some((s) => !!s?.purchased);
+      }
       return !!b?.slot?.purchased;
     });
   }

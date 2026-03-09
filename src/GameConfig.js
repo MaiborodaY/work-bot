@@ -248,39 +248,59 @@ export const CONFIG = {
     INDEX_SIZE: 20,
     SLOTS: {
       shawarma: {
-        slotMoney: 10000,
-        slotGems: 20,
-        ownerPct: 0.08,
         contractDays: 1,
-        minEnergyMax: 20
+        minEnergyMax: 20,
+        levels: [
+          { slotMoney: 10000, slotGems: 20, ownerPct: 0.08 },
+          { slotMoney: 15000, slotGems: 30, ownerPct: 0.07 },
+          { slotMoney: 20000, slotGems: 40, ownerPct: 0.06 },
+          { slotMoney: 30000, slotGems: 60, ownerPct: 0.05 },
+          { slotMoney: 40000, slotGems: 80, ownerPct: 0.04 }
+        ]
       },
       stomatology: {
-        slotMoney: 25000,
-        slotGems: 50,
-        ownerPct: 0.10,
         contractDays: 2,
-        minEnergyMax: 40
+        minEnergyMax: 40,
+        levels: [
+          { slotMoney: 25000, slotGems: 50, ownerPct: 0.10 },
+          { slotMoney: 37500, slotGems: 75, ownerPct: 0.09 },
+          { slotMoney: 50000, slotGems: 100, ownerPct: 0.08 },
+          { slotMoney: 75000, slotGems: 150, ownerPct: 0.07 },
+          { slotMoney: 100000, slotGems: 200, ownerPct: 0.06 }
+        ]
       },
       restaurant: {
-        slotMoney: 50000,
-        slotGems: 100,
-        ownerPct: 0.12,
         contractDays: 3,
-        minEnergyMax: 60
+        minEnergyMax: 60,
+        levels: [
+          { slotMoney: 50000, slotGems: 100, ownerPct: 0.12 },
+          { slotMoney: 75000, slotGems: 150, ownerPct: 0.10 },
+          { slotMoney: 100000, slotGems: 200, ownerPct: 0.08 },
+          { slotMoney: 150000, slotGems: 300, ownerPct: 0.06 },
+          { slotMoney: 200000, slotGems: 400, ownerPct: 0.05 }
+        ]
       },
       courier_service: {
-        slotMoney: 100000,
-        slotGems: 200,
-        ownerPct: 0.14,
         contractDays: 5,
-        minEnergyMax: 80
+        minEnergyMax: 80,
+        levels: [
+          { slotMoney: 100000, slotGems: 200, ownerPct: 0.14 },
+          { slotMoney: 150000, slotGems: 300, ownerPct: 0.12 },
+          { slotMoney: 200000, slotGems: 400, ownerPct: 0.10 },
+          { slotMoney: 300000, slotGems: 600, ownerPct: 0.08 },
+          { slotMoney: 400000, slotGems: 800, ownerPct: 0.06 }
+        ]
       },
       fitness_club: {
-        slotMoney: 250000,
-        slotGems: 500,
-        ownerPct: 0.16,
         contractDays: 7,
-        minEnergyMax: 100
+        minEnergyMax: 100,
+        levels: [
+          { slotMoney: 250000, slotGems: 500, ownerPct: 0.16 },
+          { slotMoney: 375000, slotGems: 750, ownerPct: 0.14 },
+          { slotMoney: 500000, slotGems: 1000, ownerPct: 0.12 },
+          { slotMoney: 750000, slotGems: 1500, ownerPct: 0.10 },
+          { slotMoney: 1000000, slotGems: 2000, ownerPct: 0.08 }
+        ]
       }
     }
   },

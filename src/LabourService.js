@@ -34,6 +34,48 @@ export class LabourService {
     return this._slotsCfg()[String(bizId || "")] || null;
   }
 
+  _slotLevelsCfg(bizId) {
+    const slotCfg = this._slotCfg(bizId);
+    if (!slotCfg || typeof slotCfg !== "object") return [];
+    const rawLevels = Array.isArray(slotCfg.levels)
+      ? slotCfg.levels
+      : [{
+          slotMoney: slotCfg.slotMoney,
+          slotGems: slotCfg.slotGems,
+          ownerPct: slotCfg.ownerPct
+        }];
+
+    return rawLevels
+      .map((x) => ({
+        slotMoney: Math.max(0, Math.floor(Number(x?.slotMoney) || 0)),
+        slotGems: Math.max(0, Math.floor(Number(x?.slotGems) || 0)),
+        ownerPct: Math.max(0, Number(x?.ownerPct) || 0)
+      }))
+      .filter((x) => x.slotMoney > 0 || x.slotGems > 0 || x.ownerPct > 0);
+  }
+
+  _slotLevelCfg(bizId, slotIndex) {
+    const levels = this._slotLevelsCfg(bizId);
+    const idx = Math.floor(Number(slotIndex));
+    if (!Number.isFinite(idx) || idx < 0 || idx >= levels.length) return null;
+    return levels[idx];
+  }
+
+  _maxSlots(bizId) {
+    const levels = this._slotLevelsCfg(bizId);
+    return Math.max(0, levels.length);
+  }
+
+  _contractDays(bizId) {
+    const slotCfg = this._slotCfg(bizId);
+    return Math.max(1, Number(slotCfg?.contractDays) || 1);
+  }
+
+  _minEnergyMax(bizId) {
+    const slotCfg = this._slotCfg(bizId);
+    return Math.max(0, Number(slotCfg?.minEnergyMax) || 0);
+  }
+
   _listSize() {
     return Math.max(1, Number(this._cfg().LIST_SIZE) || 10);
   }
@@ -67,7 +109,7 @@ export class LabourService {
   }
 
   _inactiveEmployment() {
-    return { active: false, ownerId: "", bizId: "", ownerPct: 0, contractEnd: 0 };
+    return { active: false, ownerId: "", bizId: "", ownerPct: 0, contractEnd: 0, slotIndex: -1 };
   }
 
   _ensureEmployment(u) {
@@ -96,6 +138,20 @@ export class LabourService {
       u.employment.contractEnd = 0;
       dirty = true;
     }
+    if (typeof u.employment.slotIndex !== "number" || !Number.isFinite(u.employment.slotIndex)) {
+      u.employment.slotIndex = -1;
+      dirty = true;
+    } else {
+      const idx = Math.floor(Number(u.employment.slotIndex));
+      if (idx !== u.employment.slotIndex || idx < -1) {
+        u.employment.slotIndex = Math.max(-1, idx);
+        dirty = true;
+      }
+    }
+    if (!u.employment.active && u.employment.slotIndex !== -1) {
+      u.employment.slotIndex = -1;
+      dirty = true;
+    }
     return dirty;
   }
 
@@ -106,23 +162,136 @@ export class LabourService {
       contractStart: 0,
       contractEnd: 0,
       earnedTotal: 0,
-      lastEmployeeId: ""
+      lastEmployeeId: "",
+      ownerPct: 0
     };
   }
 
-  _ensureSlot(entry) {
-    if (!entry.slot || typeof entry.slot !== "object") {
-      entry.slot = this._emptySlot();
-      return true;
+  _ensureSlotObject(slot) {
+    if (!slot || typeof slot !== "object") {
+      return { slot: this._emptySlot(), dirty: true };
     }
+
     let dirty = false;
-    if (typeof entry.slot.purchased !== "boolean") { entry.slot.purchased = false; dirty = true; }
-    if (typeof entry.slot.employeeId !== "string") { entry.slot.employeeId = ""; dirty = true; }
-    if (typeof entry.slot.contractStart !== "number") { entry.slot.contractStart = 0; dirty = true; }
-    if (typeof entry.slot.contractEnd !== "number") { entry.slot.contractEnd = 0; dirty = true; }
-    if (typeof entry.slot.earnedTotal !== "number") { entry.slot.earnedTotal = 0; dirty = true; }
-    if (typeof entry.slot.lastEmployeeId !== "string") { entry.slot.lastEmployeeId = ""; dirty = true; }
+    if (typeof slot.purchased !== "boolean") { slot.purchased = false; dirty = true; }
+    if (typeof slot.employeeId !== "string") { slot.employeeId = ""; dirty = true; }
+    if (typeof slot.contractStart !== "number") { slot.contractStart = 0; dirty = true; }
+    if (typeof slot.contractEnd !== "number") { slot.contractEnd = 0; dirty = true; }
+    if (typeof slot.earnedTotal !== "number") { slot.earnedTotal = 0; dirty = true; }
+    if (typeof slot.lastEmployeeId !== "string") { slot.lastEmployeeId = ""; dirty = true; }
+    if (typeof slot.ownerPct !== "number") { slot.ownerPct = 0; dirty = true; }
+    if (!slot.purchased) {
+      if (slot.employeeId || slot.contractStart || slot.contractEnd || slot.earnedTotal || slot.ownerPct) {
+        slot.employeeId = "";
+        slot.contractStart = 0;
+        slot.contractEnd = 0;
+        slot.earnedTotal = 0;
+        slot.ownerPct = 0;
+        dirty = true;
+      }
+    } else {
+      const ownerPct = Math.max(0, Number(slot.ownerPct) || 0);
+      if (ownerPct !== slot.ownerPct) {
+        slot.ownerPct = ownerPct;
+        dirty = true;
+      }
+    }
+    return { slot, dirty };
+  }
+
+  _ensureSlots(entry, bizId = "") {
+    if (!entry || typeof entry !== "object") return false;
+
+    let dirty = false;
+    if (entry.slot && typeof entry.slot === "object" && !Array.isArray(entry.slots)) {
+      entry.slots = [entry.slot];
+      delete entry.slot;
+      dirty = true;
+    }
+    if (!Array.isArray(entry.slots)) {
+      entry.slots = [];
+      dirty = true;
+    }
+
+    const normalized = [];
+    for (const rawSlot of entry.slots) {
+      const ensured = this._ensureSlotObject(rawSlot);
+      normalized.push(ensured.slot);
+      dirty = dirty || ensured.dirty;
+    }
+
+    const maxSlots = this._maxSlots(bizId || entry.id || "");
+    if (maxSlots > 0 && normalized.length > maxSlots) {
+      normalized.length = maxSlots;
+      dirty = true;
+    }
+
+    if (normalized.length !== entry.slots.length) dirty = true;
+    entry.slots = normalized;
     return dirty;
+  }
+
+  _slotIndex(rawIndex) {
+    const idx = Math.floor(Number(rawIndex));
+    if (!Number.isFinite(idx)) return -1;
+    return Math.max(-1, idx);
+  }
+
+  _slotNum(rawIndex) {
+    return this._slotIndex(rawIndex) + 1;
+  }
+
+  _slotAt(entry, slotIndex) {
+    if (!entry || typeof entry !== "object") return null;
+    if (!Array.isArray(entry.slots)) entry.slots = [];
+    const idx = this._slotIndex(slotIndex);
+    if (idx < 0) return null;
+    while (entry.slots.length <= idx) {
+      entry.slots.push(this._emptySlot());
+    }
+    const ensured = this._ensureSlotObject(entry.slots[idx]);
+    entry.slots[idx] = ensured.slot;
+    return entry.slots[idx];
+  }
+
+  _findEntrySlot(entry, slotIndex, employeeId = "") {
+    if (!entry || typeof entry !== "object") return { slot: null, slotIndex: -1 };
+    if (!Array.isArray(entry.slots)) entry.slots = [];
+
+    const idx = this._slotIndex(slotIndex);
+    if (idx >= 0 && idx < entry.slots.length) {
+      const ensured = this._ensureSlotObject(entry.slots[idx]);
+      entry.slots[idx] = ensured.slot;
+      return { slot: entry.slots[idx], slotIndex: idx };
+    }
+
+    const wantedEmployeeId = String(employeeId || "");
+    if (wantedEmployeeId) {
+      for (let i = 0; i < entry.slots.length; i++) {
+        const ensured = this._ensureSlotObject(entry.slots[i]);
+        entry.slots[i] = ensured.slot;
+        if (String(entry.slots[i].employeeId || "") === wantedEmployeeId) {
+          return { slot: entry.slots[i], slotIndex: i };
+        }
+      }
+    }
+
+    return { slot: null, slotIndex: -1 };
+  }
+
+  _countPurchasedSlots(entry) {
+    if (!entry || !Array.isArray(entry.slots)) return 0;
+    return entry.slots.filter((s) => !!s?.purchased).length;
+  }
+
+  _nextBuySlotIndex(entry, maxSlots) {
+    const limit = Math.max(0, Number(maxSlots) || 0);
+    if (limit <= 0) return -1;
+    for (let i = 0; i < limit; i++) {
+      const slot = this._slotAt(entry, i);
+      if (!slot?.purchased) return i;
+    }
+    return -1;
   }
 
   _ownedArray(u) {
@@ -150,7 +319,7 @@ export class LabourService {
     if (typeof entry.id !== "string") entry.id = id;
     if (typeof entry.boughtAt !== "number") entry.boughtAt = 0;
     if (typeof entry.lastClaimDayUTC !== "string") entry.lastClaimDayUTC = "";
-    this._ensureSlot(entry);
+    this._ensureSlots(entry, id);
     return { idx, entry, arr };
   }
 
@@ -158,6 +327,15 @@ export class LabourService {
     if (!slot || !slot.purchased) return false;
     if (!slot.employeeId) return false;
     return Number(slot.contractEnd || 0) > this.now();
+  }
+
+  _clearSlotAssignment(slot, employeeId = "") {
+    if (!slot || typeof slot !== "object") return;
+    slot.lastEmployeeId = String(employeeId || slot.employeeId || slot.lastEmployeeId || "");
+    slot.employeeId = "";
+    slot.contractStart = 0;
+    slot.contractEnd = 0;
+    slot.earnedTotal = 0;
   }
 
   async _loadFreePlayersIndex() {
@@ -238,6 +416,7 @@ export class LabourService {
 
     const ownerId = String(user.employment.ownerId || "");
     const bizId = String(user.employment.bizId || "");
+    const slotIndex = this._slotIndex(user.employment.slotIndex);
 
     user.employment = this._inactiveEmployment();
     await this.users.save(user);
@@ -249,15 +428,13 @@ export class LabourService {
       if (owner) {
         const found = this._findOwnedEntry(owner, bizId);
         if (found.entry) {
-          const slot = found.entry.slot || this._emptySlot();
-          total = Math.max(0, Number(slot.earnedTotal) || 0);
-          if (String(slot.employeeId || "") === String(user.id || "")) {
-            slot.lastEmployeeId = String(user.id || "");
-            slot.employeeId = "";
-            slot.contractStart = 0;
-            slot.contractEnd = 0;
-            slot.earnedTotal = 0;
-            found.entry.slot = slot;
+          const resolved = this._findEntrySlot(found.entry, slotIndex, user.id);
+          const slot = resolved.slot;
+          if (slot) {
+            total = Math.max(0, Number(slot.earnedTotal) || 0);
+          }
+          if (slot && String(slot.employeeId || "") === String(user.id || "")) {
+            this._clearSlotAssignment(slot, String(user.id || ""));
             await this.users.save(owner);
           }
         }
@@ -292,7 +469,7 @@ export class LabourService {
       }
     }
 
-    return { expired: true, ownerId, bizId };
+    return { expired: true, ownerId, bizId, slotIndex };
   }
 
   async ensureEmploymentFresh(u) {
@@ -314,39 +491,36 @@ export class LabourService {
         dirty = true;
       }
       if (!e || typeof e !== "object") continue;
-      this._ensureSlot(e);
-      const slot = e.slot;
-      if (!slot.purchased || !slot.employeeId) continue;
+      dirty = this._ensureSlots(e, e.id) || dirty;
+      const slots = Array.isArray(e.slots) ? e.slots : [];
+      for (let slotIndex = 0; slotIndex < slots.length; slotIndex++) {
+        const slot = slots[slotIndex];
+        if (!slot?.purchased || !slot.employeeId) continue;
 
-      const employee = await this.users.load(slot.employeeId).catch(() => null);
-      if (!employee) {
-        slot.lastEmployeeId = String(slot.employeeId || slot.lastEmployeeId || "");
-        slot.employeeId = "";
-        slot.contractStart = 0;
-        slot.contractEnd = 0;
-        slot.earnedTotal = 0;
-        dirty = true;
-        continue;
-      }
+        const employee = await this.users.load(slot.employeeId).catch(() => null);
+        if (!employee) {
+          this._clearSlotAssignment(slot);
+          dirty = true;
+          continue;
+        }
 
-      this._ensureEmployment(employee);
-      const active = !!employee.employment.active;
-      const sameOwner = String(employee.employment.ownerId || "") === String(owner.id || "");
-      const sameBiz = String(employee.employment.bizId || "") === String(e.id || "");
+        this._ensureEmployment(employee);
+        const active = !!employee.employment.active;
+        const sameOwner = String(employee.employment.ownerId || "") === String(owner.id || "");
+        const sameBiz = String(employee.employment.bizId || "") === String(e.id || "");
+        const employeeSlotIdx = this._slotIndex(employee.employment.slotIndex);
+        const sameSlot = employeeSlotIdx < 0 || employeeSlotIdx === slotIndex;
 
-      if (!active || !sameOwner || !sameBiz) {
-        slot.lastEmployeeId = String(slot.employeeId || slot.lastEmployeeId || "");
-        slot.employeeId = "";
-        slot.contractStart = 0;
-        slot.contractEnd = 0;
-        slot.earnedTotal = 0;
-        dirty = true;
-        continue;
-      }
+        if (!active || !sameOwner || !sameBiz || !sameSlot) {
+          this._clearSlotAssignment(slot);
+          dirty = true;
+          continue;
+        }
 
-      if (Number(employee.employment.contractEnd || 0) <= this.now()) {
-        await this._expireEmploymentForUser(employee, { notify: true });
-        return this.users.load(owner.id).catch(() => owner);
+        if (Number(employee.employment.contractEnd || 0) <= this.now()) {
+          await this._expireEmploymentForUser(employee, { notify: true });
+          return this.users.load(owner.id).catch(() => owner);
+        }
       }
     }
 
@@ -357,20 +531,44 @@ export class LabourService {
     return owner;
   }
 
-  async buySlot(owner, bizId) {
-    const slotCfg = this._slotCfg(bizId);
-    if (!slotCfg) return { ok: false, error: this._t(owner, "labour.err.slot_unavailable") };
+  async buySlot(owner, bizId, slotIndex = -1) {
+    const maxSlots = this._maxSlots(bizId);
+    if (maxSlots <= 0) return { ok: false, error: this._t(owner, "labour.err.slot_unavailable") };
+
+    owner = await this.reconcileOwnerSlots(owner);
 
     const found = this._findOwnedEntry(owner, bizId);
     if (found.idx < 0 || !found.entry) {
       return { ok: false, error: this._t(owner, "labour.err.buy_business_first") };
     }
 
-    const slot = found.entry.slot || this._emptySlot();
+    this._ensureSlots(found.entry, bizId);
+    const purchasedCount = this._countPurchasedSlots(found.entry);
+    const nextBuyIdx = this._nextBuySlotIndex(found.entry, maxSlots);
+    if (nextBuyIdx < 0 || purchasedCount >= maxSlots) {
+      return { ok: false, error: this._t(owner, "labour.err.max_slots_reached") };
+    }
+
+    let targetIdx = this._slotIndex(slotIndex);
+    if (targetIdx < 0) targetIdx = nextBuyIdx;
+    if (targetIdx >= maxSlots) {
+      return { ok: false, error: this._t(owner, "labour.err.max_slots_reached") };
+    }
+    if (targetIdx < purchasedCount) {
+      return { ok: false, error: this._t(owner, "labour.err.slot_already_bought") };
+    }
+    if (targetIdx !== nextBuyIdx) {
+      return { ok: false, error: this._t(owner, "labour.err.buy_slot_in_order") };
+    }
+
+    const levelCfg = this._slotLevelCfg(bizId, targetIdx);
+    if (!levelCfg) return { ok: false, error: this._t(owner, "labour.err.slot_unavailable") };
+    const slot = this._slotAt(found.entry, targetIdx);
+    if (!slot) return { ok: false, error: this._t(owner, "labour.err.slot_unavailable") };
     if (slot.purchased) return { ok: false, error: this._t(owner, "labour.err.slot_already_bought") };
 
-    const needMoney = Math.max(0, Number(slotCfg.slotMoney) || 0);
-    const needGems = Math.max(0, Number(slotCfg.slotGems) || 0);
+    const needMoney = Math.max(0, Number(levelCfg.slotMoney) || 0);
+    const needGems = Math.max(0, Number(levelCfg.slotGems) || 0);
 
     const haveMoney = Math.max(0, Number(owner.money) || 0);
     const haveGems = Math.max(0, Number(owner.premium) || 0);
@@ -386,17 +584,23 @@ export class LabourService {
     slot.contractEnd = 0;
     slot.earnedTotal = 0;
     slot.lastEmployeeId = String(slot.lastEmployeeId || "");
-    found.entry.slot = slot;
+    slot.ownerPct = Math.max(0, Number(levelCfg.ownerPct) || 0);
 
     await this.users.save(owner);
-    return { ok: true, money: needMoney, gems: needGems };
+    return {
+      ok: true,
+      money: needMoney,
+      gems: needGems,
+      slotIndex: targetIdx,
+      slotNum: this._slotNum(targetIdx),
+      ownerPct: slot.ownerPct
+    };
   }
 
   async getHireCandidates(owner, bizId) {
-    const slotCfg = this._slotCfg(bizId);
-    if (!slotCfg) return [];
-
-    const minEnergy = Math.max(0, Number(slotCfg.minEnergyMax) || 0);
+    const maxSlots = this._maxSlots(bizId);
+    if (maxSlots <= 0) return [];
+    const minEnergy = this._minEnergyMax(bizId);
     const limit = this._listSize();
     const index = await this._loadFreePlayersIndex();
     const out = [];
@@ -415,9 +619,9 @@ export class LabourService {
     return out;
   }
 
-  async hire(owner, bizId, employeeId) {
-    const slotCfg = this._slotCfg(bizId);
-    if (!slotCfg) return { ok: false, error: this._t(owner, "labour.err.slot_unavailable") };
+  async hire(owner, bizId, slotIndex, employeeId) {
+    const maxSlots = this._maxSlots(bizId);
+    if (maxSlots <= 0) return { ok: false, error: this._t(owner, "labour.err.slot_unavailable") };
     if (String(owner?.id || "") === String(employeeId || "")) {
       return { ok: false, error: this._t(owner, "labour.err.cannot_hire_self") };
     }
@@ -425,16 +629,30 @@ export class LabourService {
     owner = await this.reconcileOwnerSlots(owner);
     const found = this._findOwnedEntry(owner, bizId);
     if (found.idx < 0 || !found.entry) return { ok: false, error: this._t(owner, "labour.err.buy_business_first") };
-    const slot = found.entry.slot || this._emptySlot();
-    if (!slot.purchased) return { ok: false, error: this._t(owner, "labour.err.buy_slot_first") };
+    this._ensureSlots(found.entry, bizId);
+
+    let targetIdx = this._slotIndex(slotIndex);
+    if (targetIdx < 0) {
+      targetIdx = found.entry.slots.findIndex((s) => !!s?.purchased && !this._slotIsActive(s));
+      if (targetIdx < 0) targetIdx = 0;
+    }
+    if (targetIdx < 0 || targetIdx >= maxSlots) {
+      return { ok: false, error: this._t(owner, "labour.err.slot_unavailable") };
+    }
+
+    const slot = this._slotAt(found.entry, targetIdx);
+    if (!slot) return { ok: false, error: this._t(owner, "labour.err.slot_unavailable") };
+    if (!slot.purchased) return { ok: false, error: this._t(owner, "labour.err.buy_slot_for_business_first") };
     if (this._slotIsActive(slot)) return { ok: false, error: this._t(owner, "labour.err.slot_busy") };
 
     const prevLast = String(slot.lastEmployeeId || "");
     const contractStart = this.now();
-    const contractEnd = contractStart + Math.max(1, Number(slotCfg.contractDays) || 1) * DAY_MS;
-    const ownerPct = Math.max(0, Number(slotCfg.ownerPct) || 0);
-    const minEnergy = Math.max(0, Number(slotCfg.minEnergyMax) || 0);
+    const contractEnd = contractStart + this._contractDays(bizId) * DAY_MS;
+    const ownerPctFromConfig = Math.max(0, Number(this._slotLevelCfg(bizId, targetIdx)?.ownerPct) || 0);
+    const ownerPct = Math.max(0, Number(slot.ownerPct) || ownerPctFromConfig || 0);
+    const minEnergy = this._minEnergyMax(bizId);
     const wantedEmployeeId = String(employeeId || "");
+    slot.ownerPct = ownerPct;
 
     let reserved = null;
     let reserveError = "";
@@ -468,7 +686,8 @@ export class LabourService {
         ownerId: String(owner.id || ""),
         bizId: String(bizId),
         ownerPct,
-        contractEnd
+        contractEnd,
+        slotIndex: targetIdx
       };
       reserved = {
         id: String(emp.id || wantedEmployeeId),
@@ -488,7 +707,6 @@ export class LabourService {
     slot.contractEnd = contractEnd;
     slot.earnedTotal = 0;
     slot.lastEmployeeId = String(reserved.id || prevLast || "");
-    found.entry.slot = slot;
 
     await this.users.save(owner);
     await this.removeFreePlayer(reserved.id);
@@ -496,7 +714,7 @@ export class LabourService {
     if (reserved.chatId) {
       const ownerName = this._formatName(owner, reserved);
       const bizTitle = this._bizTitle(bizId, reserved);
-      const days = Math.max(1, Number(slotCfg.contractDays) || 1);
+      const days = this._contractDays(bizId);
       await this._sendInline(
         reserved.chatId,
         this._t(reserved, "labour.notify.employee_hired", { bizTitle, ownerName, days }),
@@ -505,16 +723,33 @@ export class LabourService {
       );
     }
 
-    return { ok: true, employeeId: reserved.id, employeeName: reserved.name, contractEnd };
+    return {
+      ok: true,
+      employeeId: reserved.id,
+      employeeName: reserved.name,
+      contractEnd,
+      slotIndex: targetIdx,
+      slotNum: this._slotNum(targetIdx)
+    };
   }
 
-  async hireLast(owner, bizId) {
+  async hireLast(owner, bizId, slotIndex) {
     owner = await this.reconcileOwnerSlots(owner);
     const found = this._findOwnedEntry(owner, bizId);
     if (found.idx < 0 || !found.entry) return { ok: false, error: this._t(owner, "labour.err.buy_business_first") };
-    const lastId = String(found.entry?.slot?.lastEmployeeId || "");
+    this._ensureSlots(found.entry, bizId);
+
+    let targetIdx = this._slotIndex(slotIndex);
+    if (targetIdx < 0) {
+      targetIdx = found.entry.slots.findIndex((s) => !!s?.purchased && !!s?.lastEmployeeId && !this._slotIsActive(s));
+      if (targetIdx < 0) targetIdx = 0;
+    }
+    const slot = this._slotAt(found.entry, targetIdx);
+    if (!slot || !slot.purchased) return { ok: false, error: this._t(owner, "labour.err.buy_slot_for_business_first") };
+
+    const lastId = String(slot.lastEmployeeId || "");
     if (!lastId) return { ok: false, error: this._t(owner, "labour.err.no_last_employee") };
-    return this.hire(owner, bizId, lastId);
+    return this.hire(owner, bizId, targetIdx, lastId);
   }
 
   async onEmployeePaid(employee, pay, shiftEndAt) {
@@ -524,6 +759,7 @@ export class LabourService {
     const ownerId = String(employee.employment.ownerId || "");
     const bizId = String(employee.employment.bizId || "");
     const ownerPct = Math.max(0, Number(employee.employment.ownerPct) || 0);
+    const slotIndex = this._slotIndex(employee.employment.slotIndex);
     const contractEnd = Number(employee.employment.contractEnd || 0);
     const endedAt = Math.max(0, Number(shiftEndAt) || 0);
     const safePay = Math.max(0, Math.floor(Number(pay) || 0));
@@ -537,16 +773,18 @@ export class LabourService {
         if (owner) {
           const found = this._findOwnedEntry(owner, bizId);
           if (found.entry) {
-            const slot = found.entry.slot || this._emptySlot();
-            if (!slot.purchased) {
-              slot.purchased = true;
+            const resolved = this._findEntrySlot(found.entry, slotIndex, employee.id);
+            const slot = resolved.slot;
+            if (slot && slot.purchased) {
+              if (!slot.employeeId) {
+                slot.employeeId = String(employee.id || "");
+              }
+              if (Number(slot.ownerPct || 0) <= 0) {
+                slot.ownerPct = ownerPct;
+              }
+              slot.lastEmployeeId = String(employee.id || slot.lastEmployeeId || "");
+              slot.earnedTotal = Math.max(0, Number(slot.earnedTotal) || 0) + bonus;
             }
-            if (!slot.employeeId) {
-              slot.employeeId = String(employee.id || "");
-            }
-            slot.lastEmployeeId = String(employee.id || slot.lastEmployeeId || "");
-            slot.earnedTotal = Math.max(0, Number(slot.earnedTotal) || 0) + bonus;
-            found.entry.slot = slot;
             owner.money = Math.max(0, Number(owner.money) || 0) + bonus;
             await this.users.save(owner);
             applied = true;
@@ -602,41 +840,68 @@ export class LabourService {
     for (const B of allBiz) {
       const found = this._findOwnedEntry(owner, B.id);
       if (found.idx < 0 || !found.entry) continue;
-      const slotCfg = this._slotCfg(B.id);
-      if (!slotCfg) continue;
+      const maxSlots = this._maxSlots(B.id);
+      if (maxSlots <= 0) continue;
+
+      this._ensureSlots(found.entry, B.id);
+      const nextBuyIdx = this._nextBuySlotIndex(found.entry, maxSlots);
       const bizTitle = this._bizTitle(B.id, langSource);
 
-      const slot = found.entry.slot || this._emptySlot();
       lines.push(`${B.emoji || "🏢"} ${bizTitle}`);
+      for (let slotIndex = 0; slotIndex < maxSlots; slotIndex++) {
+        const slot = this._slotAt(found.entry, slotIndex);
+        const slotNum = this._slotNum(slotIndex);
+        const levelCfg = this._slotLevelCfg(B.id, slotIndex);
+        const pct = Math.max(0, Math.floor((Number(slot?.ownerPct) || Number(levelCfg?.ownerPct) || 0) * 100));
 
-      if (!slot.purchased) {
-        lines.push(this._t(langSource, "labour.view.slot_not_bought"));
-        lines.push(this._t(langSource, "labour.view.slot_price", {
-          money: slotCfg.slotMoney,
-          gemsEmoji: CONFIG?.PREMIUM?.emoji || "💎",
-          gems: slotCfg.slotGems
-        }));
-        kb.push([{ text: this._t(langSource, "labour.btn.buy_slot", { bizTitle }), callback_data: `labour:buy_slot:${B.id}` }]);
-        lines.push("");
-        continue;
-      }
+        if (!slot?.purchased) {
+          lines.push(this._t(langSource, "labour.view.slot_not_bought", { slotNum, pct }));
+          lines.push(this._t(langSource, "labour.view.slot_price", {
+            slotNum,
+            money: Math.max(0, Number(levelCfg?.slotMoney) || 0),
+            gemsEmoji: CONFIG?.PREMIUM?.emoji || "💎",
+            gems: Math.max(0, Number(levelCfg?.slotGems) || 0),
+            pct
+          }));
+          if (slotIndex === nextBuyIdx) {
+            kb.push([{
+              text: this._t(langSource, "labour.btn.buy_slot", { bizTitle, slotNum }),
+              callback_data: `labour:buy_slot:${B.id}:${slotIndex}`
+            }]);
+          }
+          continue;
+        }
 
-      if (slot.employeeId && Number(slot.contractEnd || 0) > nowTs) {
-        const employee = await this.users.load(slot.employeeId).catch(() => null);
-        const employeeName = employee ? this._formatName(employee, langSource) : this._t(langSource, "labour.player_short", {
-          id: String(slot.employeeId).slice(-4).padStart(4, "0")
-        });
-        const leftDays = Math.max(1, Math.ceil((Number(slot.contractEnd || 0) - nowTs) / DAY_MS));
-        lines.push(this._t(langSource, "labour.view.slot_busy", { employeeName, leftDays }));
-        lines.push(this._t(langSource, "labour.view.earned_total", { total: Math.max(0, Math.floor(Number(slot.earnedTotal) || 0)) }));
-        lines.push("");
-        continue;
-      }
+        if (slot.employeeId && Number(slot.contractEnd || 0) > nowTs) {
+          const employee = await this.users.load(slot.employeeId).catch(() => null);
+          const employeeName = employee
+            ? this._formatName(employee, langSource)
+            : this._t(langSource, "labour.player_short", {
+                id: String(slot.employeeId).slice(-4).padStart(4, "0")
+              });
+          const leftDays = Math.max(1, Math.ceil((Number(slot.contractEnd || 0) - nowTs) / DAY_MS));
+          lines.push(this._t(langSource, "labour.view.slot_busy", { slotNum, employeeName, leftDays, pct }));
+          lines.push(this._t(langSource, "labour.view.earned_total", {
+            total: Math.max(0, Math.floor(Number(slot.earnedTotal) || 0))
+          }));
+          continue;
+        }
 
-      lines.push(this._t(langSource, "labour.view.slot_free"));
-      kb.push([{ text: this._t(langSource, "labour.btn.hire", { bizTitle }), callback_data: `labour:hire_list:${B.id}` }]);
-      if (slot.lastEmployeeId) {
-        kb.push([{ text: this._t(langSource, "labour.btn.rehire", { bizTitle }), callback_data: `labour:rehire:${B.id}` }]);
+        lines.push(this._t(langSource, "labour.view.slot_free", { slotNum, pct }));
+        kb.push([{
+          text: this._t(langSource, "labour.btn.hire", { bizTitle, slotNum }),
+          callback_data: `labour:hire_list:${B.id}:${slotIndex}`
+        }]);
+        if (slot.lastEmployeeId) {
+          const lastEmployee = await this.users.load(slot.lastEmployeeId).catch(() => null);
+          const rehireName = lastEmployee
+            ? this._formatName(lastEmployee, langSource)
+            : this._t(langSource, "labour.player_generic");
+          kb.push([{
+            text: this._t(langSource, "labour.btn.rehire", { bizTitle, slotNum, name: rehireName }),
+            callback_data: `labour:rehire:${B.id}:${slotIndex}`
+          }]);
+        }
       }
       lines.push("");
     }
@@ -667,13 +932,13 @@ export class LabourService {
     };
   }
 
-  async buildHireListView(owner, bizId) {
+  async buildHireListView(owner, bizId, slotIndex = -1) {
     owner = await this.reconcileOwnerSlots(owner);
     const langSource = owner;
-    const slotCfg = this._slotCfg(bizId);
+    const maxSlots = this._maxSlots(bizId);
     const B = CONFIG?.BUSINESS?.[String(bizId || "")];
     const bizTitle = this._bizTitle(bizId, langSource);
-    if (!slotCfg || !B) {
+    if (maxSlots <= 0 || !B) {
       return {
         caption: this._t(langSource, "labour.err.slot_unavailable"),
         keyboard: [[{ text: this._t(langSource, "labour.btn.back"), callback_data: "go:Labour" }]]
@@ -687,7 +952,21 @@ export class LabourService {
         keyboard: [[{ text: this._t(langSource, "labour.btn.back"), callback_data: "go:Labour" }]]
       };
     }
-    const slot = found.entry.slot || this._emptySlot();
+    this._ensureSlots(found.entry, bizId);
+
+    let targetIdx = this._slotIndex(slotIndex);
+    if (targetIdx < 0) {
+      targetIdx = found.entry.slots.findIndex((s) => !!s?.purchased && !this._slotIsActive(s));
+      if (targetIdx < 0) targetIdx = 0;
+    }
+    if (targetIdx < 0 || targetIdx >= maxSlots) {
+      return {
+        caption: this._t(langSource, "labour.err.slot_unavailable"),
+        keyboard: [[{ text: this._t(langSource, "labour.btn.back"), callback_data: "go:Labour" }]]
+      };
+    }
+
+    const slot = this._slotAt(found.entry, targetIdx);
     if (!slot.purchased) {
       return {
         caption: this._t(langSource, "labour.err.buy_slot_for_business_first"),
@@ -701,11 +980,12 @@ export class LabourService {
       };
     }
 
-    const minEnergy = Math.max(0, Number(slotCfg.minEnergyMax) || 0);
+    const minEnergy = this._minEnergyMax(bizId);
+    const slotNum = this._slotNum(targetIdx);
     const list = await this.getHireCandidates(owner, bizId);
 
     const lines = [
-      this._t(langSource, "labour.view.pick_employee_for", { bizTitle }),
+      this._t(langSource, "labour.view.pick_employee_for", { bizTitle, slotNum }),
       this._t(langSource, "labour.view.min_energy", { minEnergy }),
       ""
     ];
@@ -717,7 +997,7 @@ export class LabourService {
       let i = 1;
       for (const x of list) {
         lines.push(`${i}. ${x.name} — ${x.energyMax}⚡`);
-        kb.push([{ text: `✅ ${x.name} (${x.energyMax}⚡)`, callback_data: `labour:hire:${B.id}:${x.id}` }]);
+        kb.push([{ text: `✅ ${x.name} (${x.energyMax}⚡)`, callback_data: `labour:hire:${B.id}:${targetIdx}:${x.id}` }]);
         i++;
       }
     }
