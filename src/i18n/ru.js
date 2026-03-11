@@ -680,7 +680,7 @@ export const RU = {
   "thief.view.max_level": "🏆 Максимальный уровень уже достигнут.",
   "thief.view.unlock_hint": "Прокачай уровень вора, чтобы открыть цели для ограбления.",
   "thief.view.targets_title": "Доступные цели по типам бизнеса:",
-  "thief.view.cooldown_short": "кд {{mins}}м",
+  "thief.view.cooldown_short": "ожидание {{mins}} мин",
   "thief.btn.upgrade": "⬆️ Улучить уровень вора до {{nextLevel}} ({{cost}})",
   "thief.btn.help": "ℹ️ Как работает воровство",
   "thief.btn.refresh": "🔄 Обновить",
@@ -696,7 +696,7 @@ export const RU = {
   "thief.help.line3": "3) Владелец может успеть защититься до конца таймера.",
   "thief.help.line4": "4) Если защита не сработала, шанс успеха зависит от уровня вора.",
   "thief.help.line5": "5) Кража уменьшает ближайший сбор бизнеса, даже если сегодня владелец уже забрал деньги.",
-  "thief.help.line6": "6) После провала или блока включается кулдаун на этот тип бизнеса.",
+  "thief.help.line6": "6) После провала или блока включается временная блокировка на этот тип бизнеса.",
   "thief.targets.title": "Цели: {{bizTitle}}",
   "thief.targets.energy_cost": "Энергия: атака {{attackEnergy}}⚡, защита владельца {{defendEnergy}}⚡",
   "thief.targets.rule": "Показываются только цели, где к следующему сбору доступно к краже от {{minAvailable}}.",
@@ -705,7 +705,7 @@ export const RU = {
   "thief.err.biz_unavailable": "Этот тип бизнеса недоступен для ограбления.",
   "thief.err.level_too_low": "Нужен уровень вора {{level}}.",
   "thief.err.active_attack_exists": "У тебя уже есть активная попытка. Дождись результата.",
-  "thief.err.on_cooldown": "Кулдаун ещё {{mins}} мин.",
+  "thief.err.on_cooldown": "Нужно подождать ещё {{mins}} мин.",
   "thief.err.max_level": "Максимальный уровень уже достигнут.",
   "thief.err.not_enough_money": "Не хватает денег. Нужно {{cost}}.",
   "thief.err.invalid_target": "Некорректная цель.",
@@ -725,5 +725,5 @@ export const RU = {
   "thief.notify.owner_robbed": "💸 {{attackerName}} обокрал твой {{bizTitle}} на {{amount}}.",
   "thief.notify.attacker_success": "💰 Успех! Ты вынес из {{bizTitle}}: {{amount}}.",
   "thief.notify.owner_failed": "🛡️ Попытка кражи в {{bizTitle}} провалилась.",
-  "thief.notify.attacker_failed": "❌ Попытка в {{bizTitle}} провалилась. Кулдаун применён."
+  "thief.notify.attacker_failed": "❌ Попытка в {{bizTitle}} провалилась. Временная блокировка применена."
 };

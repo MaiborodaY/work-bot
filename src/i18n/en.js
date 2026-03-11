@@ -578,7 +578,7 @@ export const EN = {
   "thief.view.max_level": "🏆 Max level reached.",
   "thief.view.unlock_hint": "Upgrade thief level to unlock robbery targets.",
   "thief.view.targets_title": "Available targets by business type:",
-  "thief.view.cooldown_short": "cd {{mins}}m",
+  "thief.view.cooldown_short": "wait {{mins}}m",
   "thief.btn.upgrade": "⬆️ Upgrade thief level to {{nextLevel}} ({{cost}})",
   "thief.btn.help": "ℹ️ How theft works",
   "thief.btn.refresh": "🔄 Refresh",
@@ -594,7 +594,7 @@ export const EN = {
   "thief.help.line3": "3) Owner can defend before timer ends.",
   "thief.help.line4": "4) If not defended, success depends on your thief level.",
   "thief.help.line5": "5) Robbery reduces the next business claim, even if today's income was already claimed.",
-  "thief.help.line6": "6) Fail or block applies cooldown for that business type.",
+  "thief.help.line6": "6) Fail or block applies a temporary lock for that business type.",
   "thief.targets.title": "Targets: {{bizTitle}}",
   "thief.targets.energy_cost": "Energy: attack {{attackEnergy}}⚡, owner defense {{defendEnergy}}⚡",
   "thief.targets.rule": "Only targets with at least {{minAvailable}} available to steal from the next claim are shown.",
@@ -603,7 +603,7 @@ export const EN = {
   "thief.err.biz_unavailable": "This business type is unavailable for robbery.",
   "thief.err.level_too_low": "Thief level {{level}} required.",
   "thief.err.active_attack_exists": "You already have an active attempt. Wait for result.",
-  "thief.err.on_cooldown": "Cooldown: {{mins}} min left.",
+  "thief.err.on_cooldown": "Please wait {{mins}} min.",
   "thief.err.max_level": "Max level reached.",
   "thief.err.not_enough_money": "Not enough money. Need {{cost}}.",
   "thief.err.invalid_target": "Invalid target.",
@@ -623,5 +623,5 @@ export const EN = {
   "thief.notify.owner_robbed": "💸 {{attackerName}} robbed your {{bizTitle}} for {{amount}}.",
   "thief.notify.attacker_success": "💰 Success! You stole {{amount}} from {{bizTitle}}.",
   "thief.notify.owner_failed": "🛡️ Robbery attempt in {{bizTitle}} has failed.",
-  "thief.notify.attacker_failed": "❌ Attempt in {{bizTitle}} failed. Cooldown applied."
+  "thief.notify.attacker_failed": "❌ Attempt in {{bizTitle}} failed. Temporary lock applied."
 };
