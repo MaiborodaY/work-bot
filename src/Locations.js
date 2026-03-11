@@ -60,6 +60,115 @@ export class Locations {
     return t(key, this._lang(user), vars);
   }
 
+  async _renderServiceRoute({
+    user,
+    header = "",
+    routeName,
+    place,
+    policy = "auto",
+    buildView,
+    fallbackCaptionKey,
+    fallbackBackTextKey,
+    fallbackBackCb
+  }) {
+    let view = null;
+    try {
+      if (typeof buildView === "function") {
+        view = await buildView();
+      }
+    } catch {}
+
+    if (!view) {
+      view = {
+        caption: this._t(user, fallbackCaptionKey),
+        keyboard: [[{ text: this._t(user, fallbackBackTextKey), callback_data: fallbackBackCb }]]
+      };
+    }
+
+    const caption = (header || "") + (view.caption || "");
+    await this.media.show({
+      sourceMsg: this._sourceMsg,
+      place,
+      caption,
+      keyboard: view.keyboard || [[{ text: this._t(user, fallbackBackTextKey), callback_data: fallbackBackCb }]],
+      policy,
+    });
+    this._sourceMsg = null;
+    this._route = routeName;
+  }
+
+  _buildServiceRouteRegistry(user, header) {
+    return {
+      Stocks: async () => this._renderServiceRoute({
+        user,
+        header,
+        routeName: "Stocks",
+        place: "Stocks",
+        policy: "auto",
+        buildView: async () => {
+          if (this.stocks && typeof this.stocks.buildMarketView === "function") {
+            return this.stocks.buildMarketView(user);
+          }
+          return null;
+        },
+        fallbackCaptionKey: "loc.stocks.unavailable",
+        fallbackBackTextKey: "ui.back.earn",
+        fallbackBackCb: "go:Earn"
+      }),
+
+      Labour: async () => this._renderServiceRoute({
+        user,
+        header,
+        routeName: "Labour",
+        place: "Business",
+        policy: "text",
+        buildView: async () => {
+          if (this.labour && typeof this.labour.buildMainView === "function") {
+            return this.labour.buildMainView(user);
+          }
+          return null;
+        },
+        fallbackCaptionKey: "loc.labour.unavailable",
+        fallbackBackTextKey: "ui.back.earn",
+        fallbackBackCb: "go:Earn"
+      }),
+
+      Clan: async () => this._renderServiceRoute({
+        user,
+        header,
+        routeName: "Clan",
+        place: "Clan",
+        policy: "auto",
+        buildView: async () => {
+          if (this.clans && typeof this.clans.buildMainView === "function") {
+            return this.clans.buildMainView(user);
+          }
+          return null;
+        },
+        fallbackCaptionKey: "loc.clan.unavailable",
+        fallbackBackTextKey: "ui.back.default",
+        fallbackBackCb: "go:City"
+      }),
+
+      Referral: async () => this._renderServiceRoute({
+        user,
+        header,
+        routeName: "Referral",
+        place: "CityBoard",
+        policy: "auto",
+        buildView: async () => {
+          if (this.referrals && typeof this.referrals.buildView === "function") {
+            return this.referrals.buildView(user);
+          }
+          return null;
+        },
+        fallbackCaptionKey: "loc.referral.unavailable",
+        fallbackBackTextKey: "ui.back.default",
+        fallbackBackCb: "go:City"
+      })
+    };
+  }
+
   _getSquareHint(u) {
     const now = this.now();
     const active = Array.isArray(u?.jobs?.active) && u.jobs.active.length ? u.jobs.active[0] : null;
@@ -92,6 +201,11 @@ export class Locations {
     }
 
     const header = introText ? introText + "\n\n" : "";
+    const serviceRoutes = this._buildServiceRouteRegistry(user, header);
+    if (serviceRoutes[route]) {
+      await serviceRoutes[route]();
+      return;
+    }
 
     // ---------- Square ----------
     // Onboarding: single CTA for first job, then gym
@@ -205,65 +319,6 @@ export class Locations {
       return;
     }
 
-    // ---------- Stocks ----------
-    if (route === "Stocks") {
-      let view = null;
-      try {
-        if (this.stocks && typeof this.stocks.buildMarketView === "function") {
-          view = await this.stocks.buildMarketView(user);
-        }
-      } catch {}
-
-      if (!view) {
-        view = {
-          caption: this._t(user, "loc.stocks.unavailable"),
-          keyboard: [[{ text: this._t(user, "ui.back.earn"), callback_data: "go:Earn" }]]
-        };
-      }
-
-      const caption = (header || "") + (view.caption || "");
-      await this.media.show({
-        sourceMsg: this._sourceMsg,
-        place: "Stocks",
-        caption,
-        keyboard: view.keyboard || [[{ text: this._t(user, "ui.back.earn"), callback_data: "go:Earn" }]],
-        policy: "auto",
-      });
-      this._sourceMsg = null;
-      this._route = "Stocks";
-      return;
-    }
-
-    // ---------- Labour ----------
-    if (route === "Labour") {
-      let view = null;
-      try {
-        if (this.labour && typeof this.labour.buildMainView === "function") {
-          view = await this.labour.buildMainView(user);
-        }
-      } catch {}
-
-      if (!view) {
-        view = {
-          caption: this._t(user, "loc.labour.unavailable"),
-          keyboard: [[{ text: this._t(user, "ui.back.earn"), callback_data: "go:Earn" }]]
-        };
-      }
-
-      const caption = (header || "") + (view.caption || "");
-      await this.media.show({
-        sourceMsg: this._sourceMsg,
-        place: "Business",
-        caption,
-        keyboard: view.keyboard || [[{ text: this._t(user, "ui.back.earn"), callback_data: "go:Earn" }]],
-        policy: "text"
-      });
-      this._sourceMsg = null;
-      this._route = "Labour";
-      return;
-    }
-
-
     // ---------- Progress ----------
     if (route === "Progress") {
       await this.media.show({
@@ -291,62 +346,7 @@ export class Locations {
       this._route = "City";
       return;
     }
-    // ---------- Clan ----------
-    if (route === "Clan") {
-      let view = null;
-      try {
-        if (this.clans && typeof this.clans.buildMainView === "function") {
-          view = await this.clans.buildMainView(user);
-        }
-      } catch {}
-
-      if (!view) {
-        view = {
-          caption: this._t(user, "loc.clan.unavailable"),
-          keyboard: [[{ text: this._t(user, "ui.back.default"), callback_data: "go:City" }]]
-        };
-      }
-
-      const caption = (header || "") + (view.caption || "");
-      await this.media.show({
-        sourceMsg: this._sourceMsg,
-        place: "Clan",
-        caption,
-        keyboard: view.keyboard || [[{ text: this._t(user, "ui.back.default"), callback_data: "go:City" }]],
-        policy: "auto",
-      });
-      this._sourceMsg = null;
-      this._route = "Clan";
-      return;
-    }
-    // ---------- Referral ----------
-    if (route === "Referral") {
-      let view = null;
-      try {
-        if (this.referrals && typeof this.referrals.buildView === "function") {
-          view = await this.referrals.buildView(user);
-        }
-      } catch {}
-
-      if (!view) {
-        view = {
-          caption: this._t(user, "loc.referral.unavailable"),
-          keyboard: [[{ text: this._t(user, "ui.back.default"), callback_data: "go:City" }]]
-        };
-      }
-
-      const caption = (header || "") + (view.caption || "");
-      await this.media.show({
-        sourceMsg: this._sourceMsg,
-        place: "CityBoard",
-        caption,
-        keyboard: view.keyboard || [[{ text: this._t(user, "ui.back.default"), callback_data: "go:City" }]],
-        policy: "auto",
-      });
-      this._sourceMsg = null;
-      this._route = "Referral";
-      return;
-    }
+    
     // ---------- CityBoard ----------
     if (route === "CityBoard") {
       await this.media.show({
