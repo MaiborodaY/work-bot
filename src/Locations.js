@@ -98,6 +98,24 @@ export class Locations {
     this._route = routeName;
   }
 
+  async _renderStaticRoute({
+    routeName,
+    place,
+    caption,
+    keyboard,
+    policy = "auto"
+  }) {
+    await this.media.show({
+      sourceMsg: this._sourceMsg,
+      place,
+      caption,
+      keyboard,
+      policy,
+    });
+    this._sourceMsg = null;
+    this._route = routeName;
+  }
+
   _buildServiceRouteRegistry(user, header) {
     return {
       [Routes.STOCKS]: async () => this._renderServiceRoute({
@@ -170,6 +188,50 @@ export class Locations {
     };
   }
 
+  _buildStaticRouteRegistry(user, header, lang) {
+    return {
+      [Routes.EARN]: async () => this._renderStaticRoute({
+        routeName: Routes.EARN,
+        place: Routes.SQUARE,
+        caption: (header || "") + this._t(user, "loc.earn.caption"),
+        keyboard: this.ui.earn(lang),
+        policy: "photo",
+      }),
+
+      [Routes.PROGRESS]: async () => this._renderStaticRoute({
+        routeName: Routes.PROGRESS,
+        place: Routes.SQUARE,
+        caption: (header || "") + this._t(user, "loc.progress.caption"),
+        keyboard: this.ui.progress(lang),
+        policy: "photo",
+      }),
+
+      [Routes.CITY]: async () => this._renderStaticRoute({
+        routeName: Routes.CITY,
+        place: Routes.SQUARE,
+        caption: (header || "") + this._t(user, "loc.city.caption"),
+        keyboard: this.ui.city(lang),
+        policy: "photo",
+      }),
+
+      [Routes.SHOP_HUB]: async () => this._renderStaticRoute({
+        routeName: Routes.SHOP_HUB,
+        place: Routes.SQUARE,
+        caption: (header || "") + this._t(user, "loc.shophub.caption"),
+        keyboard: this.ui.shopHub(lang),
+        policy: "photo",
+      }),
+
+      [Routes.MINI_GAMES]: async () => this._renderStaticRoute({
+        routeName: Routes.MINI_GAMES,
+        place: Routes.SQUARE,
+        caption: (header || "") + this._t(user, "loc.minigames.caption"),
+        keyboard: this.ui.miniGames(lang),
+        policy: "photo",
+      })
+    };
+  }
+
   _getSquareHint(u) {
     const now = this.now();
     const active = Array.isArray(u?.jobs?.active) && u.jobs.active.length ? u.jobs.active[0] : null;
@@ -205,6 +267,11 @@ export class Locations {
     const serviceRoutes = this._buildServiceRouteRegistry(user, header);
     if (serviceRoutes[route]) {
       await serviceRoutes[route]();
+      return;
+    }
+    const staticRoutes = this._buildStaticRouteRegistry(user, header, lang);
+    if (staticRoutes[route]) {
+      await staticRoutes[route]();
       return;
     }
 
@@ -307,47 +374,6 @@ export class Locations {
       return;
     }
 
-    if (route === "Earn")  {
-      await this.media.show({
-        sourceMsg: this._sourceMsg,
-        place: "Square",
-        caption: (introText ? introText + "\n\n" : "") + this._t(user, "loc.earn.caption"),
-        keyboard: this.ui.earn(lang),
-        policy: "photo",
-      });
-      this._sourceMsg = null;
-      this._route = "Earn";
-      return;
-    }
-
-    // ---------- Progress ----------
-    if (route === "Progress") {
-      await this.media.show({
-        sourceMsg: this._sourceMsg,
-        place: "Square",
-        caption: (header || "") + this._t(user, "loc.progress.caption"),
-        keyboard: this.ui.progress(lang),
-        policy: "photo",
-      });
-      this._sourceMsg = null;
-      this._route = "Progress";
-      // Keep onboarding active when viewing Progress; it ends after first job start
-      return;
-    }
-    // ---------- City ----------
-    if (route === "City") {
-      await this.media.show({
-        sourceMsg: this._sourceMsg,
-        place: "Square",
-        caption: (header || "") + this._t(user, "loc.city.caption"),
-        keyboard: this.ui.city(lang),
-        policy: "photo",
-      });
-      this._sourceMsg = null;
-      this._route = "City";
-      return;
-    }
-    
     // ---------- CityBoard ----------
     if (route === "CityBoard") {
       await this.media.show({
@@ -361,35 +387,7 @@ export class Locations {
       this._route = "CityBoard";
       return;
     }
-    // ---------- ShopHub ----------
-    if (route === "ShopHub") {
-      await this.media.show({
-        sourceMsg: this._sourceMsg,
-        place: "Square",
-        caption: (header || "") + this._t(user, "loc.shophub.caption"),
-        keyboard: this.ui.shopHub(lang),
-        policy: "photo",
-      });
-      this._sourceMsg = null;
-      this._route = "ShopHub";
-      return;
-    }
-
-    // ---------- MiniGames ----------
-    if (route === "MiniGames") {
-      await this.media.show({
-        sourceMsg: this._sourceMsg,
-        place: "Square",
-        caption: (header || "") + this._t(user, "loc.minigames.caption"),
-        keyboard: this.ui.miniGames(lang),
-        policy: "photo",
-      });
-      this._sourceMsg = null;
-      this._route = "MiniGames";
-      return;
-    }
-
-
+    
     // ---------- Work ----------
     // Онбординг: первое открытие списка заданий
     if (route === "Work" && user?.flags?.onboarding && !(user.jobs?.active?.[0])) {
