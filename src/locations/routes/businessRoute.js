@@ -1,5 +1,6 @@
 import { CONFIG } from "../../GameConfig.js";
 import { ASSETS, JOB_ASSETS } from "../../Assets.js";
+import { getBusinessAvailableToday, getTodayUTC, normalizeBusinessEntry } from "../../BusinessPayout.js";
 import { getBusinessNote, getBusinessTitle } from "../../I18nCatalog.js";
 import { Routes, toGoCallback } from "../../Routes.js";
 
@@ -45,9 +46,10 @@ export async function renderBusinessRoute(ctx, user, { header = "", lang = "ru",
     const ownedArr = Array.isArray(user?.biz?.owned) ? user.biz.owned : [];
     const ownedObj = ownedArr.find((it) => (typeof it === "string" ? it === B.id : it?.id === B.id));
     const isOwned = !!ownedObj;
-    const todayUTC = new Date().toISOString().slice(0, 10);
-    const claimedToday = isOwned && (ownedObj.lastClaimDayUTC === todayUTC);
-    const availableToday = isOwned && !claimedToday ? (Number(B.daily) || 0) : 0;
+    const todayUTC = getTodayUTC();
+    const entry = isOwned ? normalizeBusinessEntry(typeof ownedObj === "string" ? { id: B.id } : ownedObj, B.id) : null;
+    const claimedToday = !!entry && (entry.lastClaimDayUTC === todayUTC);
+    const availableToday = entry ? getBusinessAvailableToday(entry, Number(B.daily) || 0, todayUTC) : 0;
     const bizTitle = getBusinessTitle(B.id, lang) || B.title;
     const bizNote = getBusinessNote(B.id, lang) || B.note;
 
@@ -62,7 +64,7 @@ export async function renderBusinessRoute(ctx, user, { header = "", lang = "ru",
       kb.push([{ text: ctx._t(user, "loc.business.btn.buy_for", { price: B.price }), callback_data: `biz:buy:${B.id}` }]);
     } else if (!claimedToday) {
       const claimKey = opts.claimKey || "loc.business.btn.claim";
-      kb.push([{ text: ctx._t(user, claimKey, { amount: B.daily }), callback_data: `biz:claim:${B.id}` }]);
+      kb.push([{ text: ctx._t(user, claimKey, { amount: availableToday }), callback_data: `biz:claim:${B.id}` }]);
     } else {
       kb.push([{ text: ctx._t(user, "loc.business.btn.claimed_today"), callback_data: "noop" }]);
     }
@@ -104,14 +106,14 @@ export async function renderBusinessRoute(ctx, user, { header = "", lang = "ru",
       const ownedMap = new Map(
         ownedArr.map((it) => (typeof it === "string" ? [it, { id: it, lastClaimDayUTC: "" }] : [String(it?.id || ""), it]))
       );
-      const todayUTC = new Date().toISOString().slice(0, 10);
+      const todayUTC = getTodayUTC();
       let claimAllCount = 0;
       let claimAllAmount = 0;
       for (const B of items) {
         const entry = ownedMap.get(String(B.id || ""));
         if (!entry) continue;
-        if (String(entry.lastClaimDayUTC || "") === todayUTC) continue;
-        const reward = Math.max(0, Number(B.daily) || 0);
+        const normalized = normalizeBusinessEntry(entry, B.id);
+        const reward = getBusinessAvailableToday(normalized, Math.max(0, Number(B.daily) || 0), todayUTC);
         if (reward <= 0) continue;
         claimAllCount += 1;
         claimAllAmount += reward;

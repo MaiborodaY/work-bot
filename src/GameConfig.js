@@ -305,6 +305,71 @@ export const CONFIG = {
     }
   },
 
+  THIEF: {
+    MIN_ACCOUNT_AGE_HOURS: 24,
+    MAX_LEVEL: 5,
+    DAILY_ATTEMPTS_PER_TARGET: 2,
+    MIN_AVAILABLE_TO_TARGET: 50,
+    ATTACK_PCT_MIN: 0.20,
+    ATTACK_PCT_MAX: 0.35,
+    OWNER_MIN_DAILY_REMAIN_PCT: 0.50,
+    RESOLVE_LIMIT_PER_RUN: 200,
+    DUE_BUCKET_MS: 60 * 1000,
+    LEVEL_COSTS: {
+      1: 10000,
+      2: 25000,
+      3: 75000,
+      4: 200000,
+      5: 500000
+    },
+    LEVEL_SUCCESS: {
+      1: 0.30,
+      2: 0.40,
+      3: 0.50,
+      4: 0.60,
+      5: 0.70
+    },
+    LEVEL_COOLDOWN_MINUTES: {
+      1: 120,
+      2: 90,
+      3: 60,
+      4: 45,
+      5: 30
+    },
+    BUSINESS: {
+      shawarma: {
+        unlockLevel: 1,
+        attackMs: 10 * 60 * 1000,
+        attackEnergy: 10,
+        defendEnergy: 5
+      },
+      stomatology: {
+        unlockLevel: 2,
+        attackMs: 7 * 60 * 1000,
+        attackEnergy: 15,
+        defendEnergy: 8
+      },
+      restaurant: {
+        unlockLevel: 3,
+        attackMs: 5 * 60 * 1000,
+        attackEnergy: 20,
+        defendEnergy: 10
+      },
+      courier_service: {
+        unlockLevel: 4,
+        attackMs: 3 * 60 * 1000,
+        attackEnergy: 30,
+        defendEnergy: 15
+      },
+      fitness_club: {
+        unlockLevel: 5,
+        attackMs: 1 * 60 * 1000,
+        attackEnergy: 40,
+        defendEnergy: 20
+      }
+    }
+  },
+
   ASSETS: ASSETS,
 
   NOTIFY: {

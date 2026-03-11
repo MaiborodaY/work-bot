@@ -20,6 +20,7 @@ export const Routes = Object.freeze({
   UPGRADES: "Upgrades",
   CITY_BOARD: "CityBoard",
   CLAN: "Clan",
+  THIEF: "Thief",
   REFERRAL: "Referral",
 });
 
@@ -33,4 +34,3 @@ export function parseGoRoute(data) {
   const route = raw.slice(3).trim();
   return route || Routes.SQUARE;
 }
-

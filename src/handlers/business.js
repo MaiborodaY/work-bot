@@ -1,5 +1,6 @@
 // handlers/business.js
 import { CONFIG } from "../GameConfig.js";
+import { applyBusinessClaim, getTodayUTC, normalizeBusinessEntry } from "../BusinessPayout.js";
 import { normalizeLang, t } from "../i18n/index.js";
 import { getBusinessTitle } from "../I18nCatalog.js";
 
@@ -7,10 +8,10 @@ export const businessHandler = {
   match: (data) => data.startsWith("biz:"),
 
   async handle(ctx) {
-    const { data, u, users, answer, goTo, now, send, clans } = ctx;
+    const { data, u, users, answer, goTo, now, send, clans, thief } = ctx;
     const lang = normalizeLang(u?.lang || "ru");
     const tt = (key, vars = {}) => t(key, lang, vars);
-    const [ns, action, id] = data.split(":"); // biz:buy:shawarma / biz:claim:shawarma
+    const [, action, id] = data.split(":"); // biz:buy:shawarma / biz:claim:shawarma
     const bizRoute = (bizId) => (bizId ? `Biz_${bizId}` : "Business");
 
     if (action === "buy") {
@@ -18,16 +19,14 @@ export const businessHandler = {
       if (!B) { await answer(tt("handler.business.not_found")); return; }
       const bizTitle = getBusinessTitle(B.id, lang) || B.title;
 
-      // Уже куплено?
       const ownedArr = Array.isArray(u?.biz?.owned) ? u.biz.owned : [];
-      const isOwned = ownedArr.some(it => (typeof it === "string" ? it === B.id : it?.id === B.id));
+      const isOwned = ownedArr.some((it) => (typeof it === "string" ? it === B.id : it?.id === B.id));
       if (isOwned) {
         await answer(tt("handler.business.already_owned"));
         await goTo(u, bizRoute(id));
         return;
       }
 
-      // Достаточно денег?
       const price = Number(B.price) || 0;
       const money = Number.isFinite(u?.money) ? u.money : 0;
       if (money < price) {
@@ -36,12 +35,23 @@ export const businessHandler = {
         return;
       }
 
-      // Списываем деньги и сохраняем покупку
       u.money = money - price;
       if (!u.biz) u.biz = {};
       if (!Array.isArray(u.biz.owned)) u.biz.owned = [];
-      u.biz.owned.push({ id: B.id, boughtAt: now(), lastClaimDayUTC: "" });
+      u.biz.owned.push({
+        id: B.id,
+        boughtAt: now(),
+        lastClaimDayUTC: "",
+        stolenDayUTC: "",
+        stolenAmountToday: 0
+      });
       await users.save(u);
+
+      try {
+        if (thief?.upsertBizOwner) {
+          await thief.upsertBizOwner(u.id, B.id);
+        }
+      } catch {}
 
       await send(tt("handler.business.buy_ok", {
         emoji: B.emoji,
@@ -57,31 +67,30 @@ export const businessHandler = {
       const B = CONFIG.BUSINESS[id];
       if (!B) { await answer(tt("handler.business.not_found")); return; }
       const bizTitle = getBusinessTitle(B.id, lang) || B.title;
-      
+
       const ownedArr = Array.isArray(u?.biz?.owned) ? u.biz.owned : [];
-      const idx = ownedArr.findIndex(it => (typeof it === "string" ? it === B.id : it?.id === B.id));
+      const idx = ownedArr.findIndex((it) => (typeof it === "string" ? it === B.id : it?.id === B.id));
       if (idx < 0) {
         await answer(tt("handler.business.not_owned"));
         await goTo(u, bizRoute(id));
         return;
       }
-      
-      // Текущая дата в UTC
-      const todayUTC = new Date().toISOString().slice(0, 10);
-      const entry = typeof ownedArr[idx] === "string" ? { id: B.id } : ownedArr[idx];
-      
+
+      const todayUTC = getTodayUTC();
+      const entry = normalizeBusinessEntry(
+        typeof ownedArr[idx] === "string" ? { id: B.id } : ownedArr[idx],
+        B.id
+      );
+
       if (entry.lastClaimDayUTC === todayUTC) {
         await answer(tt("handler.business.already_claimed"));
         await goTo(u, "Business");
         return;
       }
-      
-      // Начисляем ежедневную прибыль в баланс
-      const reward = Number(B.daily) || 0;
+
+      const reward = applyBusinessClaim(entry, Number(B.daily) || 0, todayUTC);
       u.money = (Number.isFinite(u.money) ? u.money : 0) + reward;
-      
-      // Сохраняем дату сбора
-      entry.lastClaimDayUTC = todayUTC;
+
       ownedArr[idx] = entry;
       u.biz = u.biz || {};
       u.biz.owned = ownedArr;
@@ -92,7 +101,7 @@ export const businessHandler = {
           await clans.recordBusinessMoney(u, reward);
         }
       } catch {}
-      
+
       await send(tt("handler.business.claim_ok", {
         emoji: B.emoji,
         title: bizTitle,
@@ -111,26 +120,30 @@ export const businessHandler = {
         return;
       }
 
-      const todayUTC = new Date().toISOString().slice(0, 10);
-      const normalizedOwned = ownedArr.map((it) => (typeof it === "string" ? { id: it, boughtAt: 0, lastClaimDayUTC: "" } : { ...it }));
+      const todayUTC = getTodayUTC();
+      const normalizedOwned = ownedArr.map((it) => normalizeBusinessEntry(
+        typeof it === "string" ? { id: it, boughtAt: 0, lastClaimDayUTC: "" } : { ...it },
+        typeof it === "string" ? it : it?.id
+      ));
 
       let total = 0;
-      let count = 0;
+      let rewardedCount = 0;
+      let processed = 0;
       for (const entry of normalizedOwned) {
         const bizId = String(entry?.id || "");
         const B = CONFIG.BUSINESS[bizId];
         if (!B) continue;
         if (entry.lastClaimDayUTC === todayUTC) continue;
+        processed += 1;
 
-        const reward = Math.max(0, Number(B.daily) || 0);
+        const reward = applyBusinessClaim(entry, Math.max(0, Number(B.daily) || 0), todayUTC);
         if (reward > 0) {
           total += reward;
-          count += 1;
+          rewardedCount += 1;
         }
-        entry.lastClaimDayUTC = todayUTC;
       }
 
-      if (count <= 0 || total <= 0) {
+      if (processed <= 0) {
         await answer(tt("handler.business.claim_all_none"));
         await goTo(u, "Business");
         return;
@@ -142,13 +155,19 @@ export const businessHandler = {
       await users.save(u);
 
       try {
-        if (clans?.recordBusinessMoney) {
+        if (clans?.recordBusinessMoney && total > 0) {
           await clans.recordBusinessMoney(u, total);
         }
       } catch {}
 
+      if (total <= 0 || rewardedCount <= 0) {
+        await answer(tt("handler.business.claim_all_none"));
+        await goTo(u, "Business");
+        return;
+      }
+
       await send(tt("handler.business.claim_all_ok", {
-        count,
+        count: rewardedCount,
         reward: total,
         money: u.money
       }));

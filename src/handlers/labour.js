@@ -12,7 +12,7 @@ export const labourHandler = {
     data.startsWith("labour:rehire:"),
 
   async handle(ctx) {
-    const { data, u, cb, answer, goTo, users, locations, labour } = ctx;
+    const { data, u, cb, answer, goTo, users, locations, labour, thief } = ctx;
     const lang = normalizeLang(u?.lang || "ru");
     const tt = (key, vars = {}) => t(key, lang, vars);
     if (!labour) {
@@ -81,8 +81,19 @@ export const labourHandler = {
         u.money = money - price;
         if (!u.biz) u.biz = {};
         if (!Array.isArray(u.biz.owned)) u.biz.owned = [];
-        u.biz.owned.push({ id: B.id, boughtAt: Date.now(), lastClaimDayUTC: "" });
+        u.biz.owned.push({
+          id: B.id,
+          boughtAt: Date.now(),
+          lastClaimDayUTC: "",
+          stolenDayUTC: "",
+          stolenAmountToday: 0
+        });
         await users.save(u);
+        try {
+          if (thief?.upsertBizOwner) {
+            await thief.upsertBizOwner(u.id, B.id);
+          }
+        } catch {}
       }
 
       await reloadSelf();

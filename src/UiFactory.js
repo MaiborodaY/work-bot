@@ -72,6 +72,7 @@ export class UiFactory {
       [{ text: this._t(l, "ui.city.home"), callback_data: this._go(Routes.HOME) }],
       [{ text: this._t(l, "ui.city.board"), callback_data: this._go(Routes.CITY_BOARD) }],
       [{ text: this._t(l, "ui.city.clans"), callback_data: this._go(Routes.CLAN) }],
+      [{ text: this._t(l, "ui.city.thief"), callback_data: this._go(Routes.THIEF) }],
       [{ text: this._t(l, "ui.city.referral"), callback_data: this._go(Routes.REFERRAL) }],
       [{ text: this._t(l, "ui.back.city"), callback_data: this._go(Routes.SQUARE) }],
     ];

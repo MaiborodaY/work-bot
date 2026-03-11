@@ -14,6 +14,7 @@ import { ClanService } from "./ClanService.js";
 import { DailyBonusService } from "./DailyBonusService.js";
 import { StockService } from "./StockService.js";
 import { LabourService } from "./LabourService.js";
+import { ThiefService } from "./ThiefService.js";
 import { ReferralService } from "./ReferralService.js";
 import { ASSETS, JOB_ASSETS } from "./Assets.js";
 import { normalizeLang, t } from "./i18n/index.js";
@@ -36,6 +37,7 @@ import { miniGamesHandler } from "./handlers/minigames.js";
 import { clanHandler } from "./handlers/clan.js";
 import { stocksHandler } from "./handlers/stocks.js";
 import { labourHandler } from "./handlers/labour.js";
+import { thiefHandler } from "./handlers/thief.js";
 import { referralHandler } from "./handlers/referral.js";
 
 // платежи Stars
@@ -74,6 +76,7 @@ export default {
       const users = new UserStore(env.DB);
       const economy = new EconomyService();
       const stocks = new StockService({ db: env.DB, users, now: () => Date.now() });
+      const thief = new ThiefService({ db: env.DB, users, now: () => Date.now(), bot });
       const notifier = new NotificationService({
         users,
         bot,
@@ -85,6 +88,9 @@ export default {
       });
       await safeCall("worker.cron.stocks_daily_update", async () => {
         await stocks.runDailyUpdate();
+      });
+      await safeCall("worker.cron.thief.resolve_expired", async () => {
+        await thief.resolveExpired();
       });
       await notifier.run();
       return new Response("ok");
@@ -119,6 +125,7 @@ export default {
     const clans = new ClanService({ db: env.DB, users, now, economy });
     const stocks = new StockService({ db: env.DB, users, now });
     const labour = new LabourService({ db: env.DB, users, now, bot });
+    const thief = new ThiefService({ db: env.DB, users, now, bot });
     const referrals = new ReferralService({
       users,
       now,
@@ -251,6 +258,7 @@ export default {
       clans,
       stocks,
       labour,
+      thief,
       referrals
     });
 
@@ -865,6 +873,7 @@ export default {
         clans,
         stocks,
         labour,
+        thief,
         referrals,
         // ui
         ui,
@@ -878,6 +887,7 @@ export default {
       const FULL_HANDLERS = [
         navigationHandler,
         clanHandler,
+        thiefHandler,
         premiumShopHandler,
         socialHandler,
         referralHandler,
@@ -929,6 +939,7 @@ export default {
     const economy = new EconomyService();
     const stocks = new StockService({ db: env.DB, users, now: () => Date.now() });
     const labour = new LabourService({ db: env.DB, users, now: () => Date.now(), bot });
+    const thief = new ThiefService({ db: env.DB, users, now: () => Date.now(), bot });
 
     const notifier = new NotificationService({
       users,
@@ -942,7 +953,8 @@ export default {
     ctx.waitUntil(Promise.allSettled([
       stocks.runDailyUpdate(),
       notifier.run(),
-      labour.runDueExpirations()
+      labour.runDueExpirations(),
+      thief.resolveExpired()
     ]));
   }
 };

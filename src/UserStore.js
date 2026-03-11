@@ -29,6 +29,11 @@ export class UserStore {
     let u = raw ? JSON.parse(raw) : this._newUser(id);
     let dirty = false;
 
+    if (typeof u.createdAt !== "number" || !Number.isFinite(u.createdAt) || u.createdAt < 0) {
+      u.createdAt = 0;
+      dirty = true;
+    }
+
     // ===== Нормализация актуальных полей =====
 
     // Инвентарь / апгрейды
@@ -245,6 +250,21 @@ export class UserStore {
       for (const entry of u.biz.owned) {
         if (!entry || typeof entry !== "object") continue;
 
+        if (typeof entry.stolenDayUTC !== "string") {
+          entry.stolenDayUTC = "";
+          dirty = true;
+        }
+        if (typeof entry.stolenAmountToday !== "number" || !Number.isFinite(entry.stolenAmountToday)) {
+          entry.stolenAmountToday = 0;
+          dirty = true;
+        } else {
+          const amount = Math.max(0, Math.floor(Number(entry.stolenAmountToday) || 0));
+          if (amount !== entry.stolenAmountToday) {
+            entry.stolenAmountToday = amount;
+            dirty = true;
+          }
+        }
+
         if (entry.slot && typeof entry.slot === "object" && !Array.isArray(entry.slots)) {
           entry.slots = [entry.slot];
           delete entry.slot;
@@ -278,6 +298,41 @@ export class UserStore {
         if (norm.length !== entry.slots.length) dirty = true;
         if (norm.length > 5) dirty = true;
         entry.slots = norm.slice(0, 5);
+      }
+    }
+
+    // Тёмный бизнес
+    if (!u.thief || typeof u.thief !== "object") {
+      u.thief = { level: 0, activeAttackId: "", cooldowns: {} };
+      dirty = true;
+    } else {
+      const maxLevel = Math.max(0, Number(CONFIG?.THIEF?.MAX_LEVEL) || 5);
+      const level = Math.max(0, Math.floor(Number(u.thief.level) || 0));
+      const boundedLevel = Math.min(maxLevel, level);
+      if (boundedLevel !== u.thief.level) {
+        u.thief.level = boundedLevel;
+        dirty = true;
+      }
+      if (typeof u.thief.activeAttackId !== "string") {
+        u.thief.activeAttackId = "";
+        dirty = true;
+      }
+      if (!u.thief.cooldowns || typeof u.thief.cooldowns !== "object") {
+        u.thief.cooldowns = {};
+        dirty = true;
+      } else {
+        const normalized = {};
+        for (const [bizId, endAtRaw] of Object.entries(u.thief.cooldowns)) {
+          const endAt = Math.max(0, Math.floor(Number(endAtRaw) || 0));
+          if (endAt > 0) normalized[String(bizId)] = endAt;
+        }
+        const prevKeys = Object.keys(u.thief.cooldowns);
+        const nextKeys = Object.keys(normalized);
+        if (prevKeys.length !== nextKeys.length ||
+            prevKeys.some((k) => Number(u.thief.cooldowns[k]) !== Number(normalized[k]))) {
+          u.thief.cooldowns = normalized;
+          dirty = true;
+        }
       }
     }
 
@@ -374,8 +429,10 @@ export class UserStore {
   }
 
   _newUser(id) {
+    const now = Date.now();
     return {
       id,
+      createdAt: now,
       money: 20,
       energy: UserStore.START_ENERGY_MIN,
       energy_max: Math.max(Number(CONFIG.ENERGY_MAX) || 0, UserStore.START_ENERGY_MIN),
@@ -426,6 +483,7 @@ export class UserStore {
       clanCosmetic: null,
       employment: { active: false, ownerId: "", bizId: "", ownerPct: 0, contractEnd: 0, slotIndex: -1 },
       referral: { referredBy: "", rewarded: false, invited: [], totalGemsEarned: 0 },
+      thief: { level: 0, activeAttackId: "", cooldowns: {} },
 
       // Flags
       flags: {

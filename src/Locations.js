@@ -31,10 +31,11 @@ export class Locations {
    *  clans?:any
    *  stocks?:any,
    *  labour?:any,
+   *  thief?:any,
    *  referrals?:any
    * }} deps
    */
-  constructor({ media, ui, economy, formatters, pct, now, maybeFinishStudy, daily, fastForward, users, social, clans, stocks, labour, referrals }) {
+  constructor({ media, ui, economy, formatters, pct, now, maybeFinishStudy, daily, fastForward, users, social, clans, stocks, labour, thief, referrals }) {
     this.media = media;
     this.ui = ui;
     this.economy = economy;
@@ -49,6 +50,7 @@ export class Locations {
     this.clans = clans || null;
     this.stocks = stocks || null;
     this.labour = labour || null;
+    this.thief = thief || null;
     this.referrals = referrals || null;
 
 
@@ -177,6 +179,23 @@ export class Locations {
           return null;
         },
         fallbackCaptionKey: "loc.clan.unavailable",
+        fallbackBackTextKey: "ui.back.default",
+        fallbackBackCb: toGoCallback(Routes.CITY)
+      }),
+
+      [Routes.THIEF]: async () => this._renderServiceRoute({
+        user,
+        header,
+        routeName: Routes.THIEF,
+        place: Routes.CITY,
+        policy: "text",
+        buildView: async () => {
+          if (this.thief && typeof this.thief.buildMainView === "function") {
+            return this.thief.buildMainView(user);
+          }
+          return null;
+        },
+        fallbackCaptionKey: "loc.thief.unavailable",
         fallbackBackTextKey: "ui.back.default",
         fallbackBackCb: toGoCallback(Routes.CITY)
       }),
