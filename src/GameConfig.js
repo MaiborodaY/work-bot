@@ -119,7 +119,7 @@ export const CONFIG = {
   },
 
   CLANS: {
-    MAX_MEMBERS: 20,
+    MAX_MEMBERS: 10,
     CONTRACTS_PER_WEEK: 3,
     ALWAYS_CONTRACT: "work_money",
     CONTRACTS: {
@@ -127,7 +127,7 @@ export const CONFIG = {
         id: "work_money",
         title: "Доход с работ",
         hint: "Сумма, полученная кнопкой «Получить выплату» в разделе Работы.",
-        target: 250000,
+        target: 125000,
         unit: "$",
         points: 100
       },
@@ -135,7 +135,7 @@ export const CONFIG = {
         id: "business_money",
         title: "Доход с бизнесов",
         hint: "Сумма, собранная с купленных бизнесов.",
-        target: 400000,
+        target: 200000,
         unit: "$",
         points: 100
       },
@@ -143,7 +143,7 @@ export const CONFIG = {
         id: "fortune_net_profit",
         title: "Чистая прибыль Зала арканы",
         hint: "Только положительная разница: max(0, выигрыш - ставка).",
-        target: 30000,
+        target: 15000,
         unit: "$",
         points: 100
       },
@@ -151,7 +151,7 @@ export const CONFIG = {
         id: "active_actions",
         title: "Активные действия",
         hint: "Полезные игровые действия участников клана.",
-        target: 1000,
+        target: 500,
         unit: "действ.",
         points: 100
       },
@@ -159,7 +159,7 @@ export const CONFIG = {
         id: "daily_presence",
         title: "Ежедневная активность",
         hint: "Каждый участник может дать 1 пункт в день при любом действии в игре.",
-        target: 28,
+        target: 14,
         unit: "дней",
         points: 100
       }

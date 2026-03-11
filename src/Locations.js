@@ -3,6 +3,7 @@ import { ASSETS, JOB_ASSETS } from "./Assets.js";
 import { normalizeLang, t } from "./i18n/index.js";
 import { getJobTitle } from "./I18nCatalog.js";
 import { Routes, toGoCallback } from "./Routes.js";
+import { safeCall } from "./SafeCall.js";
 import { clearBackToIfNeeded, renderFallbackSquareRoute, renderSquareRoute } from "./locations/routes/squareRoutes.js";
 import { renderStudyRoute } from "./locations/routes/studyRoute.js";
 import {
@@ -83,12 +84,12 @@ export class Locations {
     fallbackBackTextKey,
     fallbackBackCb
   }) {
-    let view = null;
-    try {
+    const view = await safeCall("locations.service.build_view", async () => {
       if (typeof buildView === "function") {
-        view = await buildView();
+        return await buildView();
       }
-    } catch {}
+      return null;
+    }, { fallback: null });
 
     if (!view) {
       view = {
@@ -288,14 +289,14 @@ export class Locations {
       const leftMin = Math.max(0, Math.ceil((active.endAt - this.now()) / 60000));
       const ready = this.now() >= active.endAt;
 
-      let ffCost = null;
-      try {
+      const ffCost = await safeCall("locations.work.ff_quote", async () => {
         const shouldQuotePaidSkip = !onboarding || onboardingStage !== "job_claim";
         if (this.fastForward && !ready && shouldQuotePaidSkip) {
           const q = this.fastForward.quote(user, "work");
-          if (q?.ok) ffCost = q.cost;
+          if (q?.ok) return q.cost;
         }
-      } catch {}
+        return null;
+      }, { fallback: null });
 
       const typeId = active.typeId;
       const fileId = JOB_ASSETS[typeId] || ASSETS.WorkDefault;

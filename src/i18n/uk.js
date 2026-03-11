@@ -211,7 +211,7 @@ export const UK = {
   "clan.main.week_score": "Очки тижня: {{score}}/{{max}}",
   "clan.main.contracts": "Контракти: {{done}}/{{total}}",
   "clan.main.week_status": "Статус тижня: {{cosmetic}}",
-  "clan.main.last_week": "Підсумок минулого тижня ({{weekKey}}): #{{place}}, {{score}} очок",
+  "clan.main.last_week": "Підсумок минулого тижня ({{weekKey}}): {{name}} — #{{place}}, {{score}} очок",
   "clan.view.no_membership": "Ти не перебуваєш у клані.",
   "clan.contracts.title": "Контракти тижня: {{name}}",
   "clan.contracts.score": "Рахунок клану: {{score}}/{{max}}",

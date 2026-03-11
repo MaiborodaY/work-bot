@@ -507,7 +507,7 @@ export const RU = {
   "clan.main.week_score": "Очки недели: {{score}}/{{max}}",
   "clan.main.contracts": "Контракты: {{done}}/{{total}}",
   "clan.main.week_status": "Статус недели: {{cosmetic}}",
-  "clan.main.last_week": "Итог прошлой недели ({{weekKey}}): #{{place}}, {{score}} очков",
+  "clan.main.last_week": "Итог прошлой недели ({{weekKey}}): {{name}} — #{{place}}, {{score}} очков",
   "clan.view.no_membership": "Ты не состоишь в клане.",
   "clan.contracts.title": "Контракты недели: {{name}}",
   "clan.contracts.score": "Счёт клана: {{score}}/{{max}}",

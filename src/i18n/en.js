@@ -211,7 +211,7 @@ export const EN = {
   "clan.main.week_score": "Weekly score: {{score}}/{{max}}",
   "clan.main.contracts": "Contracts: {{done}}/{{total}}",
   "clan.main.week_status": "Week status: {{cosmetic}}",
-  "clan.main.last_week": "Last week result ({{weekKey}}): #{{place}}, {{score}} points",
+  "clan.main.last_week": "Last week result ({{weekKey}}): {{name}} — #{{place}}, {{score}} points",
   "clan.view.no_membership": "You are not in a clan.",
   "clan.contracts.title": "Weekly contracts: {{name}}",
   "clan.contracts.score": "Clan score: {{score}}/{{max}}",

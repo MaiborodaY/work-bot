@@ -17,6 +17,7 @@ import { LabourService } from "./LabourService.js";
 import { ReferralService } from "./ReferralService.js";
 import { ASSETS, JOB_ASSETS } from "./Assets.js";
 import { normalizeLang, t } from "./i18n/index.js";
+import { safeCall } from "./SafeCall.js";
 
 // handlers test comm
 import { workHandler } from "./handlers/work.js";
@@ -82,7 +83,9 @@ export default {
         economy,
         debug: !!env.DEBUG
       });
-      await stocks.runDailyUpdate().catch(() => {});
+      await safeCall("worker.cron.stocks_daily_update", async () => {
+        await stocks.runDailyUpdate();
+      });
       await notifier.run();
       return new Response("ok");
     }
@@ -92,7 +95,9 @@ export default {
       return new Response("Not found", { status: 404 });
     }
 
-    const update = await request.json().catch(() => ({}));
+    const update = await safeCall("worker.update.parse_json", async () => {
+      return await request.json();
+    }, { fallback: {} });
     if (!update.message && !update.callback_query && !update.pre_checkout_query) {
       return new Response("ok");
     }
@@ -268,17 +273,24 @@ export default {
     };
 
     async function renderProfile(u, sourceMsg = null) {
-      const clan = await clans.getClanForUser(u).catch(() => null);
+      const clan = await safeCall("worker.profile.get_clan", async () => {
+        return await clans.getClanForUser(u);
+      }, { fallback: null });
       const clanName = clan?.name ? String(clan.name) : "";
-      const clanWeekKey = await clans.ensureWeek().catch(() => "");
-      const employmentLine = await labour.buildProfileEmploymentLine(u).catch(() => "");
+      const clanWeekKey = await safeCall("worker.profile.ensure_week", async () => {
+        return await clans.ensureWeek();
+      }, { fallback: "" });
+      const employmentLine = await safeCall("worker.profile.employment_line", async () => {
+        return await labour.buildProfileEmploymentLine(u);
+      }, { fallback: "" });
       const statusText = Formatters.status(u, { economy, now, pct, clanName, clanWeekKey, employmentLine });
       const kb = [[{ text: profileLangButtonText(u), callback_data: "profile:lang" }]];
       if (sourceMsg) {
-        try {
+        const edited = await safeCall("worker.profile.edit", async () => {
           await edit(sourceMsg, statusText, kb);
-          return;
-        } catch {}
+          return true;
+        }, { fallback: false });
+        if (edited) return;
       }
       await sendWithInline(statusText, kb);
     }
@@ -306,13 +318,13 @@ export default {
     if (update.pre_checkout_query) {
       const pcq = update.pre_checkout_query;
       await orders.incrAgg("pre_ok", 1);
-      try {
-        const p = JSON.parse(pcq.invoice_payload || "{}");
-        if (p && p.packId) await orders.incrAgg(`pre_ok:${p.packId}`, 1);
-      } catch {}
-      try {
+      const p = await safeCall("worker.pre_checkout.parse_payload", async () => {
+        return JSON.parse(pcq.invoice_payload || "{}");
+      }, { fallback: null });
+      if (p && p.packId) await orders.incrAgg(`pre_ok:${p.packId}`, 1);
+      await safeCall("worker.pre_checkout.answer", async () => {
         await bot.answerPreCheckoutQuery(pcq.id, true);
-      } catch {}
+      });
       return new Response("ok");
     }
 
@@ -333,25 +345,25 @@ export default {
 
       // /play — send game card with configured game_short_name
       if (text === "/play") {
-        try {
+        await safeCall("worker.cmd.play", async () => {
           await bot.sendGame(chatId, env.GAME_SHORT_NAME);
-        } catch {}
+        });
         return new Response("ok");
       }
 
       // /td — send game card with configured td_game_short_name
       if (text === "/td") {
-        try {
+        await safeCall("worker.cmd.td", async () => {
           await bot.sendGame(chatId, env.TD_GAME_SHORT_NAME);
-        } catch {}
+        });
         return new Response("ok");
       }
 
       const u = await users.getOrCreate(userId);
 
-      try {
+      await safeCall("worker.message.touch_daily_presence", async () => {
         await clans.touchDailyPresence(u);
-      } catch {}
+      });
 
       let shouldSaveMeta = false;
       if (u.chatId !== chatId) {
@@ -409,9 +421,9 @@ export default {
         }
 
         if (nameChanged) {
-          try {
+          await safeCall("worker.message.labour_upsert_name_changed", async () => {
             await labour.upsertFreePlayer(u);
-          } catch {}
+          });
         }
       }
 
@@ -419,11 +431,11 @@ export default {
       const mStart = text.match(/^\/start(?:@\w+)?(?:\s+(\S+))?$/i);
       if (mStart) {
         const startPayload = (mStart[1] || "").trim();
-        try {
+        await safeCall("worker.start.bind_referral_payload", async () => {
           if (referrals && typeof referrals.bindFromStartPayload === "function") {
             await referrals.bindFromStartPayload(u, startPayload);
           }
-        } catch {}
+        });
 
         u.flags = u.flags || {};
         if (u.__isNew) {
@@ -444,16 +456,16 @@ export default {
         u.afterNameRoute = "";
         await users.save(u);
 
-        try {
+        await safeCall("worker.start.remove_reply_keyboard", async () => {
           await bot.sendMessage(chatId, " ", {
             reply_markup: { remove_keyboard: true }
           });
-        } catch {}
+        });
 
         const onboardingWelcome = t("worker.onboarding.welcome", normalizeLang(u?.lang || "ru"));
-        try {
+        await safeCall("worker.start.send_onboarding_welcome", async () => {
           await bot.sendMessage(chatId, onboardingWelcome);
-        } catch {}
+        });
 
         await goTo(u, "Square");
         return new Response("ok");
@@ -480,9 +492,9 @@ export default {
         u.afterNameRoute = "";
         u.awaitingName = false;
         await users.save(u);
-        try {
+        await safeCall("worker.message.labour_upsert_after_name", async () => {
           await labour.upsertFreePlayer(u);
-        } catch {}
+        });
 
         await goTo(u, route, t("worker.name.set_ok", normalizeLang(u?.lang || "ru"), { name: u.displayName }));
         return new Response("ok");
@@ -514,10 +526,9 @@ export default {
           sp.provider_payment_charge_id ||
           "";
         const payloadRaw = sp.invoice_payload || "";
-        let parsed = null;
-        try {
-          parsed = JSON.parse(payloadRaw || "{}");
-        } catch {}
+        const parsed = await safeCall("worker.payment.parse_payload", async () => {
+          return JSON.parse(payloadRaw || "{}");
+        }, { fallback: null });
 
         const existed = chargeId ? await orders.getTx(chargeId) : null;
         if (!existed) {
@@ -649,9 +660,9 @@ export default {
         const p = btoa(JSON.stringify(payload));
         const base = String(env.PAGES_URL || "").replace(/\/+$/, "");
         const openUrl = `${base}/?p=${encodeURIComponent(p)}`;
-        try {
+        await safeCall("worker.callback.open_main_game_url", async () => {
           await bot.answerCallbackUrl(cb.id, openUrl);
-        } catch {}
+        });
         return new Response("ok");
       }
 
@@ -677,18 +688,18 @@ export default {
           env.TD_PAGES_URL || env.PAGES_URL || ""
         ).replace(/\/+$/, "");
         const openUrlTd = `${baseTd}/?p=${encodeURIComponent(p)}`;
-        try {
+        await safeCall("worker.callback.open_td_game_url", async () => {
           await bot.answerCallbackUrl(cb.id, openUrlTd);
-        } catch {}
+        });
         return new Response("ok");
       }
 
       const data = cb.data || "";
       const u = await users.getOrCreate(cb.from.id);
 
-      try {
+      await safeCall("worker.callback.touch_daily_presence", async () => {
         await clans.touchDailyPresence(u);
-      } catch {}
+      });
 
       let shouldSaveMetaCb = false;
       if (u.chatId !== chatId) {
@@ -770,9 +781,9 @@ export default {
         }
 
         if (nameChanged) {
-          try {
+          await safeCall("worker.callback.labour_upsert_name_changed", async () => {
             await labour.upsertFreePlayer(u);
-          } catch {}
+          });
         }
       }
 

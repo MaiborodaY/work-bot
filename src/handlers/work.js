@@ -79,20 +79,23 @@ export const workHandler = {
       const typeId = data.split(":")[2];
 
       // Если максимальной энергии не хватает для выбранной работы — сразу ведём в зал
-      try {
+      const redirectedToGym = await safeCall("work.start.energy_cap_gate", async () => {
         const jobType = (CONFIG && CONFIG.JOBS) ? CONFIG.JOBS[typeId] : null;
         const hasCoffee = Array.isArray(u?.upgrades) && u.upgrades.includes("coffee");
         const requiredEnergy = jobType ? (hasCoffee ? Math.ceil(jobType.energy * 0.95) : jobType.energy) : null;
         const energyCap = typeof u?.energy_max === "number" ? u.energy_max : (CONFIG?.ENERGY_MAX ?? 100);
-        if (requiredEnergy != null && energyCap < requiredEnergy) {
-          u.nav = typeof u.nav === "object" && u.nav ? u.nav : {};
-          u.nav.backTo = "Work";
-          await users.save(u);
-          try { await answer(cb.id, tt("handler.work.need_energy_cap_to_gym")); } catch {}
-          await ctx.goTo(u, "Gym", tt("handler.work.gym_intro_need_cap"));
-          return;
-        }
-      } catch {}
+        if (requiredEnergy == null || energyCap >= requiredEnergy) return false;
+
+        u.nav = typeof u.nav === "object" && u.nav ? u.nav : {};
+        u.nav.backTo = "Work";
+        await users.save(u);
+        await safeCall("work.start.energy_cap_gate.answer", async () => {
+          await answer(cb.id, tt("handler.work.need_energy_cap_to_gym"));
+        }, { logger: console });
+        await ctx.goTo(u, "Gym", tt("handler.work.gym_intro_need_cap"));
+        return true;
+      }, { logger: console, fallback: false });
+      if (redirectedToGym) return;
 
       const res = await jobs.start(u, typeId);
       if (!res.ok) {
@@ -111,7 +114,7 @@ export const workHandler = {
       }
 
       // Обновляем шаг онбординга после запуска первой смены
-      try {
+      await safeCall("work.start.onboarding_step", async () => {
         if (u?.flags?.onboarding && String(u?.flags?.onboardingStep || "") === "first_job") {
           u.flags.onboardingStep = "job_claim";
           const spent = Math.max(0, Number(res?.inst?.energySpent) || 0);
@@ -121,7 +124,7 @@ export const workHandler = {
           }
           await users.save(u);
         }
-      } catch {}
+      }, { logger: console });
 
       const startedTitle = getJobTitle(res?.inst?.typeId, lang) || tt("handler.work.shift_fallback");
       await answer(

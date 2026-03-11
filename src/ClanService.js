@@ -250,7 +250,7 @@ export class ClanService {
     clan.members = [...new Set(clan.members.map((x) => String(x)).filter(Boolean))];
     if (typeof clan.name !== "string") clan.name = "Clan";
     if (typeof clan.open !== "boolean") clan.open = true;
-    if (typeof clan.maxMembers !== "number") clan.maxMembers = this._maxMembers();
+    clan.maxMembers = this._maxMembers();
 
     if (!clan.allTime || typeof clan.allTime !== "object") {
       clan.allTime = { score: 0, completedContracts: 0, weeksPlayed: 0, top1: 0, top3: 0 };
@@ -269,6 +269,51 @@ export class ClanService {
     return clan;
   }
 
+  _syncWeekContractsFromConfig(week) {
+    if (!week || typeof week !== "object" || !Array.isArray(week.contracts)) return false;
+    const defs = this._contractsMap();
+    let changed = false;
+
+    for (const contract of week.contracts) {
+      if (!contract || typeof contract !== "object") continue;
+      const id = String(contract.id || "");
+      const def = defs[id];
+      if (!def) continue;
+
+      const nextTarget = Math.max(1, Number(def.target) || 1);
+      const nextPoints = Math.max(1, Number(def.points) || 100);
+      const nextTitle = String(def.title || id);
+      const nextHint = String(def.hint || "");
+      const nextUnit = String(def.unit || "");
+
+      if (Number(contract.target) !== nextTarget) {
+        contract.target = nextTarget;
+        changed = true;
+      }
+      if (Number(contract.points) !== nextPoints) {
+        contract.points = nextPoints;
+        changed = true;
+      }
+      if (String(contract.title || "") !== nextTitle) {
+        contract.title = nextTitle;
+        changed = true;
+      }
+      if (String(contract.hint || "") !== nextHint) {
+        contract.hint = nextHint;
+        changed = true;
+      }
+      if (String(contract.unit || "") !== nextUnit) {
+        contract.unit = nextUnit;
+        changed = true;
+      }
+    }
+
+    if (changed) {
+      this._recomputeWeekScore(week);
+    }
+    return changed;
+  }
+
   _ensureClanWeek(clan, weekKey) {
     this._ensureClanShape(clan);
     if (clan.week?.weekKey !== weekKey) {
@@ -277,6 +322,7 @@ export class ClanService {
     if (!clan.week.members || typeof clan.week.members !== "object") {
       clan.week.members = {};
     }
+    this._syncWeekContractsFromConfig(clan.week);
     return clan.week;
   }
 
@@ -1039,6 +1085,7 @@ export class ClanService {
     if (clan.lastWeekResult && clan.lastWeekResult.weekKey) {
       lines.push("");
       lines.push(this._t(u, "clan.main.last_week", {
+        name: clan.name,
         weekKey: clan.lastWeekResult.weekKey,
         place: clan.lastWeekResult.place || "-",
         score: clan.lastWeekResult.score || 0
