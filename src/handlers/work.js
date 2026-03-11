@@ -4,6 +4,29 @@ import { FastForwardService } from "../FastForwardService.js";
 import { CONFIG } from "../GameConfig.js";
 import { normalizeLang, t } from "../i18n/index.js";
 import { getJobTitle } from "../I18nCatalog.js";
+import { safeCall } from "../SafeCall.js";
+
+export async function applyWorkClaimSideEffects(ctx, pay, endAt) {
+  const { clans, labour, referrals, u, logger } = ctx || {};
+
+  await safeCall("work.side_effect.clan", async () => {
+    if (clans?.recordWorkMoney) {
+      await clans.recordWorkMoney(u, pay);
+    }
+  }, { logger });
+
+  await safeCall("work.side_effect.labour", async () => {
+    if (labour?.onEmployeePaid) {
+      await labour.onEmployeePaid(u, pay, endAt);
+    }
+  }, { logger });
+
+  await safeCall("work.side_effect.referral", async () => {
+    if (referrals?.tryRewardReferral) {
+      await referrals.tryRewardReferral(u);
+    }
+  }, { logger });
+}
 
 export const workHandler = {
   match: (data) =>
@@ -26,24 +49,6 @@ export const workHandler = {
 
     async function render(intro) {
       await goTo(u, "Work", intro || null);
-    }
-
-    async function applyClaimSideEffects(pay, endAt) {
-      try {
-        if (clans?.recordWorkMoney) {
-          await clans.recordWorkMoney(u, pay);
-        }
-      } catch {}
-      try {
-        if (labour?.onEmployeePaid) {
-          await labour.onEmployeePaid(u, pay, endAt);
-        }
-      } catch {}
-      try {
-        if (referrals?.tryRewardReferral) {
-          await referrals.tryRewardReferral(u);
-        }
-      } catch {}
     }
 
     async function advanceOnboardingAfterClaimIfNeeded() {
@@ -148,7 +153,7 @@ export const workHandler = {
         await answer(cb.id, res.error || tt("handler.work.claim_failed"));
         return;
       }
-      await applyClaimSideEffects(res.pay, res.endAt);
+      await applyWorkClaimSideEffects({ clans, labour, referrals, u }, res.pay, res.endAt);
       await advanceOnboardingAfterClaimIfNeeded();
       await answer(cb.id, tt("handler.work.claim_ok", { pay: res.pay }));
       await render();
@@ -175,7 +180,7 @@ export const workHandler = {
         await render();
         return;
       }
-      await applyClaimSideEffects(claim.pay, claim.endAt);
+      await applyWorkClaimSideEffects({ clans, labour, referrals, u }, claim.pay, claim.endAt);
 
       await answer(cb.id, tt("handler.work.skip_ok", { cost: res.cost, pay: claim.pay }));
       await render();
@@ -206,7 +211,7 @@ export const workHandler = {
         await render();
         return;
       }
-      await applyClaimSideEffects(claim.pay, claim.endAt);
+      await applyWorkClaimSideEffects({ clans, labour, referrals, u }, claim.pay, claim.endAt);
       await advanceOnboardingAfterClaimIfNeeded();
 
       await answer(cb.id, tt("handler.work.skip_free_ok", { pay: claim.pay }));
