@@ -325,6 +325,7 @@ export class AdminCommands {
         await this.send(
           "Labour reindex done.\n" +
           `Scanned: ${Number(out.scanned || 0)}\n` +
+          `Energy patched to min 20: ${Number(out.energyPatched || 0)}\n` +
           `Eligible: ${Number(out.eligible || 0)}\n` +
           `Saved to index: ${Number(out.saved || 0)} (limit ${Number(out.limit || 0)})`
         );
@@ -551,9 +552,11 @@ export class AdminCommands {
     const prefix = "u:";
     const now = Date.now();
     const limit = Math.max(1, Number(CONFIG?.LABOUR_MARKET?.INDEX_SIZE) || 20);
+    const minEnergy = 20;
     let cursor = undefined;
     let scanned = 0;
     let eligible = 0;
+    let energyPatched = 0;
     const rawRows = [];
 
     // eslint-disable-next-line no-constant-condition
@@ -571,6 +574,25 @@ export class AdminCommands {
           const fallbackId = String(k.name || "").slice(prefix.length);
           const id = String((u?.id ?? fallbackId) || "");
           if (!id) continue;
+          if (String(u?.id || "") !== id) {
+            u.id = id;
+          }
+
+          let changed = false;
+          const currEnergyMax = Math.max(0, Number(u?.energy_max) || 0);
+          const currEnergy = Math.max(0, Number(u?.energy) || 0);
+          if (currEnergyMax < minEnergy) {
+            u.energy_max = minEnergy;
+            changed = true;
+          }
+          if (currEnergy < minEnergy) {
+            u.energy = minEnergy;
+            changed = true;
+          }
+          if (changed) {
+            await this.users.save(u);
+            energyPatched += 1;
+          }
 
           const name = String(u?.displayName || "").trim();
           if (!name) continue;
@@ -608,7 +630,7 @@ export class AdminCommands {
     }
 
     await this.db.put(LABOUR_FREE_PLAYERS_KEY, JSON.stringify(out));
-    return { scanned, eligible, saved: out.length, limit };
+    return { scanned, eligible, saved: out.length, limit, energyPatched };
   }
   async _sendDraft(chatId, draft) {
     if (!chatId || !draft) return { ok: false, error: "missing chatId/draft" };

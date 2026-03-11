@@ -2,6 +2,8 @@
 import { CONFIG } from "./GameConfig.js";
 
 export class UserStore {
+  static START_ENERGY_MIN = 20;
+
   constructor(db) {
     this.db = db;
   }
@@ -98,8 +100,12 @@ export class UserStore {
     }
 
     // Энергия
-    if (typeof u.energy_max !== "number") { u.energy_max = CONFIG.ENERGY_MAX; dirty = true; }
-    if (typeof u.energy     !== "number") { u.energy     = Math.min(u.energy_max, 30); dirty = true; }
+    const minEnergy = UserStore.START_ENERGY_MIN;
+    const baseEnergyMax = Math.max(Number(CONFIG.ENERGY_MAX) || 0, minEnergy);
+    if (typeof u.energy_max !== "number") { u.energy_max = baseEnergyMax; dirty = true; }
+    if (u.energy_max < minEnergy) { u.energy_max = minEnergy; dirty = true; }
+    if (typeof u.energy !== "number") { u.energy = minEnergy; dirty = true; }
+    if (u.energy < minEnergy) { u.energy = minEnergy; dirty = true; }
 
     // Ник/онбординг
     if (typeof u.displayName !== "string") { u.displayName = ""; dirty = true; }
@@ -256,6 +262,7 @@ export class UserStore {
           const earnedTotal = purchased ? Math.max(0, Math.floor(Number(rawSlot.earnedTotal) || 0)) : 0;
           const lastEmployeeId = String(rawSlot.lastEmployeeId || "");
           const ownerPct = purchased ? Math.max(0, Number(rawSlot.ownerPct) || 0) : 0;
+          const bonusCarry = purchased ? Math.max(0, Number(rawSlot.bonusCarry) || 0) : 0;
 
           norm.push({
             purchased,
@@ -264,7 +271,8 @@ export class UserStore {
             contractEnd,
             earnedTotal,
             lastEmployeeId,
-            ownerPct
+            ownerPct,
+            bonusCarry
           });
         }
         if (norm.length !== entry.slots.length) dirty = true;
@@ -369,8 +377,8 @@ export class UserStore {
     return {
       id,
       money: 20,
-      energy: 5,
-      energy_max: CONFIG.ENERGY_MAX,
+      energy: UserStore.START_ENERGY_MIN,
+      energy_max: Math.max(Number(CONFIG.ENERGY_MAX) || 0, UserStore.START_ENERGY_MIN),
 
       inv: { coffee: 0, sandwich: 0, lunch: 0 },
       upgrades: [],

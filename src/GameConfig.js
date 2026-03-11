@@ -244,8 +244,8 @@ export const CONFIG = {
   },
 
   LABOUR_MARKET: {
-    LIST_SIZE: 10,
-    INDEX_SIZE: 20,
+    LIST_SIZE: 15,
+    INDEX_SIZE: 50,
     SLOTS: {
       shawarma: {
         contractDays: 1,
@@ -260,7 +260,7 @@ export const CONFIG = {
       },
       stomatology: {
         contractDays: 2,
-        minEnergyMax: 40,
+        minEnergyMax: 30,
         levels: [
           { slotMoney: 25000, slotGems: 50, ownerPct: 0.10 },
           { slotMoney: 37500, slotGems: 75, ownerPct: 0.09 },

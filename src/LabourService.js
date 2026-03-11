@@ -4,6 +4,8 @@ import { formatMoney, normalizeLang, t } from "./i18n/index.js";
 
 const LABOUR_FREE_PLAYERS_KEY = "labour:free_players";
 const DAY_MS = 24 * 60 * 60 * 1000;
+const DUE_BUCKET_MS = 5 * 60 * 1000;
+const DUE_LOOKBACK_MINUTES = 20;
 
 export class LabourService {
   constructor({ db, users, now, bot }) {
@@ -94,6 +96,75 @@ export class LabourService {
     }
   }
 
+  _dueBucket(ts) {
+    const t = Number(ts) || 0;
+    return Math.floor(t / DUE_BUCKET_MS);
+  }
+
+  _dueKey(bucket, employeeId) {
+    return `labour:due:${bucket}:${String(employeeId || "")}`;
+  }
+
+  _parseDueEmployeeId(key) {
+    const parts = String(key || "").split(":");
+    if (parts.length < 4) return "";
+    return String(parts[3] || "").trim();
+  }
+
+  async _markContractDue(employeeId, contractEnd) {
+    if (!this.db || typeof this.db.put !== "function") return;
+    const id = String(employeeId || "").trim();
+    const endAt = Number(contractEnd) || 0;
+    if (!id || endAt <= 0) return;
+
+    const bucket = this._dueBucket(endAt);
+    const ttlSec = Math.max(60, Math.ceil((endAt - this.now()) / 1000) + 3 * 24 * 60 * 60);
+    await this.db.put(this._dueKey(bucket, id), "1", { expirationTtl: ttlSec });
+  }
+
+  async _collectDueEmployeeIds({ nowTs = this.now(), lookbackMinutes = DUE_LOOKBACK_MINUTES } = {}) {
+    if (!this.db || typeof this.db.list !== "function") return [];
+    const endBucket = this._dueBucket(nowTs);
+    const lookbackMs = Math.max(0, Math.floor(Number(lookbackMinutes) || 0)) * 60 * 1000;
+    const lookbackBuckets = Math.max(0, Math.ceil(lookbackMs / DUE_BUCKET_MS));
+    const startBucket = endBucket - lookbackBuckets;
+    const ids = new Set();
+
+    for (let bucket = startBucket; bucket <= endBucket; bucket++) {
+      const prefix = `labour:due:${bucket}:`;
+      let cursor = undefined;
+      do {
+        const page = await this.db.list({ prefix, cursor });
+        cursor = page?.cursor;
+        const keys = page?.keys || [];
+        for (const k of keys) {
+          const id = this._parseDueEmployeeId(k?.name);
+          if (id) ids.add(id);
+        }
+      } while (cursor);
+    }
+
+    return [...ids];
+  }
+
+  async runDueExpirations({ lookbackMinutes = DUE_LOOKBACK_MINUTES, limit = 200 } = {}) {
+    const ids = await this._collectDueEmployeeIds({ lookbackMinutes });
+    if (!ids.length) return { checked: 0 };
+
+    let checked = 0;
+    const max = Math.max(1, Math.floor(Number(limit) || 200));
+    for (const id of ids) {
+      if (checked >= max) break;
+      checked += 1;
+      try {
+        const employee = await this.users.load(id).catch(() => null);
+        if (!employee) continue;
+        await this.ensureEmploymentFresh(employee);
+      } catch {}
+    }
+    return { checked };
+  }
+
   _bizTitle(bizId, source = "ru") {
     const localized = getBusinessTitle(bizId, this._lang(source));
     if (localized) return localized;
@@ -178,7 +249,8 @@ export class LabourService {
       contractEnd: 0,
       earnedTotal: 0,
       lastEmployeeId: "",
-      ownerPct: 0
+      ownerPct: 0,
+      bonusCarry: 0
     };
   }
 
@@ -195,19 +267,32 @@ export class LabourService {
     if (typeof slot.earnedTotal !== "number") { slot.earnedTotal = 0; dirty = true; }
     if (typeof slot.lastEmployeeId !== "string") { slot.lastEmployeeId = ""; dirty = true; }
     if (typeof slot.ownerPct !== "number") { slot.ownerPct = 0; dirty = true; }
+    if (typeof slot.bonusCarry !== "number") { slot.bonusCarry = 0; dirty = true; }
     if (!slot.purchased) {
-      if (slot.employeeId || slot.contractStart || slot.contractEnd || slot.earnedTotal || slot.ownerPct) {
+      if (slot.employeeId || slot.contractStart || slot.contractEnd || slot.earnedTotal || slot.ownerPct || slot.bonusCarry) {
         slot.employeeId = "";
         slot.contractStart = 0;
         slot.contractEnd = 0;
         slot.earnedTotal = 0;
         slot.ownerPct = 0;
+        slot.bonusCarry = 0;
         dirty = true;
       }
     } else {
       const ownerPct = Math.max(0, Number(slot.ownerPct) || 0);
       if (ownerPct !== slot.ownerPct) {
         slot.ownerPct = ownerPct;
+        dirty = true;
+      }
+      const carryRaw = Math.max(0, Number(slot.bonusCarry) || 0);
+      const carryInt = Math.floor(carryRaw);
+      const carryFrac = Math.max(0, carryRaw - carryInt);
+      if (carryInt > 0) {
+        slot.earnedTotal = Math.max(0, Math.floor(Number(slot.earnedTotal) || 0)) + carryInt;
+        dirty = true;
+      }
+      if (Math.abs(carryFrac - slot.bonusCarry) > 1e-9) {
+        slot.bonusCarry = carryFrac;
         dirty = true;
       }
     }
@@ -351,6 +436,7 @@ export class LabourService {
     slot.contractStart = 0;
     slot.contractEnd = 0;
     slot.earnedTotal = 0;
+    slot.bonusCarry = 0;
   }
 
   async _loadFreePlayersIndex() {
@@ -600,6 +686,7 @@ export class LabourService {
     slot.earnedTotal = 0;
     slot.lastEmployeeId = String(slot.lastEmployeeId || "");
     slot.ownerPct = Math.max(0, Number(levelCfg.ownerPct) || 0);
+    slot.bonusCarry = 0;
 
     await this.users.save(owner);
     return {
@@ -721,10 +808,14 @@ export class LabourService {
     slot.contractStart = contractStart;
     slot.contractEnd = contractEnd;
     slot.earnedTotal = 0;
+    slot.bonusCarry = 0;
     slot.lastEmployeeId = String(reserved.id || prevLast || "");
 
     await this.users.save(owner);
     await this.removeFreePlayer(reserved.id);
+    try {
+      await this._markContractDue(reserved.id, contractEnd);
+    } catch {}
 
     if (reserved.chatId) {
       const ownerName = this._formatName(owner, reserved);
@@ -773,39 +864,81 @@ export class LabourService {
 
     const ownerId = String(employee.employment.ownerId || "");
     const bizId = String(employee.employment.bizId || "");
-    const ownerPct = Math.max(0, Number(employee.employment.ownerPct) || 0);
+    let ownerPct = Math.max(0, Number(employee.employment.ownerPct) || 0);
     const slotIndex = this._slotIndex(employee.employment.slotIndex);
     const contractEnd = Number(employee.employment.contractEnd || 0);
     const endedAt = Math.max(0, Number(shiftEndAt) || 0);
     const safePay = Math.max(0, Math.floor(Number(pay) || 0));
+    let employeeDirty = false;
 
     let applied = false;
     let bonus = 0;
     if (safePay > 0 && endedAt > 0 && endedAt <= contractEnd && ownerId && bizId) {
-      bonus = Math.max(0, Math.floor(safePay * ownerPct));
-      if (bonus > 0) {
-        const owner = await this.users.load(ownerId).catch(() => null);
-        if (owner) {
-          const found = this._findOwnedEntry(owner, bizId);
-          if (found.entry) {
-            const resolved = this._findEntrySlot(found.entry, slotIndex, employee.id);
-            const slot = resolved.slot;
-            if (slot && slot.purchased) {
-              if (!slot.employeeId) {
-                slot.employeeId = String(employee.id || "");
-              }
-              if (Number(slot.ownerPct || 0) <= 0) {
-                slot.ownerPct = ownerPct;
-              }
-              slot.lastEmployeeId = String(employee.id || slot.lastEmployeeId || "");
-              slot.earnedTotal = Math.max(0, Number(slot.earnedTotal) || 0) + bonus;
+      const owner = await this.users.load(ownerId).catch(() => null);
+      if (owner) {
+        const found = this._findOwnedEntry(owner, bizId);
+        if (found.entry) {
+          const resolved = this._findEntrySlot(found.entry, slotIndex, employee.id);
+          const slot = resolved.slot;
+          let ownerDirty = false;
+          let carry = 0;
+
+          if (slot && slot.purchased) {
+            if (!slot.employeeId) {
+              slot.employeeId = String(employee.id || "");
+              ownerDirty = true;
             }
+
+            const slotPct = Math.max(
+              0,
+              Number(slot.ownerPct) ||
+              Number(this._slotLevelCfg(bizId, resolved.slotIndex)?.ownerPct) ||
+              0
+            );
+            if (ownerPct <= 0 && slotPct > 0) {
+              ownerPct = slotPct;
+              employee.employment.ownerPct = slotPct;
+              employeeDirty = true;
+            }
+            if (Number(slot.ownerPct || 0) <= 0 && ownerPct > 0) {
+              slot.ownerPct = ownerPct;
+              ownerDirty = true;
+            }
+
+            carry = Math.max(0, Number(slot.bonusCarry) || 0);
+          }
+
+          const rawBonus = Math.max(0, safePay * ownerPct + carry);
+          bonus = Math.max(0, Math.floor(rawBonus));
+          const nextCarry = Math.max(0, rawBonus - bonus);
+
+          if (slot && slot.purchased) {
+            slot.lastEmployeeId = String(employee.id || slot.lastEmployeeId || "");
+            if (Math.abs(nextCarry - (Number(slot.bonusCarry) || 0)) > 1e-9) {
+              slot.bonusCarry = nextCarry;
+              ownerDirty = true;
+            }
+            if (bonus > 0) {
+              slot.earnedTotal = Math.max(0, Number(slot.earnedTotal) || 0) + bonus;
+              ownerDirty = true;
+            }
+          }
+
+          if (bonus > 0) {
             owner.money = Math.max(0, Number(owner.money) || 0) + bonus;
-            await this.users.save(owner);
+            ownerDirty = true;
             applied = true;
+          }
+
+          if (ownerDirty) {
+            await this.users.save(owner);
           }
         }
       }
+    }
+
+    if (employeeDirty) {
+      await this.users.save(employee);
     }
 
     if (this.now() > contractEnd) {

@@ -917,6 +917,7 @@ export default {
     const users = new UserStore(env.DB);
     const economy = new EconomyService();
     const stocks = new StockService({ db: env.DB, users, now: () => Date.now() });
+    const labour = new LabourService({ db: env.DB, users, now: () => Date.now(), bot });
 
     const notifier = new NotificationService({
       users,
@@ -927,6 +928,10 @@ export default {
       economy,
       debug: !!env.DEBUG
     });
-    ctx.waitUntil(Promise.allSettled([stocks.runDailyUpdate(), notifier.run()]));
+    ctx.waitUntil(Promise.allSettled([
+      stocks.runDailyUpdate(),
+      notifier.run(),
+      labour.runDueExpirations()
+    ]));
   }
 };
