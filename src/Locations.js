@@ -84,7 +84,7 @@ export class Locations {
     fallbackBackTextKey,
     fallbackBackCb
   }) {
-    const view = await safeCall("locations.service.build_view", async () => {
+    let view = await safeCall("locations.service.build_view", async () => {
       if (typeof buildView === "function") {
         return await buildView();
       }
