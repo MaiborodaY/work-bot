@@ -164,6 +164,17 @@ export default {
       show: async (p) => {
         const { sourceMsg, place, caption, keyboard, policy } = p;
         const fileId = (p && p.asset) ? p.asset : (CONFIG.ASSETS?.[place]);
+        const sendPhotoOrFallback = async () => {
+          if (!sendPhoto || !fileId) {
+            await sendWithInline(caption, keyboard);
+            return;
+          }
+          try {
+            await sendPhoto(chatId, fileId, caption, keyboard);
+          } catch {
+            await sendWithInline(caption, keyboard);
+          }
+        };
         const wantPhoto =
           policy === "photo" ||
           (policy === "auto" &&
@@ -196,19 +207,11 @@ export default {
               await edit(sourceMsg, caption, keyboard);
               return;
             } catch {
-              if (sendPhoto) {
-                await sendPhoto(chatId, fileId, caption, keyboard);
-                return;
-              }
-              await sendWithInline(caption, keyboard);
+              await sendPhotoOrFallback();
               return;
             }
           } else {
-            if (sendPhoto) {
-              await sendPhoto(chatId, fileId, caption, keyboard);
-              return;
-            }
-            await sendWithInline(caption, keyboard);
+            await sendPhotoOrFallback();
             return;
           }
         }
