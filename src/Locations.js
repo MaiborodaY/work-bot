@@ -32,7 +32,7 @@ export class Locations {
     this.maybeFinishStudy = maybeFinishStudy;
     this.daily = daily;
     this.fastForward = fastForward || null;
-    this.users = users || null; // ← понадобится для await users.save(u)
+    this.users = users || null; // в†ђ РїРѕРЅР°РґРѕР±РёС‚СЃСЏ РґР»СЏ await users.save(u)
     this.social = social || null;
     this.clans = clans || null;
     this.stocks = stocks || null;
@@ -232,6 +232,107 @@ export class Locations {
     };
   }
 
+  async _renderWorkRoute(user, { header = "", lang = "ru", onboardingStage = "" } = {}) {
+    // Onboarding: first open of jobs list
+    if (user?.flags?.onboarding && !(user.jobs?.active?.[0])) {
+      if (onboardingStage === "go_gym" || onboardingStage === "gym_started") {
+        const kbGym = [[{ text: this._t(user, "loc.onboarding.to_gym"), callback_data: toGoCallback(Routes.GYM) }]];
+        const captionGym = (header || "") + this._t(user, "loc.work.onboarding_to_gym");
+        await this.media.show({
+          sourceMsg: this._sourceMsg,
+          place: Routes.WORK,
+          caption: captionGym,
+          keyboard: kbGym,
+          policy: "auto",
+        });
+        this._sourceMsg = null;
+        this._route = Routes.WORK;
+        return;
+      }
+
+      const kb = this.ui.workV2(user, {}, lang);
+      const caption =
+        (header || "") +
+        this._t(user, "loc.work.onboarding_step1") + "\n\n" +
+        this.formatters.balance(user) + "\n\n" +
+        this._t(user, "loc.work.onboarding_hint");
+
+      await this.media.show({
+        sourceMsg: this._sourceMsg,
+        place: Routes.WORK,
+        caption,
+        keyboard: kb,
+        policy: "auto",
+      });
+      this._sourceMsg = null;
+      this._route = Routes.WORK;
+      return;
+    }
+
+    // Work main mode
+    const active = user.jobs?.active?.[0] || null;
+    const onboarding = !!(user?.flags?.onboarding);
+
+    if (active) {
+      const leftMin = Math.max(0, Math.ceil((active.endAt - this.now()) / 60000));
+      const ready = this.now() >= active.endAt;
+
+      let ffCost = null;
+      try {
+        const shouldQuotePaidSkip = !onboarding || onboardingStage !== "job_claim";
+        if (this.fastForward && !ready && shouldQuotePaidSkip) {
+          const q = this.fastForward.quote(user, "work");
+          if (q?.ok) ffCost = q.cost;
+        }
+      } catch {}
+
+      const typeId = active.typeId;
+      const fileId = JOB_ASSETS[typeId] || ASSETS.WorkDefault;
+      const activeTitle = getJobTitle(typeId, lang) || active.title || this._t(user, "loc.work.shift_fallback");
+
+      const caption = ready
+        ? this._t(user, "loc.work.active_ready", { title: activeTitle, pay: active.plannedPay })
+        : this._t(user, "loc.work.active_running", { title: activeTitle, mins: leftMin }) + "\n\n" +
+          this._t(user, "loc.work.active_tip") + "\n\n" +
+          this.formatters.balance(user);
+
+      await this.media.show({
+        sourceMsg: this._sourceMsg,
+        place: Routes.WORK,
+        asset: fileId,
+        caption,
+        keyboard: this.ui.workV2(user, { active, ready, ffCost, onboardingStep: onboardingStage }, lang),
+        policy: "photo",
+      });
+    } else {
+      const perks = this.formatters.workPerks(user, { hints: true });
+      const caption =
+        (header || "") +
+        this._t(user, "loc.work.caption_intro") + "\n\n" +
+        this.formatters.balance(user) + "\n\n" +
+        this._t(user, "loc.work.bonuses") + "\n" + perks;
+
+      const kb = this.ui.workV2(user, {}, lang);
+
+      await this.media.show({
+        sourceMsg: this._sourceMsg,
+        place: Routes.WORK,
+        caption,
+        keyboard: kb,
+        policy: "photo",
+      });
+    }
+
+    this._sourceMsg = null;
+    this._route = Routes.WORK;
+  }
+
+  _buildCoreRouteRegistry(user, header, lang, onboardingStage) {
+    return {
+      [Routes.WORK]: async () => this._renderWorkRoute(user, { header, lang, onboardingStage })
+    };
+  }
+
   _getSquareHint(u) {
     const now = this.now();
     const active = Array.isArray(u?.jobs?.active) && u.jobs.active.length ? u.jobs.active[0] : null;
@@ -251,7 +352,7 @@ export class Locations {
     const lang = this._lang(user);
     const onboardingStage = user?.flags?.onboardingStep || "";
 
-    // backTo храним в БД: уходим с Shop/Home — очищаем u.nav.backTo и сохраняем
+    // backTo С…СЂР°РЅРёРј РІ Р‘Р”: СѓС…РѕРґРёРј СЃ Shop/Home вЂ” РѕС‡РёС‰Р°РµРј u.nav.backTo Рё СЃРѕС…СЂР°РЅСЏРµРј
     if (route !== "Shop" && route !== "Home" && route !== "Gym") {
       if (user?.nav?.backTo) {
         try {
@@ -272,6 +373,11 @@ export class Locations {
     const staticRoutes = this._buildStaticRouteRegistry(user, header, lang);
     if (staticRoutes[route]) {
       await staticRoutes[route]();
+      return;
+    }
+    const coreRoutes = this._buildCoreRouteRegistry(user, header, lang, onboardingStage);
+    if (coreRoutes[route]) {
+      await coreRoutes[route]();
       return;
     }
 
@@ -307,7 +413,7 @@ export class Locations {
       return;
     }
 
-    // ---------- Square (основной режим) ----------
+    // ---------- Square (РѕСЃРЅРѕРІРЅРѕР№ СЂРµР¶РёРј) ----------
     if (route === "Square") {
       const kbBase = this.ui.square(lang);
       const kb = (this.daily && this.daily.canClaim(user))
@@ -319,7 +425,7 @@ export class Locations {
         try {
           const winners = await this.social.getDailyWinnersSnapshot();
           if (Array.isArray(winners) && winners.length) {
-            const medals = ["🥇","🥈","🥉"];
+            const medals = ["рџҐ‡","рџҐ€","рџҐ‰"];
             const nameCache = new Map();
             const resolveName = (w) => {
               const key = String(w?.userId ?? "");
@@ -344,12 +450,12 @@ export class Locations {
               const stars = Math.max(0, Number(w?.reward?.stars) || 0);
               const money = Math.max(0, Number(w?.reward?.money) || 0);
               const rewardParts = [];
-              if (stars) rewardParts.push(`${stars}${CONFIG.PREMIUM?.emoji || "💎"}`);
+              if (stars) rewardParts.push(`${stars}${CONFIG.PREMIUM?.emoji || "рџ’Ћ"}`);
               if (money) rewardParts.push(`$${money}`);
               const rewardText = rewardParts.length
                 ? this._t(user, "loc.square.reward_received", { reward: rewardParts.join(" + ") })
                 : "";
-              lines.push(`${mark} ${name} — $${earned}${rewardText}`);
+              lines.push(`${mark} ${name} вЂ” $${earned}${rewardText}`);
             }
             yesterdayBlock = lines.join("\n");
           }
@@ -388,114 +494,17 @@ export class Locations {
       return;
     }
     
-    // ---------- Work ----------
-    // Онбординг: первое открытие списка заданий
-    if (route === "Work" && user?.flags?.onboarding && !(user.jobs?.active?.[0])) {
-      if (onboardingStage === "go_gym" || onboardingStage === "gym_started") {
-        const kbGym = [[{ text: this._t(user, "loc.onboarding.to_gym"), callback_data: toGoCallback(Routes.GYM) }]];
-        const captionGym = (header || "") + this._t(user, "loc.work.onboarding_to_gym");
-        await this.media.show({
-          sourceMsg: this._sourceMsg,
-          place: "Work",
-          caption: captionGym,
-          keyboard: kbGym,
-          policy: "auto",
-        });
-        this._sourceMsg = null;
-        this._route = "Work";
-        return;
-      }
-
-      const kb = this.ui.workV2(user, {}, lang);
-      const caption =
-        (header || "") +
-        this._t(user, "loc.work.onboarding_step1") + "\n\n" +
-        this.formatters.balance(user) + "\n\n" +
-        this._t(user, "loc.work.onboarding_hint");
-
-      await this.media.show({
-        sourceMsg: this._sourceMsg,
-        place: "Work",
-        caption,
-        keyboard: kb,
-        policy: "auto",
-      });
-      this._sourceMsg = null;
-      this._route = "Work";
-      return;
-    }
-
-    // ---------- Work (основной режим) ----------
-    if (route === "Work") {
-      const active = user.jobs?.active?.[0] || null;
-      const onboarding = !!(user?.flags?.onboarding);
-
-      if (active) {
-        const leftMin = Math.max(0, Math.ceil((active.endAt - this.now()) / 60000));
-        const ready = this.now() >= active.endAt;
-
-        let ffCost = null;
-        try {
-          const shouldQuotePaidSkip = !onboarding || onboardingStage !== "job_claim";
-          if (this.fastForward && !ready && shouldQuotePaidSkip) {
-            const q = this.fastForward.quote(user, "work");
-            if (q?.ok) ffCost = q.cost;
-          }
-        } catch {}
-
-        const typeId = active.typeId;
-        const fileId = JOB_ASSETS[typeId] || ASSETS.WorkDefault;
-        const activeTitle = getJobTitle(typeId, lang) || active.title || this._t(user, "loc.work.shift_fallback");
-
-        const caption = ready
-          ? this._t(user, "loc.work.active_ready", { title: activeTitle, pay: active.plannedPay })
-          : this._t(user, "loc.work.active_running", { title: activeTitle, mins: leftMin }) + "\n\n" +
-            this._t(user, "loc.work.active_tip") + "\n\n" +
-            this.formatters.balance(user);
-
-        await this.media.show({
-          sourceMsg: this._sourceMsg,
-          place: "Work",
-          asset: fileId,
-          caption,
-          keyboard: this.ui.workV2(user, { active, ready, ffCost, onboardingStep: onboardingStage }, lang),
-          policy: "photo",
-        });
-      } else {
-        const perks = this.formatters.workPerks(user, { hints: true });
-        const caption =
-          (header || "") +
-          this._t(user, "loc.work.caption_intro") + "\n\n" +
-          this.formatters.balance(user) + "\n\n" +
-          this._t(user, "loc.work.bonuses") + "\n" + perks;
-
-        const kb = this.ui.workV2(user, {}, lang);
-
-        await this.media.show({
-          sourceMsg: this._sourceMsg,
-          place: "Work",
-          caption,
-          keyboard: kb,
-          policy: "photo",
-        });
-      }
-
-      this._sourceMsg = null;
-      this._route = "Work";
-      return;
-    }
-
     // ---------- Study ----------
     if (route === "Study") {
       if (!user.displayName || !String(user.displayName).trim()) {
-        // помечаем ожидание ника и куда вернуться после него
+        // РїРѕРјРµС‡Р°РµРј РѕР¶РёРґР°РЅРёРµ РЅРёРєР° Рё РєСѓРґР° РІРµСЂРЅСѓС‚СЊСЃСЏ РїРѕСЃР»Рµ РЅРµРіРѕ
         if (this.users && typeof this.users.save === "function") {
           user.awaitingName = true;
           user.afterNameRoute = toGoCallback(Routes.STUDY);
           await this.users.save(user);
         }
 
-        // показываем тот же промпт ника, что и в табло
+        // РїРѕРєР°Р·С‹РІР°РµРј С‚РѕС‚ Р¶Рµ РїСЂРѕРјРїС‚ РЅРёРєР°, С‡С‚Рѕ Рё РІ С‚Р°Р±Р»Рѕ
         const ns = new NameService({ users: this.users });
         await ns.prompt(async (text, extra) => {
           await this.media.show({
@@ -522,7 +531,7 @@ export class Locations {
         
         let ffCost = null;
         try {
-          if (this.fastForward && !ready) {           // цену FF считаем только если НЕ готово
+          if (this.fastForward && !ready) {           // С†РµРЅСѓ FF СЃС‡РёС‚Р°РµРј С‚РѕР»СЊРєРѕ РµСЃР»Рё РќР• РіРѕС‚РѕРІРѕ
             const q = this.fastForward.quote(user, "study");
             if (q?.ok) ffCost = q.cost;
           }
@@ -609,7 +618,7 @@ export class Locations {
         ? `\n${this._t(user, "loc.casino.last_free_prize", { prize: user.casino.free.lastPrize || 0 })}`
         : "";
 
-      // Казино (день+неделя); если форматтера нет — просто пустая строка
+      // РљР°Р·РёРЅРѕ (РґРµРЅСЊ+РЅРµРґРµР»СЏ); РµСЃР»Рё С„РѕСЂРјР°С‚С‚РµСЂР° РЅРµС‚ вЂ” РїСЂРѕСЃС‚Рѕ РїСѓСЃС‚Р°СЏ СЃС‚СЂРѕРєР°
       const statsLines =
         typeof this.formatters?.casinoStatsLines === "function"
           ? this.formatters.casinoStatsLines(user)
@@ -860,7 +869,7 @@ export class Locations {
             this._t(user, "loc.business.daily_income", { daily: B.daily }) + "\n" +
             modeLine + "\n" +
             statusLine +
-            (bizNote ? `\n\nℹ️ ${bizNote}` : ""),
+            (bizNote ? `\n\nв„№пёЏ ${bizNote}` : ""),
           keyboard: kb,
           policy: "photo",
         });
@@ -940,7 +949,7 @@ export class Locations {
       }
     }
 
-    // ---------- Fallback → Square ----------
+    // ---------- Fallback в†’ Square ----------
     let kb = this.ui.square(lang);
     if (this.daily && this.daily.canClaim(user)) {
       kb = [[{ text: this._t(user, "loc.daily_bonus"), callback_data: "daily:claim" }], ...kb];
