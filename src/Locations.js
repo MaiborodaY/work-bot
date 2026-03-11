@@ -425,7 +425,7 @@ export class Locations {
         try {
           const winners = await this.social.getDailyWinnersSnapshot();
           if (Array.isArray(winners) && winners.length) {
-            const medals = ["рџҐ‡","рџҐ€","рџҐ‰"];
+            const medals = ["🥇", "🥈", "🥉"];
             const nameCache = new Map();
             const resolveName = (w) => {
               const key = String(w?.userId ?? "");
@@ -450,12 +450,12 @@ export class Locations {
               const stars = Math.max(0, Number(w?.reward?.stars) || 0);
               const money = Math.max(0, Number(w?.reward?.money) || 0);
               const rewardParts = [];
-              if (stars) rewardParts.push(`${stars}${CONFIG.PREMIUM?.emoji || "рџ’Ћ"}`);
+              if (stars) rewardParts.push(`${stars}${CONFIG.PREMIUM?.emoji || "💎"}`);
               if (money) rewardParts.push(`$${money}`);
               const rewardText = rewardParts.length
                 ? this._t(user, "loc.square.reward_received", { reward: rewardParts.join(" + ") })
                 : "";
-              lines.push(`${mark} ${name} вЂ” $${earned}${rewardText}`);
+              lines.push(`${mark} ${name} — $${earned}${rewardText}`);
             }
             yesterdayBlock = lines.join("\n");
           }
