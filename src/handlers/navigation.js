@@ -1,10 +1,12 @@
-﻿// handlers/navigation.js
+// handlers/navigation.js
+import { parseGoRoute, Routes } from "../Routes.js";
+
 export const navigationHandler = {
   match: (data) => data.startsWith("go:"),
 
   async handle(ctx) {
     const { data, u, goTo } = ctx;
-    const place = data.split(":")[1] || "Square";
+    const place = parseGoRoute(data) || Routes.SQUARE;
 
     // Разрешаем свободную навигацию без проверок занятости.
     // Активности (работа/учёба/отдых…) продолжаются в фоне,
@@ -13,13 +15,14 @@ export const navigationHandler = {
       const step = u.flags.onboardingStep || "";
       const allowed =
         (step === "go_gym" || step === "gym_started")
-          ? new Set(["Square", "Work", "Gym"])
-          : new Set(["Square", "Work"]);
+          ? new Set([Routes.SQUARE, Routes.WORK, Routes.GYM])
+          : new Set([Routes.SQUARE, Routes.WORK]);
       if (!allowed.has(place)) {
-        await goTo(u, "Square");
+        await goTo(u, Routes.SQUARE);
         return;
       }
     }
     await goTo(u, place);
   }
 };
+

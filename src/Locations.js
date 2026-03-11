@@ -4,6 +4,7 @@ import { ASSETS, JOB_ASSETS } from "./Assets.js";
 import { BarService } from "./BarService.js";
 import { normalizeLang, t } from "./i18n/index.js";
 import { getBusinessNote, getBusinessTitle, getJobTitle } from "./I18nCatalog.js";
+import { Routes, toGoCallback } from "./Routes.js";
 
 export class Locations {
   /**
@@ -40,7 +41,7 @@ export class Locations {
 
 
     this._sourceMsg = null;
-    this._route = "Square";
+    this._route = Routes.SQUARE;
     this._backToRoute = null;
   }
 
@@ -99,11 +100,11 @@ export class Locations {
 
   _buildServiceRouteRegistry(user, header) {
     return {
-      Stocks: async () => this._renderServiceRoute({
+      [Routes.STOCKS]: async () => this._renderServiceRoute({
         user,
         header,
-        routeName: "Stocks",
-        place: "Stocks",
+        routeName: Routes.STOCKS,
+        place: Routes.STOCKS,
         policy: "auto",
         buildView: async () => {
           if (this.stocks && typeof this.stocks.buildMarketView === "function") {
@@ -113,14 +114,14 @@ export class Locations {
         },
         fallbackCaptionKey: "loc.stocks.unavailable",
         fallbackBackTextKey: "ui.back.earn",
-        fallbackBackCb: "go:Earn"
+        fallbackBackCb: toGoCallback(Routes.EARN)
       }),
 
-      Labour: async () => this._renderServiceRoute({
+      [Routes.LABOUR]: async () => this._renderServiceRoute({
         user,
         header,
-        routeName: "Labour",
-        place: "Business",
+        routeName: Routes.LABOUR,
+        place: Routes.BUSINESS,
         policy: "text",
         buildView: async () => {
           if (this.labour && typeof this.labour.buildMainView === "function") {
@@ -130,14 +131,14 @@ export class Locations {
         },
         fallbackCaptionKey: "loc.labour.unavailable",
         fallbackBackTextKey: "ui.back.earn",
-        fallbackBackCb: "go:Earn"
+        fallbackBackCb: toGoCallback(Routes.EARN)
       }),
 
-      Clan: async () => this._renderServiceRoute({
+      [Routes.CLAN]: async () => this._renderServiceRoute({
         user,
         header,
-        routeName: "Clan",
-        place: "Clan",
+        routeName: Routes.CLAN,
+        place: Routes.CLAN,
         policy: "auto",
         buildView: async () => {
           if (this.clans && typeof this.clans.buildMainView === "function") {
@@ -147,14 +148,14 @@ export class Locations {
         },
         fallbackCaptionKey: "loc.clan.unavailable",
         fallbackBackTextKey: "ui.back.default",
-        fallbackBackCb: "go:City"
+        fallbackBackCb: toGoCallback(Routes.CITY)
       }),
 
-      Referral: async () => this._renderServiceRoute({
+      [Routes.REFERRAL]: async () => this._renderServiceRoute({
         user,
         header,
-        routeName: "Referral",
-        place: "CityBoard",
+        routeName: Routes.REFERRAL,
+        place: Routes.CITY_BOARD,
         policy: "auto",
         buildView: async () => {
           if (this.referrals && typeof this.referrals.buildView === "function") {
@@ -164,7 +165,7 @@ export class Locations {
         },
         fallbackCaptionKey: "loc.referral.unavailable",
         fallbackBackTextKey: "ui.back.default",
-        fallbackBackCb: "go:City"
+        fallbackBackCb: toGoCallback(Routes.CITY)
       })
     };
   }
@@ -184,7 +185,7 @@ export class Locations {
   }
 
   async show(user, introText = null, routeOverride = null) {
-    const route = routeOverride || this._route || "Square";
+    const route = routeOverride || this._route || Routes.SQUARE;
     const lang = this._lang(user);
     const onboardingStage = user?.flags?.onboardingStep || "";
 
@@ -216,7 +217,7 @@ export class Locations {
         text: goGym
           ? this._t(user, "loc.onboarding.to_gym")
           : (goWorkForClaim ? this._t(user, "loc.onboarding.claim_shift") : this._t(user, "loc.onboarding.start_first_shift")),
-        callback_data: goGym ? "go:Gym" : "go:Work"
+        callback_data: goGym ? toGoCallback(Routes.GYM) : toGoCallback(Routes.WORK)
       }]];
 
       const caption = (header || "") + (goGym
@@ -393,7 +394,7 @@ export class Locations {
     // Онбординг: первое открытие списка заданий
     if (route === "Work" && user?.flags?.onboarding && !(user.jobs?.active?.[0])) {
       if (onboardingStage === "go_gym" || onboardingStage === "gym_started") {
-        const kbGym = [[{ text: this._t(user, "loc.onboarding.to_gym"), callback_data: "go:Gym" }]];
+        const kbGym = [[{ text: this._t(user, "loc.onboarding.to_gym"), callback_data: toGoCallback(Routes.GYM) }]];
         const captionGym = (header || "") + this._t(user, "loc.work.onboarding_to_gym");
         await this.media.show({
           sourceMsg: this._sourceMsg,
@@ -492,7 +493,7 @@ export class Locations {
         // помечаем ожидание ника и куда вернуться после него
         if (this.users && typeof this.users.save === "function") {
           user.awaitingName = true;
-          user.afterNameRoute = "go:Study";
+          user.afterNameRoute = toGoCallback(Routes.STUDY);
           await this.users.save(user);
         }
 
@@ -503,7 +504,7 @@ export class Locations {
             sourceMsg: this._sourceMsg,
             place: "Study",
             caption: text,
-            keyboard: extra?.reply_markup?.inline_keyboard || [[{ text: this._t(user, "ui.back.square"), callback_data: "go:Square" }]],
+            keyboard: extra?.reply_markup?.inline_keyboard || [[{ text: this._t(user, "ui.back.square"), callback_data: toGoCallback(Routes.SQUARE) }]],
             policy: "photo",
           });
           this.setSourceMessage(null);
@@ -684,7 +685,7 @@ export class Locations {
           backToGym === "Work"  ? this._t(user, "loc.gym.back_work") :
           backToGym === "Study" ? this._t(user, "loc.gym.back_study") :
           this._t(user, "ui.back.default");
-        const backCb = "go:" + (backToGym === "Gym" ? "Progress" : backToGym);
+        const backCb = toGoCallback(backToGym === Routes.GYM ? Routes.PROGRESS : backToGym);
         if (Array.isArray(kb) && kb.length > 0) {
           kb[kb.length - 1] = [{ text: backText, callback_data: backCb }];
         }
@@ -806,7 +807,7 @@ export class Locations {
             sourceMsg: this._sourceMsg,
             place: "Business",
             caption: (header || "") + this._t(user, "loc.business.unavailable"),
-            keyboard: [[{ text: this._t(user, "loc.business.btn.back"), callback_data: "go:Business" }]],
+            keyboard: [[{ text: this._t(user, "loc.business.btn.back"), callback_data: toGoCallback(Routes.BUSINESS) }]],
             policy: "auto",
           });
           this._sourceMsg = null;
@@ -840,9 +841,9 @@ export class Locations {
         }
 
         if (opts.showBackToBusinesses) {
-          kb.push([{ text: this._t(user, "loc.business.btn.back_businesses"), callback_data: "go:Business" }]);
+          kb.push([{ text: this._t(user, "loc.business.btn.back_businesses"), callback_data: toGoCallback(Routes.BUSINESS) }]);
         }
-        kb.push([{ text: this._t(user, "loc.business.btn.back_earn"), callback_data: "go:Earn" }]);
+        kb.push([{ text: this._t(user, "loc.business.btn.back_earn"), callback_data: toGoCallback(Routes.EARN) }]);
 
         const intro = opts.includeIntro ? this._t(user, "loc.business.caption_intro") + "\n\n" : "";
         const modeLine = opts.useManualClaim
@@ -905,7 +906,7 @@ export class Locations {
             }),
             callback_data: "biz:claim_all"
           }]);
-          kb.push([{ text: this._t(user, "loc.business.btn.back_earn"), callback_data: "go:Earn" }]);
+          kb.push([{ text: this._t(user, "loc.business.btn.back_earn"), callback_data: toGoCallback(Routes.EARN) }]);
           await this.media.show({
             sourceMsg: this._sourceMsg,
             place: "Business",

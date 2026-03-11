@@ -3,6 +3,7 @@ import { CONFIG } from "./GameConfig.js";
 import { GymService } from "./GymService.js";
 import { normalizeLang, t } from "./i18n/index.js";
 import { getJobTitle, getShopTitle, getUpgradeDesc, getUpgradeTitle } from "./I18nCatalog.js";
+import { Routes, toGoCallback } from "./Routes.js";
 
 export class UiFactory {
   _lang(lang) {
@@ -11,6 +12,10 @@ export class UiFactory {
 
   _t(lang, key, vars = {}) {
     return t(key, this._lang(lang), vars);
+  }
+
+  _go(route) {
+    return toGoCallback(route);
   }
 
   mainReply(lang = "ru") {
@@ -24,11 +29,11 @@ export class UiFactory {
   square(lang = "ru") {
     const l = this._lang(lang);
     return [
-      [{ text: this._t(l, "ui.square.earn"), callback_data: "go:Earn" }],
-      [{ text: this._t(l, "ui.square.progress"), callback_data: "go:Progress" }],
-      [{ text: this._t(l, "ui.square.minigames"), callback_data: "go:MiniGames" }],
-      [{ text: this._t(l, "ui.square.city"), callback_data: "go:City" }],
-      [{ text: this._t(l, "ui.square.shop"), callback_data: "go:ShopHub" }],
+      [{ text: this._t(l, "ui.square.earn"), callback_data: this._go(Routes.EARN) }],
+      [{ text: this._t(l, "ui.square.progress"), callback_data: this._go(Routes.PROGRESS) }],
+      [{ text: this._t(l, "ui.square.minigames"), callback_data: this._go(Routes.MINI_GAMES) }],
+      [{ text: this._t(l, "ui.square.city"), callback_data: this._go(Routes.CITY) }],
+      [{ text: this._t(l, "ui.square.shop"), callback_data: this._go(Routes.SHOP_HUB) }],
     ];
   }
   
@@ -37,46 +42,46 @@ export class UiFactory {
     return [
       [{ text: this._t(l, "ui.minigames.td"), callback_data: "game:td" }],
       [{ text: this._t(l, "ui.minigames.runner"), callback_data: "game:runner" }],
-      [{ text: this._t(l, "ui.back.square"), callback_data: "go:Square" }],
+      [{ text: this._t(l, "ui.back.square"), callback_data: this._go(Routes.SQUARE) }],
     ];
   }
   
   earn(lang = "ru") {
     const l = this._lang(lang);
     return [
-      [{ text: this._t(l, "ui.earn.work"), callback_data: "go:Work" }],
-      [{ text: this._t(l, "ui.earn.bar"), callback_data: "go:Bar" }],
-      [{ text: this._t(l, "ui.earn.business"), callback_data: "go:Business" }],
-      [{ text: this._t(l, "ui.earn.labour"), callback_data: "go:Labour" }],
-      [{ text: this._t(l, "ui.earn.stocks"), callback_data: "go:Stocks" }],
-      [{ text: this._t(l, "ui.back.city"), callback_data: "go:Square" }]
+      [{ text: this._t(l, "ui.earn.work"), callback_data: this._go(Routes.WORK) }],
+      [{ text: this._t(l, "ui.earn.bar"), callback_data: this._go(Routes.BAR) }],
+      [{ text: this._t(l, "ui.earn.business"), callback_data: this._go(Routes.BUSINESS) }],
+      [{ text: this._t(l, "ui.earn.labour"), callback_data: this._go(Routes.LABOUR) }],
+      [{ text: this._t(l, "ui.earn.stocks"), callback_data: this._go(Routes.STOCKS) }],
+      [{ text: this._t(l, "ui.back.city"), callback_data: this._go(Routes.SQUARE) }]
     ];
   }
   progress(lang = "ru") {
     const l = this._lang(lang);
     return [
-      [{ text: this._t(l, "ui.progress.study"), callback_data: "go:Study" }],
-      [{ text: this._t(l, "ui.progress.gym"), callback_data: "go:Gym" }],
-      [{ text: this._t(l, "ui.progress.upgrades"), callback_data: "go:Upgrades" }],
-      [{ text: this._t(l, "ui.back.city"), callback_data: "go:Square" }],
+      [{ text: this._t(l, "ui.progress.study"), callback_data: this._go(Routes.STUDY) }],
+      [{ text: this._t(l, "ui.progress.gym"), callback_data: this._go(Routes.GYM) }],
+      [{ text: this._t(l, "ui.progress.upgrades"), callback_data: this._go(Routes.UPGRADES) }],
+      [{ text: this._t(l, "ui.back.city"), callback_data: this._go(Routes.SQUARE) }],
     ];
   }
   city(lang = "ru") {
     const l = this._lang(lang);
     return [
-      [{ text: this._t(l, "ui.city.home"), callback_data: "go:Home" }],
-      [{ text: this._t(l, "ui.city.board"), callback_data: "go:CityBoard" }],
-      [{ text: this._t(l, "ui.city.clans"), callback_data: "go:Clan" }],
-      [{ text: this._t(l, "ui.city.referral"), callback_data: "go:Referral" }],
-      [{ text: this._t(l, "ui.back.city"), callback_data: "go:Square" }],
+      [{ text: this._t(l, "ui.city.home"), callback_data: this._go(Routes.HOME) }],
+      [{ text: this._t(l, "ui.city.board"), callback_data: this._go(Routes.CITY_BOARD) }],
+      [{ text: this._t(l, "ui.city.clans"), callback_data: this._go(Routes.CLAN) }],
+      [{ text: this._t(l, "ui.city.referral"), callback_data: this._go(Routes.REFERRAL) }],
+      [{ text: this._t(l, "ui.back.city"), callback_data: this._go(Routes.SQUARE) }],
     ];
   }
   shopHub(lang = "ru") {
     const l = this._lang(lang);
     return [
-      [{ text: this._t(l, "ui.shophub.food"), callback_data: "go:Shop" }],
+      [{ text: this._t(l, "ui.shophub.food"), callback_data: this._go(Routes.SHOP) }],
       [{ text: this._t(l, "ui.shophub.premium"), callback_data: "premium:open" }],
-      [{ text: this._t(l, "ui.back.city"), callback_data: "go:Square" }],
+      [{ text: this._t(l, "ui.back.city"), callback_data: this._go(Routes.SQUARE) }],
     ];
   }
        
@@ -88,7 +93,7 @@ export class UiFactory {
     const tasks = Array.isArray(bar.tasks) ? bar.tasks : [];
   
     kb.push([{ text: this._t(l, "ui.bar.tasks"), callback_data: "bar:tasks" }]);
-    kb.push([{ text: this._t(l, "ui.bar.arcana"), callback_data: "go:Casino" }]);
+    kb.push([{ text: this._t(l, "ui.bar.arcana"), callback_data: this._go(Routes.CASINO) }]);
   
     const today = new Date().toISOString().slice(0,10);
     const freeUsed = (user?.casino?.free?.day === today);
@@ -99,7 +104,7 @@ export class UiFactory {
       kb.push([{ text: this._t(l, "ui.bar.free"), callback_data: "bar:sub" }]);
     }
   
-    kb.push([{ text: this._t(l, "ui.back.earn"), callback_data: "go:Earn" }]);
+    kb.push([{ text: this._t(l, "ui.back.earn"), callback_data: this._go(Routes.EARN) }]);
     return kb;
   }
 
@@ -110,7 +115,7 @@ export class UiFactory {
   
     if (!tasks.length) {
       kb.push([{ text: this._t(l, "ui.bar.no_tasks"), callback_data: "noop" }]);
-      kb.push([{ text: this._t(l, "ui.back.default"), callback_data: "go:Bar" }]);
+      kb.push([{ text: this._t(l, "ui.back.default"), callback_data: this._go(Routes.BAR) }]);
       return kb;
     }
   
@@ -142,7 +147,7 @@ export class UiFactory {
       }
     }
   
-    kb.push([{ text: this._t(l, "ui.back.default"), callback_data: "go:Bar" }]);
+    kb.push([{ text: this._t(l, "ui.back.default"), callback_data: this._go(Routes.BAR) }]);
     return kb;
   }
   
@@ -177,7 +182,7 @@ export class UiFactory {
           kb.push([{ text: this._t(l, "ui.work.cancel_penalty"), callback_data: "work:cancel" }]);
         }
       }
-      kb.push([{ text: this._t(l, "ui.back.earn"), callback_data: "go:Earn" }]);
+      kb.push([{ text: this._t(l, "ui.back.earn"), callback_data: this._go(Routes.EARN) }]);
       return kb;
     }
 
@@ -192,17 +197,17 @@ export class UiFactory {
       }]);
     }
 
-    kb.push([{ text: this._t(l, "ui.back.city"), callback_data: "go:Square" }]);
+    kb.push([{ text: this._t(l, "ui.back.city"), callback_data: this._go(Routes.SQUARE) }]);
     return kb;
   }
 
   // ---------- Учеба ----------
   studyIdle(effectsText, lang = "ru") {
     const l = this._lang(lang);
-    return [
-      [{ text: this._t(l, "ui.study.start", { effects: effectsText }), callback_data: "study:start" }],
-      [{ text: this._t(l, "ui.back.progress"), callback_data: "go:Progress" }],
-    ];
+      return [
+        [{ text: this._t(l, "ui.study.start", { effects: effectsText }), callback_data: "study:start" }],
+        [{ text: this._t(l, "ui.back.progress"), callback_data: this._go(Routes.PROGRESS) }],
+      ];
   }
 
   studyActive(progress, { ready = false, ffCost = null } = {}, lang = "ru") {
@@ -211,7 +216,7 @@ export class UiFactory {
       return [
         [{ text: this._t(l, "ui.progress.line", { progress }), callback_data: "noop" }],
         [{ text: this._t(l, "ui.study.finish"), callback_data: "study:finish" }],
-        [{ text: this._t(l, "ui.back.progress"), callback_data: "go:Progress" }],
+        [{ text: this._t(l, "ui.back.progress"), callback_data: this._go(Routes.PROGRESS) }],
       ];
     }
 
@@ -221,7 +226,7 @@ export class UiFactory {
     return [
       [{ text: this._t(l, "ui.progress.line", { progress }), callback_data: "noop" }],
       [{ text: this._t(l, "ui.study.skip_for", { cost: costLabel }), callback_data: "study:skip" }],
-      [{ text: this._t(l, "ui.back.progress"), callback_data: "go:Progress" }],
+      [{ text: this._t(l, "ui.back.progress"), callback_data: this._go(Routes.PROGRESS) }],
     ];
   }
 
@@ -278,8 +283,8 @@ export class UiFactory {
       kb.push([{ text: this._t(l, "ui.home.bed.all_bought"), callback_data: "noop" }]);
     }
     
-    const back = (opts && typeof opts.backTo === "string" && opts.backTo) ? opts.backTo : "City";
-    kb.push([{ text: this._t(l, "ui.back.default"), callback_data: `go:${back}` }]);
+    const back = (opts && typeof opts.backTo === "string" && opts.backTo) ? opts.backTo : Routes.CITY;
+    kb.push([{ text: this._t(l, "ui.back.default"), callback_data: this._go(back) }]);
     return kb;
   }
 
@@ -298,11 +303,11 @@ export class UiFactory {
 
     const backTo   = opts?.backTo || null;
     const backText =
-      backTo === "Work"  ? this._t(l, "ui.back.work_shifts") :
-      backTo === "Study" ? this._t(l, "ui.back.study") :
-      backTo === "Gym"   ? this._t(l, "ui.back.gym") :
+      backTo === Routes.WORK  ? this._t(l, "ui.back.work_shifts") :
+      backTo === Routes.STUDY ? this._t(l, "ui.back.study") :
+      backTo === Routes.GYM   ? this._t(l, "ui.back.gym") :
                            this._t(l, "ui.back.default");
-    const backCb = backTo ? `go:${backTo}` : "go:ShopHub";
+    const backCb = this._go(backTo || Routes.SHOP_HUB);
     items.push([{ text: backText, callback_data: backCb }]);
     return items;
   }
@@ -320,7 +325,7 @@ export class UiFactory {
       return [
         [
           { text: this._t(l, "ui.casino.rules"), callback_data: "casino_info" },
-          { text: this._t(l, "ui.casino.to_bar"), callback_data: "go:Bar" }
+          { text: this._t(l, "ui.casino.to_bar"), callback_data: this._go(Routes.BAR) }
         ]
       ];
     }
@@ -341,7 +346,7 @@ export class UiFactory {
     rows.push([{ text: this._t(l, "ui.casino.allin"), callback_data: "casino_allin:ask" }]);
     rows.push([
       { text: this._t(l, "ui.casino.rules"), callback_data: "casino_info" },
-      { text: this._t(l, "ui.casino.to_bar"), callback_data: "go:Bar" }
+      { text: this._t(l, "ui.casino.to_bar"), callback_data: this._go(Routes.BAR) }
     ]);
     return rows;
   }
@@ -364,7 +369,7 @@ export class UiFactory {
         return [
           [{ text: this._t(l, "ui.progress.line", { progress }), callback_data: "noop" }],
           [{ text: this._t(l, "ui.gym.finish"), callback_data: "gym:finish" }],
-          [{ text: this._t(l, "ui.back.progress"), callback_data: "go:Progress" }],
+          [{ text: this._t(l, "ui.back.progress"), callback_data: this._go(Routes.PROGRESS) }],
         ];
       }
     
@@ -379,7 +384,7 @@ export class UiFactory {
             : this._t(l, "ui.gym.skip_for", { cost: costLabel }),
           callback_data: canUseFreeSkip ? "gym:skip_free" : "gym:skip"
         }],
-        [{ text: this._t(l, "ui.back.progress"), callback_data: "go:Progress" }],
+        [{ text: this._t(l, "ui.back.progress"), callback_data: this._go(Routes.PROGRESS) }],
       ];
     }
     
@@ -392,7 +397,7 @@ export class UiFactory {
         text: this._t(l, "ui.gym.start", { money: costMoney, energy: costEnergy, mins }),
         callback_data: "gym:start"
       }],
-      [{ text: this._t(l, "ui.back.progress"), callback_data: "go:Progress" }],
+      [{ text: this._t(l, "ui.back.progress"), callback_data: this._go(Routes.PROGRESS) }],
     ];
   }
 
@@ -432,7 +437,7 @@ export class UiFactory {
         rows.push(row);
       }
     }
-    rows.push([{ text: this._t(l, "ui.back.default"), callback_data: "go:Progress" }]);
+    rows.push([{ text: this._t(l, "ui.back.default"), callback_data: this._go(Routes.PROGRESS) }]);
     return rows;
   }
 
@@ -450,21 +455,21 @@ export class UiFactory {
         { text: this._t(l, "ui.cityboard.topstrong"),    callback_data: "city:topstrong" }
       ],
       [{ text: this._t(l, "ui.cityboard.rename"), callback_data: "social:name" }],
-      [{ text: this._t(l, "ui.back.default"), callback_data: "go:City" }],
+      [{ text: this._t(l, "ui.back.default"), callback_data: this._go(Routes.CITY) }],
     ];
   }
   
   cityTopStrong(lang = "ru") {
     const l = this._lang(lang);
     return [
-      [{ text: this._t(l, "ui.back.default"), callback_data: "go:CityBoard" }],
+      [{ text: this._t(l, "ui.back.default"), callback_data: this._go(Routes.CITY_BOARD) }],
     ];
   }
 
   cityTopDay(lang = "ru") {
     const l = this._lang(lang);
     return [
-      [{ text: this._t(l, "ui.back.default"), callback_data: "go:CityBoard" }],
+      [{ text: this._t(l, "ui.back.default"), callback_data: this._go(Routes.CITY_BOARD) }],
     ];
   }
 
@@ -528,7 +533,7 @@ export class UiFactory {
   cityTopLucky(lang = "ru") {
     const l = this._lang(lang);
     return [
-      [{ text: this._t(l, "ui.back.default"), callback_data: "go:CityBoard" }],
+      [{ text: this._t(l, "ui.back.default"), callback_data: this._go(Routes.CITY_BOARD) }],
     ];
   }
 
