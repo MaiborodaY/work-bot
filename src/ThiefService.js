@@ -467,17 +467,57 @@ export class ThiefService {
   }
 
   async buildHelpView(user) {
+    const maxLevel = Math.max(1, Number(this._cfg()?.MAX_LEVEL) || 5);
+    const levels = Array.from({ length: maxLevel }, (_, i) => i + 1);
+    const energyMultiplier = 2;
+    const successByLevel = levels.map((lvl) => `${lvl}→${Math.floor(this._successChance(lvl) * 100)}%`).join(", ");
+    const cooldownUnit = this._lang(user) === "en" ? "m" : (this._lang(user) === "uk" ? "хв" : "мин");
+    const cooldownByLevel = levels.map((lvl) => `${lvl}→${this._cooldownMinutes(lvl)}${cooldownUnit}`).join(", ");
+    const costsByLevel = levels.map((lvl) => `${lvl}→${this._money(user, this._upgradeCost(lvl))}`).join(", ");
+    const pct = this._attackPctRange();
+    const stealPctMin = Math.round(Number(pct.min || 0) * 100);
+    const stealPctMax = Math.round(Number(pct.max || 0) * 100);
+    const ownerMinPct = Math.round(this._ownerRemainPct() * 100);
+    const attempts = this._dailyAttemptsLimit();
+    const protectHours = Math.round(this._minAccountAgeMs() / (60 * 60 * 1000));
+    const minTarget = this._money(user, this._minTargetCash());
+
     const lines = [
       this._t(user, "thief.help.title"),
       "",
       this._t(user, "thief.help.line1"),
-      this._t(user, "thief.help.line2"),
-      this._t(user, "thief.help.line2a"),
+      this._t(user, "thief.help.line2", { energyMultiplier }),
       this._t(user, "thief.help.line3"),
-      this._t(user, "thief.help.line4"),
-      this._t(user, "thief.help.line5"),
-      this._t(user, "thief.help.line6")
+      this._t(user, "thief.help.line4", { successByLevel }),
+      this._t(user, "thief.help.line5", { stealPctMin, stealPctMax }),
+      this._t(user, "thief.help.line6", { ownerMinPct }),
+      this._t(user, "thief.help.line7"),
+      this._t(user, "thief.help.line8", { energyMultiplier }),
+      this._t(user, "thief.help.line9"),
+      this._t(user, "thief.help.line10", { cooldownByLevel }),
+      this._t(user, "thief.help.line11", { attempts }),
+      this._t(user, "thief.help.line12"),
+      this._t(user, "thief.help.line13", { protectHours }),
+      this._t(user, "thief.help.line14", { minTarget }),
+      this._t(user, "thief.help.line15", { costsByLevel }),
+      "",
+      this._t(user, "thief.help.line16")
     ];
+
+    for (const bizId of this._allBusinessIds()) {
+      const cfg = this._bizCfg(bizId);
+      const B = CONFIG?.BUSINESS?.[bizId];
+      if (!cfg || !B) continue;
+      lines.push(this._t(user, "thief.help.biz_line", {
+        emoji: B.emoji || "🏢",
+        bizTitle: this._bizTitle(bizId, user),
+        unlock: Math.max(1, Math.floor(Number(cfg.unlockLevel) || 1)),
+        attack: this._attackEnergy(bizId),
+        defend: this._defendEnergy(bizId),
+        mins: this._formatMinutes(this._attackWindowMs(bizId))
+      }));
+    }
+
     return {
       caption: lines.join("\n"),
       keyboard: [[{ text: this._t(user, "thief.btn.back"), callback_data: "go:Thief" }]]
