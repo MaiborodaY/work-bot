@@ -1011,6 +1011,7 @@ export class LabourService {
 
   async buildHelpView(owner) {
     const langSource = owner;
+    const businesses = this._businessesOrdered().filter((b) => this._maxSlots(b.id) > 0);
     const lines = [
       this._t(langSource, "labour.help.title"),
       "",
@@ -1022,6 +1023,26 @@ export class LabourService {
       "",
       this._t(langSource, "labour.help.line6")
     ];
+    if (businesses.length) {
+      const maxSlots = businesses.reduce((acc, b) => Math.max(acc, this._maxSlots(b.id)), 0);
+      lines.push("");
+      lines.push(this._t(langSource, "labour.help.line7", { maxSlots }));
+      for (const B of businesses) {
+        const first = this._slotLevelCfg(B.id, 0);
+        if (!first) continue;
+        lines.push(this._t(langSource, "labour.help.biz_line", {
+          emoji: B.emoji || "🏢",
+          bizTitle: this._bizTitle(B.id, langSource),
+          days: this._contractDays(B.id),
+          minEnergy: this._minEnergyMax(B.id),
+          money: this._money(langSource, Number(first.slotMoney) || 0),
+          gemsEmoji: CONFIG?.PREMIUM?.emoji || "💎",
+          gems: Math.max(0, Number(first.slotGems) || 0),
+          pct: Math.max(0, Math.floor((Number(first.ownerPct) || 0) * 100))
+        }));
+      }
+      lines.push(this._t(langSource, "labour.help.line8"));
+    }
 
     return {
       caption: lines.join("\n"),

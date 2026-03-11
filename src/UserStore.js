@@ -28,6 +28,7 @@ export class UserStore {
       : await this.db.get(this._key(id));
     let u = raw ? JSON.parse(raw) : this._newUser(id);
     let dirty = false;
+    const todayUTC = new Date().toISOString().slice(0, 10);
 
     if (typeof u.createdAt !== "number" || !Number.isFinite(u.createdAt) || u.createdAt < 0) {
       u.createdAt = 0;
@@ -250,19 +251,32 @@ export class UserStore {
       for (const entry of u.biz.owned) {
         if (!entry || typeof entry !== "object") continue;
 
-        if (typeof entry.stolenDayUTC !== "string") {
+        const hadPendingTheft = typeof entry.pendingTheftAmount === "number" && Number.isFinite(entry.pendingTheftAmount);
+        if (typeof entry.pendingTheftAmount !== "number" || !Number.isFinite(entry.pendingTheftAmount)) {
+          entry.pendingTheftAmount = 0;
+          dirty = true;
+        } else {
+          const pending = Math.max(0, Math.floor(Number(entry.pendingTheftAmount) || 0));
+          if (pending !== entry.pendingTheftAmount) {
+            entry.pendingTheftAmount = pending;
+            dirty = true;
+          }
+        }
+
+        const legacyDay = String(entry.stolenDayUTC || "");
+        const legacyAmountRaw = Math.max(0, Math.floor(Number(entry.stolenAmountToday) || 0));
+        if (!hadPendingTheft && legacyAmountRaw > 0 && legacyDay === todayUTC) {
+          entry.pendingTheftAmount = legacyAmountRaw;
+          dirty = true;
+        }
+
+        if (entry.stolenDayUTC !== "") {
           entry.stolenDayUTC = "";
           dirty = true;
         }
-        if (typeof entry.stolenAmountToday !== "number" || !Number.isFinite(entry.stolenAmountToday)) {
+        if (entry.stolenAmountToday !== 0) {
           entry.stolenAmountToday = 0;
           dirty = true;
-        } else {
-          const amount = Math.max(0, Math.floor(Number(entry.stolenAmountToday) || 0));
-          if (amount !== entry.stolenAmountToday) {
-            entry.stolenAmountToday = amount;
-            dirty = true;
-          }
         }
 
         if (entry.slot && typeof entry.slot === "object" && !Array.isArray(entry.slots)) {

@@ -1,6 +1,11 @@
 import { CONFIG } from "./GameConfig.js";
 import { getBusinessTitle } from "./I18nCatalog.js";
-import { addBusinessStolenToday, getBusinessAvailableToday, getTodayUTC, normalizeBusinessEntry } from "./BusinessPayout.js";
+import {
+  addBusinessPendingTheft,
+  getBusinessStealableForNextClaim,
+  getTodayUTC,
+  normalizeBusinessEntry
+} from "./BusinessPayout.js";
 import { formatMoney, normalizeLang, t } from "./i18n/index.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -274,7 +279,7 @@ export class ThiefService {
 
     let entry = arr[idx];
     if (typeof entry === "string") {
-      entry = { id: entry, boughtAt: 0, lastClaimDayUTC: "", stolenDayUTC: "", stolenAmountToday: 0 };
+      entry = { id: entry, boughtAt: 0, lastClaimDayUTC: "", pendingTheftAmount: 0 };
     }
     entry = normalizeBusinessEntry(entry, id);
     arr[idx] = entry;
@@ -283,12 +288,15 @@ export class ThiefService {
 
   _availableForOwner(owner, bizId, todayUTC = getTodayUTC(this.now())) {
     const B = CONFIG?.BUSINESS?.[String(bizId || "")];
-    if (!B) return { available: 0, daily: 0, entry: null, arr: null };
+    if (!B) return { available: 0, daily: 0, entry: null, arr: null, pending: 0 };
     const found = this._findOwnedEntry(owner, bizId);
-    if (found.idx < 0 || !found.entry) return { available: 0, daily: Math.max(0, Number(B.daily) || 0), entry: null, arr: found.arr };
+    if (found.idx < 0 || !found.entry) {
+      return { available: 0, daily: Math.max(0, Number(B.daily) || 0), entry: null, arr: found.arr, pending: 0 };
+    }
     const daily = Math.max(0, Number(B.daily) || 0);
-    const available = getBusinessAvailableToday(found.entry, daily, todayUTC);
-    return { available, daily, entry: found.entry, arr: found.arr };
+    const available = getBusinessStealableForNextClaim(found.entry, daily, this._ownerRemainPct());
+    const pending = Math.max(0, Math.floor(Number(found.entry.pendingTheftAmount) || 0));
+    return { available, daily, entry: found.entry, arr: found.arr, pending };
   }
 
   _rand(min, max) {
@@ -553,8 +561,11 @@ export class ThiefService {
       if (availableInfo.available < minAvailable) continue;
 
       const ownerName = this._userName(owner, attacker);
-      const stealMin = Math.floor(availableInfo.available * this._attackPctRange().min);
-      const stealMax = Math.floor(availableInfo.available * this._attackPctRange().max);
+      const pctRange = this._attackPctRange();
+      const stealMinRaw = Math.max(1, Math.floor(availableInfo.daily * pctRange.min));
+      const stealMaxRaw = Math.max(1, Math.floor(availableInfo.daily * pctRange.max));
+      const stealMin = Math.max(0, Math.min(stealMinRaw, availableInfo.available));
+      const stealMax = Math.max(0, Math.min(stealMaxRaw, availableInfo.available));
       lines.push(this._t(attacker, "thief.targets.row", {
         ownerName,
         available: this._money(attacker, availableInfo.available),
@@ -783,11 +794,10 @@ export class ThiefService {
           const daily = Math.max(0, Number(avail.daily) || 0);
           const range = this._attackPctRange();
           const percent = this._rand(range.min, range.max);
-          const rawStolen = Math.max(1, Math.floor(available * percent));
-          const maxByRemain = Math.max(0, available - Math.floor(daily * this._ownerRemainPct()));
-          stolen = Math.max(0, Math.min(rawStolen, maxByRemain));
+          const rawStolen = Math.max(1, Math.floor(daily * percent));
+          stolen = Math.max(0, Math.min(rawStolen, available));
           if (stolen > 0) {
-            const applied = addBusinessStolenToday(avail.entry, daily, stolen, todayUTC);
+            const applied = addBusinessPendingTheft(avail.entry, daily, stolen, this._ownerRemainPct());
             stolen = Math.max(0, applied);
             success = stolen > 0;
             if (success) {

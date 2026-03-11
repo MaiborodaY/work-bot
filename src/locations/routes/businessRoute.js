@@ -1,6 +1,11 @@
 import { CONFIG } from "../../GameConfig.js";
 import { ASSETS, JOB_ASSETS } from "../../Assets.js";
-import { getBusinessAvailableToday, getTodayUTC, normalizeBusinessEntry } from "../../BusinessPayout.js";
+import {
+  getBusinessAvailableToday,
+  getBusinessPendingTheft,
+  getTodayUTC,
+  normalizeBusinessEntry
+} from "../../BusinessPayout.js";
 import { getBusinessNote, getBusinessTitle } from "../../I18nCatalog.js";
 import { Routes, toGoCallback } from "../../Routes.js";
 
@@ -50,6 +55,7 @@ export async function renderBusinessRoute(ctx, user, { header = "", lang = "ru",
     const entry = isOwned ? normalizeBusinessEntry(typeof ownedObj === "string" ? { id: B.id } : ownedObj, B.id) : null;
     const claimedToday = !!entry && (entry.lastClaimDayUTC === todayUTC);
     const availableToday = entry ? getBusinessAvailableToday(entry, Number(B.daily) || 0, todayUTC) : 0;
+    const pendingTheft = entry ? getBusinessPendingTheft(entry, Number(B.daily) || 0) : 0;
     const bizTitle = getBusinessTitle(B.id, lang) || B.title;
     const bizNote = getBusinessNote(B.id, lang) || B.note;
 
@@ -58,6 +64,9 @@ export async function renderBusinessRoute(ctx, user, { header = "", lang = "ru",
       : (claimedToday
           ? ctx._t(user, "loc.business.status_claimed_today")
           : ctx._t(user, "loc.business.status_available_today", { amount: availableToday }));
+    const stolenLine = isOwned
+      ? ctx._t(user, "loc.business.status_stolen_next", { amount: pendingTheft })
+      : "";
 
     const kb = [];
     if (!isOwned) {
@@ -91,6 +100,7 @@ export async function renderBusinessRoute(ctx, user, { header = "", lang = "ru",
         ctx._t(user, "loc.business.daily_income", { daily: B.daily }) + "\n" +
         modeLine + "\n" +
         statusLine +
+        (stolenLine ? `\n${stolenLine}` : "") +
         (bizNote ? `\n\nℹ️ ${bizNote}` : ""),
       keyboard: kb,
       policy: "photo",

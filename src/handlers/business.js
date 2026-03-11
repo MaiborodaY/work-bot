@@ -42,8 +42,7 @@ export const businessHandler = {
         id: B.id,
         boughtAt: now(),
         lastClaimDayUTC: "",
-        stolenDayUTC: "",
-        stolenAmountToday: 0
+        pendingTheftAmount: 0
       });
       await users.save(u);
 

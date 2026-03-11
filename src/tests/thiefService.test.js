@@ -80,7 +80,7 @@ test("thief service: start attack fails when energy below double attack cost", a
       lang: "en",
       chatId: 1,
       createdAt: nowTs - 10 * 24 * 60 * 60 * 1000,
-      biz: { owned: [{ id: "shawarma", boughtAt: nowTs, lastClaimDayUTC: "", stolenDayUTC: "", stolenAmountToday: 0 }] }
+      biz: { owned: [{ id: "shawarma", boughtAt: nowTs, lastClaimDayUTC: "", pendingTheftAmount: 0 }] }
     }
   });
   const service = new ThiefService({
@@ -114,7 +114,7 @@ test("thief service: start attack creates active attempt and deducts energy", as
       lang: "en",
       chatId: 1,
       createdAt: nowTs - 10 * 24 * 60 * 60 * 1000,
-      biz: { owned: [{ id: "shawarma", boughtAt: nowTs, lastClaimDayUTC: "", stolenDayUTC: "", stolenAmountToday: 0 }] }
+      biz: { owned: [{ id: "shawarma", boughtAt: nowTs, lastClaimDayUTC: "", pendingTheftAmount: 0 }] }
     }
   });
   const service = new ThiefService({
@@ -137,3 +137,37 @@ test("thief service: start attack creates active attempt and deducts energy", as
   assert.ok(rawAttack);
 });
 
+test("thief service: attack can start even if owner already claimed today", async () => {
+  const nowTs = Date.now();
+  const todayUTC = new Date(nowTs).toISOString().slice(0, 10);
+  const db = new FakeDb();
+  const users = new FakeUsers({
+    attacker: {
+      id: "attacker",
+      lang: "en",
+      money: 50000,
+      energy: 30,
+      createdAt: nowTs - 10 * 24 * 60 * 60 * 1000,
+      thief: { level: 1, activeAttackId: "", cooldowns: {} },
+      biz: { owned: [] }
+    },
+    owner: {
+      id: "owner",
+      lang: "en",
+      chatId: 1,
+      createdAt: nowTs - 10 * 24 * 60 * 60 * 1000,
+      biz: { owned: [{ id: "shawarma", boughtAt: nowTs, lastClaimDayUTC: todayUTC, pendingTheftAmount: 0 }] }
+    }
+  });
+  const service = new ThiefService({
+    db,
+    users,
+    now: () => nowTs,
+    bot: { async sendWithInline() {} }
+  });
+  const attacker = await users.load("attacker");
+  const res = await service.startAttack(attacker, "shawarma", "owner");
+
+  assert.equal(res.ok, true);
+  assert.ok(res.attackId);
+});
