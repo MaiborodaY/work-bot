@@ -472,6 +472,7 @@ export class ThiefService {
       "",
       this._t(user, "thief.help.line1"),
       this._t(user, "thief.help.line2"),
+      this._t(user, "thief.help.line2a"),
       this._t(user, "thief.help.line3"),
       this._t(user, "thief.help.line4"),
       this._t(user, "thief.help.line5"),
@@ -535,6 +536,7 @@ export class ThiefService {
       this._t(attacker, "thief.targets.title", { bizTitle: this._bizTitle(biz, attacker) }),
       this._t(attacker, "thief.targets.energy_cost", {
         attackEnergy: this._attackEnergy(biz),
+        startNeed: this._attackEnergy(biz) * 2,
         defendEnergy: this._defendEnergy(biz)
       }),
       this._t(attacker, "thief.targets.rule", { minAvailable: this._money(attacker, minAvailable) }),

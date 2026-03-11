@@ -21,10 +21,10 @@ export const thiefHandler = {
     const show = async (view) => {
       await locations.media.show({
         sourceMsg: locations._sourceMsg || cb?.message || null,
-        place: "City",
+        place: "Thief",
         caption: view.caption,
         keyboard: view.keyboard,
-        policy: "text"
+        policy: "auto"
       });
       locations.setSourceMessage(null);
     };

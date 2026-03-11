@@ -23,10 +23,10 @@ export const labourHandler = {
     const show = async (view) => {
       await locations.media.show({
         sourceMsg: locations._sourceMsg || cb?.message || null,
-        place: "Business",
+        place: "Labour",
         caption: view.caption,
         keyboard: view.keyboard,
-        policy: "text"
+        policy: "auto"
       });
       locations.setSourceMessage(null);
     };

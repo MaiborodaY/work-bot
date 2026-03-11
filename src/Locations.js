@@ -153,8 +153,8 @@ export class Locations {
         user,
         header,
         routeName: Routes.LABOUR,
-        place: Routes.BUSINESS,
-        policy: "text",
+        place: Routes.LABOUR,
+        policy: "auto",
         buildView: async () => {
           if (this.labour && typeof this.labour.buildMainView === "function") {
             return this.labour.buildMainView(user);
@@ -187,8 +187,8 @@ export class Locations {
         user,
         header,
         routeName: Routes.THIEF,
-        place: Routes.CITY,
-        policy: "text",
+        place: Routes.THIEF,
+        policy: "auto",
         buildView: async () => {
           if (this.thief && typeof this.thief.buildMainView === "function") {
             return this.thief.buildMainView(user);
