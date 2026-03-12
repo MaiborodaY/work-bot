@@ -448,7 +448,8 @@ export default {
       users,
       send: (text) => send(text),
       isAdmin,
-      botToken: env.BOT_TOKEN
+      botToken: env.BOT_TOKEN,
+      ratings
     });
 
     // ===== Минимальная телеметрия оплаты =====

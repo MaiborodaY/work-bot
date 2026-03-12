@@ -12,12 +12,13 @@ export class AdminCommands {
    *  - isAdmin: (id: number|string) => boolean
    *  - botToken: Telegram bot token
    */
-  constructor({ users, send, isAdmin, botToken }) {
+  constructor({ users, send, isAdmin, botToken, ratings = null }) {
     this.users = users;
     this.send = send;
     this.isAdmin = isAdmin;
     this.botToken = botToken;
     this.db = users?.db;
+    this.ratings = ratings || null;
 
     this.K = {
       draft: (adminId) => `admin:broadcast:draft:${adminId}`,
@@ -50,6 +51,7 @@ export class AdminCommands {
         "/setgem &lt;userId&gt; &lt;amount&gt;\n" +
         "/wipe &lt;userId&gt;\n" +
         "/labour_reindex - rebuild free labour index once\n\n" +
+        "/admin_rebuild_ratings - rebuild top rating indexes once\n\n" +
         "<b>Broadcast</b>\n" +
         "/broadcast - start draft mode\n" +
         "/broadcast_test - send draft only to you\n" +
@@ -331,6 +333,20 @@ export class AdminCommands {
         );
       } catch (e) {
         await this.send(`Labour reindex failed: ${this._escapeHtml(e?.message || e)}`);
+      }
+      return true;
+    }
+    if (/^\/admin_rebuild_ratings(?:@\w+)?\s*$/i.test(input)) {
+      await this.send("Ratings rebuild started...");
+      try {
+        const out = await this._rebuildRatings();
+        await this.send(
+          "Ratings rebuild done.\n" +
+          `Scanned users: ${Number(out.scanned || 0)}\n` +
+          `Indexes rebuilt: ${Number(out.rebuilt || 0)}`
+        );
+      } catch (e) {
+        await this.send(`Ratings rebuild failed: ${this._escapeHtml(e?.message || e)}`);
       }
       return true;
     }
@@ -631,6 +647,13 @@ export class AdminCommands {
 
     await this.db.put(LABOUR_FREE_PLAYERS_KEY, JSON.stringify(out));
     return { scanned, eligible, saved: out.length, limit, energyPatched };
+  }
+
+  async _rebuildRatings() {
+    if (!this.ratings || typeof this.ratings.rebuildAll !== "function") {
+      throw new Error("ratings service unavailable");
+    }
+    return this.ratings.rebuildAll();
   }
   async _sendDraft(chatId, draft) {
     if (!chatId || !draft) return { ok: false, error: "missing chatId/draft" };
