@@ -1,4 +1,5 @@
-import { ACHIEVEMENTS_BY_EVENT } from "./AchievementCatalog.js";
+import { ACHIEVEMENTS, ACHIEVEMENT_BY_ID, ACHIEVEMENTS_BY_EVENT } from "./AchievementCatalog.js";
+import { CONFIG } from "./GameConfig.js";
 import { normalizeLang } from "./i18n/index.js";
 
 function n(raw) {
@@ -200,6 +201,301 @@ export class AchievementService {
     return Array.isArray(ACHIEVEMENTS_BY_EVENT[key]) ? ACHIEVEMENTS_BY_EVENT[key] : [];
   }
 
+  _knownDefs() {
+    return Array.isArray(ACHIEVEMENTS) ? ACHIEVEMENTS : [];
+  }
+
+  _categoryForId(id) {
+    const s = String(id || "");
+    if (s.startsWith("work_")) return "work";
+    if (s.startsWith("biz_") || s.startsWith("labour_")) return "biz";
+    if (s.startsWith("gym_") || s.startsWith("study_")) return "growth";
+    if (s.startsWith("stocks_")) return "stocks";
+    if (s.startsWith("thief_")) return "thief";
+    if (s.startsWith("clan_")) return "clan";
+    if (s.startsWith("referrals_")) return "ref";
+    return "other";
+  }
+
+  _categoryTitle(cat, lang) {
+    const l = this._lang(lang);
+    const map = {
+      ru: {
+        work: "💼 Работа",
+        biz: "🏢 Бизнес",
+        growth: "🏋️ Зал и учёба",
+        stocks: "📈 Биржа",
+        thief: "🌑 Воровство",
+        clan: "🤝 Клан",
+        ref: "👥 Рефералы",
+        other: "📌 Прочее"
+      },
+      uk: {
+        work: "💼 Робота",
+        biz: "🏢 Бізнес",
+        growth: "🏋️ Зал і навчання",
+        stocks: "📈 Біржа",
+        thief: "🌑 Крадіжки",
+        clan: "🤝 Клан",
+        ref: "👥 Реферали",
+        other: "📌 Інше"
+      },
+      en: {
+        work: "💼 Work",
+        biz: "🏢 Business",
+        growth: "🏋️ Gym & Study",
+        stocks: "📈 Stocks",
+        thief: "🌑 Theft",
+        clan: "🤝 Clan",
+        ref: "👥 Referrals",
+        other: "📌 Other"
+      }
+    };
+    return (map[l] && map[l][cat]) || map.ru[cat] || map.ru.other;
+  }
+
+  _countOwnedBusinesses(u) {
+    const arr = Array.isArray(u?.biz?.owned) ? u.biz.owned : [];
+    let nBiz = 0;
+    for (const x of arr) {
+      const id = String(typeof x === "string" ? x : x?.id || "");
+      if (id) nBiz += 1;
+    }
+    return nBiz;
+  }
+
+  _countBoughtSlots(u) {
+    const arr = Array.isArray(u?.biz?.owned) ? u.biz.owned : [];
+    let slots = 0;
+    for (const entry of arr) {
+      if (!entry || typeof entry !== "object") continue;
+      const s = Array.isArray(entry.slots) ? entry.slots : [];
+      slots += s.filter((x) => !!x?.purchased).length;
+    }
+    return slots;
+  }
+
+  _heldCompanies(u) {
+    const holdings = (u?.stocks?.holdings && typeof u.stocks.holdings === "object")
+      ? u.stocks.holdings
+      : {};
+    let count = 0;
+    for (const h of Object.values(holdings)) {
+      if (Math.max(0, Math.floor(n(h?.shares))) > 0) count += 1;
+    }
+    return count;
+  }
+
+  _rewardedReferrals(u) {
+    const invited = Array.isArray(u?.referral?.invited) ? u.referral.invited : [];
+    let c = 0;
+    for (const x of invited) {
+      if (Math.max(0, Math.floor(n(x?.rewardedAt))) > 0) c += 1;
+    }
+    return c;
+  }
+
+  _progressText(id, u, lang) {
+    const l = this._lang(lang);
+    const p = u?.achievements?.progress || {};
+    const totalShifts = Math.max(0, Math.floor(n(p.totalShifts)));
+    const totalEarned = Math.max(0, Math.floor(n(p.totalEarned)));
+    const ownedBiz = this._countOwnedBusinesses(u);
+    const boughtSlots = this._countBoughtSlots(u);
+    const bizPts = ownedBiz + boughtSlots;
+    const hires = Math.max(0, Math.floor(n(p.employeesHiredTotal)));
+    const gymLevel = Math.max(0, Math.floor(n(u?.gym?.level)));
+    const maxEnergy = Math.max(0, Math.floor(n(u?.energy_max)));
+    const gymCap = Math.max(0, Number(CONFIG?.GYM?.MAX_ENERGY_CAP) || 160);
+    const studyLevel = Math.max(0, Math.floor(n(u?.study?.level)));
+    const stockBuys = Math.max(0, Math.floor(n(p.stockBuysTotal)));
+    const heldCompanies = this._heldCompanies(u);
+    const totalDividends = Math.max(0, Math.floor(n(p.totalDividends)));
+    const theftTotal = Math.max(0, Math.floor(n(p.totalStolen)));
+    const theftStreak = Math.max(0, Math.floor(n(p.successfulTheftsStreak)));
+    const defenses = Math.max(0, Math.floor(n(p.defensesSuccess)));
+    const clanContracts = Math.max(0, Math.floor(n(p.clanContractsByUser)));
+    const refs = this._rewardedReferrals(u);
+
+    const ru = {
+      work_first_shift: `${totalShifts}/1 смен`,
+      work_shifts_50: `${totalShifts}/50 смен`,
+      work_shifts_500: `${totalShifts}/500 смен`,
+      work_earned_1k: `$${totalEarned}/$1000`,
+      work_earned_1m: `$${totalEarned}/$1000000`,
+      biz_first: `${ownedBiz}/1 бизнесов`,
+      biz_all_5: `${ownedBiz}/5 бизнесов`,
+      biz_points_10: `${bizPts}/10 очков`,
+      biz_points_25: `${bizPts}/25 очков`,
+      labour_first_hire: `${hires}/1 наймов`,
+      labour_hires_10: `${hires}/10 наймов`,
+      gym_first_finish: `${gymLevel}/1 тренировок`,
+      gym_energy_max: `${maxEnergy}/${gymCap}⚡`,
+      study_lvl_5: `${studyLevel}/5 уровней`,
+      stocks_first_buy: `${stockBuys}/1 покупок`,
+      stocks_portfolio_5: `${heldCompanies}/5 компаний`,
+      stocks_dividends_50k: `$${totalDividends}/$50000`,
+      thief_first_success: `${Math.max(0, Math.floor(n(p.theftSuccessTotal)))}/1 краж`,
+      thief_total_100k: `$${theftTotal}/$100000`,
+      thief_streak_10: `${theftStreak}/10 подряд`,
+      thief_defense_5: `${defenses}/5 защит`,
+      clan_contracts_10: `${clanContracts}/10 контрактов`,
+      referrals_1: `${refs}/1 рефералов`,
+      referrals_5: `${refs}/5 рефералов`
+    };
+    const uk = {
+      work_first_shift: `${totalShifts}/1 змін`,
+      work_shifts_50: `${totalShifts}/50 змін`,
+      work_shifts_500: `${totalShifts}/500 змін`,
+      work_earned_1k: `$${totalEarned}/$1000`,
+      work_earned_1m: `$${totalEarned}/$1000000`,
+      biz_first: `${ownedBiz}/1 бізнесів`,
+      biz_all_5: `${ownedBiz}/5 бізнесів`,
+      biz_points_10: `${bizPts}/10 очок`,
+      biz_points_25: `${bizPts}/25 очок`,
+      labour_first_hire: `${hires}/1 наймів`,
+      labour_hires_10: `${hires}/10 наймів`,
+      gym_first_finish: `${gymLevel}/1 тренувань`,
+      gym_energy_max: `${maxEnergy}/${gymCap}⚡`,
+      study_lvl_5: `${studyLevel}/5 рівнів`,
+      stocks_first_buy: `${stockBuys}/1 покупок`,
+      stocks_portfolio_5: `${heldCompanies}/5 компаній`,
+      stocks_dividends_50k: `$${totalDividends}/$50000`,
+      thief_first_success: `${Math.max(0, Math.floor(n(p.theftSuccessTotal)))}/1 крадіжок`,
+      thief_total_100k: `$${theftTotal}/$100000`,
+      thief_streak_10: `${theftStreak}/10 поспіль`,
+      thief_defense_5: `${defenses}/5 захистів`,
+      clan_contracts_10: `${clanContracts}/10 контрактів`,
+      referrals_1: `${refs}/1 рефералів`,
+      referrals_5: `${refs}/5 рефералів`
+    };
+    const en = {
+      work_first_shift: `${totalShifts}/1 shifts`,
+      work_shifts_50: `${totalShifts}/50 shifts`,
+      work_shifts_500: `${totalShifts}/500 shifts`,
+      work_earned_1k: `$${totalEarned}/$1000`,
+      work_earned_1m: `$${totalEarned}/$1000000`,
+      biz_first: `${ownedBiz}/1 businesses`,
+      biz_all_5: `${ownedBiz}/5 businesses`,
+      biz_points_10: `${bizPts}/10 points`,
+      biz_points_25: `${bizPts}/25 points`,
+      labour_first_hire: `${hires}/1 hires`,
+      labour_hires_10: `${hires}/10 hires`,
+      gym_first_finish: `${gymLevel}/1 workouts`,
+      gym_energy_max: `${maxEnergy}/${gymCap}⚡`,
+      study_lvl_5: `${studyLevel}/5 levels`,
+      stocks_first_buy: `${stockBuys}/1 buys`,
+      stocks_portfolio_5: `${heldCompanies}/5 companies`,
+      stocks_dividends_50k: `$${totalDividends}/$50000`,
+      thief_first_success: `${Math.max(0, Math.floor(n(p.theftSuccessTotal)))}/1 thefts`,
+      thief_total_100k: `$${theftTotal}/$100000`,
+      thief_streak_10: `${theftStreak}/10 streak`,
+      thief_defense_5: `${defenses}/5 defenses`,
+      clan_contracts_10: `${clanContracts}/10 contracts`,
+      referrals_1: `${refs}/1 referrals`,
+      referrals_5: `${refs}/5 referrals`
+    };
+
+    const maps = { ru, uk, en };
+    return (maps[l] && maps[l][id]) || (maps.ru[id] || "");
+  }
+
+  _earnedEntriesSorted(u) {
+    this._ensureModel(u);
+    const earned = u?.achievements?.earned && typeof u.achievements.earned === "object"
+      ? u.achievements.earned
+      : {};
+    const out = [];
+    for (const [id, tsRaw] of Object.entries(earned)) {
+      const ts = Math.max(0, Math.floor(n(tsRaw)));
+      if (!ts) continue;
+      const def = ACHIEVEMENT_BY_ID[id];
+      if (!def) continue;
+      out.push({ id, ts, reward: Math.max(0, Math.floor(n(def.reward))), title: def.title || null });
+    }
+    out.sort((a, b) => b.ts - a.ts);
+    return out;
+  }
+
+  _achTitle(id, lang) {
+    const def = ACHIEVEMENT_BY_ID[String(id || "")];
+    if (!def) return String(id || "");
+    return this._titleForLang(def.title, lang) || String(id || "");
+  }
+
+  buildOwnView(u) {
+    this._ensureModel(u);
+    const lang = this._lang(u);
+    const defs = this._knownDefs();
+    const total = defs.length;
+    const earned = this._earnedEntriesSorted(u);
+    const done = earned.length;
+    const gems = earned.reduce((sum, x) => sum + Math.max(0, Math.floor(n(x.reward))), 0);
+    const lines = [];
+
+    const titleMap = {
+      ru: "🏆 Достижения",
+      uk: "🏆 Досягнення",
+      en: "🏆 Achievements"
+    };
+    const summaryMap = {
+      ru: `Выполнено: ${done} из ${total} · 💎 получено: ${gems}`,
+      uk: `Виконано: ${done} з ${total} · 💎 отримано: ${gems}`,
+      en: `Completed: ${done} of ${total} · 💎 earned: ${gems}`
+    };
+
+    lines.push(titleMap[lang] || titleMap.ru);
+    lines.push("");
+    lines.push(summaryMap[lang] || summaryMap.ru);
+    lines.push("");
+
+    const catOrder = ["work", "biz", "growth", "stocks", "thief", "clan", "ref"];
+    for (const cat of catOrder) {
+      const group = defs.filter((d) => this._categoryForId(d.id) === cat);
+      if (!group.length) continue;
+      lines.push(this._categoryTitle(cat, lang));
+      for (const def of group) {
+        const title = this._titleForLang(def.title, lang) || def.id;
+        if (this._isEarned(u, def.id)) {
+          lines.push(`✅ ${title} — 💎${Math.max(0, Math.floor(n(def.reward)))}`);
+          continue;
+        }
+        const progress = this._progressText(def.id, u, lang);
+        if (progress) {
+          lines.push(`⬜ ${title} — ${progress}`);
+        } else {
+          lines.push(`⬜ ${title} — 💎${Math.max(0, Math.floor(n(def.reward)))}`);
+        }
+      }
+      lines.push("");
+    }
+
+    while (lines.length > 0 && !String(lines[lines.length - 1] || "").trim()) lines.pop();
+    return {
+      caption: lines.join("\n"),
+      keyboard: [[{
+        text: lang === "en" ? "⬅️ Back to profile" : (lang === "uk" ? "⬅️ До профілю" : "⬅️ В профиль"),
+        callback_data: "profile:back"
+      }]]
+    };
+  }
+
+  buildPublicSummary(targetUser, viewerLang = "ru", limit = 8) {
+    const lang = this._lang(viewerLang);
+    const earned = this._earnedEntriesSorted(targetUser);
+    const shown = earned.slice(0, Math.max(1, Math.floor(n(limit) || 8)));
+    const lines = [];
+    for (const item of shown) {
+      lines.push(`✅ ${this._achTitle(item.id, lang)}`);
+    }
+    const more = Math.max(0, earned.length - shown.length);
+    return {
+      totalDone: earned.length,
+      lines,
+      more
+    };
+  }
+
   async onEvent(u, event, ctx = {}, opts = {}) {
     if (!u || typeof u !== "object") return { changed: false, newlyEarned: [], gemsAwarded: 0 };
     const persist = opts.persist !== false;
@@ -310,4 +606,3 @@ export class AchievementService {
     }
   }
 }
-

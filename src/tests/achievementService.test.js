@@ -99,3 +99,45 @@ test("achievement service: retro check awards from existing state and marks done
   assert.equal(u.premium >= 3, true);
 });
 
+test("achievement service: own/public views are built with earned achievements", async () => {
+  const users = new FakeUsers({
+    u4: {
+      id: "u4",
+      lang: "en",
+      premium: 5,
+      money: 1000,
+      achievements: {
+        earned: {
+          work_first_shift: 100,
+          biz_first: 200
+        },
+        progress: {
+          totalShifts: 5,
+          totalEarned: 5000,
+          totalDividends: 0,
+          successfulTheftsStreak: 0,
+          theftSuccessTotal: 0,
+          totalStolen: 0,
+          defensesSuccess: 0,
+          employeesHiredTotal: 0,
+          clanContractsByUser: 0,
+          stockBuysTotal: 0,
+          referralsDone: 0,
+          clanJoinedOnce: false,
+          clanCreatedOnce: false
+        },
+        retroDone: true
+      }
+    }
+  });
+  const svc = new AchievementService({ users, now: () => 5000, bot: null });
+  const u = await users.load("u4");
+
+  const own = svc.buildOwnView(u);
+  assert.match(own.caption, /Achievements/i);
+  assert.match(own.caption, /First work day/i);
+
+  const pub = svc.buildPublicSummary(u, "en", 8);
+  assert.equal(pub.totalDone, 2);
+  assert.equal(pub.lines.length, 2);
+});

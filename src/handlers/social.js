@@ -17,6 +17,28 @@ export const socialHandler = {
     const { data, cb, u, answer, locations, ui, social, goTo, users } = ctx;
     const lang = normalizeLang(u?.lang || "ru");
     const tt = (key, vars = {}) => t(key, lang, vars);
+    const medals = ["🥇", "🥈", "🥉"];
+    const shortName = (raw) => {
+      const s = String(raw || "").trim();
+      if (!s) return tt("loc.square.player_fallback_id", { id: String(u?.id || "").slice(-4).padStart(4, "0") });
+      return s.length > 24 ? `${s.slice(0, 23)}…` : s;
+    };
+    const topProfileKb = (list, sourceToken, baseKb) => {
+      const kb = [];
+      const arr = Array.isArray(list) ? list.slice(0, 10) : [];
+      for (let i = 0; i < arr.length; i++) {
+        const row = arr[i] || {};
+        const uid = String(row.userId ?? row.id ?? "").trim();
+        if (!uid) continue;
+        const marker = medals[i] || `${i + 1}.`;
+        const label = `${marker} ${shortName(row.name)}`;
+        kb.push([{ text: label, callback_data: `profile:view:${uid}:${sourceToken}` }]);
+      }
+      if (Array.isArray(baseKb) && baseKb.length) {
+        kb.push(...baseKb);
+      }
+      return kb;
+    };
 
         // ===== ручная смена ника по кнопке в табло =====
         if (data === "social:name") {
@@ -47,7 +69,7 @@ export const socialHandler = {
         sourceMsg: locations._sourceMsg,
         place: "CityBoard",
         caption: ui.cityTopLuckyCaption(list, lang),
-        keyboard: ui.cityTopLucky(lang),
+        keyboard: topProfileKb(list, "lucky", ui.cityTopLucky(lang)),
         policy: "auto",
       });
       locations.setSourceMessage(null);
@@ -114,7 +136,7 @@ export const socialHandler = {
         sourceMsg: locations._sourceMsg,
         place: "CityBoard",
         caption: ui.cityTopDayCaption(top, lang),
-        keyboard: ui.cityTopDay(lang),
+        keyboard: topProfileKb(top, "day", ui.cityTopDay(lang)),
         policy: "auto",
       });
       locations.setSourceMessage(null);
@@ -137,7 +159,7 @@ export const socialHandler = {
         sourceMsg: locations._sourceMsg,
         place: "CityBoard",
         caption: ui.cityTopWeekCaption(top, lang),
-        keyboard: ui.cityTopDay(lang), // можно переиспользовать ту же «Назад»-клавиатуру
+        keyboard: topProfileKb(top, "week", ui.cityTopDay(lang)), // можно переиспользовать ту же «Назад»-клавиатуру
         policy: "auto",
       });
       locations.setSourceMessage(null);
@@ -163,7 +185,7 @@ export const socialHandler = {
         sourceMsg: locations._sourceMsg,
         place: "CityBoard",
         caption: ui.cityTopSmartCaption(top, lang),
-        keyboard: ui.cityTopDay(lang), // можем переиспользовать ту же "назад"-клаву
+        keyboard: topProfileKb(top, "smart", ui.cityTopDay(lang)), // можем переиспользовать ту же "назад"-клаву
         policy: "auto",
       });
       locations.setSourceMessage(null);
@@ -207,7 +229,7 @@ export const socialHandler = {
         sourceMsg: locations._sourceMsg,
         place: "CityBoard",
         caption: ui.cityTopStrongCaption(top, lang),
-        keyboard: ui.cityTopStrong(lang),
+        keyboard: topProfileKb(top, "strong", ui.cityTopStrong(lang)),
         policy: "auto",
       });
       locations.setSourceMessage(null);

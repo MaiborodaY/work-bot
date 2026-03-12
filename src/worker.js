@@ -302,7 +302,14 @@ export default {
         return await labour.buildProfileEmploymentLine(u);
       }, { fallback: "" });
       const statusText = Formatters.status(u, { economy, now, pct, clanName, clanWeekKey, employmentLine });
-      const kb = [[{ text: profileLangButtonText(u), callback_data: "profile:lang" }]];
+      const lang = normalizeLang(u?.lang || "ru");
+      const achievementsBtn = lang === "en"
+        ? "🏆 Achievements"
+        : (lang === "uk" ? "🏆 Досягнення" : "🏆 Достижения");
+      const kb = [
+        [{ text: achievementsBtn, callback_data: "profile:achievements" }],
+        [{ text: profileLangButtonText(u), callback_data: "profile:lang" }]
+      ];
       if (sourceMsg) {
         const edited = await safeCall("worker.profile.edit", async () => {
           await edit(sourceMsg, statusText, kb);
@@ -311,6 +318,112 @@ export default {
         if (edited) return;
       }
       await sendWithInline(statusText, kb);
+    }
+
+    const profileSourceToCallback = (srcToken) => {
+      const s = String(srcToken || "").trim().toLowerCase();
+      if (!s) return "go:CityBoard";
+      if (s === "day") return "city:topday";
+      if (s === "week") return "city:topweek";
+      if (s === "smart") return "city:topsmart";
+      if (s === "strong") return "city:topstrong";
+      if (s === "lucky") return "city:toplucky";
+      return "go:CityBoard";
+    };
+
+    async function renderPublicProfile(viewer, targetId, sourceToken = "", sourceMsg = null) {
+      const lang = normalizeLang(viewer?.lang || "ru");
+      const target = await users.load(targetId).catch(() => null);
+      if (!target) {
+        return null;
+      }
+      if (String(target.id || "") === String(viewer.id || "")) {
+        await renderProfile(viewer, sourceMsg);
+        return { renderedSelf: true };
+      }
+
+      let clanName = "";
+      const targetClan = await safeCall("worker.profile.public.get_clan", async () => {
+        return await clans.getClanForUser(target);
+      }, { fallback: null });
+      clanName = String(targetClan?.name || "");
+
+      const bizOwned = Array.isArray(target?.biz?.owned) ? target.biz.owned : [];
+      let bizCount = 0;
+      let slotsCount = 0;
+      for (const b of bizOwned) {
+        const id = String(typeof b === "string" ? b : b?.id || "");
+        if (id) bizCount += 1;
+        if (b && typeof b === "object" && Array.isArray(b.slots)) {
+          slotsCount += b.slots.filter((s) => !!s?.purchased).length;
+        }
+      }
+
+      const preview = achievements?.buildPublicSummary
+        ? achievements.buildPublicSummary(target, lang, 8)
+        : { totalDone: 0, lines: [], more: 0 };
+
+      const name = String(target?.displayName || "").trim() || `u${String(target?.id || "").slice(-4).padStart(4, "0")}`;
+      const money = Math.max(0, Math.floor(Number(target?.money) || 0));
+      const energy = Math.max(0, Math.floor(Number(target?.energy) || 0));
+      const energyMax = Math.max(0, Math.floor(Number(target?.energy_max) || 0));
+      const stolen = Math.max(0, Math.floor(Number(target?.thief?.totalStolen || target?.achievements?.progress?.totalStolen) || 0));
+
+      const lines = [];
+      if (lang === "en") {
+        lines.push(`👤 ${name}`);
+        lines.push("");
+        lines.push(`💰 $${money} · ⚡ ${energy}/${energyMax}`);
+        lines.push(`🏢 Businesses: ${bizCount} · Slots: ${slotsCount}${clanName ? ` · 🤝 ${clanName}` : ""}`);
+        lines.push(`🎖️ Achievements: ${preview.totalDone} · 🌑 Stolen: $${stolen}`);
+        lines.push("");
+        lines.push("🏆 Recent achievements:");
+      } else if (lang === "uk") {
+        lines.push(`👤 ${name}`);
+        lines.push("");
+        lines.push(`💰 $${money} · ⚡ ${energy}/${energyMax}`);
+        lines.push(`🏢 Бізнесів: ${bizCount} · Слотів: ${slotsCount}${clanName ? ` · 🤝 ${clanName}` : ""}`);
+        lines.push(`🎖️ Досягнень: ${preview.totalDone} · 🌑 Вкрадено: $${stolen}`);
+        lines.push("");
+        lines.push("🏆 Останні досягнення:");
+      } else {
+        lines.push(`👤 ${name}`);
+        lines.push("");
+        lines.push(`💰 $${money} · ⚡ ${energy}/${energyMax}`);
+        lines.push(`🏢 Бизнесов: ${bizCount} · Слотов: ${slotsCount}${clanName ? ` · 🤝 ${clanName}` : ""}`);
+        lines.push(`🎖️ Ачивок: ${preview.totalDone} · 🌑 Украдено: $${stolen}`);
+        lines.push("");
+        lines.push("🏆 Последние достижения:");
+      }
+
+      if (preview.lines.length) {
+        lines.push(...preview.lines);
+      } else {
+        lines.push(lang === "en"
+          ? "No completed achievements yet."
+          : (lang === "uk" ? "Поки немає виконаних досягнень." : "Пока нет выполненных достижений."));
+      }
+      if (preview.more > 0) {
+        lines.push(lang === "en"
+          ? `… and ${preview.more} more`
+          : (lang === "uk" ? `… і ще ${preview.more}` : `… и ещё ${preview.more}`));
+      }
+
+      const backCb = profileSourceToCallback(sourceToken);
+      const backText = lang === "en"
+        ? "⬅️ Back to rating"
+        : (lang === "uk" ? "⬅️ Назад до рейтингу" : "⬅️ Назад к рейтингу");
+      const kb = [[{ text: backText, callback_data: backCb }]];
+
+      if (sourceMsg) {
+        const edited = await safeCall("worker.profile.public.edit", async () => {
+          await edit(sourceMsg, lines.join("\n"), kb);
+          return true;
+        }, { fallback: false });
+        if (edited) return { rendered: true };
+      }
+      await sendWithInline(lines.join("\n"), kb);
+      return { rendered: true };
     }
 
     // Support multiple admin IDs via env variables: ADMIN_ID, ADMIN2, ADMIN_IDS (comma/space-separated)
@@ -763,6 +876,34 @@ export default {
         } catch {
           await sendWithInline(title, kb);
         }
+        return new Response("ok");
+      }
+
+      if (data === "profile:achievements") {
+        await answer(cb.id);
+        const view = achievements?.buildOwnView ? achievements.buildOwnView(u) : null;
+        if (!view) {
+          await renderProfile(u, cb.message);
+          return new Response("ok");
+        }
+        try {
+          await edit(cb.message, view.caption, view.keyboard);
+        } catch {
+          await sendWithInline(view.caption, view.keyboard);
+        }
+        return new Response("ok");
+      }
+
+      if (data.startsWith("profile:view:")) {
+        await answer(cb.id);
+        const parts = data.split(":");
+        const targetId = String(parts[2] || "").trim();
+        const srcToken = String(parts[3] || "").trim();
+        if (!targetId) {
+          await renderProfile(u, cb.message);
+          return new Response("ok");
+        }
+        await renderPublicProfile(u, targetId, srcToken, cb.message);
         return new Response("ok");
       }
 
