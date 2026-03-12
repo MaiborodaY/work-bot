@@ -2,11 +2,12 @@ import { CONFIG } from "./GameConfig.js";
 import { normalizeLang, t } from "./i18n/index.js";
 
 export class ReferralService {
-  constructor({ users, now, bot, botUsername }) {
+  constructor({ users, now, bot, botUsername, achievements = null }) {
     this.users = users;
     this.now = now || (() => Date.now());
     this.bot = bot || null;
     this.botUsername = String(botUsername || "").replace(/^@+/, "").trim();
+    this.achievements = achievements || null;
   }
 
   _lang(source) {
@@ -85,6 +86,11 @@ export class ReferralService {
     return current.slice(0, this._invitedLimit());
   }
 
+  _rewardedInvitedCount(u) {
+    const invited = Array.isArray(u?.referral?.invited) ? u.referral.invited : [];
+    return invited.filter((x) => Math.max(0, Number(x?.rewardedAt) || 0) > 0).length;
+  }
+
   buildInviteLink(u) {
     const username = String(this.botUsername || "").replace(/^@+/, "").trim();
     if (!username) return "";
@@ -148,7 +154,21 @@ export class ReferralService {
       referrer.premium = (referrer.premium || 0) + gems;
       referrer.referral.totalGemsEarned = Math.max(0, Number(referrer.referral.totalGemsEarned) || 0) + gems;
       referrer.referral.invited = this._upsertInvited(referrer.referral.invited, u.id, nowSec);
+      let achRes = null;
+      if (this.achievements?.onEvent) {
+        try {
+          achRes = await this.achievements.onEvent(referrer, "referral_rewarded", {
+            count: this._rewardedInvitedCount(referrer)
+          }, {
+            persist: false,
+            notify: false
+          });
+        } catch {}
+      }
       await this.users.save(referrer);
+      if (achRes?.newlyEarned?.length && this.achievements?.notifyEarned) {
+        await this.achievements.notifyEarned(referrer, achRes.newlyEarned);
+      }
 
       if (this.bot && referrer?.chatId) {
         try {

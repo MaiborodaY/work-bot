@@ -11,11 +11,12 @@ import { formatMoney, normalizeLang, t } from "./i18n/index.js";
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export class ThiefService {
-  constructor({ db, users, now, bot }) {
+  constructor({ db, users, now, bot, achievements = null }) {
     this.db = db;
     this.users = users;
     this.now = now || (() => Date.now());
     this.bot = bot || null;
+    this.achievements = achievements || null;
   }
 
   _cfg() {
@@ -110,7 +111,7 @@ export class ThiefService {
     if (!u || typeof u !== "object") return false;
     let dirty = false;
     if (!u.thief || typeof u.thief !== "object") {
-      u.thief = { level: 0, activeAttackId: "", cooldowns: {} };
+      u.thief = { level: 0, activeAttackId: "", cooldowns: {}, totalStolen: 0 };
       return true;
     }
     const maxLevel = Math.max(0, Number(this._cfg().MAX_LEVEL) || 5);
@@ -126,6 +127,11 @@ export class ThiefService {
     }
     if (!u.thief.cooldowns || typeof u.thief.cooldowns !== "object") {
       u.thief.cooldowns = {};
+      dirty = true;
+    }
+    const totalStolen = Math.max(0, Math.floor(Number(u.thief.totalStolen) || 0));
+    if (totalStolen !== Number(u.thief.totalStolen)) {
+      u.thief.totalStolen = totalStolen;
       dirty = true;
     }
     return dirty;
@@ -1032,7 +1038,19 @@ export class ThiefService {
       owner.biz = owner.biz || {};
       owner.biz.owned = ownerFound.arr;
     }
+    let ownerAch = null;
+    if (this.achievements?.onEvent) {
+      try {
+        ownerAch = await this.achievements.onEvent(owner, "thief_defense_success", { bizId: attack.bizId }, {
+          persist: false,
+          notify: false
+        });
+      } catch {}
+    }
     await this.users.save(owner);
+    if (ownerAch?.newlyEarned?.length && this.achievements?.notifyEarned) {
+      await this.achievements.notifyEarned(owner, ownerAch.newlyEarned);
+    }
 
     const attacker = await this.users.load(attack.attackerId).catch(() => null);
     if (attacker) {
@@ -1043,6 +1061,14 @@ export class ThiefService {
       const cooldownUntil = this.now() + Math.max(1, Math.floor(Number(attack.cooldownMinutes) || 0)) * 60_000;
       attacker.thief.cooldowns = attacker.thief.cooldowns || {};
       attacker.thief.cooldowns[String(attack.bizId || "")] = cooldownUntil;
+      if (this.achievements?.onEvent) {
+        try {
+          await this.achievements.onEvent(attacker, "thief_fail", { bizId: attack.bizId, reason: "blocked" }, {
+            persist: false,
+            notify: false
+          });
+        } catch {}
+      }
       await this.users.save(attacker);
 
       if (attacker?.chatId) {
@@ -1105,17 +1131,39 @@ export class ThiefService {
         attacker.thief.activeAttackId = "";
       }
 
+      let attackerAch = null;
+
       if (success) {
         attacker.money = Math.max(0, Math.floor(Number(attacker.money) || 0) + stolen);
+        attacker.thief.totalStolen = Math.max(0, Math.floor(Number(attacker.thief.totalStolen) || 0) + Math.max(0, Math.floor(Number(stolen) || 0)));
+        if (this.achievements?.onEvent) {
+          try {
+            attackerAch = await this.achievements.onEvent(attacker, "thief_success", { amount: stolen, bizId }, {
+              persist: false,
+              notify: false
+            });
+          } catch {}
+        }
       } else {
         const attackEnergy = Math.max(1, Math.floor(Number(attack.attackEnergy) || this._attackEnergy(bizId)));
         attacker.energy = Math.max(0, Math.floor(Number(attacker.energy) || 0) - attackEnergy);
         const cooldownUntil = this.now() + Math.max(1, Math.floor(Number(attack.cooldownMinutes) || 0)) * 60_000;
         attacker.thief.cooldowns = attacker.thief.cooldowns || {};
         attacker.thief.cooldowns[bizId] = cooldownUntil;
+        if (this.achievements?.onEvent) {
+          try {
+            attackerAch = await this.achievements.onEvent(attacker, "thief_fail", { bizId, reason: "resolve_fail" }, {
+              persist: false,
+              notify: false
+            });
+          } catch {}
+        }
       }
 
       await this.users.save(attacker);
+      if (attackerAch?.newlyEarned?.length && this.achievements?.notifyEarned) {
+        await this.achievements.notifyEarned(attacker, attackerAch.newlyEarned);
+      }
     }
 
     await this._deleteAttack(attack);

@@ -40,11 +40,11 @@ export const workHandler = {
     data === "work:goto:shop",
 
   async handle(ctx) {
-    const { data, u, cb, answer, users, now, social, clans, labour, referrals, goTo, orders, send } = ctx;
+    const { data, u, cb, answer, users, now, social, clans, labour, referrals, achievements, goTo, orders, send } = ctx;
     const lang = normalizeLang(u?.lang || "ru");
     const tt = (key, vars = {}) => t(key, lang, vars);
 
-    const jobs = new JobService({ users, now, social });
+    const jobs = new JobService({ users, now, social, achievements });
     const ff = new FastForwardService({ users, orders, now, send });
 
     async function render(intro) {

@@ -317,7 +317,7 @@ export class UserStore {
 
     // Тёмный бизнес
     if (!u.thief || typeof u.thief !== "object") {
-      u.thief = { level: 0, activeAttackId: "", cooldowns: {} };
+      u.thief = { level: 0, activeAttackId: "", cooldowns: {}, totalStolen: 0 };
       dirty = true;
     } else {
       const maxLevel = Math.max(0, Number(CONFIG?.THIEF?.MAX_LEVEL) || 5);
@@ -347,6 +347,11 @@ export class UserStore {
           u.thief.cooldowns = normalized;
           dirty = true;
         }
+      }
+      const totalStolen = Math.max(0, Math.floor(Number(u.thief.totalStolen) || 0));
+      if (totalStolen !== Number(u.thief.totalStolen)) {
+        u.thief.totalStolen = totalStolen;
+        dirty = true;
       }
     }
 
@@ -406,10 +411,74 @@ export class UserStore {
       u.referral.totalGemsEarned = Math.max(0, Math.round(Number(u.referral.totalGemsEarned) || 0));
     }
 
+    // Достижения
+    if (!u.achievements || typeof u.achievements !== "object") {
+      u.achievements = {
+        earned: {},
+        progress: {
+          totalShifts: 0,
+          totalEarned: 0,
+          totalDividends: 0,
+          successfulTheftsStreak: 0,
+          theftSuccessTotal: 0,
+          totalStolen: 0,
+          defensesSuccess: 0,
+          employeesHiredTotal: 0,
+          clanContractsByUser: 0,
+          stockBuysTotal: 0,
+          referralsDone: 0,
+          clanJoinedOnce: false,
+          clanCreatedOnce: false
+        },
+        retroDone: false
+      };
+      dirty = true;
+    } else {
+      if (!u.achievements.earned || typeof u.achievements.earned !== "object" || Array.isArray(u.achievements.earned)) {
+        u.achievements.earned = {};
+        dirty = true;
+      }
+      if (!u.achievements.progress || typeof u.achievements.progress !== "object") {
+        u.achievements.progress = {};
+        dirty = true;
+      }
+      if (typeof u.achievements.retroDone !== "boolean") {
+        u.achievements.retroDone = false;
+        dirty = true;
+      }
+      const progressDefaults = {
+        totalShifts: 0,
+        totalEarned: 0,
+        totalDividends: 0,
+        successfulTheftsStreak: 0,
+        theftSuccessTotal: 0,
+        totalStolen: 0,
+        defensesSuccess: 0,
+        employeesHiredTotal: 0,
+        clanContractsByUser: 0,
+        stockBuysTotal: 0,
+        referralsDone: 0
+      };
+      for (const [k, d] of Object.entries(progressDefaults)) {
+        if (typeof u.achievements.progress[k] !== "number" || !Number.isFinite(u.achievements.progress[k])) {
+          u.achievements.progress[k] = d;
+          dirty = true;
+        }
+      }
+      if (typeof u.achievements.progress.clanJoinedOnce !== "boolean") {
+        u.achievements.progress.clanJoinedOnce = false;
+        dirty = true;
+      }
+      if (typeof u.achievements.progress.clanCreatedOnce !== "boolean") {
+        u.achievements.progress.clanCreatedOnce = false;
+        dirty = true;
+      }
+    }
+
     // ===== LEGACY — мягко удаляем устаревшие ключи =====
     const dropKeys = [
       "status","last_work_start","shifts","goals","last_daily",
-      "streak","achievements","achv","ui","effects",
+      "streak","achv","ui","effects",
       "skipsToday" // старый суточный лимит скипов работы — больше не используется
     ];
     for (const k of dropKeys) {
@@ -497,7 +566,26 @@ export class UserStore {
       clanCosmetic: null,
       employment: { active: false, ownerId: "", bizId: "", ownerPct: 0, contractEnd: 0, slotIndex: -1 },
       referral: { referredBy: "", rewarded: false, invited: [], totalGemsEarned: 0 },
-      thief: { level: 0, activeAttackId: "", cooldowns: {} },
+      thief: { level: 0, activeAttackId: "", cooldowns: {}, totalStolen: 0 },
+      achievements: {
+        earned: {},
+        progress: {
+          totalShifts: 0,
+          totalEarned: 0,
+          totalDividends: 0,
+          successfulTheftsStreak: 0,
+          theftSuccessTotal: 0,
+          totalStolen: 0,
+          defensesSuccess: 0,
+          employeesHiredTotal: 0,
+          clanContractsByUser: 0,
+          stockBuysTotal: 0,
+          referralsDone: 0,
+          clanJoinedOnce: false,
+          clanCreatedOnce: false
+        },
+        retroDone: false
+      },
 
       // Flags
       flags: {

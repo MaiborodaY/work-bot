@@ -5,10 +5,11 @@ import { BarService } from "./BarService.js";
 import { NotifyDueIndex } from "./NotifyDueIndex.js";
 
 export class JobService {
-  constructor({ users, now, social }) {
+  constructor({ users, now, social, achievements = null }) {
     this.users = users;
     this.now = now || (() => Date.now());
     this.social = social || null;
+    this.achievements = achievements || null;
     this.dueIndex = (this.users?.db) ? new NotifyDueIndex({ db: this.users.db, now: this.now }) : null;
   }
 
@@ -70,7 +71,20 @@ export class JobService {
     };
 
     u.jobs.active = [inst];
+    let achRes = null;
+    if (this.achievements?.onEvent) {
+      try {
+        achRes = await this.achievements.onEvent(u, "work_claim", { pay }, {
+          persist: false,
+          notify: false
+        });
+      } catch {}
+    }
+
     await this.users.save(u);
+    if (achRes?.newlyEarned?.length && this.achievements?.notifyEarned) {
+      await this.achievements.notifyEarned(u, achRes.newlyEarned);
+    }
 
     // best-effort индекс готовности уведомлений для крона
     try {

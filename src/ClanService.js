@@ -9,11 +9,12 @@ const CLAN_KEY_PREFIX = "clan:item:";
 const CLAN_WEEK_SNAPSHOT_PREFIX = "clan:rank:week:";
 
 export class ClanService {
-  constructor({ db, users, now, economy }) {
+  constructor({ db, users, now, economy, achievements = null }) {
     this.db = db;
     this.users = users;
     this.now = now || (() => Date.now());
     this.economy = economy || new EconomyService();
+    this.achievements = achievements || null;
 
     this._ensurePromise = null;
     this._ensuredWeek = "";
@@ -551,6 +552,23 @@ export class ClanService {
     return res;
   }
 
+  _memberCompletedContractsCount(clan, userId) {
+    const uid = String(userId || "");
+    if (!uid) return 0;
+    const week = clan?.week;
+    const contracts = Array.isArray(week?.contracts) ? week.contracts : [];
+    const metrics = week?.members?.[uid]?.metrics || {};
+    let done = 0;
+    for (const c of contracts) {
+      if (!c?.completed) continue;
+      const metricId = String(c.id || "");
+      if (!metricId) continue;
+      const personal = Math.max(0, Number(metrics?.[metricId]) || 0);
+      if (personal > 0) done += 1;
+    }
+    return done;
+  }
+
   async _applyClanRewardToUser(userId, reward) {
     const u = await this.users.load(userId).catch(() => null);
     if (!u) return false;
@@ -632,6 +650,18 @@ export class ClanService {
       if (reward && eligible.length) {
         for (const uid of eligible) {
           await this._applyClanRewardToUser(uid, reward);
+        }
+      }
+
+      if (this.achievements?.onEvent && (entry.completedContracts || 0) > 0) {
+        for (const uid of clan.members || []) {
+          const completedByUser = this._memberCompletedContractsCount(clan, uid);
+          if (completedByUser <= 0) continue;
+          const member = await this.users.load(uid).catch(() => null);
+          if (!member) continue;
+          try {
+            await this.achievements.onEvent(member, "clan_contracts_completed", { count: completedByUser });
+          } catch {}
         }
       }
 

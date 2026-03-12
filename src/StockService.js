@@ -5,10 +5,11 @@ const STOCK_STATE_KEY = "stocks:state:v1";
 const STOCK_ACTIVITY_PREFIX = "stocks:activity:";
 
 export class StockService {
-  constructor({ db, users, now }) {
+  constructor({ db, users, now, achievements = null }) {
     this.db = db;
     this.users = users;
     this.now = now || (() => Date.now());
+    this.achievements = achievements || null;
   }
 
   _lang(source) {
@@ -303,7 +304,19 @@ export class StockService {
           paidUsers += 1;
           paidTotal += div;
         }
+        let achRes = null;
+        if (div > 0 && this.achievements?.onEvent) {
+          try {
+            achRes = await this.achievements.onEvent(u, "stocks_dividend", { amount: div }, {
+              persist: false,
+              notify: false
+            });
+          } catch {}
+        }
         await this.users.save(u);
+        if (achRes?.newlyEarned?.length && this.achievements?.notifyEarned) {
+          await this.achievements.notifyEarned(u, achRes.newlyEarned);
+        }
       }
 
       if (!page || page.list_complete || !page.cursor) break;
@@ -481,7 +494,19 @@ export class StockService {
 
     u.money = money - cost;
     this._setHolding(u, ticker, totalShares, avgPrice);
+    let achRes = null;
+    if (this.achievements?.onEvent) {
+      try {
+        achRes = await this.achievements.onEvent(u, "stocks_buy", { ticker, shares }, {
+          persist: false,
+          notify: false
+        });
+      } catch {}
+    }
     await this.users.save(u);
+    if (achRes?.newlyEarned?.length && this.achievements?.notifyEarned) {
+      await this.achievements.notifyEarned(u, achRes.newlyEarned);
+    }
 
     return {
       ok: true,

@@ -8,7 +8,7 @@ export const businessHandler = {
   match: (data) => data.startsWith("biz:"),
 
   async handle(ctx) {
-    const { data, u, users, answer, goTo, now, send, clans, thief, cb, locations } = ctx;
+    const { data, u, users, answer, goTo, now, send, clans, thief, achievements, cb, locations } = ctx;
     const lang = normalizeLang(u?.lang || "ru");
     const tt = (key, vars = {}) => t(key, lang, vars);
     const parts = String(data || "").split(":");
@@ -69,6 +69,11 @@ export const businessHandler = {
         guardBlocked: 0
       });
       await users.save(u);
+      try {
+        if (achievements?.onEvent) {
+          await achievements.onEvent(u, "business_buy", { bizId: B.id });
+        }
+      } catch {}
 
       try {
         if (thief?.upsertBizOwner) {

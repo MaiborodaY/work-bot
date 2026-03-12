@@ -10,7 +10,7 @@ export const gymHandler = {
     data === "gym:skip_free",
 
   async handle(ctx) {
-    const { u, cb, answer, users, locations, now, send, orders, social, labour } = ctx;
+    const { u, cb, answer, users, locations, now, send, orders, social, labour, achievements } = ctx;
     const lang = normalizeLang(u?.lang || "ru");
     const tt = (key, vars = {}) => t(key, lang, vars);
 
@@ -122,6 +122,11 @@ export const gymHandler = {
         await locations.show(u, null, "Gym");
         return;
       }
+      try {
+        if (achievements?.onEvent) {
+          await achievements.onEvent(u, "gym_finish", { source: "skip_free" });
+        }
+      } catch {}
 
       const onboardingDone = await finishOnboardingIfNeeded();
       await answer(cb.id, tt("handler.gym.skip_free_ok"));
@@ -156,6 +161,11 @@ export const gymHandler = {
         await answer(cb.id, tt("handler.gym.finish_failed"));
         return;
       }
+      try {
+        if (achievements?.onEvent) {
+          await achievements.onEvent(u, "gym_finish", { source: "finish" });
+        }
+      } catch {}
 
       const onboardingDone = onboardingFinish ? await finishOnboardingIfNeeded() : false;
       await answer(cb.id, tt("handler.gym.finish_ok"));

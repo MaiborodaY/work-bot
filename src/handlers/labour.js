@@ -12,7 +12,7 @@ export const labourHandler = {
     data.startsWith("labour:rehire:"),
 
   async handle(ctx) {
-    const { data, u, cb, answer, goTo, users, locations, labour, thief } = ctx;
+    const { data, u, cb, answer, goTo, users, locations, labour, thief, achievements } = ctx;
     const lang = normalizeLang(u?.lang || "ru");
     const tt = (key, vars = {}) => t(key, lang, vars);
     if (!labour) {
@@ -92,6 +92,11 @@ export const labourHandler = {
         });
         await users.save(u);
         try {
+          if (achievements?.onEvent) {
+            await achievements.onEvent(u, "business_buy", { bizId: B.id });
+          }
+        } catch {}
+        try {
           if (thief?.upsertBizOwner) {
             await thief.upsertBizOwner(u.id, B.id);
           }
@@ -114,6 +119,14 @@ export const labourHandler = {
         await showBiz(bizId);
         return;
       }
+      try {
+        if (achievements?.onEvent) {
+          await achievements.onEvent(u, "slot_buy", {
+            bizId,
+            slotIndex: Number.isFinite(slotIndex) ? slotIndex : -1
+          });
+        }
+      } catch {}
       await reloadSelf();
       await showBiz(bizId);
       return;
@@ -147,6 +160,15 @@ export const labourHandler = {
         await showBiz(bizId);
         return;
       }
+      try {
+        if (achievements?.onEvent) {
+          await achievements.onEvent(u, "labour_hire", {
+            bizId,
+            employeeId: String(res?.employeeId || employeeId || ""),
+            slotIndex: Number.isFinite(slotIndex) ? slotIndex : Number(res?.slotIndex || -1)
+          });
+        }
+      } catch {}
       await reloadSelf();
       await showBiz(bizId);
       return;
@@ -163,6 +185,15 @@ export const labourHandler = {
         await showBiz(bizId);
         return;
       }
+      try {
+        if (achievements?.onEvent) {
+          await achievements.onEvent(u, "labour_hire", {
+            bizId,
+            employeeId: String(res?.employeeId || ""),
+            slotIndex: Number.isFinite(slotIndex) ? slotIndex : Number(res?.slotIndex || -1)
+          });
+        }
+      } catch {}
       await reloadSelf();
       await showBiz(bizId);
       return;

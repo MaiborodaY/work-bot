@@ -14,7 +14,7 @@ export const clanHandler = {
     data.startsWith("clan:join:"),
 
   async handle(ctx) {
-    const { data, u, cb, answer, users, locations, clans, goTo } = ctx;
+    const { data, u, cb, answer, users, locations, clans, achievements, goTo } = ctx;
     const lang = normalizeLang(u?.lang || "ru");
     const tt = (key, vars = {}) => t(key, lang, vars);
 
@@ -62,6 +62,11 @@ export const clanHandler = {
         await goTo(u, "Clan");
         return;
       }
+      try {
+        if (achievements?.onEvent) {
+          await achievements.onEvent(u, "clan_join", { clanId: String(res?.clan?.id || clanId) });
+        }
+      } catch {}
       await answer(cb.id, tt("handler.clan.join_ok", { name: res.clan?.name || "" }));
       await goTo(u, "Clan");
       return;

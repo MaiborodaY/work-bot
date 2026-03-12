@@ -16,6 +16,7 @@ import { StockService } from "./StockService.js";
 import { LabourService } from "./LabourService.js";
 import { ThiefService } from "./ThiefService.js";
 import { ReferralService } from "./ReferralService.js";
+import { AchievementService } from "./AchievementService.js";
 import { ASSETS, JOB_ASSETS } from "./Assets.js";
 import { normalizeLang, t } from "./i18n/index.js";
 import { safeCall } from "./SafeCall.js";
@@ -75,8 +76,9 @@ export default {
       const bot = new TelegramClient(env.BOT_TOKEN);
       const users = new UserStore(env.DB);
       const economy = new EconomyService();
-      const stocks = new StockService({ db: env.DB, users, now: () => Date.now() });
-      const thief = new ThiefService({ db: env.DB, users, now: () => Date.now(), bot });
+      const achievements = new AchievementService({ users, db: env.DB, now: () => Date.now(), bot });
+      const stocks = new StockService({ db: env.DB, users, now: () => Date.now(), achievements });
+      const thief = new ThiefService({ db: env.DB, users, now: () => Date.now(), bot, achievements });
       const notifier = new NotificationService({
         users,
         bot,
@@ -124,16 +126,18 @@ export default {
     const now = () => Date.now();
     const pct = (a, b) => Math.min(100, Math.floor((a / b) * 100));
 
+    const achievements = new AchievementService({ users, db: env.DB, now, bot });
     const social = new SocialService({ db: env.DB, users, now, economy });
-    const clans = new ClanService({ db: env.DB, users, now, economy });
-    const stocks = new StockService({ db: env.DB, users, now });
+    const clans = new ClanService({ db: env.DB, users, now, economy, achievements });
+    const stocks = new StockService({ db: env.DB, users, now, achievements });
     const labour = new LabourService({ db: env.DB, users, now, bot });
-    const thief = new ThiefService({ db: env.DB, users, now, bot });
+    const thief = new ThiefService({ db: env.DB, users, now, bot, achievements });
     const referrals = new ReferralService({
       users,
       now,
       bot,
-      botUsername: env.BOT_USERNAME
+      botUsername: env.BOT_USERNAME,
+      achievements
     });
 
     const orders = new StarsOrdersStore(env.DB, now);
@@ -403,6 +407,11 @@ export default {
       if (shouldSaveMeta) {
         await users.save(u);
       }
+      await safeCall("worker.message.achievements.retro", async () => {
+        if (achievements?.retroCheck) {
+          await achievements.retroCheck(u);
+        }
+      });
 
       // 🔹 Легаси: если ник пуст и НЕ ждём ручной ввод (от Social) — тихо автоподставим
       if (!u.displayName && !u.awaitingName) {
@@ -527,6 +536,12 @@ export default {
           await send(`⚠️ ${res.error || t("worker.clan.create_failed", normalizeLang(u?.lang || "ru"))}`);
           return new Response("ok");
         }
+
+        await safeCall("worker.message.achievements.clan_create", async () => {
+          if (achievements?.onEvent) {
+            await achievements.onEvent(u, "clan_create", { clanId: String(res?.clan?.id || "") });
+          }
+        });
 
         await goTo(u, "Clan", t("worker.clan.create_ok", normalizeLang(u?.lang || "ru"), { name: res.clan?.name || "" }));
         return new Response("ok");
@@ -728,6 +743,11 @@ export default {
       if (shouldSaveMetaCb) {
         await users.save(u);
       }
+      await safeCall("worker.callback.achievements.retro", async () => {
+        if (achievements?.retroCheck) {
+          await achievements.retroCheck(u);
+        }
+      });
 
       if (data === "profile:lang") {
         await answer(cb.id);
@@ -881,6 +901,7 @@ export default {
         labour,
         thief,
         referrals,
+        achievements,
         // ui
         ui,
         // payments
@@ -943,9 +964,10 @@ export default {
     const bot = new TelegramClient(env.BOT_TOKEN);
     const users = new UserStore(env.DB);
     const economy = new EconomyService();
-    const stocks = new StockService({ db: env.DB, users, now: () => Date.now() });
+    const achievements = new AchievementService({ users, db: env.DB, now: () => Date.now(), bot });
+    const stocks = new StockService({ db: env.DB, users, now: () => Date.now(), achievements });
     const labour = new LabourService({ db: env.DB, users, now: () => Date.now(), bot });
-    const thief = new ThiefService({ db: env.DB, users, now: () => Date.now(), bot });
+    const thief = new ThiefService({ db: env.DB, users, now: () => Date.now(), bot, achievements });
 
     const notifier = new NotificationService({
       users,
