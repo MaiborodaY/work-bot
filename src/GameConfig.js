@@ -336,6 +336,29 @@ export const CONFIG = {
       4: 45,
       5: 30
     },
+    PROTECTION: {
+      GUARD: {
+        DURATION_MS: 24 * 60 * 60 * 1000,
+        SUCCESS_REDUCTION_PCT: 0.50,
+        EXTRA_WINDOW_MS: 20 * 60 * 1000,
+        PRICES: {
+          shawarma: 50,
+          stomatology: 100,
+          restaurant: 300,
+          courier_service: 800,
+          fitness_club: 2000
+        }
+      },
+      IMMUNITY: {
+        OPTIONS: {
+          24: 1,
+          48: 2,
+          96: 3
+        }
+      },
+      EXPIRE_RESOLVE_LIMIT_PER_RUN: 200,
+      EXPIRE_LOOKBACK_MINUTES: 30
+    },
     BUSINESS: {
       shawarma: {
         unlockLevel: 1,

@@ -27,6 +27,56 @@ export class ThiefService {
     return this._cfg()?.BUSINESS?.[id] || null;
   }
 
+  _protectionCfg() {
+    return this._cfg()?.PROTECTION || {};
+  }
+
+  _guardCfg() {
+    return this._protectionCfg()?.GUARD || {};
+  }
+
+  _immunityCfg() {
+    return this._protectionCfg()?.IMMUNITY || {};
+  }
+
+  _guardDurationMs() {
+    return Math.max(60_000, Math.floor(Number(this._guardCfg()?.DURATION_MS) || DAY_MS));
+  }
+
+  _guardSuccessReductionPct() {
+    return Math.max(0, Math.min(1, Number(this._guardCfg()?.SUCCESS_REDUCTION_PCT) || 0));
+  }
+
+  _guardSuccessMultiplier() {
+    return Math.max(0, 1 - this._guardSuccessReductionPct());
+  }
+
+  _guardExtraWindowMs() {
+    return Math.max(0, Math.floor(Number(this._guardCfg()?.EXTRA_WINDOW_MS) || 0));
+  }
+
+  _guardPrice(bizId) {
+    const id = String(bizId || "");
+    return Math.max(0, Math.floor(Number(this._guardCfg()?.PRICES?.[id]) || 0));
+  }
+
+  _immunityOptions() {
+    const options = this._immunityCfg()?.OPTIONS || {};
+    const out = [];
+    for (const [hoursRaw, gemsRaw] of Object.entries(options)) {
+      const hours = Math.max(1, Math.floor(Number(hoursRaw) || 0));
+      const gems = Math.max(1, Math.floor(Number(gemsRaw) || 0));
+      if (hours > 0 && gems > 0) out.push({ hours, gems });
+    }
+    out.sort((a, b) => a.hours - b.hours);
+    return out;
+  }
+
+  _immunityPrice(hours) {
+    const h = Math.max(1, Math.floor(Number(hours) || 0));
+    return Math.max(0, Math.floor(Number(this._immunityCfg()?.OPTIONS?.[String(h)]) || 0));
+  }
+
   _lang(source) {
     if (typeof source === "string") return normalizeLang(source);
     return normalizeLang(source?.lang || "ru");
@@ -145,9 +195,24 @@ export class ThiefService {
     return `thief:due:${bucket}:${String(attackId || "")}`;
   }
 
+  _protectionDueKey(bucket, kind, ownerId, bizId) {
+    return `thief:protect_due:${bucket}:${String(kind || "")}:${String(ownerId || "")}:${String(bizId || "")}`;
+  }
+
   _parseDueAttackId(key) {
     const parts = String(key || "").split(":");
     return parts.length >= 4 ? String(parts[3] || "") : "";
+  }
+
+  _parseProtectionDueKey(key) {
+    const parts = String(key || "").split(":");
+    if (parts.length < 6) return null;
+    return {
+      bucket: Number(parts[2]) || 0,
+      kind: String(parts[3] || ""),
+      ownerId: String(parts[4] || ""),
+      bizId: String(parts[5] || "")
+    };
   }
 
   _attackKey(attackId) {
@@ -217,6 +282,17 @@ export class ThiefService {
     await this.db.put(this._dueKey(bucket, id), "1", { expirationTtl: ttlSec }).catch(() => {});
   }
 
+  async _markProtectionDue(kind, ownerId, bizId, resolveAt) {
+    const k = String(kind || "").trim();
+    const oid = String(ownerId || "").trim();
+    const bid = String(bizId || "").trim();
+    const at = Math.max(0, Math.floor(Number(resolveAt) || 0));
+    if (!k || !oid || !bid || !at) return;
+    const bucket = this._dueBucket(at);
+    const ttlSec = Math.max(60, Math.ceil((at - this.now()) / 1000) + 2 * DAY_MS / 1000);
+    await this.db.put(this._protectionDueKey(bucket, k, oid, bid), "1", { expirationTtl: ttlSec }).catch(() => {});
+  }
+
   async _collectDueAttackIds({ nowTs = this.now(), lookbackMinutes = 10 } = {}) {
     const result = new Set();
     const endBucket = this._dueBucket(nowTs);
@@ -235,6 +311,28 @@ export class ThiefService {
       } while (cursor);
     }
     return [...result];
+  }
+
+  async _collectDueProtectionEvents({ nowTs = this.now(), lookbackMinutes = 30 } = {}) {
+    const result = new Map();
+    const endBucket = this._dueBucket(nowTs);
+    const buckets = Math.max(0, Math.ceil((Math.max(0, Number(lookbackMinutes) || 0) * 60_000) / this._dueBucketMs()));
+    const startBucket = endBucket - buckets;
+    for (let b = startBucket; b <= endBucket; b++) {
+      const prefix = `thief:protect_due:${b}:`;
+      let cursor = undefined;
+      do {
+        const page = await this.db.list({ prefix, cursor });
+        cursor = page?.cursor;
+        for (const key of page?.keys || []) {
+          const parsed = this._parseProtectionDueKey(key?.name);
+          if (!parsed?.kind || !parsed?.ownerId || !parsed?.bizId) continue;
+          const uniq = `${parsed.kind}:${parsed.ownerId}:${parsed.bizId}`;
+          if (!result.has(uniq)) result.set(uniq, parsed);
+        }
+      } while (cursor);
+    }
+    return [...result.values()];
   }
 
   _allBusinessIds() {
@@ -408,6 +506,139 @@ export class ThiefService {
 
   _formatMinutes(ms) {
     return Math.max(1, Math.ceil((Math.max(0, Number(ms) || 0)) / 60000));
+  }
+
+  _protectionState(entry, nowTs = this.now()) {
+    const guardUntil = Math.max(0, Math.floor(Number(entry?.guardUntil) || 0));
+    const immunityUntil = Math.max(0, Math.floor(Number(entry?.immunityUntil) || 0));
+    const guardActive = guardUntil > nowTs;
+    const immunityActive = immunityUntil > nowTs;
+    return {
+      guardUntil,
+      immunityUntil,
+      guardActive,
+      immunityActive,
+      guardLeftMs: guardActive ? (guardUntil - nowTs) : 0,
+      immunityLeftMs: immunityActive ? (immunityUntil - nowTs) : 0
+    };
+  }
+
+  _formatHoursLeft(ms) {
+    return Math.max(1, Math.ceil((Math.max(0, Number(ms) || 0)) / (60 * 60 * 1000)));
+  }
+
+  getProtectionUiModel(owner, bizId) {
+    const biz = String(bizId || "");
+    const B = CONFIG?.BUSINESS?.[biz];
+    if (!B) return { ok: false, error: "biz_unavailable" };
+    const found = this._findOwnedEntry(owner, biz);
+    if (found.idx < 0 || !found.entry) return { ok: false, error: "not_owned" };
+
+    const state = this._protectionState(found.entry);
+    return {
+      ok: true,
+      bizId: biz,
+      guardPrice: this._guardPrice(biz),
+      guardDurationHours: Math.round(this._guardDurationMs() / (60 * 60 * 1000)),
+      guardActive: state.guardActive,
+      guardLeftMs: state.guardLeftMs,
+      guardLeftHours: this._formatHoursLeft(state.guardLeftMs),
+      immunityActive: state.immunityActive,
+      immunityLeftMs: state.immunityLeftMs,
+      immunityLeftHours: this._formatHoursLeft(state.immunityLeftMs),
+      immunityOptions: this._immunityOptions(),
+      guardBlocked: Math.max(0, Math.floor(Number(found.entry.guardBlocked) || 0))
+    };
+  }
+
+  async buyGuard(owner, bizId, { forceReset = false } = {}) {
+    const biz = String(bizId || "");
+    const B = CONFIG?.BUSINESS?.[biz];
+    if (!B) return { ok: false, error: this._t(owner, "thief.err.biz_unavailable") };
+
+    const found = this._findOwnedEntry(owner, biz);
+    if (found.idx < 0 || !found.entry) return { ok: false, error: this._t(owner, "handler.business.not_owned") };
+
+    const state = this._protectionState(found.entry);
+    if (state.immunityActive) {
+      return { ok: false, error: this._t(owner, "biz.protect.err.immunity_active") };
+    }
+    if (state.guardActive && !forceReset) {
+      return { ok: false, needConfirm: true, leftMs: state.guardLeftMs, leftHours: this._formatHoursLeft(state.guardLeftMs) };
+    }
+
+    const price = this._guardPrice(biz);
+    const money = Math.max(0, Math.floor(Number(owner?.money) || 0));
+    if (money < price) {
+      return { ok: false, error: this._t(owner, "handler.business.not_enough_money") };
+    }
+
+    owner.money = money - price;
+    found.entry.guardUntil = this.now() + this._guardDurationMs();
+    found.entry.immunityUntil = 0;
+    found.arr[found.idx] = found.entry;
+    owner.biz = owner.biz || {};
+    owner.biz.owned = found.arr;
+    await this.users.save(owner);
+    await this._markProtectionDue("guard", owner.id, biz, found.entry.guardUntil);
+
+    return {
+      ok: true,
+      price,
+      guardUntil: found.entry.guardUntil,
+      guardHours: Math.round(this._guardDurationMs() / (60 * 60 * 1000)),
+      wasReset: state.guardActive
+    };
+  }
+
+  async buyImmunity(owner, bizId, hours, { confirmGuardReset = false } = {}) {
+    const biz = String(bizId || "");
+    const B = CONFIG?.BUSINESS?.[biz];
+    if (!B) return { ok: false, error: this._t(owner, "thief.err.biz_unavailable") };
+
+    const found = this._findOwnedEntry(owner, biz);
+    if (found.idx < 0 || !found.entry) return { ok: false, error: this._t(owner, "handler.business.not_owned") };
+
+    const safeHours = Math.max(1, Math.floor(Number(hours) || 0));
+    const priceGems = this._immunityPrice(safeHours);
+    if (priceGems <= 0) {
+      return { ok: false, error: this._t(owner, "biz.protect.err.bad_option") };
+    }
+
+    const state = this._protectionState(found.entry);
+    if (state.guardActive && !confirmGuardReset) {
+      return {
+        ok: false,
+        needConfirmGuardReset: true,
+        leftMs: state.guardLeftMs,
+        leftHours: this._formatHoursLeft(state.guardLeftMs),
+        hours: safeHours,
+        gems: priceGems
+      };
+    }
+
+    const gems = Math.max(0, Math.floor(Number(owner?.premium) || 0));
+    if (gems < priceGems) {
+      return { ok: false, error: this._t(owner, "handler.upgrades.not_enough_gems", { emoji: CONFIG?.PREMIUM?.emoji || "💎", need: priceGems }) };
+    }
+
+    owner.premium = gems - priceGems;
+    const durationMs = safeHours * 60 * 60 * 1000;
+    found.entry.immunityUntil = this.now() + durationMs;
+    found.entry.guardUntil = 0;
+    found.arr[found.idx] = found.entry;
+    owner.biz = owner.biz || {};
+    owner.biz.owned = found.arr;
+    await this.users.save(owner);
+    await this._markProtectionDue("immunity", owner.id, biz, found.entry.immunityUntil);
+
+    return {
+      ok: true,
+      hours: safeHours,
+      gems: priceGems,
+      immunityUntil: found.entry.immunityUntil,
+      guardCanceled: state.guardActive
+    };
   }
 
   async buildMainView(attacker) {
@@ -600,6 +831,7 @@ export class ThiefService {
       if (attempts >= attemptsLimit) continue;
 
       const availableInfo = this._availableForOwner(owner, biz, todayUTC);
+      if (this._protectionState(availableInfo.entry).immunityActive) continue;
       if (availableInfo.available < minAvailable) continue;
 
       const ownerName = this._userName(owner, attacker);
@@ -713,12 +945,18 @@ export class ThiefService {
     }
 
     const availableInfo = this._availableForOwner(owner, biz, todayUTC);
+    const protection = this._protectionState(availableInfo.entry);
+    if (protection.immunityActive) {
+      return { ok: false, error: this._t(attacker, "thief.err.target_immune") };
+    }
     if (availableInfo.available < this._minTargetCash()) {
       return { ok: false, error: this._t(attacker, "thief.err.not_enough_cash_in_target") };
     }
 
     const createdAt = this.now();
-    const resolveAt = createdAt + this._attackWindowMs(biz);
+    const guardApplied = protection.guardActive;
+    const resolveAt = createdAt + this._attackWindowMs(biz) + (guardApplied ? this._guardExtraWindowMs() : 0);
+    const successChance = this._successChance(level) * (guardApplied ? this._guardSuccessMultiplier() : 1);
     const attackId = `${createdAt}_${String(attacker.id)}_${Math.floor(Math.random() * 1_000_000)}`;
     const attack = {
       id: attackId,
@@ -731,7 +969,7 @@ export class ThiefService {
       levelAtStart: level,
       attackEnergy,
       defendEnergy: this._defendEnergy(biz),
-      successChance: this._successChance(level),
+      successChance,
       cooldownMinutes: this._cooldownMinutes(level)
     };
 
@@ -783,6 +1021,13 @@ export class ThiefService {
     }
 
     owner.energy = Math.max(0, Math.floor(Number(owner.energy) || 0) - defendEnergy);
+    const ownerFound = this._findOwnedEntry(owner, attack.bizId);
+    if (ownerFound.idx >= 0 && ownerFound.entry) {
+      ownerFound.entry.guardBlocked = Math.max(0, Math.floor(Number(ownerFound.entry.guardBlocked) || 0)) + 1;
+      ownerFound.arr[ownerFound.idx] = ownerFound.entry;
+      owner.biz = owner.biz || {};
+      owner.biz.owned = ownerFound.arr;
+    }
     await this.users.save(owner);
 
     const attacker = await this.users.load(attack.attackerId).catch(() => null);
@@ -910,6 +1155,78 @@ export class ThiefService {
     }
 
     return { ok: true, resolved: true, success: false, stolen: 0, source };
+  }
+
+  async _resolveProtectionExpiryEvent(evt) {
+    const kind = String(evt?.kind || "");
+    const ownerId = String(evt?.ownerId || "");
+    const bizId = String(evt?.bizId || "");
+    if (!kind || !ownerId || !bizId) return { checked: 0, expired: 0 };
+
+    const owner = await this.users.load(ownerId).catch(() => null);
+    if (!owner) return { checked: 1, expired: 0 };
+
+    const found = this._findOwnedEntry(owner, bizId);
+    if (found.idx < 0 || !found.entry) return { checked: 1, expired: 0 };
+
+    const nowTs = this.now();
+    let expired = false;
+    let notifyKey = "";
+    if (kind === "guard") {
+      const until = Math.max(0, Math.floor(Number(found.entry.guardUntil) || 0));
+      if (until > 0 && until <= nowTs) {
+        found.entry.guardUntil = 0;
+        expired = true;
+        notifyKey = "thief.notify.guard_expired";
+      }
+    }
+    if (kind === "immunity") {
+      const until = Math.max(0, Math.floor(Number(found.entry.immunityUntil) || 0));
+      if (until > 0 && until <= nowTs) {
+        found.entry.immunityUntil = 0;
+        expired = true;
+        notifyKey = "thief.notify.immunity_expired";
+      }
+    }
+    if (!expired) return { checked: 1, expired: 0 };
+
+    found.arr[found.idx] = found.entry;
+    owner.biz = owner.biz || {};
+    owner.biz.owned = found.arr;
+    await this.users.save(owner);
+
+    if (owner?.chatId && notifyKey) {
+      const bizTitle = this._bizTitle(bizId, owner);
+      await this._sendInline(
+        owner.chatId,
+        this._t(owner, notifyKey, { bizTitle }),
+        [[{ text: this._t(owner, "thief.btn.business"), callback_data: "go:Business" }]]
+      );
+    }
+    return { checked: 1, expired: 1 };
+  }
+
+  async resolveProtectionExpirations({ limit } = {}) {
+    const lookback = Math.max(
+      1,
+      Math.floor(Number(this._protectionCfg()?.EXPIRE_LOOKBACK_MINUTES) || 30)
+    );
+    const events = await this._collectDueProtectionEvents({ nowTs: this.now(), lookbackMinutes: lookback });
+    if (!events.length) return { checked: 0, expired: 0 };
+
+    const max = Math.max(
+      1,
+      Math.floor(Number(limit) || Number(this._protectionCfg()?.EXPIRE_RESOLVE_LIMIT_PER_RUN) || 200)
+    );
+    let checked = 0;
+    let expired = 0;
+    for (const evt of events) {
+      if (checked >= max) break;
+      const res = await this._resolveProtectionExpiryEvent(evt);
+      checked += Number(res?.checked || 0);
+      expired += Number(res?.expired || 0);
+    }
+    return { checked, expired };
   }
 
   async resolveExpired({ limit } = {}) {

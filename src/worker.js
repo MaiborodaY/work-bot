@@ -92,6 +92,9 @@ export default {
       await safeCall("worker.cron.thief.resolve_expired", async () => {
         await thief.resolveExpired();
       });
+      await safeCall("worker.cron.thief.resolve_protection_expirations", async () => {
+        await thief.resolveProtectionExpirations();
+      });
       await notifier.run();
       return new Response("ok");
     }
@@ -957,7 +960,8 @@ export default {
       stocks.runDailyUpdate(),
       notifier.run(),
       labour.runDueExpirations(),
-      thief.resolveExpired()
+      thief.resolveExpired(),
+      thief.resolveProtectionExpirations()
     ]));
   }
 };

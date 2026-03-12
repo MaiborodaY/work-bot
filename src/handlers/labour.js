@@ -85,7 +85,10 @@ export const labourHandler = {
           id: B.id,
           boughtAt: Date.now(),
           lastClaimDayUTC: "",
-          pendingTheftAmount: 0
+          pendingTheftAmount: 0,
+          guardUntil: 0,
+          immunityUntil: 0,
+          guardBlocked: 0
         });
         await users.save(u);
         try {

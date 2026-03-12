@@ -56,6 +56,16 @@ export async function renderBusinessRoute(ctx, user, { header = "", lang = "ru",
     const claimedToday = !!entry && (entry.lastClaimDayUTC === todayUTC);
     const availableToday = entry ? getBusinessAvailableToday(entry, Number(B.daily) || 0, todayUTC) : 0;
     const pendingTheft = entry ? getBusinessPendingTheft(entry, Number(B.daily) || 0) : 0;
+    const dailyIncome = Math.max(0, Math.floor(Number(B.daily) || 0));
+    const nextClaimAmount = entry ? Math.max(0, dailyIncome - pendingTheft) : dailyIncome;
+    const guardPrice = Math.max(0, Math.floor(Number(CONFIG?.THIEF?.PROTECTION?.GUARD?.PRICES?.[B.id]) || 0));
+    const nowTs = Date.now();
+    const guardUntil = entry ? Math.max(0, Math.floor(Number(entry.guardUntil) || 0)) : 0;
+    const immunityUntil = entry ? Math.max(0, Math.floor(Number(entry.immunityUntil) || 0)) : 0;
+    const guardActive = guardUntil > nowTs;
+    const immunityActive = immunityUntil > nowTs;
+    const guardLeftHours = Math.max(1, Math.ceil((guardUntil - nowTs) / (60 * 60 * 1000)));
+    const immunityLeftHours = Math.max(1, Math.ceil((immunityUntil - nowTs) / (60 * 60 * 1000)));
     const bizTitle = getBusinessTitle(B.id, lang) || B.title;
     const bizNote = getBusinessNote(B.id, lang) || B.note;
 
@@ -67,6 +77,21 @@ export async function renderBusinessRoute(ctx, user, { header = "", lang = "ru",
     const stolenLine = isOwned
       ? ctx._t(user, "loc.business.status_stolen_next", { amount: pendingTheft })
       : "";
+    const nextClaimLine = isOwned
+      ? ctx._t(user, "loc.business.next_claim", { amount: nextClaimAmount })
+      : "";
+    const protectionLine = isOwned
+      ? (immunityActive
+        ? ctx._t(user, "loc.business.protection_immunity_active", { hours: immunityLeftHours })
+        : (guardActive
+          ? ctx._t(user, "loc.business.protection_guard_active", { hours: guardLeftHours })
+          : ctx._t(user, "loc.business.protection_none")))
+      : "";
+    const protectionHintLine = isOwned
+      ? (immunityActive
+        ? ctx._t(user, "loc.business.protection_immunity_hint")
+        : (guardActive ? ctx._t(user, "loc.business.protection_guard_hint") : ""))
+      : "";
 
     const kb = [];
     if (!isOwned) {
@@ -76,6 +101,19 @@ export async function renderBusinessRoute(ctx, user, { header = "", lang = "ru",
       kb.push([{ text: ctx._t(user, claimKey, { amount: availableToday }), callback_data: `biz:claim:${B.id}` }]);
     } else {
       kb.push([{ text: ctx._t(user, "loc.business.btn.claimed_today"), callback_data: "noop" }]);
+    }
+
+    if (isOwned) {
+      if (!immunityActive) {
+        kb.push([{
+          text: guardActive
+            ? ctx._t(user, "loc.business.btn.guard_refresh", { price: guardPrice })
+            : ctx._t(user, "loc.business.btn.guard_buy", { price: guardPrice }),
+          callback_data: `biz:guard:${B.id}`
+        }]);
+      }
+      kb.push([{ text: ctx._t(user, "loc.business.btn.immunity_open"), callback_data: `biz:immune:${B.id}` }]);
+      kb.push([{ text: ctx._t(user, "loc.business.btn.protection_help"), callback_data: `biz:protection_help:${B.id}` }]);
     }
 
     if (opts.showBackToBusinesses) {
@@ -98,8 +136,11 @@ export async function renderBusinessRoute(ctx, user, { header = "", lang = "ru",
         `${B.emoji} ${bizTitle}\n` +
         ctx._t(user, "loc.business.price", { price: B.price }) + "\n" +
         ctx._t(user, "loc.business.daily_income", { daily: B.daily }) + "\n" +
-        modeLine + "\n" +
+        modeLine +
+        (nextClaimLine ? `\n${nextClaimLine}` : "") + "\n" +
         statusLine +
+        (protectionLine ? `\n\n${protectionLine}` : "") +
+        (protectionHintLine ? `\n${protectionHintLine}` : "") +
         (stolenLine ? `\n${stolenLine}` : "") +
         (bizNote ? `\n\nℹ️ ${bizNote}` : ""),
       keyboard: kb,

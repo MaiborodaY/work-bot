@@ -171,3 +171,110 @@ test("thief service: attack can start even if owner already claimed today", asyn
   assert.equal(res.ok, true);
   assert.ok(res.attackId);
 });
+
+test("thief service: guard purchase sets timer and requires confirm on refresh", async () => {
+  const nowTs = Date.now();
+  const db = new FakeDb();
+  const users = new FakeUsers({
+    owner: {
+      id: "owner",
+      lang: "en",
+      money: 1000,
+      premium: 10,
+      createdAt: nowTs - 10 * 24 * 60 * 60 * 1000,
+      biz: { owned: [{ id: "shawarma", boughtAt: nowTs, lastClaimDayUTC: "", pendingTheftAmount: 0 }] }
+    }
+  });
+  const service = new ThiefService({ db, users, now: () => nowTs, bot: { async sendWithInline() {} } });
+  const owner = await users.load("owner");
+
+  const first = await service.buyGuard(owner, "shawarma");
+  assert.equal(first.ok, true);
+  assert.equal(first.price, 50);
+
+  const saved = await users.load("owner");
+  assert.equal(saved.money, 950);
+  assert.ok(Number(saved?.biz?.owned?.[0]?.guardUntil) > nowTs);
+
+  const second = await service.buyGuard(saved, "shawarma");
+  assert.equal(second.ok, false);
+  assert.equal(second.needConfirm, true);
+});
+
+test("thief service: immunity blocks attack start", async () => {
+  const nowTs = Date.now();
+  const db = new FakeDb();
+  const users = new FakeUsers({
+    attacker: {
+      id: "attacker",
+      lang: "en",
+      money: 50000,
+      energy: 30,
+      createdAt: nowTs - 10 * 24 * 60 * 60 * 1000,
+      thief: { level: 1, activeAttackId: "", cooldowns: {} },
+      biz: { owned: [] }
+    },
+    owner: {
+      id: "owner",
+      lang: "en",
+      chatId: 1,
+      createdAt: nowTs - 10 * 24 * 60 * 60 * 1000,
+      biz: {
+        owned: [{
+          id: "shawarma",
+          boughtAt: nowTs,
+          lastClaimDayUTC: "",
+          pendingTheftAmount: 0,
+          immunityUntil: nowTs + 24 * 60 * 60 * 1000
+        }]
+      }
+    }
+  });
+  const service = new ThiefService({ db, users, now: () => nowTs, bot: { async sendWithInline() {} } });
+  const attacker = await users.load("attacker");
+  const res = await service.startAttack(attacker, "shawarma", "owner");
+
+  assert.equal(res.ok, false);
+  assert.match(String(res.error || ""), /immun/i);
+});
+
+test("thief service: active guard increases window and reduces success chance", async () => {
+  const nowTs = Date.now();
+  const db = new FakeDb();
+  const users = new FakeUsers({
+    attacker: {
+      id: "attacker",
+      lang: "en",
+      money: 50000,
+      energy: 30,
+      createdAt: nowTs - 10 * 24 * 60 * 60 * 1000,
+      thief: { level: 1, activeAttackId: "", cooldowns: {} },
+      biz: { owned: [] }
+    },
+    owner: {
+      id: "owner",
+      lang: "en",
+      chatId: 1,
+      createdAt: nowTs - 10 * 24 * 60 * 60 * 1000,
+      biz: {
+        owned: [{
+          id: "shawarma",
+          boughtAt: nowTs,
+          lastClaimDayUTC: "",
+          pendingTheftAmount: 0,
+          guardUntil: nowTs + 24 * 60 * 60 * 1000
+        }]
+      }
+    }
+  });
+  const service = new ThiefService({ db, users, now: () => nowTs, bot: { async sendWithInline() {} } });
+  const attacker = await users.load("attacker");
+  const res = await service.startAttack(attacker, "shawarma", "owner");
+  assert.equal(res.ok, true);
+
+  const rawAttack = await db.get(`thief:attack:${res.attackId}`);
+  assert.ok(rawAttack);
+  const attack = JSON.parse(rawAttack);
+  assert.equal(Number(attack.resolveAt), nowTs + (20 * 60 * 1000) + (20 * 60 * 1000));
+  assert.equal(Number(attack.successChance), 0.15);
+});

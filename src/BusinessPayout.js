@@ -7,11 +7,22 @@ export function normalizeBusinessEntry(entry, bizId = "") {
   if (typeof out.id !== "string") out.id = String(bizId || out.id || "");
   if (typeof out.boughtAt !== "number" || !Number.isFinite(out.boughtAt)) out.boughtAt = 0;
   if (typeof out.lastClaimDayUTC !== "string") out.lastClaimDayUTC = "";
-  if (typeof out.pendingTheftAmount !== "number" || !Number.isFinite(out.pendingTheftAmount)) {
-    out.pendingTheftAmount = 0;
-  } else {
-    out.pendingTheftAmount = Math.max(0, Math.floor(Number(out.pendingTheftAmount) || 0));
-  }
+  const pendingParsed = Number(out.pendingTheftAmount);
+  out.pendingTheftAmount = Number.isFinite(pendingParsed)
+    ? Math.max(0, Math.floor(pendingParsed))
+    : 0;
+  const guardUntilParsed = Number(out.guardUntil);
+  out.guardUntil = Number.isFinite(guardUntilParsed)
+    ? Math.max(0, Math.floor(guardUntilParsed))
+    : 0;
+  const immunityUntilParsed = Number(out.immunityUntil);
+  out.immunityUntil = Number.isFinite(immunityUntilParsed)
+    ? Math.max(0, Math.floor(immunityUntilParsed))
+    : 0;
+  const guardBlockedParsed = Number(out.guardBlocked);
+  out.guardBlocked = Number.isFinite(guardBlockedParsed)
+    ? Math.max(0, Math.floor(guardBlockedParsed))
+    : 0;
   // Legacy thief fields. Kept for safe migration from older data.
   if (typeof out.stolenDayUTC !== "string") out.stolenDayUTC = "";
   if (typeof out.stolenAmountToday !== "number" || !Number.isFinite(out.stolenAmountToday)) out.stolenAmountToday = 0;
