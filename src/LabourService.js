@@ -92,19 +92,26 @@ export class LabourService {
     return this._cfg().BACKGROUND || {};
   }
 
+  _bgEmployeePayoutMult() {
+    const raw = Number(this._bgCfg().EMPLOYEE_PAYOUT_MULT);
+    if (!Number.isFinite(raw)) return 1;
+    return Math.max(0, raw);
+  }
+
   _bgShiftMs() {
     return Math.max(60_000, Math.floor(Number(this._bgCfg().SHIFT_MS) || (60 * 60 * 1000)));
   }
 
   _bgRatePerHour(bizId) {
     const map = this._bgCfg().EMPLOYEE_RATE_PER_HOUR || {};
-    return Math.max(0, Math.floor(Number(map[String(bizId || "")]) || 0));
+    return Math.max(0, Number(map[String(bizId || "")]) || 0);
   }
 
   _bgShiftPay(bizId) {
     const perHour = this._bgRatePerHour(bizId);
     const shiftHours = this._bgShiftMs() / (60 * 60 * 1000);
-    return Math.max(0, Math.floor(perHour * shiftHours));
+    const pay = perHour * shiftHours * this._bgEmployeePayoutMult();
+    return Math.max(0, Math.round(pay * 100) / 100);
   }
 
   _bgOwnerGems(bizId) {
@@ -228,6 +235,17 @@ export class LabourService {
 
   _money(source, amount) {
     return formatMoney(amount, this._lang(source));
+  }
+
+  _moneyPrecise(amount) {
+    const raw = Number(amount);
+    const v = Number.isFinite(raw) ? raw : 0;
+    const sign = v < 0 ? "-" : "";
+    const abs = Math.abs(v);
+    const shown = Number.isInteger(abs)
+      ? String(abs)
+      : String(abs.toFixed(2)).replace(/\.?0+$/, "");
+    return `${sign}$${shown}`;
   }
 
   _formatTimeLeftDhM(source, endAt) {
@@ -967,7 +985,7 @@ export class LabourService {
     const contractStart = this.now();
     const contractEnd = contractStart + this._contractDays(bizId) * DAY_MS;
     const ownerPctFromConfig = Math.max(0, Number(this._slotLevelCfg(bizId, targetIdx)?.ownerPct) || 0);
-    const ownerPct = Math.max(0, Number(slot.ownerPct) || ownerPctFromConfig || 0);
+    const ownerPct = Math.max(0, Math.max(Number(slot.ownerPct) || 0, ownerPctFromConfig || 0));
     const bgPlan = this._buildBgPlan(bizId, contractStart, contractEnd, ownerPct);
     const minEnergy = this._minEnergyMax(bizId);
     const wantedEmployeeId = String(employeeId || "");
@@ -1054,14 +1072,14 @@ export class LabourService {
       const days = this._contractDays(bizId);
       await this._sendInline(
         reserved.chatId,
-        this._t(reserved, "labour.notify.employee_hired", {
-          bizTitle,
-          ownerName,
-          days,
-          shifts: bgPlan.totalShifts,
-          shiftPay: this._money(reserved, bgPlan.shiftPay),
-          employeeTotal: this._money(reserved, bgPlan.employeeTotal)
-        }),
+          this._t(reserved, "labour.notify.employee_hired", {
+            bizTitle,
+            ownerName,
+            days,
+            shifts: bgPlan.totalShifts,
+            shiftPay: this._moneyPrecise(bgPlan.shiftPay),
+            employeeTotal: this._money(reserved, bgPlan.employeeTotal)
+          }),
         [[{ text: this._t(reserved, "labour.btn.work"), callback_data: "go:Work" }]],
         reserved
       );
@@ -1355,7 +1373,7 @@ export class LabourService {
       if (!slot?.purchased) continue;
       const slotNum = this._slotNum(i);
       const levelCfg = this._slotLevelCfg(B.id, i);
-      const pct = Math.max(0, Math.floor((Number(slot.ownerPct) || Number(levelCfg?.ownerPct) || 0) * 100));
+      const pct = Math.max(0, Math.floor(Math.max(Number(slot.ownerPct) || 0, Number(levelCfg?.ownerPct) || 0) * 100));
 
       if (slot.employeeId && Number(slot.contractEnd || 0) > nowTs) {
         const employee = await this.users.load(slot.employeeId).catch(() => null);
@@ -1486,7 +1504,7 @@ export class LabourService {
     const minEnergy = this._minEnergyMax(bizId);
     const slotNum = this._slotNum(targetIdx);
     const levelCfg = this._slotLevelCfg(B.id, targetIdx);
-    const ownerPct = Math.max(0, Number(slot.ownerPct) || Number(levelCfg?.ownerPct) || 0);
+    const ownerPct = Math.max(0, Math.max(Number(slot.ownerPct) || 0, Number(levelCfg?.ownerPct) || 0));
     const contractDays = this._contractDays(bizId);
     const plan = this._buildBgPlan(
       bizId,
@@ -1502,7 +1520,7 @@ export class LabourService {
       this._t(langSource, "labour.view.contract_plan", {
         days: contractDays,
         shifts: plan.totalShifts,
-        shiftPay: this._money(langSource, plan.shiftPay),
+        shiftPay: this._moneyPrecise(plan.shiftPay),
         employeeTotal: this._money(langSource, plan.employeeTotal),
         ownerPct: Math.max(0, Math.floor(ownerPct * 100)),
         ownerMoneyTotal: this._money(langSource, plan.ownerMoneyTotal),
