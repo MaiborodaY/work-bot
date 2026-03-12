@@ -339,31 +339,31 @@ export const CONFIG = {
     BUSINESS: {
       shawarma: {
         unlockLevel: 1,
-        attackMs: 10 * 60 * 1000,
+        attackMs: 20 * 60 * 1000,
         attackEnergy: 10,
         defendEnergy: 5
       },
       stomatology: {
         unlockLevel: 2,
-        attackMs: 7 * 60 * 1000,
+        attackMs: 17 * 60 * 1000,
         attackEnergy: 15,
         defendEnergy: 8
       },
       restaurant: {
         unlockLevel: 3,
-        attackMs: 5 * 60 * 1000,
+        attackMs: 15 * 60 * 1000,
         attackEnergy: 20,
         defendEnergy: 10
       },
       courier_service: {
         unlockLevel: 4,
-        attackMs: 3 * 60 * 1000,
+        attackMs: 12 * 60 * 1000,
         attackEnergy: 30,
         defendEnergy: 15
       },
       fitness_club: {
         unlockLevel: 5,
-        attackMs: 1 * 60 * 1000,
+        attackMs: 10 * 60 * 1000,
         attackEnergy: 40,
         defendEnergy: 20
       }
