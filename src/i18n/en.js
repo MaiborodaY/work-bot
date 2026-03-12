@@ -146,7 +146,7 @@ export const EN = {
   "labour.biz.title": "{{emoji}} {{bizTitle}} — Hires",
   "labour.biz.unowned": "🔒 This business is not purchased yet.",
   "labour.biz.price": "Price: {{price}}",
-  "labour.biz.slot_busy": "Slot {{slotNum}} ({{pct}}%) — {{employeeName}} · {{leftDays}} day(s) left{{earnPart}}",
+  "labour.biz.slot_busy": "Slot {{slotNum}} ({{pct}}%) — {{employeeName}} · {{leftTime}} left{{earnPart}}",
   "labour.biz.slot_free": "Slot {{slotNum}} ({{pct}}%) — free",
   "labour.biz.slot_next_buy": "Slot {{slotNum}} ({{pct}}%) — not bought",
   "labour.biz.earned_part": " · +{{earned}}",

@@ -183,6 +183,20 @@ export class LabourService {
     return formatMoney(amount, this._lang(source));
   }
 
+  _formatTimeLeftDhM(source, endAt) {
+    const endTs = Number(endAt) || 0;
+    const diffMs = Math.max(0, endTs - this.now());
+    const totalMinutes = Math.max(1, Math.ceil(diffMs / (60 * 1000)));
+    const days = Math.floor(totalMinutes / (24 * 60));
+    const hours = Math.floor((totalMinutes % (24 * 60)) / 60);
+    const minutes = totalMinutes % 60;
+    const lang = this._lang(source);
+
+    if (lang === "en") return `${days}d ${hours}h ${minutes}m`;
+    if (lang === "uk") return `${days} дн ${hours} год ${minutes} хв`;
+    return `${days} дн ${hours} ч ${minutes} мин`;
+  }
+
   _businessesOrdered() {
     const all = Object.values(CONFIG?.BUSINESS || {});
     all.sort((a, b) => {
@@ -1103,7 +1117,7 @@ export class LabourService {
           : this._t(langSource, "labour.player_short", {
               id: String(slot.employeeId).slice(-4).padStart(4, "0")
             });
-        const leftDays = Math.max(1, Math.ceil((Number(slot.contractEnd || 0) - nowTs) / DAY_MS));
+        const leftTime = this._formatTimeLeftDhM(langSource, slot.contractEnd);
         const earned = Math.max(0, Math.floor(Number(slot.earnedTotal) || 0));
         const earnPart = earned > 0
           ? this._t(langSource, "labour.biz.earned_part", { earned: this._money(langSource, earned) })
@@ -1112,7 +1126,7 @@ export class LabourService {
           slotNum,
           pct,
           employeeName,
-          leftDays,
+          leftTime,
           earnPart
         }));
       } else {

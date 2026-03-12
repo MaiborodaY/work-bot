@@ -146,7 +146,7 @@ export const UK = {
   "labour.biz.title": "{{emoji}} {{bizTitle}} — Найманці",
   "labour.biz.unowned": "🔒 Цей бізнес ще не куплено.",
   "labour.biz.price": "Ціна: {{price}}",
-  "labour.biz.slot_busy": "Слот {{slotNum}} ({{pct}}%) — {{employeeName}} · лишилось {{leftDays}} дн{{earnPart}}",
+  "labour.biz.slot_busy": "Слот {{slotNum}} ({{pct}}%) — {{employeeName}} · лишилось {{leftTime}}{{earnPart}}",
   "labour.biz.slot_free": "Слот {{slotNum}} ({{pct}}%) — вільно",
   "labour.biz.slot_next_buy": "Слот {{slotNum}} ({{pct}}%) — не куплено",
   "labour.biz.earned_part": " · +{{earned}}",

@@ -427,7 +427,7 @@ export const RU = {
   "labour.biz.title": "{{emoji}} {{bizTitle}} — Наёмники",
   "labour.biz.unowned": "🔒 Этот бизнес ещё не куплен.",
   "labour.biz.price": "Цена: {{price}}",
-  "labour.biz.slot_busy": "Слот {{slotNum}} ({{pct}}%) — {{employeeName}} · ост. {{leftDays}} дн{{earnPart}}",
+  "labour.biz.slot_busy": "Слот {{slotNum}} ({{pct}}%) — {{employeeName}} · ост. {{leftTime}}{{earnPart}}",
   "labour.biz.slot_free": "Слот {{slotNum}} ({{pct}}%) — свободно",
   "labour.biz.slot_next_buy": "Слот {{slotNum}} ({{pct}}%) — не куплен",
   "labour.biz.earned_part": " · +{{earned}}",
