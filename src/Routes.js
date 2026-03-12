@@ -20,6 +20,7 @@ export const Routes = Object.freeze({
   UPGRADES: "Upgrades",
   CITY_BOARD: "CityBoard",
   CLAN: "Clan",
+  RATINGS: "Ratings",
   THIEF: "Thief",
   REFERRAL: "Referral",
 });

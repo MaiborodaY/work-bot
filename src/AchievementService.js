@@ -8,11 +8,12 @@ function n(raw) {
 }
 
 export class AchievementService {
-  constructor({ users, db, now, bot }) {
+  constructor({ users, db, now, bot, ratings = null }) {
     this.users = users;
     this.db = db || users?.db || null;
     this.now = now || (() => Date.now());
     this.bot = bot || null;
+    this.ratings = ratings || null;
   }
 
   _lang(source) {
@@ -535,6 +536,11 @@ export class AchievementService {
 
     if (changed && persist && this.users?.save) {
       await this.users.save(u);
+    }
+    if (newlyEarned.length > 0 && this.ratings?.updateUser) {
+      try {
+        await this.ratings.updateUser(u, ["ach"]);
+      } catch {}
     }
     if (newlyEarned.length && notify && !silent) {
       await this.notifyEarned(u, newlyEarned);

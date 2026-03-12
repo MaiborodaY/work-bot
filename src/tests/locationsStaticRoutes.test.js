@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { Locations } from "../Locations.js";
 import { Routes } from "../Routes.js";
 
-function makeLocations() {
+function makeLocations(overrides = {}) {
   const calls = [];
   const media = {
     async show(payload) {
@@ -26,7 +26,8 @@ function makeLocations() {
     formatters: {},
     pct: () => 0,
     now: () => Date.now(),
-    maybeFinishStudy: async () => false
+    maybeFinishStudy: async () => false,
+    ...overrides
   });
 
   return { locations, calls };
@@ -71,3 +72,21 @@ test("locations static route: MiniGames uses static registry", async () => {
   assert.deepEqual(calls[0].keyboard, [[{ text: "mini", callback_data: "noop" }]]);
 });
 
+test("locations service route: Ratings uses rating service view", async () => {
+  const ratings = {
+    async buildView() {
+      return {
+        caption: "Rating view",
+        keyboard: [[{ text: "back", callback_data: "go:City" }]]
+      };
+    }
+  };
+  const { locations, calls } = makeLocations({ ratings });
+  await locations.show(makeUser(), null, Routes.RATINGS);
+
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].place, Routes.CITY_BOARD);
+  assert.equal(calls[0].policy, "auto");
+  assert.equal(calls[0].caption, "Rating view");
+  assert.deepEqual(calls[0].keyboard, [[{ text: "back", callback_data: "go:City" }]]);
+});

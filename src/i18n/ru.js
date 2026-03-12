@@ -28,6 +28,7 @@ export const RU = {
 
   "ui.city.home": "🏠 Дом и отдых",
   "ui.city.board": "🏆 Доска почёта",
+  "ui.city.ratings": "🏆 Рейтинг",
   "ui.city.clans": "👥 Кланы",
   "ui.city.referral": "👥 Рефералы",
 
@@ -139,6 +140,7 @@ export const RU = {
   "loc.city.caption": "🏙️ Город: дом, таблицы лидеров и кланы.",
   "loc.clan.unavailable": "👥 Кланы временно недоступны.",
   "loc.referral.unavailable": "👥 Рефералы временно недоступны.",
+  "loc.rating.unavailable": "🏆 Рейтинг временно недоступен.",
   "loc.cityboard.caption": "🌟 Рейтинг игроков\n\nПризы за лучшие места выдаются каждый день.",
   "loc.shophub.caption": "🛒 Магазины",
   "loc.minigames.caption": "🎮 Игра в Игре!: выбери режим и нажми, чтобы запустить.",

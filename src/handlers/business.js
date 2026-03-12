@@ -8,7 +8,7 @@ export const businessHandler = {
   match: (data) => data.startsWith("biz:"),
 
   async handle(ctx) {
-    const { data, u, users, answer, goTo, now, send, clans, thief, achievements, cb, locations } = ctx;
+    const { data, u, users, answer, goTo, now, send, clans, thief, achievements, ratings, cb, locations } = ctx;
     const lang = normalizeLang(u?.lang || "ru");
     const tt = (key, vars = {}) => t(key, lang, vars);
     const parts = String(data || "").split(":");
@@ -78,6 +78,11 @@ export const businessHandler = {
       try {
         if (thief?.upsertBizOwner) {
           await thief.upsertBizOwner(u.id, B.id);
+        }
+      } catch {}
+      try {
+        if (ratings?.updateUser) {
+          await ratings.updateUser(u, ["biz"]);
         }
       } catch {}
 

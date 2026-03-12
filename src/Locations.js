@@ -31,11 +31,12 @@ export class Locations {
    *  clans?:any
    *  stocks?:any,
    *  labour?:any,
+   *  ratings?:any,
    *  thief?:any,
    *  referrals?:any
    * }} deps
    */
-  constructor({ media, ui, economy, formatters, pct, now, maybeFinishStudy, daily, fastForward, users, social, clans, stocks, labour, thief, referrals }) {
+  constructor({ media, ui, economy, formatters, pct, now, maybeFinishStudy, daily, fastForward, users, social, clans, stocks, labour, ratings, thief, referrals }) {
     this.media = media;
     this.ui = ui;
     this.economy = economy;
@@ -50,6 +51,7 @@ export class Locations {
     this.clans = clans || null;
     this.stocks = stocks || null;
     this.labour = labour || null;
+    this.ratings = ratings || null;
     this.thief = thief || null;
     this.referrals = referrals || null;
 
@@ -179,6 +181,22 @@ export class Locations {
           return null;
         },
         fallbackCaptionKey: "loc.clan.unavailable",
+        fallbackBackTextKey: "ui.back.default",
+        fallbackBackCb: toGoCallback(Routes.CITY)
+      }),
+      [Routes.RATINGS]: async () => this._renderServiceRoute({
+        user,
+        header,
+        routeName: Routes.RATINGS,
+        place: Routes.CITY_BOARD,
+        policy: "auto",
+        buildView: async () => {
+          if (this.ratings && typeof this.ratings.buildView === "function") {
+            return this.ratings.buildView(user, "biz");
+          }
+          return null;
+        },
+        fallbackCaptionKey: "loc.rating.unavailable",
         fallbackBackTextKey: "ui.back.default",
         fallbackBackCb: toGoCallback(Routes.CITY)
       }),

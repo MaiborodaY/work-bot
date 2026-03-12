@@ -17,6 +17,7 @@ import { LabourService } from "./LabourService.js";
 import { ThiefService } from "./ThiefService.js";
 import { ReferralService } from "./ReferralService.js";
 import { AchievementService } from "./AchievementService.js";
+import { RatingService } from "./RatingService.js";
 import { ASSETS, JOB_ASSETS } from "./Assets.js";
 import { normalizeLang, t } from "./i18n/index.js";
 import { safeCall } from "./SafeCall.js";
@@ -40,6 +41,7 @@ import { stocksHandler } from "./handlers/stocks.js";
 import { labourHandler } from "./handlers/labour.js";
 import { thiefHandler } from "./handlers/thief.js";
 import { referralHandler } from "./handlers/referral.js";
+import { ratingsHandler } from "./handlers/ratings.js";
 
 // платежи Stars
 import { OrdersStore as StarsOrdersStore } from "./payments/OrdersStore.js";
@@ -76,9 +78,10 @@ export default {
       const bot = new TelegramClient(env.BOT_TOKEN);
       const users = new UserStore(env.DB);
       const economy = new EconomyService();
-      const achievements = new AchievementService({ users, db: env.DB, now: () => Date.now(), bot });
+      const ratings = new RatingService({ db: env.DB, users, now: () => Date.now() });
+      const achievements = new AchievementService({ users, db: env.DB, now: () => Date.now(), bot, ratings });
       const stocks = new StockService({ db: env.DB, users, now: () => Date.now(), achievements });
-      const thief = new ThiefService({ db: env.DB, users, now: () => Date.now(), bot, achievements });
+      const thief = new ThiefService({ db: env.DB, users, now: () => Date.now(), bot, achievements, ratings });
       const notifier = new NotificationService({
         users,
         bot,
@@ -126,12 +129,13 @@ export default {
     const now = () => Date.now();
     const pct = (a, b) => Math.min(100, Math.floor((a / b) * 100));
 
-    const achievements = new AchievementService({ users, db: env.DB, now, bot });
+    const ratings = new RatingService({ db: env.DB, users, now });
+    const achievements = new AchievementService({ users, db: env.DB, now, bot, ratings });
     const social = new SocialService({ db: env.DB, users, now, economy });
     const clans = new ClanService({ db: env.DB, users, now, economy, achievements });
     const stocks = new StockService({ db: env.DB, users, now, achievements });
     const labour = new LabourService({ db: env.DB, users, now, bot });
-    const thief = new ThiefService({ db: env.DB, users, now, bot, achievements });
+    const thief = new ThiefService({ db: env.DB, users, now, bot, achievements, ratings });
     const referrals = new ReferralService({
       users,
       now,
@@ -268,6 +272,7 @@ export default {
       clans,
       stocks,
       labour,
+      ratings,
       thief,
       referrals
     });
@@ -328,6 +333,7 @@ export default {
       if (s === "smart") return "city:topsmart";
       if (s === "strong") return "city:topstrong";
       if (s === "lucky") return "city:toplucky";
+      if (s === "rating") return "go:Ratings";
       return "go:CityBoard";
     };
 
@@ -1040,6 +1046,7 @@ export default {
         clans,
         stocks,
         labour,
+        ratings,
         thief,
         referrals,
         achievements,
@@ -1056,6 +1063,7 @@ export default {
         navigationHandler,
         clanHandler,
         thiefHandler,
+        ratingsHandler,
         premiumShopHandler,
         socialHandler,
         referralHandler,
@@ -1105,10 +1113,11 @@ export default {
     const bot = new TelegramClient(env.BOT_TOKEN);
     const users = new UserStore(env.DB);
     const economy = new EconomyService();
-    const achievements = new AchievementService({ users, db: env.DB, now: () => Date.now(), bot });
+    const ratings = new RatingService({ db: env.DB, users, now: () => Date.now() });
+    const achievements = new AchievementService({ users, db: env.DB, now: () => Date.now(), bot, ratings });
     const stocks = new StockService({ db: env.DB, users, now: () => Date.now(), achievements });
     const labour = new LabourService({ db: env.DB, users, now: () => Date.now(), bot });
-    const thief = new ThiefService({ db: env.DB, users, now: () => Date.now(), bot, achievements });
+    const thief = new ThiefService({ db: env.DB, users, now: () => Date.now(), bot, achievements, ratings });
 
     const notifier = new NotificationService({
       users,

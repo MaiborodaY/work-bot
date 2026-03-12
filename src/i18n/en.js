@@ -6,6 +6,8 @@ export const EN = {
   "profile.lang.button": "🌐 Language: {{lang}}",
   "profile.lang.title": "Choose interface language:",
   "profile.lang.changed": "Language updated: {{lang}}",
+  "ui.city.ratings": "🏆 Rating",
+  "loc.rating.unavailable": "🏆 Rating is temporarily unavailable.",
 
   "cfg.job.flyers.title": "Hand out flyers",
   "cfg.job.dishwasher.title": "Dishwasher",

@@ -6,6 +6,8 @@ export const UK = {
   "profile.lang.button": "🌐 Мова: {{lang}}",
   "profile.lang.title": "Обери мову інтерфейсу:",
   "profile.lang.changed": "Мову оновлено: {{lang}}",
+  "ui.city.ratings": "🏆 Рейтинг",
+  "loc.rating.unavailable": "🏆 Рейтинг тимчасово недоступний.",
 
   "cfg.job.flyers.title": "Роздавати листівки",
   "cfg.job.dishwasher.title": "Посудомийник",

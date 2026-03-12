@@ -11,12 +11,13 @@ import { formatMoney, normalizeLang, t } from "./i18n/index.js";
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export class ThiefService {
-  constructor({ db, users, now, bot, achievements = null }) {
+  constructor({ db, users, now, bot, achievements = null, ratings = null }) {
     this.db = db;
     this.users = users;
     this.now = now || (() => Date.now());
     this.bot = bot || null;
     this.achievements = achievements || null;
+    this.ratings = ratings || null;
   }
 
   _cfg() {
@@ -1161,6 +1162,11 @@ export class ThiefService {
       }
 
       await this.users.save(attacker);
+      if (success && this.ratings?.updateUser) {
+        try {
+          await this.ratings.updateUser(attacker, ["thief"]);
+        } catch {}
+      }
       if (attackerAch?.newlyEarned?.length && this.achievements?.notifyEarned) {
         await this.achievements.notifyEarned(attacker, attackerAch.newlyEarned);
       }
