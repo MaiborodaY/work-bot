@@ -1309,15 +1309,27 @@ export class LabourService {
       for (const B of businesses) {
         const first = this._slotLevelCfg(B.id, 0);
         if (!first) continue;
+        const days = this._contractDays(B.id);
+        const plan = this._buildBgPlan(
+          B.id,
+          this.now(),
+          this.now() + days * DAY_MS,
+          Number(first.ownerPct) || 0
+        );
         lines.push(this._t(langSource, "labour.help.biz_line", {
-          emoji: B.emoji || "🏢",
+          emoji: B.emoji || "????",
           bizTitle: this._bizTitle(B.id, langSource),
-          days: this._contractDays(B.id),
+          days,
           minEnergy: this._minEnergyMax(B.id),
           money: this._money(langSource, Number(first.slotMoney) || 0),
-          gemsEmoji: CONFIG?.PREMIUM?.emoji || "💎",
+          gemsEmoji: CONFIG?.PREMIUM?.emoji || "????",
           gems: Math.max(0, Number(first.slotGems) || 0),
-          pct: Math.max(0, Math.floor((Number(first.ownerPct) || 0) * 100))
+          pct: Math.max(0, Math.floor((Number(first.ownerPct) || 0) * 100)),
+          shiftPay: this._moneyPrecise(plan.shiftPay),
+          shifts: plan.totalShifts,
+          employeeTotal: this._money(langSource, plan.employeeTotal),
+          ownerMoney: this._money(langSource, plan.ownerMoneyTotal),
+          ownerGems: Math.max(0, plan.ownerGemsTotal)
         }));
       }
       lines.push(this._t(langSource, "labour.help.line8"));
