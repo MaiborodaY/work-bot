@@ -57,6 +57,10 @@ export class ThiefService {
 
   _guardPrice(bizId) {
     const id = String(bizId || "");
+    const daily = Math.max(0, Math.floor(Number(CONFIG?.BUSINESS?.[id]?.daily) || 0));
+    if (daily > 0) {
+      return Math.max(1, Math.floor(daily * 0.10));
+    }
     return Math.max(0, Math.floor(Number(this._guardCfg()?.PRICES?.[id]) || 0));
   }
 

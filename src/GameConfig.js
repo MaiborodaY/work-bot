@@ -344,9 +344,9 @@ export const CONFIG = {
         PRICES: {
           shawarma: 50,
           stomatology: 100,
-          restaurant: 300,
-          courier_service: 800,
-          fitness_club: 2000
+          restaurant: 200,
+          courier_service: 400,
+          fitness_club: 1000
         }
       },
       IMMUNITY: {

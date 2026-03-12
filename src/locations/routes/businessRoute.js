@@ -58,7 +58,7 @@ export async function renderBusinessRoute(ctx, user, { header = "", lang = "ru",
     const pendingTheft = entry ? getBusinessPendingTheft(entry, Number(B.daily) || 0) : 0;
     const dailyIncome = Math.max(0, Math.floor(Number(B.daily) || 0));
     const nextClaimAmount = entry ? Math.max(0, dailyIncome - pendingTheft) : dailyIncome;
-    const guardPrice = Math.max(0, Math.floor(Number(CONFIG?.THIEF?.PROTECTION?.GUARD?.PRICES?.[B.id]) || 0));
+    const guardPrice = Math.max(1, Math.floor(Math.max(0, Number(B.daily) || 0) * 0.10));
     const nowTs = Date.now();
     const guardUntil = entry ? Math.max(0, Math.floor(Number(entry.guardUntil) || 0)) : 0;
     const immunityUntil = entry ? Math.max(0, Math.floor(Number(entry.immunityUntil) || 0)) : 0;

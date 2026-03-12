@@ -94,7 +94,7 @@ export const businessHandler = {
         return;
       }
       const bizTitle = getBusinessTitle(B.id, lang) || B.title;
-      const guardPrice = Math.max(0, Math.floor(Number(CONFIG?.THIEF?.PROTECTION?.GUARD?.PRICES?.[B.id]) || 0));
+      const guardPrice = Math.max(1, Math.floor(Math.max(0, Number(B.daily) || 0) * 0.10));
       const gem24 = Math.max(0, Math.floor(Number(CONFIG?.THIEF?.PROTECTION?.IMMUNITY?.OPTIONS?.["24"]) || 0));
       const gem48 = Math.max(0, Math.floor(Number(CONFIG?.THIEF?.PROTECTION?.IMMUNITY?.OPTIONS?.["48"]) || 0));
       const gem96 = Math.max(0, Math.floor(Number(CONFIG?.THIEF?.PROTECTION?.IMMUNITY?.OPTIONS?.["96"]) || 0));
