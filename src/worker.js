@@ -374,6 +374,8 @@ export default {
       const energy = Math.max(0, Math.floor(Number(target?.energy) || 0));
       const energyMax = Math.max(0, Math.floor(Number(target?.energy_max) || 0));
       const stolen = Math.max(0, Math.floor(Number(target?.thief?.totalStolen || target?.achievements?.progress?.totalStolen) || 0));
+      const sourceTokenNorm = String(sourceToken || "").trim().toLowerCase();
+      const hideMoneyInPublicProfile = sourceTokenNorm === "rating";
 
       const lines = [];
       if (lang === "en") {
@@ -400,6 +402,10 @@ export default {
         lines.push(`🎖️ Ачивок: ${preview.totalDone} · 🌑 Украдено: $${stolen}`);
         lines.push("");
         lines.push("🏆 Последние достижения:");
+      }
+
+      if (hideMoneyInPublicProfile && lines.length >= 3) {
+        lines[2] = `⚡ ${energy}/${energyMax}`;
       }
 
       if (preview.lines.length) {
