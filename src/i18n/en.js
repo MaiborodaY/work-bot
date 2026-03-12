@@ -167,6 +167,7 @@ export const EN = {
   "labour.view.slot_free": "Slot {{slotNum}} (+{{pct}}%): free",
   "labour.view.pick_employee_for": "Pick employee for {{bizTitle}} (slot {{slotNum}})",
   "labour.view.min_energy": "Minimum: {{minEnergy}}⚡",
+  "labour.view.contract_plan": "Contract plan: {{days}}d · {{shifts}} shifts at {{shiftPay}}. Employee gets {{employeeTotal}}, you get {{ownerMoneyTotal}} (+{{ownerPct}}%) + {{gemsEmoji}}{{ownerGemsTotal}}.",
   "labour.view.no_candidates": "No free players with required energy.",
   "labour.help.title": "ℹ️ How hires work",
   "labour.help.line1": "1) Buy a business and an employer slot for it.",

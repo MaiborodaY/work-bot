@@ -1485,11 +1485,30 @@ export class LabourService {
 
     const minEnergy = this._minEnergyMax(bizId);
     const slotNum = this._slotNum(targetIdx);
+    const levelCfg = this._slotLevelCfg(B.id, targetIdx);
+    const ownerPct = Math.max(0, Number(slot.ownerPct) || Number(levelCfg?.ownerPct) || 0);
+    const contractDays = this._contractDays(bizId);
+    const plan = this._buildBgPlan(
+      bizId,
+      this.now(),
+      this.now() + contractDays * DAY_MS,
+      ownerPct
+    );
     const list = await this.getHireCandidates(owner, bizId);
 
     const lines = [
       this._t(langSource, "labour.view.pick_employee_for", { bizTitle, slotNum }),
       this._t(langSource, "labour.view.min_energy", { minEnergy }),
+      this._t(langSource, "labour.view.contract_plan", {
+        days: contractDays,
+        shifts: plan.totalShifts,
+        shiftPay: this._money(langSource, plan.shiftPay),
+        employeeTotal: this._money(langSource, plan.employeeTotal),
+        ownerPct: Math.max(0, Math.floor(ownerPct * 100)),
+        ownerMoneyTotal: this._money(langSource, plan.ownerMoneyTotal),
+        ownerGemsTotal: Math.max(0, plan.ownerGemsTotal),
+        gemsEmoji: CONFIG?.PREMIUM?.emoji || "💎"
+      }),
       ""
     ];
     const kb = [];

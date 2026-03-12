@@ -448,6 +448,7 @@ export const RU = {
   "labour.view.slot_free": "Слот {{slotNum}} (+{{pct}}%): свободен",
   "labour.view.pick_employee_for": "Выберите сотрудника для {{bizTitle}} (слот {{slotNum}})",
   "labour.view.min_energy": "Минимум: {{minEnergy}}⚡",
+  "labour.view.contract_plan": "План контракта: {{days}} дн · {{shifts}} смен по {{shiftPay}}. Сотрудник получит {{employeeTotal}}, ты получишь {{ownerMoneyTotal}} (+{{ownerPct}}%) + {{gemsEmoji}}{{ownerGemsTotal}}.",
   "labour.view.no_candidates": "Нет свободных игроков с нужной энергией.",
   "labour.help.title": "ℹ️ Как работают наёмники",
   "labour.help.line1": "1) Купи бизнес и слот работодателя для него.",

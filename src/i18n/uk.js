@@ -167,6 +167,7 @@ export const UK = {
   "labour.view.slot_free": "Слот {{slotNum}} (+{{pct}}%): вільний",
   "labour.view.pick_employee_for": "Оберіть співробітника для {{bizTitle}} (слот {{slotNum}})",
   "labour.view.min_energy": "Мінімум: {{minEnergy}}⚡",
+  "labour.view.contract_plan": "План контракту: {{days}} дн · {{shifts}} змін по {{shiftPay}}. Працівник отримає {{employeeTotal}}, ти отримаєш {{ownerMoneyTotal}} (+{{ownerPct}}%) + {{gemsEmoji}}{{ownerGemsTotal}}.",
   "labour.view.no_candidates": "Немає вільних гравців з потрібною енергією.",
   "labour.help.title": "ℹ️ Як працюють найманці",
   "labour.help.line1": "1) Купи бізнес і слот роботодавця для нього.",
