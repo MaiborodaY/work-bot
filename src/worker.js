@@ -374,8 +374,7 @@ export default {
       const energy = Math.max(0, Math.floor(Number(target?.energy) || 0));
       const energyMax = Math.max(0, Math.floor(Number(target?.energy_max) || 0));
       const stolen = Math.max(0, Math.floor(Number(target?.thief?.totalStolen || target?.achievements?.progress?.totalStolen) || 0));
-      const sourceTokenNorm = String(sourceToken || "").trim().toLowerCase();
-      const hideMoneyInPublicProfile = sourceTokenNorm === "rating";
+      const hideMoneyInPublicProfile = true;
 
       const lines = [];
       if (lang === "en") {
