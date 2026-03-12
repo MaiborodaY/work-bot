@@ -246,60 +246,77 @@ export const CONFIG = {
   LABOUR_MARKET: {
     LIST_SIZE: 15,
     INDEX_SIZE: 50,
+    BACKGROUND: {
+      SHIFT_MS: 60 * 60 * 1000,
+      EMPLOYEE_RATE_PER_HOUR: {
+        shawarma: 75,
+        stomatology: 110,
+        restaurant: 150,
+        courier_service: 190,
+        fitness_club: 240
+      },
+      OWNER_GEMS_BY_BIZ: {
+        shawarma: 1,
+        stomatology: 2,
+        restaurant: 3,
+        courier_service: 4,
+        fitness_club: 5
+      }
+    },
     SLOTS: {
       shawarma: {
         contractDays: 1,
         minEnergyMax: 20,
         levels: [
-          { slotMoney: 10000, slotGems: 20, ownerPct: 0.08 },
-          { slotMoney: 15000, slotGems: 30, ownerPct: 0.07 },
-          { slotMoney: 20000, slotGems: 40, ownerPct: 0.06 },
-          { slotMoney: 30000, slotGems: 60, ownerPct: 0.05 },
-          { slotMoney: 40000, slotGems: 80, ownerPct: 0.04 }
+          { slotMoney: 10000, slotGems: 20, ownerPct: 0.03 },
+          { slotMoney: 15000, slotGems: 30, ownerPct: 0.04 },
+          { slotMoney: 20000, slotGems: 40, ownerPct: 0.05 },
+          { slotMoney: 30000, slotGems: 60, ownerPct: 0.06 },
+          { slotMoney: 40000, slotGems: 80, ownerPct: 0.07 }
         ]
       },
       stomatology: {
         contractDays: 2,
         minEnergyMax: 30,
         levels: [
-          { slotMoney: 25000, slotGems: 50, ownerPct: 0.10 },
-          { slotMoney: 37500, slotGems: 75, ownerPct: 0.09 },
-          { slotMoney: 50000, slotGems: 100, ownerPct: 0.08 },
-          { slotMoney: 75000, slotGems: 150, ownerPct: 0.07 },
-          { slotMoney: 100000, slotGems: 200, ownerPct: 0.06 }
+          { slotMoney: 25000, slotGems: 50, ownerPct: 0.03 },
+          { slotMoney: 37500, slotGems: 75, ownerPct: 0.04 },
+          { slotMoney: 50000, slotGems: 100, ownerPct: 0.05 },
+          { slotMoney: 75000, slotGems: 150, ownerPct: 0.06 },
+          { slotMoney: 100000, slotGems: 200, ownerPct: 0.07 }
         ]
       },
       restaurant: {
         contractDays: 3,
         minEnergyMax: 60,
         levels: [
-          { slotMoney: 50000, slotGems: 100, ownerPct: 0.12 },
-          { slotMoney: 75000, slotGems: 150, ownerPct: 0.10 },
-          { slotMoney: 100000, slotGems: 200, ownerPct: 0.08 },
+          { slotMoney: 50000, slotGems: 100, ownerPct: 0.03 },
+          { slotMoney: 75000, slotGems: 150, ownerPct: 0.04 },
+          { slotMoney: 100000, slotGems: 200, ownerPct: 0.05 },
           { slotMoney: 150000, slotGems: 300, ownerPct: 0.06 },
-          { slotMoney: 200000, slotGems: 400, ownerPct: 0.05 }
+          { slotMoney: 200000, slotGems: 400, ownerPct: 0.07 }
         ]
       },
       courier_service: {
         contractDays: 5,
         minEnergyMax: 80,
         levels: [
-          { slotMoney: 100000, slotGems: 200, ownerPct: 0.14 },
-          { slotMoney: 150000, slotGems: 300, ownerPct: 0.12 },
-          { slotMoney: 200000, slotGems: 400, ownerPct: 0.10 },
-          { slotMoney: 300000, slotGems: 600, ownerPct: 0.08 },
-          { slotMoney: 400000, slotGems: 800, ownerPct: 0.06 }
+          { slotMoney: 100000, slotGems: 200, ownerPct: 0.03 },
+          { slotMoney: 150000, slotGems: 300, ownerPct: 0.04 },
+          { slotMoney: 200000, slotGems: 400, ownerPct: 0.05 },
+          { slotMoney: 300000, slotGems: 600, ownerPct: 0.06 },
+          { slotMoney: 400000, slotGems: 800, ownerPct: 0.07 }
         ]
       },
       fitness_club: {
         contractDays: 7,
         minEnergyMax: 100,
         levels: [
-          { slotMoney: 250000, slotGems: 500, ownerPct: 0.16 },
-          { slotMoney: 375000, slotGems: 750, ownerPct: 0.14 },
-          { slotMoney: 500000, slotGems: 1000, ownerPct: 0.12 },
-          { slotMoney: 750000, slotGems: 1500, ownerPct: 0.10 },
-          { slotMoney: 1000000, slotGems: 2000, ownerPct: 0.08 }
+          { slotMoney: 250000, slotGems: 500, ownerPct: 0.03 },
+          { slotMoney: 375000, slotGems: 750, ownerPct: 0.04 },
+          { slotMoney: 500000, slotGems: 1000, ownerPct: 0.05 },
+          { slotMoney: 750000, slotGems: 1500, ownerPct: 0.06 },
+          { slotMoney: 1000000, slotGems: 2000, ownerPct: 0.07 }
         ]
       }
     }

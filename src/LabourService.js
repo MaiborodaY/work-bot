@@ -6,6 +6,8 @@ const LABOUR_FREE_PLAYERS_KEY = "labour:free_players";
 const DAY_MS = 24 * 60 * 60 * 1000;
 const DUE_BUCKET_MS = 5 * 60 * 1000;
 const DUE_LOOKBACK_MINUTES = 20;
+const CONTRACT_MODEL_LEGACY = "legacy_claim_share";
+const CONTRACT_MODEL_BG_V1 = "bg_fixed_v1";
 
 export class LabourService {
   constructor({ db, users, now, bot }) {
@@ -84,6 +86,51 @@ export class LabourService {
 
   _indexSize() {
     return Math.max(this._listSize(), Number(this._cfg().INDEX_SIZE) || 20);
+  }
+
+  _bgCfg() {
+    return this._cfg().BACKGROUND || {};
+  }
+
+  _bgShiftMs() {
+    return Math.max(60_000, Math.floor(Number(this._bgCfg().SHIFT_MS) || (60 * 60 * 1000)));
+  }
+
+  _bgRatePerHour(bizId) {
+    const map = this._bgCfg().EMPLOYEE_RATE_PER_HOUR || {};
+    return Math.max(0, Math.floor(Number(map[String(bizId || "")]) || 0));
+  }
+
+  _bgShiftPay(bizId) {
+    const perHour = this._bgRatePerHour(bizId);
+    const shiftHours = this._bgShiftMs() / (60 * 60 * 1000);
+    return Math.max(0, Math.floor(perHour * shiftHours));
+  }
+
+  _bgOwnerGems(bizId) {
+    const map = this._bgCfg().OWNER_GEMS_BY_BIZ || {};
+    return Math.max(0, Math.floor(Number(map[String(bizId || "")]) || 0));
+  }
+
+  _buildBgPlan(bizId, contractStart, contractEnd, ownerPct) {
+    const startAt = Math.max(0, Number(contractStart) || 0);
+    const endAt = Math.max(startAt, Number(contractEnd) || 0);
+    const shiftMs = this._bgShiftMs();
+    const shiftPay = this._bgShiftPay(bizId);
+    const totalShifts = shiftMs > 0 ? Math.max(0, Math.floor((endAt - startAt) / shiftMs)) : 0;
+    const employeeTotal = Math.max(0, Math.floor(totalShifts * shiftPay));
+    const pct = Math.max(0, Number(ownerPct) || 0);
+    const ownerMoneyTotal = Math.max(0, Math.floor(employeeTotal * pct));
+    const ownerGemsTotal = this._bgOwnerGems(bizId);
+    return {
+      model: CONTRACT_MODEL_BG_V1,
+      shiftMs,
+      shiftPay,
+      totalShifts,
+      employeeTotal,
+      ownerMoneyTotal,
+      ownerGemsTotal
+    };
   }
 
   _safeJson(raw, fallback) {
@@ -209,7 +256,21 @@ export class LabourService {
   }
 
   _inactiveEmployment() {
-    return { active: false, ownerId: "", bizId: "", ownerPct: 0, contractEnd: 0, slotIndex: -1 };
+    return {
+      active: false,
+      ownerId: "",
+      bizId: "",
+      ownerPct: 0,
+      contractEnd: 0,
+      slotIndex: -1,
+      model: CONTRACT_MODEL_LEGACY,
+      bgShiftMs: 0,
+      bgShiftPay: 0,
+      bgTotalShifts: 0,
+      bgEmployeeTotal: 0,
+      bgOwnerMoneyTotal: 0,
+      bgOwnerGemsTotal: 0
+    };
   }
 
   _ensureEmployment(u) {
@@ -238,6 +299,24 @@ export class LabourService {
       u.employment.contractEnd = 0;
       dirty = true;
     }
+    if (typeof u.employment.model !== "string") {
+      u.employment.model = CONTRACT_MODEL_LEGACY;
+      dirty = true;
+    }
+    const employmentNumDefaults = {
+      bgShiftMs: 0,
+      bgShiftPay: 0,
+      bgTotalShifts: 0,
+      bgEmployeeTotal: 0,
+      bgOwnerMoneyTotal: 0,
+      bgOwnerGemsTotal: 0
+    };
+    for (const [k, v] of Object.entries(employmentNumDefaults)) {
+      if (typeof u.employment[k] !== "number" || !Number.isFinite(u.employment[k])) {
+        u.employment[k] = v;
+        dirty = true;
+      }
+    }
     if (typeof u.employment.slotIndex !== "number" || !Number.isFinite(u.employment.slotIndex)) {
       u.employment.slotIndex = -1;
       dirty = true;
@@ -264,7 +343,14 @@ export class LabourService {
       earnedTotal: 0,
       lastEmployeeId: "",
       ownerPct: 0,
-      bonusCarry: 0
+      bonusCarry: 0,
+      contractModel: CONTRACT_MODEL_LEGACY,
+      bgShiftMs: 0,
+      bgShiftPay: 0,
+      bgTotalShifts: 0,
+      bgEmployeeTotal: 0,
+      bgOwnerMoneyTotal: 0,
+      bgOwnerGemsTotal: 0
     };
   }
 
@@ -282,14 +368,46 @@ export class LabourService {
     if (typeof slot.lastEmployeeId !== "string") { slot.lastEmployeeId = ""; dirty = true; }
     if (typeof slot.ownerPct !== "number") { slot.ownerPct = 0; dirty = true; }
     if (typeof slot.bonusCarry !== "number") { slot.bonusCarry = 0; dirty = true; }
+    if (typeof slot.contractModel !== "string") { slot.contractModel = CONTRACT_MODEL_LEGACY; dirty = true; }
+    const bgDefaults = {
+      bgShiftMs: 0,
+      bgShiftPay: 0,
+      bgTotalShifts: 0,
+      bgEmployeeTotal: 0,
+      bgOwnerMoneyTotal: 0,
+      bgOwnerGemsTotal: 0
+    };
+    for (const [k, v] of Object.entries(bgDefaults)) {
+      if (typeof slot[k] !== "number" || !Number.isFinite(slot[k])) {
+        slot[k] = v;
+        dirty = true;
+      }
+    }
     if (!slot.purchased) {
-      if (slot.employeeId || slot.contractStart || slot.contractEnd || slot.earnedTotal || slot.ownerPct || slot.bonusCarry) {
+      if (
+        slot.employeeId ||
+        slot.contractStart ||
+        slot.contractEnd ||
+        slot.earnedTotal ||
+        slot.ownerPct ||
+        slot.bonusCarry ||
+        slot.bgEmployeeTotal ||
+        slot.bgOwnerMoneyTotal ||
+        slot.bgOwnerGemsTotal
+      ) {
         slot.employeeId = "";
         slot.contractStart = 0;
         slot.contractEnd = 0;
         slot.earnedTotal = 0;
         slot.ownerPct = 0;
         slot.bonusCarry = 0;
+        slot.contractModel = CONTRACT_MODEL_LEGACY;
+        slot.bgShiftMs = 0;
+        slot.bgShiftPay = 0;
+        slot.bgTotalShifts = 0;
+        slot.bgEmployeeTotal = 0;
+        slot.bgOwnerMoneyTotal = 0;
+        slot.bgOwnerGemsTotal = 0;
         dirty = true;
       }
     } else {
@@ -451,6 +569,13 @@ export class LabourService {
     slot.contractEnd = 0;
     slot.earnedTotal = 0;
     slot.bonusCarry = 0;
+    slot.contractModel = CONTRACT_MODEL_LEGACY;
+    slot.bgShiftMs = 0;
+    slot.bgShiftPay = 0;
+    slot.bgTotalShifts = 0;
+    slot.bgEmployeeTotal = 0;
+    slot.bgOwnerMoneyTotal = 0;
+    slot.bgOwnerGemsTotal = 0;
   }
 
   async _loadFreePlayersIndex() {
@@ -521,8 +646,9 @@ export class LabourService {
     this._ensureEmployment(user);
     if (!user.employment.active) return { expired: false };
     if (this.now() <= Number(user.employment.contractEnd || 0)) return { expired: false };
+    const preModel = String(user?.employment?.model || CONTRACT_MODEL_LEGACY);
     const pendingInst = user?.jobs?.active?.[0] || null;
-    if (pendingInst && !pendingInst.claimed) {
+    if (preModel !== CONTRACT_MODEL_BG_V1 && pendingInst && !pendingInst.claimed) {
       const endAt = Number(pendingInst.endAt || 0);
       if (endAt > 0 && endAt <= Number(user.employment.contractEnd || 0)) {
         return { expired: false, deferredUntilClaim: true };
@@ -532,59 +658,135 @@ export class LabourService {
     const ownerId = String(user.employment.ownerId || "");
     const bizId = String(user.employment.bizId || "");
     const slotIndex = this._slotIndex(user.employment.slotIndex);
+    const contractModel = String(user?.employment?.model || CONTRACT_MODEL_LEGACY);
+    const employmentSnapshot = { ...(user?.employment || {}) };
+
+    const snapshotEmployeeTotal = Math.max(0, Math.floor(Number(employmentSnapshot?.bgEmployeeTotal) || 0));
+    const snapshotOwnerMoneyTotal = Math.max(0, Math.floor(Number(employmentSnapshot?.bgOwnerMoneyTotal) || 0));
+    const snapshotOwnerGemsTotal = Math.max(0, Math.floor(Number(employmentSnapshot?.bgOwnerGemsTotal) || 0));
+
+    let employeePayout = 0;
+    if (contractModel === CONTRACT_MODEL_BG_V1) {
+      employeePayout = snapshotEmployeeTotal;
+      if (employeePayout > 0) {
+        user.money = Math.max(0, Math.floor(Number(user.money) || 0)) + employeePayout;
+      }
+    }
 
     user.employment = this._inactiveEmployment();
     await this.users.save(user);
 
     let owner = null;
-    let total = 0;
+    let ownerMoneyTotal = 0;
+    let ownerGemsTotal = 0;
+    let legacyTotal = 0;
     if (ownerId) {
       owner = await this.users.load(ownerId).catch(() => null);
       if (owner) {
         const found = this._findOwnedEntry(owner, bizId);
+        let ownerDirty = false;
+
         if (found.entry) {
           const resolved = this._findEntrySlot(found.entry, slotIndex, user.id);
           const slot = resolved.slot;
-          if (slot) {
-            total = Math.max(0, Number(slot.earnedTotal) || 0);
+
+          if (contractModel === CONTRACT_MODEL_BG_V1) {
+            if (slot) {
+              ownerMoneyTotal = Math.max(0, Math.floor(Number(slot.bgOwnerMoneyTotal) || 0));
+              ownerGemsTotal = Math.max(0, Math.floor(Number(slot.bgOwnerGemsTotal) || 0));
+            } else {
+              ownerMoneyTotal = snapshotOwnerMoneyTotal;
+              ownerGemsTotal = snapshotOwnerGemsTotal;
+            }
+            if (ownerMoneyTotal > 0) {
+              owner.money = Math.max(0, Math.floor(Number(owner.money) || 0)) + ownerMoneyTotal;
+              ownerDirty = true;
+            }
+            if (ownerGemsTotal > 0) {
+              owner.premium = Math.max(0, Math.floor(Number(owner.premium) || 0)) + ownerGemsTotal;
+              ownerDirty = true;
+            }
+          } else if (slot) {
+            legacyTotal = Math.max(0, Number(slot.earnedTotal) || 0);
           }
+
           if (slot && String(slot.employeeId || "") === String(user.id || "")) {
             this._clearSlotAssignment(slot, String(user.id || ""));
-            await this.users.save(owner);
+            ownerDirty = true;
           }
+        } else if (contractModel === CONTRACT_MODEL_BG_V1) {
+          ownerMoneyTotal = snapshotOwnerMoneyTotal;
+          ownerGemsTotal = snapshotOwnerGemsTotal;
+          if (ownerMoneyTotal > 0) {
+            owner.money = Math.max(0, Math.floor(Number(owner.money) || 0)) + ownerMoneyTotal;
+            ownerDirty = true;
+          }
+          if (ownerGemsTotal > 0) {
+            owner.premium = Math.max(0, Math.floor(Number(owner.premium) || 0)) + ownerGemsTotal;
+            ownerDirty = true;
+          }
+        }
+
+        if (ownerDirty) {
+          await this.users.save(owner);
         }
       }
     }
-
     await this.upsertFreePlayer(user);
 
     if (notify) {
       const employeeName = this._formatName(user, owner || user);
       const bizTitle = this._bizTitle(bizId, owner || user);
       if (owner?.chatId) {
-        await this._sendInline(
-          owner.chatId,
-          this._t(owner, "labour.notify.owner_contract_finished", {
-            employeeName,
-            total: Math.max(0, Math.floor(total))
-          }),
-          [[{ text: this._t(owner, "labour.btn.labour"), callback_data: "go:Labour" }]],
-          owner
-        );
+        if (contractModel === CONTRACT_MODEL_BG_V1) {
+          await this._sendInline(
+            owner.chatId,
+            this._t(owner, "labour.notify.owner_contract_finished_bg", {
+              employeeName,
+              money: this._money(owner, ownerMoneyTotal),
+              gems: ownerGemsTotal,
+              gemsEmoji: CONFIG?.PREMIUM?.emoji || "💎"
+            }),
+            [[{ text: this._t(owner, "labour.btn.labour"), callback_data: "go:Labour" }]],
+            owner
+          );
+        } else {
+          await this._sendInline(
+            owner.chatId,
+            this._t(owner, "labour.notify.owner_contract_finished", {
+              employeeName,
+              total: Math.max(0, Math.floor(legacyTotal))
+            }),
+            [[{ text: this._t(owner, "labour.btn.labour"), callback_data: "go:Labour" }]],
+            owner
+          );
+        }
       }
       if (user?.chatId) {
-        await this._sendInline(
-          user.chatId,
-          this._t(user, "labour.notify.employee_contract_finished", {
-            bizTitle
-          }),
-          [[{ text: this._t(user, "labour.btn.menu"), callback_data: "go:Square" }]],
-          user
-        );
+        if (contractModel === CONTRACT_MODEL_BG_V1) {
+          await this._sendInline(
+            user.chatId,
+            this._t(user, "labour.notify.employee_contract_finished_bg", {
+              bizTitle,
+              money: this._money(user, employeePayout)
+            }),
+            [[{ text: this._t(user, "labour.btn.menu"), callback_data: "go:Square" }]],
+            user
+          );
+        } else {
+          await this._sendInline(
+            user.chatId,
+            this._t(user, "labour.notify.employee_contract_finished", {
+              bizTitle
+            }),
+            [[{ text: this._t(user, "labour.btn.menu"), callback_data: "go:Square" }]],
+            user
+          );
+        }
       }
     }
 
-    return { expired: true, ownerId, bizId, slotIndex };
+    return { expired: true, ownerId, bizId, slotIndex, contractModel, employeePayout, ownerMoneyTotal, ownerGemsTotal };
   }
 
   async ensureEmploymentFresh(u) {
@@ -766,6 +968,7 @@ export class LabourService {
     const contractEnd = contractStart + this._contractDays(bizId) * DAY_MS;
     const ownerPctFromConfig = Math.max(0, Number(this._slotLevelCfg(bizId, targetIdx)?.ownerPct) || 0);
     const ownerPct = Math.max(0, Number(slot.ownerPct) || ownerPctFromConfig || 0);
+    const bgPlan = this._buildBgPlan(bizId, contractStart, contractEnd, ownerPct);
     const minEnergy = this._minEnergyMax(bizId);
     const wantedEmployeeId = String(employeeId || "");
     slot.ownerPct = ownerPct;
@@ -803,7 +1006,14 @@ export class LabourService {
         bizId: String(bizId),
         ownerPct,
         contractEnd,
-        slotIndex: targetIdx
+        slotIndex: targetIdx,
+        model: CONTRACT_MODEL_BG_V1,
+        bgShiftMs: bgPlan.shiftMs,
+        bgShiftPay: bgPlan.shiftPay,
+        bgTotalShifts: bgPlan.totalShifts,
+        bgEmployeeTotal: bgPlan.employeeTotal,
+        bgOwnerMoneyTotal: bgPlan.ownerMoneyTotal,
+        bgOwnerGemsTotal: bgPlan.ownerGemsTotal
       };
       reserved = {
         id: String(emp.id || wantedEmployeeId),
@@ -824,6 +1034,13 @@ export class LabourService {
     slot.earnedTotal = 0;
     slot.bonusCarry = 0;
     slot.lastEmployeeId = String(reserved.id || prevLast || "");
+    slot.contractModel = CONTRACT_MODEL_BG_V1;
+    slot.bgShiftMs = bgPlan.shiftMs;
+    slot.bgShiftPay = bgPlan.shiftPay;
+    slot.bgTotalShifts = bgPlan.totalShifts;
+    slot.bgEmployeeTotal = bgPlan.employeeTotal;
+    slot.bgOwnerMoneyTotal = bgPlan.ownerMoneyTotal;
+    slot.bgOwnerGemsTotal = bgPlan.ownerGemsTotal;
 
     await this.users.save(owner);
     await this.removeFreePlayer(reserved.id);
@@ -837,9 +1054,35 @@ export class LabourService {
       const days = this._contractDays(bizId);
       await this._sendInline(
         reserved.chatId,
-        this._t(reserved, "labour.notify.employee_hired", { bizTitle, ownerName, days }),
+        this._t(reserved, "labour.notify.employee_hired", {
+          bizTitle,
+          ownerName,
+          days,
+          shifts: bgPlan.totalShifts,
+          shiftPay: this._money(reserved, bgPlan.shiftPay),
+          employeeTotal: this._money(reserved, bgPlan.employeeTotal)
+        }),
         [[{ text: this._t(reserved, "labour.btn.work"), callback_data: "go:Work" }]],
         reserved
+      );
+    }
+
+    if (owner?.chatId) {
+      const employeeName = this._formatName({ id: reserved.id, displayName: reserved.name }, owner);
+      const bizTitle = this._bizTitle(bizId, owner);
+      await this._sendInline(
+        owner.chatId,
+        this._t(owner, "labour.notify.owner_hired", {
+          employeeName,
+          bizTitle,
+          shifts: bgPlan.totalShifts,
+          employeeTotal: this._money(owner, bgPlan.employeeTotal),
+          ownerMoneyTotal: this._money(owner, bgPlan.ownerMoneyTotal),
+          ownerGemsTotal: Math.max(0, bgPlan.ownerGemsTotal),
+          gemsEmoji: CONFIG?.PREMIUM?.emoji || "💎"
+        }),
+        [[{ text: this._t(owner, "labour.btn.labour"), callback_data: "go:Labour" }]],
+        owner
       );
     }
 
@@ -849,7 +1092,8 @@ export class LabourService {
       employeeName: reserved.name,
       contractEnd,
       slotIndex: targetIdx,
-      slotNum: this._slotNum(targetIdx)
+      slotNum: this._slotNum(targetIdx),
+      plan: bgPlan
     };
   }
 
@@ -875,6 +1119,9 @@ export class LabourService {
   async onEmployeePaid(employee, pay, shiftEndAt) {
     this._ensureEmployment(employee);
     if (!employee.employment.active) return { ok: true, applied: false, bonus: 0 };
+    if (String(employee?.employment?.model || "") === CONTRACT_MODEL_BG_V1) {
+      return { ok: true, applied: false, bonus: 0, mode: CONTRACT_MODEL_BG_V1 };
+    }
 
     const ownerId = String(employee.employment.ownerId || "");
     const bizId = String(employee.employment.bizId || "");
@@ -1118,10 +1365,21 @@ export class LabourService {
               id: String(slot.employeeId).slice(-4).padStart(4, "0")
             });
         const leftTime = this._formatTimeLeftDhM(langSource, slot.contractEnd);
-        const earned = Math.max(0, Math.floor(Number(slot.earnedTotal) || 0));
-        const earnPart = earned > 0
-          ? this._t(langSource, "labour.biz.earned_part", { earned: this._money(langSource, earned) })
-          : "";
+        let earnPart = "";
+        if (String(slot.contractModel || "") === CONTRACT_MODEL_BG_V1) {
+          const planMoney = Math.max(0, Math.floor(Number(slot.bgOwnerMoneyTotal) || 0));
+          const planGems = Math.max(0, Math.floor(Number(slot.bgOwnerGemsTotal) || 0));
+          earnPart = this._t(langSource, "labour.biz.plan_part", {
+            money: this._money(langSource, planMoney),
+            gemsEmoji: CONFIG?.PREMIUM?.emoji || "💎",
+            gems: planGems
+          });
+        } else {
+          const earned = Math.max(0, Math.floor(Number(slot.earnedTotal) || 0));
+          earnPart = earned > 0
+            ? this._t(langSource, "labour.biz.earned_part", { earned: this._money(langSource, earned) })
+            : "";
+        }
         lines.push(this._t(langSource, "labour.biz.slot_busy", {
           slotNum,
           pct,
