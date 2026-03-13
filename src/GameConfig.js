@@ -117,6 +117,7 @@ export const CONFIG = {
       { id: "gym_2trains", type: "daily", category: "gym", difficulty: "hard", rewardMoney: 600, target: 2 },
       { id: "fortune_spin", type: "daily", category: "fortune", difficulty: "easy", rewardMoney: 300, target: 1 },
       { id: "daily_bonus", type: "daily", category: "daily", difficulty: "easy", rewardMoney: 300, target: 1 },
+      { id: "pet_feed", type: "daily", category: "pet", difficulty: "easy", rewardMoney: 300, target: 1 },
       { id: "biz_collect", type: "daily", category: "biz", difficulty: "easy", rewardMoney: 400, target: 1 },
       { id: "biz_collect_all", type: "daily", category: "biz", difficulty: "hard", rewardMoney: 800, target: 1 },
       { id: "biz_guard", type: "daily", category: "biz", difficulty: "medium", rewardMoney: 400, target: 1 },
@@ -368,6 +369,32 @@ export const CONFIG = {
           { slotMoney: 1000000, slotGems: 2000, ownerPct: 0.14 }
         ]
       }
+    }
+  },
+
+  PET: {
+    PRICES: {
+      cat: 15000,
+      dog: 15000
+    },
+    NAME_MIN: 2,
+    NAME_MAX: 12,
+    // 1-6 -> 1 gem, 7-29 -> 2 gems, 30+ -> 3 gems
+    REWARD_TIERS: [
+      { from: 1, to: 6, gems: 1 },
+      { from: 7, to: 29, gems: 2 },
+      { from: 30, to: 999999, gems: 3 }
+    ],
+    SICK_HEAL_GEMS: 3,
+    HUNGRY_AFTER_DAYS: 1,
+    SICK_AFTER_DAYS: 3,
+    DEAD_AFTER_DAYS: 5,
+    NOTIFY: {
+      REMINDER_HOUR_UTC: 18,
+      STATUS_HOUR_UTC: 10,
+      DUE_BUCKET_MS: 5 * 60 * 1000,
+      DUE_LOOKBACK_MINUTES: 30,
+      MAX_PROCESS_PER_RUN: 500
     }
   },
 

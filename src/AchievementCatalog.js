@@ -47,6 +47,9 @@ const rewardedReferralCount = (u) => {
 
 const gymMaxEnergy = () => Math.max(0, Number(CONFIG?.GYM?.MAX_ENERGY_CAP) || 160);
 
+const hasPet = (u) => !!(u?.pet && typeof u.pet === "object" && String(u.pet.type || ""));
+const petStreak = (u) => Math.max(0, Math.floor(Number(u?.pet?.streak) || 0));
+
 export const ACHIEVEMENTS = [
   {
     id: "work_first_shift",
@@ -147,6 +150,27 @@ export const ACHIEVEMENTS = [
     events: ["study_finish", "retro"],
     title: { ru: "Студент", uk: "Студент", en: "Student" },
     done: (u) => Math.max(0, Number(u?.study?.level) || 0) >= 5
+  },
+  {
+    id: "pet_owner",
+    reward: 2,
+    events: ["pet_buy", "retro"],
+    title: { ru: "Хозяин", uk: "Господар", en: "Pet owner" },
+    done: (u) => hasPet(u)
+  },
+  {
+    id: "pet_streak_30",
+    reward: 10,
+    events: ["pet_feed", "retro"],
+    title: { ru: "Верный друг", uk: "Вірний друг", en: "Loyal friend" },
+    done: (u) => petStreak(u) >= 30
+  },
+  {
+    id: "pet_streak_100",
+    reward: 30,
+    events: ["pet_feed", "retro"],
+    title: { ru: "Преданность", uk: "Відданість", en: "Devotion" },
+    done: (u) => petStreak(u) >= 100
   },
 
   {
@@ -250,4 +274,3 @@ export const ACHIEVEMENTS_BY_EVENT = ACHIEVEMENTS.reduce((acc, def) => {
   }
   return acc;
 }, {});
-

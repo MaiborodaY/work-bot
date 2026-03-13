@@ -248,6 +248,11 @@ export class UiFactory {
     } else {
       kb.push([{ text: this._t(l, "ui.home.bed.all_bought"), callback_data: "noop" }]);
     }
+
+    const petBtnText = l === "en"
+      ? "🐾 Pet"
+      : (l === "uk" ? "🐾 Улюбленець" : "🐾 Питомец");
+    kb.push([{ text: petBtnText, callback_data: this._go(Routes.PET) }]);
     
     const back = (opts && typeof opts.backTo === "string" && opts.backTo) ? opts.backTo : Routes.CITY;
     kb.push([{ text: this._t(l, "ui.back.default"), callback_data: this._go(back) }]);

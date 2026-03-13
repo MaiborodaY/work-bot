@@ -120,6 +120,14 @@ export class UserStore {
     u.awaitingName = !!u.awaitingName;
     if (typeof u.afterNameRoute !== "string") { u.afterNameRoute = ""; dirty = true; }
     u.awaitingClanName = !!u.awaitingClanName;
+    u.awaitingPetName = !!u.awaitingPetName;
+    if (!u.petDraft || typeof u.petDraft !== "object") {
+      u.petDraft = { type: "", name: "" };
+      dirty = true;
+    } else {
+      if (typeof u.petDraft.type !== "string") { u.petDraft.type = ""; dirty = true; }
+      if (typeof u.petDraft.name !== "string") { u.petDraft.name = ""; dirty = true; }
+    }
 
     // Соц-табло суммы
     if (typeof u.dayTotal  !== "number") { u.dayTotal  = 0; dirty = true; }
@@ -129,6 +137,33 @@ export class UserStore {
 
     // Прем-валюта
     if (typeof u.premium !== "number") { u.premium = 0; dirty = true; }
+
+    if (u.pet == null) {
+      u.pet = null;
+    } else if (typeof u.pet !== "object") {
+      u.pet = null;
+      dirty = true;
+    } else {
+      const p = u.pet;
+      const type = String(p.type || "cat");
+      if (type !== "cat" && type !== "dog") { p.type = "cat"; dirty = true; }
+      if (typeof p.name !== "string") { p.name = ""; dirty = true; }
+      const status = String(p.status || "healthy");
+      if (!["healthy", "hungry", "sick", "dead"].includes(status)) {
+        p.status = "healthy";
+        dirty = true;
+      }
+      const streak = Math.max(0, Math.floor(Number(p.streak) || 0));
+      if (streak !== p.streak) { p.streak = streak; dirty = true; }
+      if (typeof p.lastFedDay !== "string") { p.lastFedDay = ""; dirty = true; }
+      if (typeof p.sickSince !== "string") { p.sickSince = ""; dirty = true; }
+      if (typeof p.boughtAt !== "number" || !Number.isFinite(p.boughtAt)) { p.boughtAt = Date.now(); dirty = true; }
+      if (typeof p.notifyDay !== "string") { p.notifyDay = ""; dirty = true; }
+      const notifyPriority = Math.max(0, Math.floor(Number(p.notifyPriority) || 0));
+      if (notifyPriority !== p.notifyPriority) { p.notifyPriority = notifyPriority; dirty = true; }
+      if (Object.prototype.hasOwnProperty.call(p, "fedToday")) { delete p.fedToday; dirty = true; }
+      if (Object.prototype.hasOwnProperty.call(p, "missedDays")) { delete p.missedDays; dirty = true; }
+    }
 
     // Биржа
     if (!u.stocks || typeof u.stocks !== "object") {
@@ -540,6 +575,8 @@ export class UserStore {
       awaitingName: true,
       afterNameRoute: "",
       awaitingClanName: false,
+      awaitingPetName: false,
+      petDraft: { type: "", name: "" },
 
       dayTotal: 0,
       dayKey: "",
@@ -550,6 +587,7 @@ export class UserStore {
       lastDailyRewardDay: "",
 
       premium: 20,
+      pet: null,
 
       stocks: { holdings: {}, lastDividendDay: "", lastDividendAmount: 0 },
 

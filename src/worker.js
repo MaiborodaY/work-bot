@@ -19,6 +19,7 @@ import { ReferralService } from "./ReferralService.js";
 import { AchievementService } from "./AchievementService.js";
 import { RatingService } from "./RatingService.js";
 import { QuestService } from "./QuestService.js";
+import { PetService } from "./PetService.js";
 import { ASSETS, JOB_ASSETS } from "./Assets.js";
 import { normalizeLang, t } from "./i18n/index.js";
 import { safeCall } from "./SafeCall.js";
@@ -43,6 +44,7 @@ import { labourHandler } from "./handlers/labour.js";
 import { thiefHandler } from "./handlers/thief.js";
 import { referralHandler } from "./handlers/referral.js";
 import { ratingsHandler } from "./handlers/ratings.js";
+import { petHandler } from "./handlers/pet.js";
 
 // платежи Stars
 import { OrdersStore as StarsOrdersStore } from "./payments/OrdersStore.js";
@@ -85,6 +87,7 @@ export default {
       const stocks = new StockService({ db: env.DB, users, now: () => Date.now(), achievements, quests });
       const labour = new LabourService({ db: env.DB, users, now: () => Date.now(), bot, quests });
       const thief = new ThiefService({ db: env.DB, users, now: () => Date.now(), bot, achievements, ratings, quests });
+      const pet = new PetService({ db: env.DB, users, now: () => Date.now(), bot, quests, achievements });
       const notifier = new NotificationService({
         users,
         bot,
@@ -105,6 +108,9 @@ export default {
       });
       await safeCall("worker.cron.labour.run_due_expirations", async () => {
         await labour.runDueExpirations();
+      });
+      await safeCall("worker.cron.pet.daily_tick", async () => {
+        await pet.dailyTick();
       });
       await notifier.run();
       return new Response("ok");
@@ -143,6 +149,7 @@ export default {
     const stocks = new StockService({ db: env.DB, users, now, achievements, quests });
     const labour = new LabourService({ db: env.DB, users, now, bot, quests });
     const thief = new ThiefService({ db: env.DB, users, now, bot, achievements, ratings, quests });
+    const pet = new PetService({ db: env.DB, users, now, bot, quests, achievements });
     const referrals = new ReferralService({
       users,
       now,
@@ -279,6 +286,7 @@ export default {
       clans,
       stocks,
       labour,
+      pet,
       ratings,
       thief,
       referrals,
@@ -680,6 +688,17 @@ export default {
         return new Response("ok");
       }
 
+      if (u.awaitingPetName && text && !text.startsWith("/")) {
+        const res = await pet.setDraftName(u, text);
+        if (!res.ok) {
+          await send(res.error || "Invalid pet name.");
+          await goTo(u, "Pet");
+          return new Response("ok");
+        }
+        await goTo(u, "Pet");
+        return new Response("ok");
+      }
+
       // успешная оплата Stars (с учётом бонусов пакета и First Purchase ×2)
       if (update.message.successful_payment) {
         const sp = update.message.successful_payment;
@@ -1060,6 +1079,7 @@ export default {
         clans,
         stocks,
         labour,
+        pet,
         ratings,
         thief,
         referrals,
@@ -1088,6 +1108,7 @@ export default {
         workHandler,
         businessHandler,
         labourHandler,
+        petHandler,
         stocksHandler,
         studyHandler,
         homeHandler,
@@ -1134,6 +1155,7 @@ export default {
     const stocks = new StockService({ db: env.DB, users, now: () => Date.now(), achievements, quests });
     const labour = new LabourService({ db: env.DB, users, now: () => Date.now(), bot, quests });
     const thief = new ThiefService({ db: env.DB, users, now: () => Date.now(), bot, achievements, ratings, quests });
+    const pet = new PetService({ db: env.DB, users, now: () => Date.now(), bot, quests, achievements });
 
     const notifier = new NotificationService({
       users,
@@ -1149,7 +1171,8 @@ export default {
       notifier.run(),
       labour.runDueExpirations(),
       thief.resolveExpired(),
-      thief.resolveProtectionExpirations()
+      thief.resolveProtectionExpirations(),
+      pet.dailyTick()
     ]));
   }
 };

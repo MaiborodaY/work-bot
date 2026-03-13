@@ -31,13 +31,14 @@ export class Locations {
    *  clans?:any
    *  stocks?:any,
    *  labour?:any,
+   *  pet?:any,
    *  ratings?:any,
    *  thief?:any,
    *  referrals?:any,
    *  quests?:any
    * }} deps
    */
-  constructor({ media, ui, economy, formatters, pct, now, maybeFinishStudy, daily, fastForward, users, social, clans, stocks, labour, ratings, thief, referrals, quests }) {
+  constructor({ media, ui, economy, formatters, pct, now, maybeFinishStudy, daily, fastForward, users, social, clans, stocks, labour, pet, ratings, thief, referrals, quests }) {
     this.media = media;
     this.ui = ui;
     this.economy = economy;
@@ -52,6 +53,7 @@ export class Locations {
     this.clans = clans || null;
     this.stocks = stocks || null;
     this.labour = labour || null;
+    this.pet = pet || null;
     this.ratings = ratings || null;
     this.thief = thief || null;
     this.referrals = referrals || null;
@@ -168,6 +170,22 @@ export class Locations {
         fallbackCaptionKey: "loc.labour.unavailable",
         fallbackBackTextKey: "ui.back.earn",
         fallbackBackCb: toGoCallback(Routes.EARN)
+      }),
+      [Routes.PET]: async () => this._renderServiceRoute({
+        user,
+        header,
+        routeName: Routes.PET,
+        place: Routes.HOME,
+        policy: "auto",
+        buildView: async () => {
+          if (this.pet && typeof this.pet.buildView === "function") {
+            return this.pet.buildView(user);
+          }
+          return null;
+        },
+        fallbackCaptionKey: "loc.home.caption",
+        fallbackBackTextKey: "ui.back.default",
+        fallbackBackCb: toGoCallback(Routes.HOME)
       }),
 
       [Routes.CLAN]: async () => this._renderServiceRoute({

@@ -211,6 +211,7 @@ export class AchievementService {
     if (s.startsWith("work_")) return "work";
     if (s.startsWith("biz_") || s.startsWith("labour_")) return "biz";
     if (s.startsWith("gym_") || s.startsWith("study_")) return "growth";
+    if (s.startsWith("pet_")) return "pet";
     if (s.startsWith("stocks_")) return "stocks";
     if (s.startsWith("thief_")) return "thief";
     if (s.startsWith("clan_")) return "clan";
@@ -225,6 +226,7 @@ export class AchievementService {
         work: "💼 Работа",
         biz: "🏢 Бизнес",
         growth: "🏋️ Зал и учёба",
+        pet: "🐾 Питомец",
         stocks: "📈 Биржа",
         thief: "🌑 Воровство",
         clan: "🤝 Клан",
@@ -235,6 +237,7 @@ export class AchievementService {
         work: "💼 Робота",
         biz: "🏢 Бізнес",
         growth: "🏋️ Зал і навчання",
+        pet: "🐾 Улюбленець",
         stocks: "📈 Біржа",
         thief: "🌑 Крадіжки",
         clan: "🤝 Клан",
@@ -245,6 +248,7 @@ export class AchievementService {
         work: "💼 Work",
         biz: "🏢 Business",
         growth: "🏋️ Gym & Study",
+        pet: "🐾 Pet",
         stocks: "📈 Stocks",
         thief: "🌑 Theft",
         clan: "🤝 Clan",
@@ -309,6 +313,8 @@ export class AchievementService {
     const maxEnergy = Math.max(0, Math.floor(n(u?.energy_max)));
     const gymCap = Math.max(0, Number(CONFIG?.GYM?.MAX_ENERGY_CAP) || 160);
     const studyLevel = Math.max(0, Math.floor(n(u?.study?.level)));
+    const hasPetNow = !!(u?.pet && typeof u.pet === "object" && String(u?.pet?.type || ""));
+    const petFeedStreak = Math.max(0, Math.floor(n(u?.pet?.streak)));
     const stockBuys = Math.max(0, Math.floor(n(p.stockBuysTotal)));
     const heldCompanies = this._heldCompanies(u);
     const totalDividends = Math.max(0, Math.floor(n(p.totalDividends)));
@@ -333,6 +339,9 @@ export class AchievementService {
       gym_first_finish: `${gymLevel}/1 тренировок`,
       gym_energy_max: `${maxEnergy}/${gymCap}⚡`,
       study_lvl_5: `${studyLevel}/5 уровней`,
+      pet_owner: `${hasPetNow ? 1 : 0}/1 питомец`,
+      pet_streak_30: `${petFeedStreak}/30 дней`,
+      pet_streak_100: `${petFeedStreak}/100 дней`,
       stocks_first_buy: `${stockBuys}/1 покупок`,
       stocks_portfolio_5: `${heldCompanies}/5 компаний`,
       stocks_dividends_50k: `$${totalDividends}/$50000`,
@@ -359,6 +368,9 @@ export class AchievementService {
       gym_first_finish: `${gymLevel}/1 тренувань`,
       gym_energy_max: `${maxEnergy}/${gymCap}⚡`,
       study_lvl_5: `${studyLevel}/5 рівнів`,
+      pet_owner: `${hasPetNow ? 1 : 0}/1 улюбленець`,
+      pet_streak_30: `${petFeedStreak}/30 днів`,
+      pet_streak_100: `${petFeedStreak}/100 днів`,
       stocks_first_buy: `${stockBuys}/1 покупок`,
       stocks_portfolio_5: `${heldCompanies}/5 компаній`,
       stocks_dividends_50k: `$${totalDividends}/$50000`,
@@ -385,6 +397,9 @@ export class AchievementService {
       gym_first_finish: `${gymLevel}/1 workouts`,
       gym_energy_max: `${maxEnergy}/${gymCap}⚡`,
       study_lvl_5: `${studyLevel}/5 levels`,
+      pet_owner: `${hasPetNow ? 1 : 0}/1 pet`,
+      pet_streak_30: `${petFeedStreak}/30 days`,
+      pet_streak_100: `${petFeedStreak}/100 days`,
       stocks_first_buy: `${stockBuys}/1 buys`,
       stocks_portfolio_5: `${heldCompanies}/5 companies`,
       stocks_dividends_50k: `$${totalDividends}/$50000`,
@@ -450,7 +465,7 @@ export class AchievementService {
     lines.push(summaryMap[lang] || summaryMap.ru);
     lines.push("");
 
-    const catOrder = ["work", "biz", "growth", "stocks", "thief", "clan", "ref"];
+    const catOrder = ["work", "biz", "growth", "pet", "stocks", "thief", "clan", "ref"];
     for (const cat of catOrder) {
       const group = defs.filter((d) => this._categoryForId(d.id) === cat);
       if (!group.length) continue;

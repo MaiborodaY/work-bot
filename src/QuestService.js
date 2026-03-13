@@ -136,6 +136,7 @@ export class QuestService {
       workShifts: 0,
       workEarn: 0,
       gymTrains: 0,
+      petFeeds: 0,
       fortuneSpins: 0,
       dailyClaims: 0,
       bizClaims: 0,
@@ -321,6 +322,8 @@ export class QuestService {
       case "gym_train":
       case "gym_2trains":
         return this._canDoGymQuest(u);
+      case "pet_feed":
+        return !!(u?.pet && typeof u.pet === "object" && String(u.pet.status || "") !== "dead");
       case "biz_collect":
       case "biz_collect_all":
       case "biz_guard":
@@ -533,6 +536,8 @@ export class QuestService {
         case "gym_train":
         case "gym_2trains":
           return toInt(d.gymTrains, 0);
+        case "pet_feed":
+          return toInt(d.petFeeds, 0);
         case "fortune_spin":
           return toInt(d.fortuneSpins, 0);
         case "daily_bonus":
@@ -671,6 +676,10 @@ export class QuestService {
         w.gymTrains += 1;
         changed = true;
         break;
+      case "pet_feed":
+        d.petFeeds += 1;
+        changed = true;
+        break;
       case "fortune_spin":
         d.fortuneSpins += 1;
         changed = true;
@@ -785,6 +794,7 @@ export class QuestService {
         work_earn: `Получить выплатами со смен $${target} за сегодня`,
         gym_train: "Сделать 1 тренировку",
         gym_2trains: `Сделать ${target} тренировк(и)`,
+        pet_feed: "Покормить питомца",
         fortune_spin: "Крутануть колесо фортуны",
         daily_bonus: "Забрать ежедневный бонус",
         biz_collect: "Забрать доход с любого бизнеса",
@@ -816,6 +826,7 @@ export class QuestService {
         work_earn: `Отримати виплатами зі змін $${target} за сьогодні`,
         gym_train: "Зробити 1 тренування",
         gym_2trains: `Зробити ${target} тренуванн(я)`,
+        pet_feed: "Погодувати улюбленця",
         fortune_spin: "Прокрутити колесо фортуни",
         daily_bonus: "Забрати щоденний бонус",
         biz_collect: "Забрати дохід з будь-якого бізнесу",
@@ -847,6 +858,7 @@ export class QuestService {
         work_earn: `Get $${target} from shift payouts today`,
         gym_train: "Do 1 workout",
         gym_2trains: `Do ${target} workout(s)`,
+        pet_feed: "Feed your pet",
         fortune_spin: "Spin the wheel of fortune",
         daily_bonus: "Claim daily bonus",
         biz_collect: "Collect income from any business",
