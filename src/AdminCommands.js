@@ -51,6 +51,8 @@ export class AdminCommands {
         "/setgem &lt;userId&gt; &lt;amount&gt;\n" +
         "/wipe &lt;userId&gt;\n" +
         "/labour_reindex - rebuild free labour index once\n\n" +
+        "/admin_referrals - referrals/ads stats\n" +
+        "/admin_referrals &lt;userId&gt; - referral info for user\n" +
         "/admin_rebuild_ratings - rebuild top rating indexes once\n\n" +
         "<b>Broadcast</b>\n" +
         "/broadcast - start draft mode\n" +
@@ -320,6 +322,16 @@ export class AdminCommands {
       await this._sendUsersList();
       return true;
     }
+    const mAdminReferrals = input.match(/^\/admin_referrals(?:@\w+)?(?:\s+(\d+))?\s*$/i);
+    if (mAdminReferrals) {
+      const targetId = String(mAdminReferrals[1] || "").trim();
+      if (targetId) {
+        await this._sendReferralUserInfo(targetId);
+      } else {
+        await this._sendReferralStats();
+      }
+      return true;
+    }
     if (/^\/labour_reindex(?:@\w+)?\s*$/i.test(input)) {
       await this.send("Labour reindex started...");
       try {
@@ -409,6 +421,164 @@ export class AdminCommands {
         `Users (${i + 1}-${i + part.length} / ${rows.length})\n${body}`
       );
     }
+  }
+
+  _refSnapshot(u) {
+    const ref = (u?.referral && typeof u.referral === "object") ? u.referral : {};
+    const invited = Array.isArray(ref.invited) ? ref.invited : [];
+    let invitedDone = 0;
+    let invitedPending = 0;
+    for (const raw of invited) {
+      const id = String(raw?.id || "").trim();
+      if (!id) continue;
+      const rewardedAt = Math.max(0, Number(raw?.rewardedAt) || 0);
+      if (rewardedAt > 0) invitedDone += 1;
+      else invitedPending += 1;
+    }
+    return {
+      referredBy: String(ref?.referredBy || "").trim(),
+      rewarded: !!ref?.rewarded,
+      invitedTotal: invitedDone + invitedPending,
+      invitedDone,
+      invitedPending,
+      totalGemsEarned: Math.max(0, Math.round(Number(ref?.totalGemsEarned) || 0)),
+      startPayload: String(ref?.startPayload || "").trim(),
+      startSource: String(ref?.startSource || "").trim(),
+      startBoundAt: Math.max(0, Math.floor(Number(ref?.startBoundAt) || 0))
+    };
+  }
+
+  async _sendReferralUserInfo(userId) {
+    const u = await this.users.load(userId).catch(() => null);
+    if (!u) {
+      await this.send(`User not found: <code>${this._escapeHtml(userId)}</code>`);
+      return;
+    }
+    const id = String(u?.id ?? userId ?? "");
+    const name = String(u?.displayName || "").trim() || "(no name)";
+    const s = this._refSnapshot(u);
+    const lines = [
+      "<b>Referral user info</b>",
+      `User: <code>${this._escapeHtml(id)}</code> - ${this._escapeHtml(name)}`,
+      `referredBy: <code>${this._escapeHtml(s.referredBy || "-")}</code>`,
+      `rewarded (newbie got gems): ${s.rewarded ? "yes" : "no"}`,
+      `invited: total ${s.invitedTotal}, done ${s.invitedDone}, pending ${s.invitedPending}`,
+      `total gems earned as referrer: 💎${s.totalGemsEarned}`,
+      `start source: <code>${this._escapeHtml(s.startSource || "-")}</code>`,
+      `start payload: <code>${this._escapeHtml(s.startPayload || "-")}</code>`,
+      `start tracked at: ${s.startBoundAt > 0 ? this._escapeHtml(new Date(s.startBoundAt * 1000).toISOString()) : "-"}`
+    ];
+    await this.send(lines.join("\n"));
+  }
+
+  async _sendReferralStats() {
+    await this.send("Referral stats started...");
+    const prefix = "u:";
+    let cursor = undefined;
+    let scanned = 0;
+    let boundReferrals = 0;
+    let rewardedReferrals = 0;
+    let referrersActive = 0;
+    let invitedDoneTotal = 0;
+    let invitedPendingTotal = 0;
+    let gemsPaidToReferrers = 0;
+    let sourceTracked = 0;
+    let sourceAds = 0;
+    let sourceRef = 0;
+    const sourceCounts = new Map();
+    const topReferrers = [];
+
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const page = await this.db.list({ prefix, cursor });
+      const keys = Array.isArray(page?.keys) ? page.keys : [];
+      for (const k of keys) {
+        scanned += 1;
+        try {
+          const raw = await this.db.get(k.name);
+          if (!raw) continue;
+          const u = JSON.parse(raw);
+          const fallbackId = String(k.name || "").slice(prefix.length);
+          const id = String((u?.id ?? fallbackId) || "");
+          const name = String(u?.displayName || "").trim() || "(no name)";
+          const s = this._refSnapshot(u);
+
+          if (s.referredBy) boundReferrals += 1;
+          if (s.rewarded) rewardedReferrals += 1;
+          if (s.invitedTotal > 0 || s.totalGemsEarned > 0) referrersActive += 1;
+
+          invitedDoneTotal += s.invitedDone;
+          invitedPendingTotal += s.invitedPending;
+          gemsPaidToReferrers += s.totalGemsEarned;
+
+          if (s.startPayload) {
+            sourceTracked += 1;
+            sourceCounts.set(s.startPayload, Number(sourceCounts.get(s.startPayload) || 0) + 1);
+          }
+          if (s.startSource === "ads") sourceAds += 1;
+          if (s.startSource === "ref") sourceRef += 1;
+
+          if (s.invitedDone > 0 || s.totalGemsEarned > 0) {
+            topReferrers.push({
+              id,
+              name,
+              done: s.invitedDone,
+              pending: s.invitedPending,
+              gems: s.totalGemsEarned
+            });
+          }
+        } catch {
+          // skip bad rows
+        }
+      }
+
+      if (!page || page.list_complete || !page.cursor) break;
+      cursor = page.cursor;
+    }
+
+    topReferrers.sort((a, b) => {
+      if ((b.done || 0) !== (a.done || 0)) return (b.done || 0) - (a.done || 0);
+      if ((b.gems || 0) !== (a.gems || 0)) return (b.gems || 0) - (a.gems || 0);
+      return String(a.id || "").localeCompare(String(b.id || ""));
+    });
+
+    const topSources = Array.from(sourceCounts.entries())
+      .sort((a, b) => Number(b[1] || 0) - Number(a[1] || 0))
+      .slice(0, 10);
+
+    const lines = [
+      "<b>Referral stats</b>",
+      `Scanned users: ${scanned}`,
+      `Bound referrals (referredBy): ${boundReferrals}`,
+      `Rewarded referrals: ${rewardedReferrals}`,
+      `Referrer accounts (invites/gems): ${referrersActive}`,
+      `Invites: done ${invitedDoneTotal}, pending ${invitedPendingTotal}`,
+      `Gems paid to referrers total: 💎${gemsPaidToReferrers}`,
+      "",
+      "<b>Start payload tracking</b>",
+      `Tracked users: ${sourceTracked}`,
+      `Source=ads: ${sourceAds}`,
+      `Source=ref: ${sourceRef}`
+    ];
+
+    if (topSources.length) {
+      lines.push("", "<b>Top start payloads</b>");
+      for (const [payload, count] of topSources) {
+        lines.push(`${this._escapeHtml(payload)} - ${Number(count || 0)}`);
+      }
+    }
+
+    if (topReferrers.length) {
+      lines.push("", "<b>Top referrers</b>");
+      for (const r of topReferrers.slice(0, 10)) {
+        lines.push(
+          `<code>${this._escapeHtml(r.id)}</code> ${this._escapeHtml(r.name)} - ` +
+          `done ${Number(r.done || 0)}, pending ${Number(r.pending || 0)}, 💎${Number(r.gems || 0)}`
+        );
+      }
+    }
+
+    await this.send(lines.join("\n"));
   }
 
   async _trySaveDraftFromMessage({ adminId, chatId, msg }) {

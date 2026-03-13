@@ -425,13 +425,27 @@ export class UserStore {
 
     // Рефералы
     if (!u.referral || typeof u.referral !== "object") {
-      u.referral = { referredBy: "", rewarded: false, invited: [], totalGemsEarned: 0 };
+      u.referral = {
+        referredBy: "",
+        rewarded: false,
+        invited: [],
+        totalGemsEarned: 0,
+        startPayload: "",
+        startSource: "",
+        startBoundAt: 0
+      };
       dirty = true;
     } else {
       if (typeof u.referral.referredBy !== "string") { u.referral.referredBy = ""; dirty = true; }
       if (typeof u.referral.rewarded !== "boolean") { u.referral.rewarded = false; dirty = true; }
       if (!Array.isArray(u.referral.invited)) { u.referral.invited = []; dirty = true; }
       if (typeof u.referral.totalGemsEarned !== "number") { u.referral.totalGemsEarned = 0; dirty = true; }
+      if (typeof u.referral.startPayload !== "string") { u.referral.startPayload = ""; dirty = true; }
+      if (typeof u.referral.startSource !== "string") { u.referral.startSource = ""; dirty = true; }
+      if (typeof u.referral.startBoundAt !== "number" || !Number.isFinite(u.referral.startBoundAt)) {
+        u.referral.startBoundAt = 0;
+        dirty = true;
+      }
 
       const invitedNorm = [];
       for (const raw of u.referral.invited) {
@@ -444,6 +458,9 @@ export class UserStore {
       invitedNorm.sort((a, b) => (Number(b.rewardedAt) || 0) - (Number(a.rewardedAt) || 0));
       u.referral.invited = invitedNorm.slice(0, 100);
       u.referral.totalGemsEarned = Math.max(0, Math.round(Number(u.referral.totalGemsEarned) || 0));
+      u.referral.startPayload = String(u.referral.startPayload || "").trim().slice(0, 64);
+      u.referral.startSource = String(u.referral.startSource || "").trim().slice(0, 16);
+      u.referral.startBoundAt = Math.max(0, Math.floor(Number(u.referral.startBoundAt) || 0));
     }
 
     // Достижения
@@ -603,7 +620,15 @@ export class UserStore {
       clan: { clanId: "", joinedAt: 0, joinAvailableFromWeek: "", lastPresenceDay: "" },
       clanCosmetic: null,
       employment: { active: false, ownerId: "", bizId: "", ownerPct: 0, contractEnd: 0, slotIndex: -1 },
-      referral: { referredBy: "", rewarded: false, invited: [], totalGemsEarned: 0 },
+      referral: {
+        referredBy: "",
+        rewarded: false,
+        invited: [],
+        totalGemsEarned: 0,
+        startPayload: "",
+        startSource: "",
+        startBoundAt: 0
+      },
       thief: { level: 0, activeAttackId: "", cooldowns: {}, totalStolen: 0 },
       achievements: {
         earned: {},

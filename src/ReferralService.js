@@ -37,7 +37,15 @@ export class ReferralService {
 
   _ensureReferral(u) {
     if (!u.referral || typeof u.referral !== "object") {
-      u.referral = { referredBy: "", rewarded: false, invited: [], totalGemsEarned: 0 };
+      u.referral = {
+        referredBy: "",
+        rewarded: false,
+        invited: [],
+        totalGemsEarned: 0,
+        startPayload: "",
+        startSource: "",
+        startBoundAt: 0
+      };
       return true;
     }
     let dirty = false;
@@ -45,6 +53,12 @@ export class ReferralService {
     if (typeof u.referral.rewarded !== "boolean") { u.referral.rewarded = false; dirty = true; }
     if (!Array.isArray(u.referral.invited)) { u.referral.invited = []; dirty = true; }
     if (typeof u.referral.totalGemsEarned !== "number") { u.referral.totalGemsEarned = 0; dirty = true; }
+    if (typeof u.referral.startPayload !== "string") { u.referral.startPayload = ""; dirty = true; }
+    if (typeof u.referral.startSource !== "string") { u.referral.startSource = ""; dirty = true; }
+    if (typeof u.referral.startBoundAt !== "number" || !Number.isFinite(u.referral.startBoundAt)) {
+      u.referral.startBoundAt = 0;
+      dirty = true;
+    }
 
     const invited = [];
     for (const raw of u.referral.invited) {
@@ -55,6 +69,9 @@ export class ReferralService {
     invited.sort((a, b) => (Number(b.rewardedAt) || 0) - (Number(a.rewardedAt) || 0));
     u.referral.invited = invited.slice(0, this._invitedLimit());
     u.referral.totalGemsEarned = Math.max(0, Math.round(Number(u.referral.totalGemsEarned) || 0));
+    u.referral.startPayload = String(u.referral.startPayload || "").trim().slice(0, 64);
+    u.referral.startSource = String(u.referral.startSource || "").trim().slice(0, 16);
+    u.referral.startBoundAt = Math.max(0, Math.floor(Number(u.referral.startBoundAt) || 0));
     return dirty;
   }
 
@@ -63,6 +80,25 @@ export class ReferralService {
     const m = p.match(/^ref_(\d+)$/);
     if (!m) return "";
     return String(m[1] || "").trim();
+  }
+
+  _parseAdsPayload(payload) {
+    const p = String(payload || "").trim();
+    const m = p.match(/^ads_[A-Za-z0-9_-]{1,56}$/);
+    if (!m) return "";
+    return p;
+  }
+
+  _trackStartPayload(u, source, payload) {
+    this._ensureReferral(u);
+    if (String(u?.referral?.startPayload || "").trim()) return false;
+    const src = String(source || "").trim();
+    const p = String(payload || "").trim();
+    if (!src || !p) return false;
+    u.referral.startPayload = p.slice(0, 64);
+    u.referral.startSource = src.slice(0, 16);
+    u.referral.startBoundAt = Math.floor(this.now() / 1000);
+    return true;
   }
 
   _canBindForUser(u) {
@@ -99,12 +135,26 @@ export class ReferralService {
 
   async bindFromStartPayload(u, payload) {
     this._ensureReferral(u);
+    const adsPayload = this._parseAdsPayload(payload);
+    if (adsPayload) {
+      // Track campaign source for first-time users only.
+      if (u?.__isNew) {
+        const tracked = this._trackStartPayload(u, "ads", adsPayload);
+        return { ok: true, bound: false, tracked, source: "ads", payload: adsPayload };
+      }
+      return { ok: true, bound: false, tracked: false, source: "ads", reason: "not_new" };
+    }
+
     const referrerId = this._parseRefPayload(payload);
     if (!referrerId) return { ok: true, bound: false, reason: "invalid" };
+    if (String(u?.referral?.startSource || "") === "ads") {
+      return { ok: true, bound: false, reason: "ads_locked" };
+    }
     if (!this._canBindForUser(u)) return { ok: true, bound: false, reason: "not_eligible" };
     if (String(referrerId) === String(u?.id || "")) return { ok: true, bound: false, reason: "self" };
     if (String(u.referral.referredBy || "").trim()) return { ok: true, bound: false, reason: "already_bound" };
 
+    this._trackStartPayload(u, "ref", `ref_${referrerId}`);
     u.referral.referredBy = String(referrerId);
 
     try {
