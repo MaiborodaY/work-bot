@@ -327,7 +327,7 @@ export const CONFIG = {
       },
       stomatology: {
         contractDays: 2,
-        minEnergyMax: 30,
+        minEnergyMax: 20,
         levels: [
           { slotMoney: 25000, slotGems: 50, ownerPct: 0.06 },
           { slotMoney: 37500, slotGems: 75, ownerPct: 0.08 },
@@ -338,7 +338,7 @@ export const CONFIG = {
       },
       restaurant: {
         contractDays: 3,
-        minEnergyMax: 35,
+        minEnergyMax: 20,
         levels: [
           { slotMoney: 50000, slotGems: 100, ownerPct: 0.06 },
           { slotMoney: 75000, slotGems: 150, ownerPct: 0.08 },
@@ -349,7 +349,7 @@ export const CONFIG = {
       },
       courier_service: {
         contractDays: 5,
-        minEnergyMax: 40,
+        minEnergyMax: 20,
         levels: [
           { slotMoney: 100000, slotGems: 200, ownerPct: 0.06 },
           { slotMoney: 150000, slotGems: 300, ownerPct: 0.08 },
@@ -360,7 +360,7 @@ export const CONFIG = {
       },
       fitness_club: {
         contractDays: 7,
-        minEnergyMax: 55,
+        minEnergyMax: 20,
         levels: [
           { slotMoney: 250000, slotGems: 500, ownerPct: 0.06 },
           { slotMoney: 375000, slotGems: 750, ownerPct: 0.08 },
