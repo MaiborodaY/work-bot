@@ -215,6 +215,10 @@ export class PetService {
     return String(type) === "dog" ? s.typeDog : s.typeCat;
   }
 
+  _petAsset(type) {
+    return String(this._cfg()?.ASSETS?.[String(type || "")] || "");
+  }
+
   _isAliveStatus(status) {
     const s = String(status || "");
     return s === "healthy" || s === "hungry" || s === "sick";
@@ -736,6 +740,7 @@ export class PetService {
     });
     return {
       caption,
+      asset: this._petAsset(type) || undefined,
       keyboard: [
         [{ text: s.confirmBtn, callback_data: "pet:confirm_buy" }],
         [{ text: s.cancelBtn, callback_data: "pet:cancel_buy" }]
@@ -804,6 +809,7 @@ export class PetService {
     if (u.awaitingPetName && String(u?.petDraft?.type || "")) {
       return {
         caption: `${s.titleNoPet}\n\n${this._fmt(s.askName, { type: this._petTypeName(u, u.petDraft.type) })}`,
+        asset: this._petAsset(u.petDraft.type) || undefined,
         keyboard: [[{ text: s.cancelBtn, callback_data: "pet:cancel_buy" }], backRow]
       };
     }
@@ -822,11 +828,13 @@ export class PetService {
     const today = this._today();
     const fedToday = String(p.lastFedDay || "") === today && String(p.status || "") === "healthy";
     const status = String(p.status || "healthy");
+    const petAsset = this._petAsset(p.type) || undefined;
     const lines = [title, ""];
     const kb = [];
 
     if (status === "dead") {
-      return this.buildTypePickerView(u, { deadName: p.name });
+      const view = this.buildTypePickerView(u, { deadName: p.name });
+      return { ...view, asset: petAsset };
     }
 
     if (status === "sick") {
@@ -834,7 +842,7 @@ export class PetService {
       const healCost = Math.max(0, toInt(this._cfg().SICK_HEAL_GEMS, 3));
       kb.push([{ text: `${s.healBtn} — 💎${healCost}`, callback_data: "pet:heal" }]);
       kb.push(backRow);
-      return { caption: lines.join("\n"), keyboard: kb };
+      return { caption: lines.join("\n"), keyboard: kb, asset: petAsset };
     }
 
     const streak = Math.max(0, toInt(p.streak, 0));
@@ -846,7 +854,7 @@ export class PetService {
       lines.push(s.hungry, "", `${s.streak}: 0`, this._fmt(s.hungryWarn, { days: left }));
       kb.push([{ text: s.feedBtn, callback_data: "pet:feed" }]);
       kb.push(backRow);
-      return { caption: lines.join("\n"), keyboard: kb };
+      return { caption: lines.join("\n"), keyboard: kb, asset: petAsset };
     }
 
     lines.push(fedToday ? s.healthyFed : s.healthy, "");
@@ -861,6 +869,6 @@ export class PetService {
       kb.push([{ text: s.feedBtn, callback_data: "pet:feed" }]);
       kb.push(backRow);
     }
-    return { caption: lines.join("\n"), keyboard: kb };
+    return { caption: lines.join("\n"), keyboard: kb, asset: petAsset };
   }
 }

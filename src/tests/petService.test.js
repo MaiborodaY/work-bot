@@ -118,3 +118,14 @@ test("pet: draft confirmation is shown before type picker when name is set", asy
   const cb = view?.keyboard?.[0]?.[0]?.callback_data || "";
   assert.equal(cb, "pet:confirm_buy");
 });
+
+test("pet: owned pet view includes image asset by type", async () => {
+  const nowTs = Date.UTC(2026, 2, 13, 12, 0, 0);
+  const svc = makeService(nowTs);
+  const u = makeUser(nowTs);
+  u.pet.type = "dog";
+
+  const view = await svc.buildView(u);
+  assert.equal(typeof view.asset, "string");
+  assert.ok(view.asset.length > 10);
+});
