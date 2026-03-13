@@ -378,8 +378,8 @@ export const CONFIG = {
       dog: 150
     },
     ASSETS: {
-      cat: "AgACAgIAAxkBAAJ1Kmm0gp_EiHik_4gzNm9DXMnRNMJNAAKNGGsbbd2gSeZMTTxQYoMlAQADAgADeQADOgQ",
-      dog: "AgACAgIAAxkBAAJ1LGm0gqxx9ng5mSzckE-dPI2bmX6uAAKOGGsbbd2gSfgC7w-_q8eVAQADAgADeQADOgQ"
+      cat: "AgACAgIAAxkBAAJ1Umm0id_SiY8AATO8FwftUZEtaohRVQACqhhrG23doEnwpLyuEBT6wAEAAwIAA3kAAzoE",
+      dog: "AgACAgIAAxkBAAJ1WWm0jLcN1EthAAGZmpecxE30v3YFCAACrhhrG23doElC83hXcht2IwEAAwIAA3kAAzoE"
     },
     NAME_MIN: 2,
     NAME_MAX: 12,

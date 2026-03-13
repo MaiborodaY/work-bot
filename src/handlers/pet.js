@@ -1,6 +1,7 @@
 export const petHandler = {
   match: (data) =>
     data.startsWith("pet:card:") ||
+    data === "pet:help" ||
     data === "pet:cancel_buy" ||
     data === "pet:confirm_buy" ||
     data === "pet:feed" ||
@@ -38,6 +39,20 @@ export const petHandler = {
         await answer(cb.id, res.error || "Не удалось начать покупку.");
       }
       await goTo(u, "Pet");
+      return;
+    }
+
+    if (data === "pet:help") {
+      await answer(cb.id);
+      const view = pet.buildHelpView(u);
+      await locations.media.show({
+        sourceMsg: locations._sourceMsg || cb?.message || null,
+        place: "Pet",
+        caption: view.caption,
+        keyboard: view.keyboard,
+        policy: "auto"
+      });
+      locations.setSourceMessage(null);
       return;
     }
 

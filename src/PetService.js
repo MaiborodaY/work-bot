@@ -219,6 +219,13 @@ export class PetService {
     return String(this._cfg()?.ASSETS?.[String(type || "")] || "");
   }
 
+  _helpBtn(u) {
+    const lang = this._lang(u);
+    if (lang === "en") return "❓ How pet works";
+    if (lang === "uk") return "❓ Як працює улюбленець";
+    return "❓ Как работает питомец";
+  }
+
   _isAliveStatus(status) {
     const s = String(status || "");
     return s === "healthy" || s === "hungry" || s === "sick";
@@ -769,6 +776,7 @@ export class PetService {
       keyboard: [
         [{ text: "🐱 Кошка", callback_data: "pet:card:cat" }],
         [{ text: "🐶 Собака", callback_data: "pet:card:dog" }],
+        [{ text: this._helpBtn(u), callback_data: "pet:help" }],
         [{ text: s.backBtn, callback_data: "go:Home" }]
       ]
     };
@@ -795,8 +803,105 @@ export class PetService {
       asset,
       keyboard: [
         [{ text: buyText, callback_data: `pet:buy:${t}` }],
+        [{ text: this._helpBtn(u), callback_data: "pet:help" }],
         [{ text: lang === "en" ? "⬅️ Back to pets" : (lang === "uk" ? "⬅️ До вибору" : "⬅️ К выбору"), callback_data: "go:Pet" }]
       ]
+    };
+  }
+
+  buildHelpView(u) {
+    const lang = this._lang(u);
+    const priceCat = this._price("cat");
+    const priceDog = this._price("dog");
+    const healCost = Math.max(0, toInt(this._cfg().SICK_HEAL_GEMS, 3));
+
+    let caption = "";
+    if (lang === "en") {
+      caption = [
+        "❓ How pet works",
+        "",
+        `• Buy cat/dog for $${priceCat}/$${priceDog}`,
+        "• Feed once per UTC day",
+        "",
+        "🔥 Streak",
+        "Streak = how many days in a row you fed your pet.",
+        "If you miss feeding and pet becomes hungry, streak resets to 0.",
+        "After next feed, streak starts from 1 again.",
+        "",
+        "💎 Gems for feeding",
+        "1-6 days: +💎1",
+        "7-29 days: +💎2",
+        "30+ days: +💎3",
+        "",
+        "🐾 States",
+        "Healthy: gives gems.",
+        "Hungry (after 1 day without food): no gems.",
+        "Sick (after 3 days without food): heal first.",
+        "Dead (after 5 days without food): irreversible.",
+        "",
+        `💊 Heal costs 💎${healCost}`,
+        "After heal: status becomes hungry and missed-days timer resets from today.",
+        "Feed again to return to healthy state."
+      ].join("\n");
+    } else if (lang === "uk") {
+      caption = [
+        "❓ Як працює улюбленець",
+        "",
+        `• Купівля кота/собаки за $${priceCat}/$${priceDog}`,
+        "• Годування 1 раз за UTC-день",
+        "",
+        "🔥 Серія (стрік)",
+        "Серія = скільки днів поспіль ти годував улюбленця.",
+        "Якщо пропустив годування і улюбленець став голодним, серія скидається до 0.",
+        "Після наступного годування серія знову починається з 1.",
+        "",
+        "💎 Кристали за годування",
+        "1-6 днів: +💎1",
+        "7-29 днів: +💎2",
+        "30+ днів: +💎3",
+        "",
+        "🐾 Стани",
+        "Здоровий: дає кристали.",
+        "Голодний (після 1 дня без їжі): кристалів немає.",
+        "Хворий (після 3 днів без їжі): спочатку лікування.",
+        "Мертвий (після 5 днів без їжі): незворотно.",
+        "",
+        `💊 Лікування коштує 💎${healCost}`,
+        "Після лікування: статус «голодний», таймер пропусків скидається від сьогодні.",
+        "Погодуй ще раз, щоб повернути стан «здоровий»."
+      ].join("\n");
+    } else {
+      caption = [
+        "❓ Как работает питомец",
+        "",
+        `• Покупка кошки/собаки за $${priceCat}/$${priceDog}`,
+        "• Кормление 1 раз в UTC-день",
+        "",
+        "🔥 Стрик",
+        "Стрик = сколько дней подряд ты кормил питомца.",
+        "Если пропустил кормление и питомец стал голодным, стрик сбрасывается в 0.",
+        "После следующего кормления стрик начинается заново с 1.",
+        "",
+        "💎 Кристаллы за кормление",
+        "1-6 дней: +💎1",
+        "7-29 дней: +💎2",
+        "30+ дней: +💎3",
+        "",
+        "🐾 Состояния",
+        "Здоров: даёт кристаллы.",
+        "Голоден (после 1 дня без еды): кристаллов нет.",
+        "Болеет (после 3 дней без еды): сначала лечение.",
+        "Мёртв (после 5 дней без еды): необратимо.",
+        "",
+        `💊 Лечение стоит 💎${healCost}`,
+        "После лечения: статус «голоден», таймер пропусков сбрасывается от сегодняшнего дня.",
+        "Покорми ещё раз, чтобы вернуться в состояние «здоров»."
+      ].join("\n");
+    }
+
+    return {
+      caption,
+      keyboard: [[{ text: lang === "en" ? "⬅️ Back" : "⬅️ Назад", callback_data: "go:Pet" }]]
     };
   }
 
@@ -841,6 +946,7 @@ export class PetService {
       lines.push(s.sick, "", s.sickHint);
       const healCost = Math.max(0, toInt(this._cfg().SICK_HEAL_GEMS, 3));
       kb.push([{ text: `${s.healBtn} — 💎${healCost}`, callback_data: "pet:heal" }]);
+      kb.push([{ text: this._helpBtn(u), callback_data: "pet:help" }]);
       kb.push(backRow);
       return { caption: lines.join("\n"), keyboard: kb, asset: petAsset };
     }
@@ -853,6 +959,7 @@ export class PetService {
       const left = Math.max(0, sickAfter - missed);
       lines.push(s.hungry, "", `${s.streak}: 0`, this._fmt(s.hungryWarn, { days: left }));
       kb.push([{ text: s.feedBtn, callback_data: "pet:feed" }]);
+      kb.push([{ text: this._helpBtn(u), callback_data: "pet:help" }]);
       kb.push(backRow);
       return { caption: lines.join("\n"), keyboard: kb, asset: petAsset };
     }
@@ -864,9 +971,11 @@ export class PetService {
     lines.push(`${s.lastFeed}: ${p.lastFedDay || s.notFedYet}`);
     if (fedToday) {
       lines.push("", s.fedToday);
+      kb.push([{ text: this._helpBtn(u), callback_data: "pet:help" }]);
       kb.push(backRow);
     } else {
       kb.push([{ text: s.feedBtn, callback_data: "pet:feed" }]);
+      kb.push([{ text: this._helpBtn(u), callback_data: "pet:help" }]);
       kb.push(backRow);
     }
     return { caption: lines.join("\n"), keyboard: kb, asset: petAsset };
