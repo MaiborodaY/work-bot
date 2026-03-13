@@ -6,6 +6,9 @@ export const EN = {
   "profile.lang.button": "🌐 Language: {{lang}}",
   "profile.lang.title": "Choose interface language:",
   "profile.lang.changed": "Language updated: {{lang}}",
+  "worker.start.lang_pick": "🌐 Choose your language before we start:",
+  "worker.start.lang_pick_hint": "You can change it later in your profile.",
+  "worker.start.lang_pick_required": "Choose language first.",
   "ui.city.ratings": "🏆 Rating",
   "loc.rating.unavailable": "🏆 Rating is temporarily unavailable.",
 

@@ -6,6 +6,9 @@ export const UK = {
   "profile.lang.button": "🌐 Мова: {{lang}}",
   "profile.lang.title": "Обери мову інтерфейсу:",
   "profile.lang.changed": "Мову оновлено: {{lang}}",
+  "worker.start.lang_pick": "🌐 Обери мову перед стартом:",
+  "worker.start.lang_pick_hint": "Це можна змінити пізніше у профілі.",
+  "worker.start.lang_pick_required": "Спочатку обери мову.",
   "ui.city.ratings": "🏆 Рейтинг",
   "loc.rating.unavailable": "🏆 Рейтинг тимчасово недоступний.",
 

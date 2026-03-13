@@ -3,6 +3,9 @@ export const RU = {
   "profile.lang.button": "🌐 Язык: {{lang}}",
   "profile.lang.title": "Выбери язык интерфейса:",
   "profile.lang.changed": "Язык обновлён: {{lang}}",
+  "worker.start.lang_pick": "🌐 Выбери язык перед стартом:",
+  "worker.start.lang_pick_hint": "Это можно изменить позже в профиле.",
+  "worker.start.lang_pick_required": "Сначала выбери язык.",
 
   "ui.reply.menu": "🧭 Меню",
   "ui.reply.profile": "👤 Профиль",

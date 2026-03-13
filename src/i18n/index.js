@@ -12,11 +12,12 @@ export const STRINGS = {
 
 export function normalizeLang(raw) {
   const v = String(raw || "").trim().toLowerCase();
-  if (!v) return "ru";
-  if (v.startsWith("uk")) return "uk";
+  if (!v) return "en";
+  if (v.startsWith("uk") || v.startsWith("ua")) return "uk";
   if (v.startsWith("en")) return "en";
+  if (v.startsWith("ru")) return "ru";
   if (LANGS.includes(v)) return v;
-  return "ru";
+  return "en";
 }
 
 export function escapeHtml(value) {

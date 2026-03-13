@@ -116,7 +116,7 @@ export class UserStore {
     // Ник/онбординг
     if (typeof u.displayName !== "string") { u.displayName = ""; dirty = true; }
     if (typeof u.lang !== "string") { u.lang = ""; dirty = true; }
-    if (u.lang && !["ru", "uk", "en"].includes(u.lang)) { u.lang = "ru"; dirty = true; }
+    if (u.lang && !["ru", "uk", "en"].includes(u.lang)) { u.lang = "en"; dirty = true; }
     u.awaitingName = !!u.awaitingName;
     if (typeof u.afterNameRoute !== "string") { u.afterNameRoute = ""; dirty = true; }
     u.awaitingClanName = !!u.awaitingClanName;
@@ -547,6 +547,7 @@ export class UserStore {
     if (typeof u.flags.onboardingFlowV2 !== "boolean") { u.flags.onboardingFlowV2 = false; dirty = true; }
     if (typeof u.flags.freeSkipUsed_work !== "boolean") { u.flags.freeSkipUsed_work = false; dirty = true; }
     if (typeof u.flags.freeSkipUsed_gym !== "boolean") { u.flags.freeSkipUsed_gym = false; dirty = true; }
+    if (typeof u.flags.awaitingLangPick !== "boolean") { u.flags.awaitingLangPick = false; dirty = true; }
 
     // Daily top stats and reward marker
     if (!u.stats || typeof u.stats !== "object") {
@@ -659,7 +660,8 @@ export class UserStore {
         onboardingDone: false,
         onboardingFlowV2: false,
         freeSkipUsed_work: false,
-        freeSkipUsed_gym: false
+        freeSkipUsed_gym: false,
+        awaitingLangPick: false
       }
     };
   }

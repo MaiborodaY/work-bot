@@ -63,8 +63,8 @@ import { FastForwardService } from "./FastForwardService.js";
 // --- Public links (RU only) ---
 const PRIVACY_URL = "https://sites.google.com/view/world-of-life-privacy/";
 
-const helpText = (lang) => t("worker.help", normalizeLang(lang || "ru"));
-const privacyText = (lang) => t("worker.privacy", normalizeLang(lang || "ru"), { url: PRIVACY_URL });
+const helpText = (lang) => t("worker.help", normalizeLang(lang || "en"));
+const privacyText = (lang) => t("worker.privacy", normalizeLang(lang || "en"), { url: PRIVACY_URL });
 
 const LANG_OPTIONS = [
   { code: "ru", label: "🇷🇺 Русский" },
@@ -302,13 +302,28 @@ export default {
     }
 
     const profileLangButtonText = (u) => {
-      const lang = normalizeLang(u?.lang || "ru");
+      const lang = normalizeLang(u?.lang || "en");
       return t("profile.lang.button", lang, { lang: lang.toUpperCase() });
     };
 
     const langOptionLabel = (code) => {
       const found = LANG_OPTIONS.find((x) => x.code === code);
       return found ? found.label : code.toUpperCase();
+    };
+
+    const startLangPickerText = (lang) => {
+      const l = normalizeLang(lang || "en");
+      return `${t("worker.start.lang_pick", l)}\n\n${t("worker.start.lang_pick_hint", l)}`;
+    };
+
+    const buildLangPickerKeyboard = (lang, { prefix = "profile:lang:set:", withBack = false } = {}) => {
+      const l = normalizeLang(lang || "en");
+      const kb = LANG_OPTIONS.map((opt) => {
+        const mark = opt.code === l ? " ✅" : "";
+        return [{ text: `${opt.label}${mark}`, callback_data: `${prefix}${opt.code}` }];
+      });
+      if (withBack) kb.push([{ text: t("worker.btn.back", l), callback_data: "profile:back" }]);
+      return kb;
     };
 
     async function renderProfile(u, sourceMsg = null) {
@@ -323,7 +338,7 @@ export default {
         return await labour.buildProfileEmploymentLine(u);
       }, { fallback: "" });
       const statusText = Formatters.status(u, { economy, now, pct, clanName, clanWeekKey, employmentLine });
-      const lang = normalizeLang(u?.lang || "ru");
+      const lang = normalizeLang(u?.lang || "en");
       const achievementsBtn = lang === "en"
         ? "🏆 Achievements"
         : (lang === "uk" ? "🏆 Досягнення" : "🏆 Достижения");
@@ -493,12 +508,12 @@ export default {
 
       // /help
       if (/^\/help(?:@\w+)?$/i.test(text)) {
-        await send(helpText(update?.message?.from?.language_code || "ru"));
+        await send(helpText(update?.message?.from?.language_code || "en"));
         return new Response("ok");
       }
       // /privacy
       if (/^\/privacy(?:@\w+)?$/i.test(text)) {
-        await send(privacyText(update?.message?.from?.language_code || "ru"));
+        await send(privacyText(update?.message?.from?.language_code || "en"));
         return new Response("ok");
       }
 
@@ -610,6 +625,7 @@ export default {
           u.flags.onboardingFlowV2 = true;
           u.flags.freeSkipUsed_work = false;
           u.flags.freeSkipUsed_gym = false;
+          u.flags.awaitingLangPick = true;
         }
         if (u.flags.onboarding && !u.flags.onboardingStep) {
           u.flags.onboardingStep = "first_job";
@@ -626,7 +642,17 @@ export default {
           });
         });
 
-        const onboardingWelcome = t("worker.onboarding.welcome", normalizeLang(u?.lang || "ru"));
+        if (u?.flags?.awaitingLangPick) {
+          await safeCall("worker.start.send_lang_picker", async () => {
+            await sendWithInline(
+              startLangPickerText(normalizeLang(u?.lang || "en")),
+              buildLangPickerKeyboard(normalizeLang(u?.lang || "en"), { prefix: "start:lang:set:" })
+            );
+          });
+          return new Response("ok");
+        }
+
+        const onboardingWelcome = t("worker.onboarding.welcome", normalizeLang(u?.lang || "en"));
         await safeCall("worker.start.send_onboarding_welcome", async () => {
           await bot.sendMessage(chatId, onboardingWelcome);
         });
@@ -901,15 +927,45 @@ export default {
         }
       });
 
+      if (u?.flags?.awaitingLangPick && !data.startsWith("start:lang:set:")) {
+        const lang = normalizeLang(u?.lang || "en");
+        await answer(cb.id, t("worker.start.lang_pick_required", lang));
+        const caption = startLangPickerText(lang);
+        const kb = buildLangPickerKeyboard(lang, { prefix: "start:lang:set:" });
+        try {
+          await edit(cb.message, caption, kb);
+        } catch {
+          await sendWithInline(caption, kb);
+        }
+        return new Response("ok");
+      }
+
+      if (data.startsWith("start:lang:set:")) {
+        const next = normalizeLang(data.split(":")[3] || "");
+        const prev = normalizeLang(u.lang || "en");
+        u.flags = (u.flags && typeof u.flags === "object") ? u.flags : {};
+        const wasAwaitingLangPick = !!u.flags.awaitingLangPick;
+        u.flags.awaitingLangPick = false;
+        if (next !== prev) u.lang = next;
+        await users.save(u);
+        await answer(cb.id, t("profile.lang.changed", next, { lang: langOptionLabel(next) }));
+        if (wasAwaitingLangPick) {
+          const onboardingWelcome = t("worker.onboarding.welcome", next);
+          await safeCall("worker.start.send_onboarding_welcome_after_lang_pick", async () => {
+            await bot.sendMessage(chatId, onboardingWelcome);
+          });
+          await goTo(u, "Square");
+          return new Response("ok");
+        }
+        await renderProfile(u, cb.message);
+        return new Response("ok");
+      }
+
       if (data === "profile:lang") {
         await answer(cb.id);
-        const lang = normalizeLang(u.lang || "ru");
+        const lang = normalizeLang(u.lang || "en");
         const title = t("profile.lang.title", lang);
-        const kb = LANG_OPTIONS.map((opt) => {
-          const mark = opt.code === lang ? " ✅" : "";
-          return [{ text: `${opt.label}${mark}`, callback_data: `profile:lang:set:${opt.code}` }];
-        });
-        kb.push([{ text: t("worker.btn.back", lang), callback_data: "profile:back" }]);
+        const kb = buildLangPickerKeyboard(lang, { prefix: "profile:lang:set:", withBack: true });
         try {
           await edit(cb.message, title, kb);
         } catch {
@@ -948,7 +1004,7 @@ export default {
 
       if (data.startsWith("profile:lang:set:")) {
         const next = normalizeLang(data.split(":")[3] || "");
-        const prev = normalizeLang(u.lang || "ru");
+        const prev = normalizeLang(u.lang || "en");
         if (next !== prev) {
           u.lang = next;
           await users.save(u);
