@@ -134,7 +134,7 @@ export default {
       update.message?.from?.id || update.callback_query?.from?.id;
 
     const ui = new UiFactory();
-    const bot = new TelegramClient(env.BOT_TOKEN, ui.mainReply());
+    const bot = new TelegramClient(env.BOT_TOKEN, ui.mainReply("en"));
     const users = new UserStore(env.DB);
     const economy = new EconomyService();
     const casino = new CasinoEngine();
@@ -161,7 +161,11 @@ export default {
     const orders = new StarsOrdersStore(env.DB, now);
     const stars = new StarsPayService({ botToken: env.BOT_TOKEN, orders, now });
 
-    const send = (text, extra = {}) => bot.sendMessage(chatId, text, extra);
+    let replyLang = "en";
+    let send = (text, extra = {}) => bot.sendMessage(chatId, text, {
+      reply_markup: ui.mainReply(replyLang),
+      ...extra
+    });
     const sendWithInline = (text, inline_keyboard) =>
       bot.sendWithInline(chatId, text, inline_keyboard);
     const answer = (cbId, t) => bot.answerCallback(cbId, t);
@@ -369,7 +373,7 @@ export default {
     };
 
     async function renderPublicProfile(viewer, targetId, sourceToken = "", sourceMsg = null) {
-      const lang = normalizeLang(viewer?.lang || "ru");
+      const lang = normalizeLang(viewer?.lang || "en");
       const target = await users.load(targetId).catch(() => null);
       if (!target) {
         return null;
@@ -563,6 +567,7 @@ export default {
       if (shouldSaveMeta) {
         await users.save(u);
       }
+      replyLang = normalizeLang(u?.lang || "en");
       await safeCall("worker.message.achievements.retro", async () => {
         if (achievements?.retroCheck) {
           await achievements.retroCheck(u);
@@ -618,6 +623,7 @@ export default {
 
         u.flags = u.flags || {};
         if (u.__isNew) {
+          u.lang = "en";
           u.flags.onboarding = true;
           u.flags.onboardingDone = false;
           u.flags.onboardingStartedAt = now();
@@ -645,8 +651,8 @@ export default {
         if (u?.flags?.awaitingLangPick) {
           await safeCall("worker.start.send_lang_picker", async () => {
             await sendWithInline(
-              startLangPickerText(normalizeLang(u?.lang || "en")),
-              buildLangPickerKeyboard(normalizeLang(u?.lang || "en"), { prefix: "start:lang:set:" })
+              startLangPickerText("en"),
+              buildLangPickerKeyboard("en", { prefix: "start:lang:set:" })
             );
           });
           return new Response("ok");
@@ -654,7 +660,7 @@ export default {
 
         const onboardingWelcome = t("worker.onboarding.welcome", normalizeLang(u?.lang || "en"));
         await safeCall("worker.start.send_onboarding_welcome", async () => {
-          await bot.sendMessage(chatId, onboardingWelcome);
+          await send(onboardingWelcome);
         });
 
         await goTo(u, "Square");
@@ -665,7 +671,7 @@ export default {
       if (u.awaitingName) {
         const ns = new NameService({ users });
         const textMsg = (update.message.text || "").trim();
-        const langNow = normalizeLang(u?.lang || "ru");
+        const langNow = normalizeLang(u?.lang || "en");
 
         if (!textMsg || textMsg.startsWith("/")) {
           await ns.prompt(send, "", langNow);
@@ -686,7 +692,7 @@ export default {
           await labour.upsertFreePlayer(u);
         });
 
-        await goTo(u, route, t("worker.name.set_ok", normalizeLang(u?.lang || "ru"), { name: u.displayName }));
+        await goTo(u, route, t("worker.name.set_ok", normalizeLang(u?.lang || "en"), { name: u.displayName }));
         return new Response("ok");
       }
 
@@ -694,13 +700,13 @@ export default {
       if (u.awaitingClanName) {
         const textMsg = (update.message.text || "").trim();
         if (!textMsg || textMsg.startsWith("/")) {
-          await send(t("worker.clan.awaiting_name_prompt", normalizeLang(u?.lang || "ru")));
+          await send(t("worker.clan.awaiting_name_prompt", normalizeLang(u?.lang || "en")));
           return new Response("ok");
         }
 
         const res = await clans.createClan(u, textMsg);
         if (!res.ok) {
-          await send(`⚠️ ${res.error || t("worker.clan.create_failed", normalizeLang(u?.lang || "ru"))}`);
+          await send(`⚠️ ${res.error || t("worker.clan.create_failed", normalizeLang(u?.lang || "en"))}`);
           return new Response("ok");
         }
 
@@ -710,7 +716,7 @@ export default {
           }
         });
 
-        await goTo(u, "Clan", t("worker.clan.create_ok", normalizeLang(u?.lang || "ru"), { name: res.clan?.name || "" }));
+        await goTo(u, "Clan", t("worker.clan.create_ok", normalizeLang(u?.lang || "en"), { name: res.clan?.name || "" }));
         return new Response("ok");
       }
 
@@ -783,13 +789,13 @@ export default {
             invoiceId: parsed?.nonce || ""
           });
 
-          await send(t("worker.payment.success", normalizeLang(u?.lang || "ru"), {
+          await send(t("worker.payment.success", normalizeLang(u?.lang || "en"), {
             emoji: CONFIG.PREMIUM.emoji,
             credited,
             premium: u.premium
           }));
         } else {
-          await send(t("worker.payment.duplicate", normalizeLang(u?.lang || "ru")));
+          await send(t("worker.payment.duplicate", normalizeLang(u?.lang || "en")));
         }
         return new Response("ok");
       }
@@ -807,7 +813,7 @@ export default {
         return new Response("ok");
 
       if (text === "/reset") {
-        await bot.sendMessage(chatId, t("worker.reset.in_progress", normalizeLang(u?.lang || "ru")), {
+        await bot.sendMessage(chatId, t("worker.reset.in_progress", normalizeLang(u?.lang || "en")), {
           reply_markup: { remove_keyboard: true }
         });
         if (u.study) u.study.active = false;
@@ -820,13 +826,13 @@ export default {
         await goTo(
           u,
           "Square",
-          t("worker.reset.done_intro", normalizeLang(u?.lang || "ru"))
+            t("worker.reset.done_intro", normalizeLang(u?.lang || "en"))
         );
-        await bot.sendMessage(chatId, t("worker.reset.done_toast", normalizeLang(u?.lang || "ru")));
+        await send(t("worker.reset.done_toast", normalizeLang(u?.lang || "en")));
         return new Response("ok");
       }
 
-      const langNow = normalizeLang(u?.lang || "ru");
+      const langNow = normalizeLang(u?.lang || "en");
       const menuLabel = t("ui.reply.menu", langNow);
       const profileLabel = t("ui.reply.profile", langNow);
 
@@ -921,6 +927,7 @@ export default {
       if (shouldSaveMetaCb) {
         await users.save(u);
       }
+      replyLang = normalizeLang(u?.lang || "en");
       await safeCall("worker.callback.achievements.retro", async () => {
         if (achievements?.retroCheck) {
           await achievements.retroCheck(u);
@@ -950,9 +957,10 @@ export default {
         await users.save(u);
         await answer(cb.id, t("profile.lang.changed", next, { lang: langOptionLabel(next) }));
         if (wasAwaitingLangPick) {
+          replyLang = next;
           const onboardingWelcome = t("worker.onboarding.welcome", next);
           await safeCall("worker.start.send_onboarding_welcome_after_lang_pick", async () => {
-            await bot.sendMessage(chatId, onboardingWelcome);
+            await send(onboardingWelcome);
           });
           await goTo(u, "Square");
           return new Response("ok");
@@ -1007,6 +1015,7 @@ export default {
         const prev = normalizeLang(u.lang || "en");
         if (next !== prev) {
           u.lang = next;
+          replyLang = next;
           await users.save(u);
         }
         await answer(cb.id, t("profile.lang.changed", next, { lang: langOptionLabel(next) }));
@@ -1071,7 +1080,7 @@ export default {
 
         // ✖ Любые другие нажатия — продолжаем просить ник
         const ns = new NameService({ users });
-        await ns.prompt(send, "", normalizeLang(u?.lang || "ru"));
+        await ns.prompt(send, "", normalizeLang(u?.lang || "en"));
         return new Response("ok");
       }
 
@@ -1085,7 +1094,7 @@ export default {
           return new Response("ok");
         }
 
-        const langAwaitClan = normalizeLang(u?.lang || "ru");
+        const langAwaitClan = normalizeLang(u?.lang || "en");
         await answer(cb.id, t("worker.clan.send_name_first", langAwaitClan));
         await locations.media.show({
           sourceMsg: locations._sourceMsg || cb.message,

@@ -7,7 +7,7 @@ import { Routes, toGoCallback } from "./Routes.js";
 
 export class UiFactory {
   _lang(lang) {
-    return normalizeLang(lang || "ru");
+    return normalizeLang(lang || "en");
   }
 
   _t(lang, key, vars = {}) {
@@ -18,7 +18,7 @@ export class UiFactory {
     return toGoCallback(route);
   }
 
-  mainReply(lang = "ru") {
+  mainReply(lang = "en") {
     const l = this._lang(lang);
     return {
       keyboard: [[{ text: this._t(l, "ui.reply.menu") }, { text: this._t(l, "ui.reply.profile") }]],
