@@ -1,6 +1,5 @@
 // handlers/casino.js
 import { CONFIG } from "../GameConfig.js";
-import { BarService } from "../BarService.js";
 import { Formatters } from "../Formatters.js";
 
 export const casinoHandler = {
@@ -11,7 +10,7 @@ export const casinoHandler = {
     data === "casino_info",
 
   async handle(ctx) {
-    const { data, u, cb, answer, users, casino, now, env, social, clans, stocks } = ctx; // goTo не используем здесь
+    const { data, u, cb, answer, users, casino, now, env, social, clans, stocks, quests } = ctx; // goTo не используем здесь
     const chatId = cb.message.chat.id;
 
     const minStudy = Number(CONFIG?.CASINO?.MIN_STUDY_FOR_PAID ?? 5);
@@ -169,7 +168,6 @@ const ensureStats = (u) => {
       await users.save(u);
 
       // >>> Прогресс квеста Бара по казино (по факту спина)
-      await BarService.onCasinoSpin({ u, users, now });
       try {
         if (stocks?.recordCasinoSpin) {
           await stocks.recordCasinoSpin(1);
@@ -207,6 +205,11 @@ await users.save(u);
 try {
   if (clans?.recordFortuneSpin) {
     await clans.recordFortuneSpin(u, { bet, win });
+  }
+} catch {}
+try {
+  if (quests?.onEvent) {
+    await quests.onEvent(u, "fortune_spin");
   }
 } catch {}
       
@@ -249,7 +252,6 @@ try {
       await users.save(u);
 
       // >>> Прогресс квеста Бара по казино (по факту спина)
-      await BarService.onCasinoSpin({ u, users, now });
       try {
         if (stocks?.recordCasinoSpin) {
           await stocks.recordCasinoSpin(1);
@@ -290,6 +292,11 @@ await users.save(u);
 try {
   if (clans?.recordFortuneSpin) {
     await clans.recordFortuneSpin(u, { bet: 0, win });
+  }
+} catch {}
+try {
+  if (quests?.onEvent) {
+    await quests.onEvent(u, "fortune_spin");
   }
 } catch {}
       

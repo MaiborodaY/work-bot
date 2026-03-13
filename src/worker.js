@@ -18,6 +18,7 @@ import { ThiefService } from "./ThiefService.js";
 import { ReferralService } from "./ReferralService.js";
 import { AchievementService } from "./AchievementService.js";
 import { RatingService } from "./RatingService.js";
+import { QuestService } from "./QuestService.js";
 import { ASSETS, JOB_ASSETS } from "./Assets.js";
 import { normalizeLang, t } from "./i18n/index.js";
 import { safeCall } from "./SafeCall.js";
@@ -80,8 +81,10 @@ export default {
       const economy = new EconomyService();
       const ratings = new RatingService({ db: env.DB, users, now: () => Date.now() });
       const achievements = new AchievementService({ users, db: env.DB, now: () => Date.now(), bot, ratings });
-      const stocks = new StockService({ db: env.DB, users, now: () => Date.now(), achievements });
-      const thief = new ThiefService({ db: env.DB, users, now: () => Date.now(), bot, achievements, ratings });
+      const quests = new QuestService({ users, now: () => Date.now(), bot });
+      const stocks = new StockService({ db: env.DB, users, now: () => Date.now(), achievements, quests });
+      const labour = new LabourService({ db: env.DB, users, now: () => Date.now(), bot, quests });
+      const thief = new ThiefService({ db: env.DB, users, now: () => Date.now(), bot, achievements, ratings, quests });
       const notifier = new NotificationService({
         users,
         bot,
@@ -99,6 +102,9 @@ export default {
       });
       await safeCall("worker.cron.thief.resolve_protection_expirations", async () => {
         await thief.resolveProtectionExpirations();
+      });
+      await safeCall("worker.cron.labour.run_due_expirations", async () => {
+        await labour.runDueExpirations();
       });
       await notifier.run();
       return new Response("ok");
@@ -131,11 +137,12 @@ export default {
 
     const ratings = new RatingService({ db: env.DB, users, now });
     const achievements = new AchievementService({ users, db: env.DB, now, bot, ratings });
+    const quests = new QuestService({ users, now, bot });
     const social = new SocialService({ db: env.DB, users, now, economy });
     const clans = new ClanService({ db: env.DB, users, now, economy, achievements });
-    const stocks = new StockService({ db: env.DB, users, now, achievements });
-    const labour = new LabourService({ db: env.DB, users, now, bot });
-    const thief = new ThiefService({ db: env.DB, users, now, bot, achievements, ratings });
+    const stocks = new StockService({ db: env.DB, users, now, achievements, quests });
+    const labour = new LabourService({ db: env.DB, users, now, bot, quests });
+    const thief = new ThiefService({ db: env.DB, users, now, bot, achievements, ratings, quests });
     const referrals = new ReferralService({
       users,
       now,
@@ -250,7 +257,7 @@ export default {
     };
 
     const study = new StudyService({ users, send, now, social });
-    const daily = new DailyBonusService({ users, now });
+    const daily = new DailyBonusService({ users, now, quests });
     const gym = new GymService({ users, send, now, social, labour });
     const fastForward = new FastForwardService({ users, orders, now, send });
 
@@ -274,7 +281,8 @@ export default {
       labour,
       ratings,
       thief,
-      referrals
+      referrals,
+      quests
     });
 
     // статлесс переход — ничего не пишем в KV
@@ -1056,6 +1064,7 @@ export default {
         thief,
         referrals,
         achievements,
+        quests,
         // ui
         ui,
         // payments
@@ -1121,9 +1130,10 @@ export default {
     const economy = new EconomyService();
     const ratings = new RatingService({ db: env.DB, users, now: () => Date.now() });
     const achievements = new AchievementService({ users, db: env.DB, now: () => Date.now(), bot, ratings });
-    const stocks = new StockService({ db: env.DB, users, now: () => Date.now(), achievements });
-    const labour = new LabourService({ db: env.DB, users, now: () => Date.now(), bot });
-    const thief = new ThiefService({ db: env.DB, users, now: () => Date.now(), bot, achievements, ratings });
+    const quests = new QuestService({ users, now: () => Date.now(), bot });
+    const stocks = new StockService({ db: env.DB, users, now: () => Date.now(), achievements, quests });
+    const labour = new LabourService({ db: env.DB, users, now: () => Date.now(), bot, quests });
+    const thief = new ThiefService({ db: env.DB, users, now: () => Date.now(), bot, achievements, ratings, quests });
 
     const notifier = new NotificationService({
       users,

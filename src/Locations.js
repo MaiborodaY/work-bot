@@ -33,10 +33,11 @@ export class Locations {
    *  labour?:any,
    *  ratings?:any,
    *  thief?:any,
-   *  referrals?:any
+   *  referrals?:any,
+   *  quests?:any
    * }} deps
    */
-  constructor({ media, ui, economy, formatters, pct, now, maybeFinishStudy, daily, fastForward, users, social, clans, stocks, labour, ratings, thief, referrals }) {
+  constructor({ media, ui, economy, formatters, pct, now, maybeFinishStudy, daily, fastForward, users, social, clans, stocks, labour, ratings, thief, referrals, quests }) {
     this.media = media;
     this.ui = ui;
     this.economy = economy;
@@ -54,6 +55,7 @@ export class Locations {
     this.ratings = ratings || null;
     this.thief = thief || null;
     this.referrals = referrals || null;
+    this.quests = quests || null;
 
 
     this._sourceMsg = null;

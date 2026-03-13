@@ -11,13 +11,14 @@ import { formatMoney, normalizeLang, t } from "./i18n/index.js";
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export class ThiefService {
-  constructor({ db, users, now, bot, achievements = null, ratings = null }) {
+  constructor({ db, users, now, bot, achievements = null, ratings = null, quests = null }) {
     this.db = db;
     this.users = users;
     this.now = now || (() => Date.now());
     this.bot = bot || null;
     this.achievements = achievements || null;
     this.ratings = ratings || null;
+    this.quests = quests || null;
   }
 
   _cfg() {
@@ -986,7 +987,19 @@ export class ThiefService {
 
     attacker.energy = Math.max(0, Math.floor(Number(attacker.energy) || 0) - attackEnergy);
     attacker.thief.activeAttackId = attackId;
+    let questStartRes = null;
+    if (this.quests?.onEvent) {
+      try {
+        questStartRes = await this.quests.onEvent(attacker, "thief_attempt", { bizId: biz }, {
+          persist: false,
+          notify: false
+        });
+      } catch {}
+    }
     await this.users.save(attacker);
+    if (questStartRes?.events?.length && this.quests?.notifyEvents) {
+      await this.quests.notifyEvents(attacker, questStartRes.events);
+    }
 
     await this._saveAttack(attack);
     await this.db.put(lockKey, attackId, { expirationTtl: Math.max(60, Math.ceil((resolveAt - this.now()) / 1000) + 2 * 60 * 60) });
@@ -1133,6 +1146,7 @@ export class ThiefService {
       }
 
       let attackerAch = null;
+      let attackerQuest = null;
 
       if (success) {
         attacker.money = Math.max(0, Math.floor(Number(attacker.money) || 0) + stolen);
@@ -1140,6 +1154,14 @@ export class ThiefService {
         if (this.achievements?.onEvent) {
           try {
             attackerAch = await this.achievements.onEvent(attacker, "thief_success", { amount: stolen, bizId }, {
+              persist: false,
+              notify: false
+            });
+          } catch {}
+        }
+        if (this.quests?.onEvent) {
+          try {
+            attackerQuest = await this.quests.onEvent(attacker, "thief_success", { amount: stolen, bizId }, {
               persist: false,
               notify: false
             });
@@ -1169,6 +1191,9 @@ export class ThiefService {
       }
       if (attackerAch?.newlyEarned?.length && this.achievements?.notifyEarned) {
         await this.achievements.notifyEarned(attacker, attackerAch.newlyEarned);
+      }
+      if (attackerQuest?.events?.length && this.quests?.notifyEvents) {
+        await this.quests.notifyEvents(attacker, attackerQuest.events);
       }
     }
 

@@ -12,7 +12,7 @@ export const labourHandler = {
     data.startsWith("labour:rehire:"),
 
   async handle(ctx) {
-    const { data, u, cb, answer, goTo, users, locations, labour, thief, achievements, ratings } = ctx;
+    const { data, u, cb, answer, goTo, users, locations, labour, thief, achievements, ratings, quests } = ctx;
     const lang = normalizeLang(u?.lang || "ru");
     const tt = (key, vars = {}) => t(key, lang, vars);
     if (!labour) {
@@ -97,6 +97,11 @@ export const labourHandler = {
           }
         } catch {}
         try {
+          if (quests?.onEvent) {
+            await quests.onEvent(u, "biz_expand", { bizId: B.id });
+          }
+        } catch {}
+        try {
           if (thief?.upsertBizOwner) {
             await thief.upsertBizOwner(u.id, B.id);
           }
@@ -127,6 +132,14 @@ export const labourHandler = {
       try {
         if (achievements?.onEvent) {
           await achievements.onEvent(u, "slot_buy", {
+            bizId,
+            slotIndex: Number.isFinite(slotIndex) ? slotIndex : -1
+          });
+        }
+      } catch {}
+      try {
+        if (quests?.onEvent) {
+          await quests.onEvent(u, "biz_expand", {
             bizId,
             slotIndex: Number.isFinite(slotIndex) ? slotIndex : -1
           });

@@ -1,15 +1,15 @@
 ﻿// JobService.js
 import { CONFIG } from "./GameConfig.js";
 import { HomeService } from "./HomeService.js";
-import { BarService } from "./BarService.js";
 import { NotifyDueIndex } from "./NotifyDueIndex.js";
 
 export class JobService {
-  constructor({ users, now, social, achievements = null }) {
+  constructor({ users, now, social, achievements = null, quests = null }) {
     this.users = users;
     this.now = now || (() => Date.now());
     this.social = social || null;
     this.achievements = achievements || null;
+    this.quests = quests || null;
     this.dueIndex = (this.users?.db) ? new NotifyDueIndex({ db: this.users.db, now: this.now }) : null;
   }
 
@@ -71,20 +71,8 @@ export class JobService {
     };
 
     u.jobs.active = [inst];
-    let achRes = null;
-    if (this.achievements?.onEvent) {
-      try {
-        achRes = await this.achievements.onEvent(u, "work_claim", { pay }, {
-          persist: false,
-          notify: false
-        });
-      } catch {}
-    }
 
     await this.users.save(u);
-    if (achRes?.newlyEarned?.length && this.achievements?.notifyEarned) {
-      await this.achievements.notifyEarned(u, achRes.newlyEarned);
-    }
 
     // best-effort индекс готовности уведомлений для крона
     try {
@@ -135,12 +123,33 @@ export class JobService {
     u.dayTotal  = (u.dayTotal  || 0) + pay;
     u.weekTotal = (u.weekTotal || 0) + pay;
 
+    let achRes = null;
+    if (this.achievements?.onEvent) {
+      try {
+        achRes = await this.achievements.onEvent(u, "work_claim", { pay }, {
+          persist: false,
+          notify: false
+        });
+      } catch {}
+    }
+    let questRes = null;
+    if (this.quests?.onEvent) {
+      try {
+        questRes = await this.quests.onEvent(u, "work_claim", { pay }, {
+          persist: false,
+          notify: false
+        });
+      } catch {}
+    }
+
     await this.users.save(u);
 
-    // BAR-квесты (best-effort)
-    try {
-      await BarService.onWorkClaim({ u, users: this.users, now: this.now, pay });
-    } catch {}
+    if (achRes?.newlyEarned?.length && this.achievements?.notifyEarned) {
+      await this.achievements.notifyEarned(u, achRes.newlyEarned);
+    }
+    if (questRes?.events?.length && this.quests?.notifyEvents) {
+      await this.quests.notifyEvents(u, questRes.events);
+    }
 
     // Агрегаты и топ (best-effort)
     try {

@@ -187,23 +187,21 @@ export async function renderUpgradesRoute(ctx, user, { lang = "ru" } = {}) {
 }
 
 export async function renderBarTasksRoute(ctx, user, { lang = "ru" } = {}) {
-  const title = ctx._t(user, "loc.bartasks.title");
-  const tasks = Array.isArray(user?.bar?.tasks) ? user.bar.tasks : [];
-  const hasTasks = tasks.length > 0;
-  const allClaimed = hasTasks && tasks.every((task) => task?.status === "claimed");
-
-  let caption = title;
-  if (!hasTasks) {
-    caption = `${title}\n\n${ctx._t(user, "loc.bartasks.empty")}`;
-  } else if (allClaimed) {
-    caption = `${title}\n\n${ctx._t(user, "loc.bartasks.done")}`;
+  let caption = `${ctx._t(user, "loc.bartasks.title")}\n\n${ctx._t(user, "loc.bartasks.empty")}`;
+  let keyboard = ctx.ui.barTasks(user, lang);
+  if (ctx.quests?.buildBarTasksView) {
+    const view = await ctx.quests.buildBarTasksView(user);
+    if (view && typeof view === "object") {
+      caption = String(view.caption || caption);
+      if (Array.isArray(view.keyboard)) keyboard = view.keyboard;
+    }
   }
 
   await ctx.media.show({
     sourceMsg: ctx._sourceMsg,
     place: Routes.BAR,
     caption,
-    keyboard: ctx.ui.barTasks(user, lang),
+    keyboard,
     policy: "auto",
   });
   ctx._sourceMsg = null;

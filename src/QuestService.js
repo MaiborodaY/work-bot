@@ -1,0 +1,1070 @@
+import { CONFIG } from "./GameConfig.js";
+import { formatMoney, normalizeLang } from "./i18n/index.js";
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function n(raw) {
+  const v = Number(raw);
+  return Number.isFinite(v) ? v : 0;
+}
+
+function toInt(raw, min = 0) {
+  return Math.max(min, Math.floor(n(raw)));
+}
+
+function dayStr(ts) {
+  const d = new Date(ts);
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(d.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function parseDayToMs(day) {
+  const s = String(day || "");
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return 0;
+  const y = Number(m[1]);
+  const mm = Number(m[2]);
+  const dd = Number(m[3]);
+  return Date.UTC(y, mm - 1, dd);
+}
+
+function dayDiff(a, b) {
+  const da = parseDayToMs(a);
+  const db = parseDayToMs(b);
+  if (!da || !db) return 0;
+  return Math.floor((db - da) / DAY_MS);
+}
+
+function isoWeekKey(ts) {
+  const d = new Date(ts);
+  const tmp = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  const dayNum = (tmp.getUTCDay() + 6) % 7;
+  tmp.setUTCDate(tmp.getUTCDate() - dayNum + 3);
+  const firstThu = new Date(Date.UTC(tmp.getUTCFullYear(), 0, 4));
+  const diff = Math.floor((tmp.getTime() - firstThu.getTime()) / DAY_MS);
+  const week = 1 + Math.floor(diff / 7);
+  return `${tmp.getUTCFullYear()}-W${String(week).padStart(2, "0")}`;
+}
+
+function xmur3(str) {
+  let h = 1779033703 ^ str.length;
+  for (let i = 0; i < str.length; i += 1) {
+    h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+    h = (h << 13) | (h >>> 19);
+  }
+  return function seed() {
+    h = Math.imul(h ^ (h >>> 16), 2246822507);
+    h = Math.imul(h ^ (h >>> 13), 3266489909);
+    return (h ^= h >>> 16) >>> 0;
+  };
+}
+
+function mulberry32(seed) {
+  let t = seed >>> 0;
+  return function rand() {
+    t += 0x6D2B79F5;
+    let r = Math.imul(t ^ (t >>> 15), t | 1);
+    r ^= r + Math.imul(r ^ (r >>> 7), r | 61);
+    return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function rngFromSeed(seed) {
+  const seedFn = xmur3(String(seed || ""));
+  return mulberry32(seedFn());
+}
+
+function shuffleDeterministic(list, rng) {
+  const arr = [...list];
+  for (let i = arr.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(rng() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+const DIFF_SCORE = { easy: 1, medium: 2, hard: 3 };
+
+export class QuestService {
+  constructor({ users, now, bot = null }) {
+    this.users = users;
+    this.now = now || (() => Date.now());
+    this.bot = bot || null;
+  }
+
+  _lang(source) {
+    if (typeof source === "string") return normalizeLang(source);
+    return normalizeLang(source?.lang || "ru");
+  }
+
+  _cfg() {
+    return CONFIG?.QUESTS || {};
+  }
+
+  _dailyPool() {
+    return Array.isArray(this._cfg().DAILY_POOL) ? this._cfg().DAILY_POOL : [];
+  }
+
+  _weeklyPool() {
+    return Array.isArray(this._cfg().WEEKLY_POOL) ? this._cfg().WEEKLY_POOL : [];
+  }
+
+  _dailyCount() {
+    return Math.max(1, toInt(this._cfg().DAILY_COUNT, 1));
+  }
+
+  _weeklyCount() {
+    return Math.max(1, toInt(this._cfg().WEEKLY_COUNT, 1));
+  }
+
+  _dailyBonusGems() {
+    return Math.max(0, toInt(this._cfg().DAILY_BONUS_GEMS, 0));
+  }
+
+  _weeklyBonusGems() {
+    return Math.max(0, toInt(this._cfg().WEEKLY_BONUS_GEMS, 0));
+  }
+
+  _subBonusRewardMoney() {
+    return Math.max(0, toInt(this._cfg().SUB_BONUS_REWARD_MONEY, 0));
+  }
+
+  _dailyCounterDefaults() {
+    return {
+      workShifts: 0,
+      workEarn: 0,
+      gymTrains: 0,
+      fortuneSpins: 0,
+      dailyClaims: 0,
+      bizClaims: 0,
+      bizCollectAll: 0,
+      bizGuard: 0,
+      labourHires: 0,
+      stocksBuys: 0,
+      stocksSells: 0,
+      stocksHoldings3: 0,
+      stocksPortfolioMax: 0,
+      thiefAttempts: 0,
+      thiefSuccesses: 0
+    };
+  }
+
+  _weeklyCounterDefaults() {
+    return {
+      workShifts: 0,
+      workEarn: 0,
+      gymTrains: 0,
+      bizClaimDays: 0,
+      bizExpands: 0,
+      labourHires: 0,
+      labourOwnerContractFinishes: 0,
+      stocksProfitSells: 0,
+      stocksHoldings5: 0,
+      stocksInvested: 0,
+      thiefAttempts: 0,
+      thiefStolen: 0
+    };
+  }
+
+  _ensureCounters(target, defaults) {
+    let dirty = false;
+    if (!target || typeof target !== "object") return { value: { ...defaults }, dirty: true };
+    for (const [k, v] of Object.entries(defaults)) {
+      if (typeof target[k] !== "number" || !Number.isFinite(target[k])) {
+        target[k] = v;
+        dirty = true;
+      }
+    }
+    return { value: target, dirty };
+  }
+
+  _ensureModel(u) {
+    if (!u || typeof u !== "object") return false;
+    let dirty = false;
+
+    if (!u.flags || typeof u.flags !== "object") {
+      u.flags = {};
+      dirty = true;
+    }
+    if (typeof u.flags.subBonusClaimed !== "boolean") {
+      u.flags.subBonusClaimed = false;
+      dirty = true;
+    }
+
+    if (!u.quests || typeof u.quests !== "object") {
+      u.quests = {};
+      dirty = true;
+    }
+    if (!u.quests.daily || typeof u.quests.daily !== "object") {
+      u.quests.daily = {};
+      dirty = true;
+    }
+    if (!u.quests.weekly || typeof u.quests.weekly !== "object") {
+      u.quests.weekly = {};
+      dirty = true;
+    }
+
+    const d = u.quests.daily;
+    if (typeof d.day !== "string") { d.day = ""; dirty = true; }
+    if (!Array.isArray(d.list)) { d.list = []; dirty = true; }
+    if (typeof d.bonusPaid !== "boolean") { d.bonusPaid = false; dirty = true; }
+    const dRes = this._ensureCounters(d.counters, this._dailyCounterDefaults());
+    d.counters = dRes.value;
+    dirty = dirty || dRes.dirty;
+
+    const w = u.quests.weekly;
+    if (typeof w.week !== "string") { w.week = ""; dirty = true; }
+    if (!Array.isArray(w.list)) { w.list = []; dirty = true; }
+    if (typeof w.bonusPaid !== "boolean") { w.bonusPaid = false; dirty = true; }
+    if (typeof w.bizStreakCurrent !== "number" || !Number.isFinite(w.bizStreakCurrent)) {
+      w.bizStreakCurrent = 0;
+      dirty = true;
+    }
+    if (typeof w.lastBizClaimDay !== "string") {
+      w.lastBizClaimDay = "";
+      dirty = true;
+    }
+    const wRes = this._ensureCounters(w.counters, this._weeklyCounterDefaults());
+    w.counters = wRes.value;
+    dirty = dirty || wRes.dirty;
+
+    for (const group of [d.list, w.list]) {
+      for (const q of group) {
+        if (!q || typeof q !== "object") continue;
+        if (typeof q.id !== "string") { q.id = ""; dirty = true; }
+        if (typeof q.type !== "string") { q.type = "daily"; dirty = true; }
+        if (typeof q.category !== "string") { q.category = "work"; dirty = true; }
+        if (typeof q.difficulty !== "string") { q.difficulty = "easy"; dirty = true; }
+        if (typeof q.rewardMoney !== "number" || !Number.isFinite(q.rewardMoney)) { q.rewardMoney = 0; dirty = true; }
+        if (typeof q.target !== "number" || !Number.isFinite(q.target)) { q.target = 1; dirty = true; }
+        if (typeof q.progress !== "number" || !Number.isFinite(q.progress)) { q.progress = 0; dirty = true; }
+        if (typeof q.done !== "boolean") { q.done = false; dirty = true; }
+        if (typeof q.paid !== "boolean") { q.paid = false; dirty = true; }
+      }
+    }
+
+    return dirty;
+  }
+
+  _hasAnyBusiness(u) {
+    const arr = Array.isArray(u?.biz?.owned) ? u.biz.owned : [];
+    for (const x of arr) {
+      const id = String(typeof x === "string" ? x : x?.id || "");
+      if (id) return true;
+    }
+    return false;
+  }
+
+  _iterBizOwnedObjects(u) {
+    const arr = Array.isArray(u?.biz?.owned) ? u.biz.owned : [];
+    const out = [];
+    for (const x of arr) {
+      if (x && typeof x === "object") out.push(x);
+    }
+    return out;
+  }
+
+  _slotIsActive(slot) {
+    if (!slot || typeof slot !== "object") return false;
+    if (!slot.purchased) return false;
+    const endAt = toInt(slot.contractEnd, 0);
+    const employeeId = String(slot.employeeId || "").trim();
+    return !!employeeId && endAt > this.now();
+  }
+
+  _hasAnyFreeLabourSlot(u) {
+    for (const biz of this._iterBizOwnedObjects(u)) {
+      const slots = Array.isArray(biz?.slots) ? biz.slots : [];
+      for (const slot of slots) {
+        if (!slot?.purchased) continue;
+        if (!this._slotIsActive(slot)) return true;
+      }
+    }
+    return false;
+  }
+
+  _hasAnyBusyLabourSlot(u) {
+    for (const biz of this._iterBizOwnedObjects(u)) {
+      const slots = Array.isArray(biz?.slots) ? biz.slots : [];
+      for (const slot of slots) {
+        if (this._slotIsActive(slot)) return true;
+      }
+    }
+    return false;
+  }
+
+  _holdingsCount(u) {
+    const h = u?.stocks?.holdings;
+    if (!h || typeof h !== "object") return 0;
+    let c = 0;
+    for (const v of Object.values(h)) {
+      if (toInt(v?.shares, 0) > 0) c += 1;
+    }
+    return c;
+  }
+
+  _canDoGymQuest(u) {
+    const maxCap = Math.max(0, toInt(CONFIG?.GYM?.MAX_ENERGY_CAP, 0));
+    const energyMax = Math.max(0, toInt(u?.energy_max, 0));
+    if (!maxCap) return true;
+    return energyMax < maxCap;
+  }
+
+  _dailyQuestAvailable(u, id) {
+    switch (id) {
+      case "gym_train":
+      case "gym_2trains":
+        return this._canDoGymQuest(u);
+      case "biz_collect":
+      case "biz_collect_all":
+      case "biz_guard":
+        return this._hasAnyBusiness(u);
+      case "labour_hire":
+        return this._hasAnyFreeLabourSlot(u);
+      case "stocks_sell":
+        return this._holdingsCount(u) > 0;
+      case "thief_attempt":
+      case "thief_success":
+        return toInt(u?.thief?.level, 0) >= 1;
+      default:
+        return true;
+    }
+  }
+
+  _weeklyQuestAvailable(u, id) {
+    switch (id) {
+      case "w_gym_7trains":
+        return this._canDoGymQuest(u);
+      case "w_biz_streak":
+      case "w_biz_expand":
+        return this._hasAnyBusiness(u);
+      case "w_labour_hire":
+        return this._hasAnyFreeLabourSlot(u);
+      case "w_labour_finish_contracts":
+        return this._hasAnyBusyLabourSlot(u);
+      case "w_stocks_profit":
+        return this._holdingsCount(u) > 0;
+      case "w_thief_3attempts":
+      case "w_thief_total":
+        return toInt(u?.thief?.level, 0) >= 1;
+      default:
+        return true;
+    }
+  }
+
+  _resolveTarget(id, fallbackTarget) {
+    const cfg = this._cfg();
+    if (id === "work_earn") return Math.max(1, toInt(cfg.DAILY_WORK_EARN_TARGET, 500));
+    if (id === "stocks_portfolio") return Math.max(1, toInt(cfg.DAILY_STOCKS_PORTFOLIO_TARGET, 5000));
+    if (id === "w_work_earn") return Math.max(1, toInt(cfg.WEEKLY_WORK_EARN_TARGET, 20000));
+    if (id === "w_stocks_invest") return Math.max(1, toInt(cfg.WEEKLY_STOCKS_INVEST_TARGET, 50000));
+    if (id === "w_thief_total") return Math.max(1, toInt(cfg.WEEKLY_THIEF_TOTAL_TARGET, 10000));
+    return Math.max(1, toInt(fallbackTarget, 1));
+  }
+
+  _toQuest(def) {
+    const id = String(def?.id || "");
+    return {
+      id,
+      type: String(def?.type || "daily"),
+      category: String(def?.category || "work"),
+      difficulty: String(def?.difficulty || "easy"),
+      rewardMoney: Math.max(0, toInt(def?.rewardMoney, 0)),
+      target: this._resolveTarget(id, def?.target),
+      progress: 0,
+      done: false,
+      paid: false
+    };
+  }
+
+  _pickDailyQuests(pool, seed) {
+    const desired = ["easy", "easy", "hard"];
+    const rng = rngFromSeed(seed);
+    const shuffled = shuffleDeterministic(pool, rng);
+    const available = [...shuffled];
+    const selected = [];
+
+    const pickOne = (diff) => {
+      const fallbackOrder = diff === "hard"
+        ? ["hard", "medium", "easy"]
+        : ["easy", "medium", "hard"];
+      for (const d of fallbackOrder) {
+        const idx = available.findIndex((q) => String(q?.difficulty || "") === d);
+        if (idx >= 0) {
+          const [one] = available.splice(idx, 1);
+          return one;
+        }
+      }
+      return null;
+    };
+
+    for (const diff of desired) {
+      const one = pickOne(diff);
+      if (one) selected.push(one);
+      if (selected.length >= this._dailyCount()) break;
+    }
+    while (selected.length < this._dailyCount() && available.length) {
+      selected.push(available.shift());
+    }
+
+    selected.sort((a, b) => {
+      const da = DIFF_SCORE[String(a?.difficulty || "easy")] || 1;
+      const db = DIFF_SCORE[String(b?.difficulty || "easy")] || 1;
+      if (da !== db) return da - db;
+      return String(a?.id || "").localeCompare(String(b?.id || ""));
+    });
+    return selected.slice(0, this._dailyCount()).map((q) => this._toQuest(q));
+  }
+
+  _pickWeeklyQuests(pool, seed) {
+    const rng = rngFromSeed(seed);
+    const shuffled = shuffleDeterministic(pool, rng);
+    shuffled.sort((a, b) => {
+      const da = DIFF_SCORE[String(a?.difficulty || "easy")] || 1;
+      const db = DIFF_SCORE[String(b?.difficulty || "easy")] || 1;
+      if (da !== db) return db - da;
+      return 0;
+    });
+
+    const selected = [];
+    for (const q of shuffled) {
+      if (selected.length >= this._weeklyCount()) break;
+      if (!selected.length) {
+        selected.push(q);
+        continue;
+      }
+      const cat = String(q?.category || "");
+      const duplicateCategory = selected.some((x) => String(x?.category || "") === cat);
+      if (!duplicateCategory) selected.push(q);
+    }
+    for (const q of shuffled) {
+      if (selected.length >= this._weeklyCount()) break;
+      if (selected.some((x) => String(x?.id || "") === String(q?.id || ""))) continue;
+      selected.push(q);
+    }
+    selected.sort((a, b) => {
+      const da = DIFF_SCORE[String(a?.difficulty || "easy")] || 1;
+      const db = DIFF_SCORE[String(b?.difficulty || "easy")] || 1;
+      if (da !== db) return db - da;
+      return String(a?.id || "").localeCompare(String(b?.id || ""));
+    });
+    return selected.slice(0, this._weeklyCount()).map((q) => this._toQuest(q));
+  }
+
+  _generateDaily(u, day) {
+    const pool = this._dailyPool().filter((q) => this._dailyQuestAvailable(u, q?.id));
+    const picked = this._pickDailyQuests(pool, `${u?.id || ""}:${day}:daily`);
+    if (picked.length >= this._dailyCount()) return picked;
+
+    const fallbackWork = this._dailyPool().filter((q) => String(q?.category || "") === "work");
+    const add = this._pickDailyQuests(fallbackWork, `${u?.id || ""}:${day}:daily:fallback`);
+    const byId = new Map();
+    for (const q of [...picked, ...add]) byId.set(q.id, q);
+    return [...byId.values()].slice(0, this._dailyCount());
+  }
+
+  _generateWeekly(u, week) {
+    const pool = this._weeklyPool().filter((q) => this._weeklyQuestAvailable(u, q?.id));
+    const picked = this._pickWeeklyQuests(pool, `${u?.id || ""}:${week}:weekly`);
+    if (picked.length >= this._weeklyCount()) return picked;
+
+    const fallbackWork = this._weeklyPool().filter((q) => String(q?.category || "") === "work");
+    const add = this._pickWeeklyQuests(fallbackWork, `${u?.id || ""}:${week}:weekly:fallback`);
+    const byId = new Map();
+    for (const q of [...picked, ...add]) byId.set(q.id, q);
+    return [...byId.values()].slice(0, this._weeklyCount());
+  }
+
+  _normalizeQuestList(list, type) {
+    if (!Array.isArray(list)) return [];
+    return list
+      .filter((q) => q && typeof q === "object" && String(q.id || ""))
+      .map((q) => ({
+        id: String(q.id || ""),
+        type: String(q.type || type),
+        category: String(q.category || "work"),
+        difficulty: String(q.difficulty || "easy"),
+        rewardMoney: Math.max(0, toInt(q.rewardMoney, 0)),
+        target: Math.max(1, toInt(q.target, 1)),
+        progress: Math.max(0, toInt(q.progress, 0)),
+        done: !!q.done,
+        paid: !!q.paid
+      }));
+  }
+
+  _progressByQuestId(u, scope, id) {
+    const daily = u?.quests?.daily || {};
+    const weekly = u?.quests?.weekly || {};
+    const d = daily.counters || {};
+    const w = weekly.counters || {};
+    if (scope === "daily") {
+      switch (id) {
+        case "work_1shift":
+        case "work_2shifts":
+          return toInt(d.workShifts, 0);
+        case "work_earn":
+          return toInt(d.workEarn, 0);
+        case "gym_train":
+        case "gym_2trains":
+          return toInt(d.gymTrains, 0);
+        case "fortune_spin":
+          return toInt(d.fortuneSpins, 0);
+        case "daily_bonus":
+          return toInt(d.dailyClaims, 0);
+        case "biz_collect":
+          return toInt(d.bizClaims, 0);
+        case "biz_collect_all":
+          return toInt(d.bizCollectAll, 0);
+        case "biz_guard":
+          return toInt(d.bizGuard, 0);
+        case "labour_hire":
+          return toInt(d.labourHires, 0);
+        case "stocks_buy":
+          return toInt(d.stocksBuys, 0);
+        case "stocks_buy3":
+          return toInt(d.stocksHoldings3, 0);
+        case "stocks_sell":
+          return toInt(d.stocksSells, 0);
+        case "stocks_portfolio":
+          return toInt(d.stocksPortfolioMax, 0);
+        case "thief_attempt":
+          return toInt(d.thiefAttempts, 0);
+        case "thief_success":
+          return toInt(d.thiefSuccesses, 0);
+        default:
+          return 0;
+      }
+    }
+
+    switch (id) {
+      case "w_work_10shifts":
+        return toInt(w.workShifts, 0);
+      case "w_work_earn":
+        return toInt(w.workEarn, 0);
+      case "w_gym_7trains":
+        return toInt(w.gymTrains, 0);
+      case "w_biz_streak":
+        return toInt(weekly.bizStreakCurrent, 0);
+      case "w_biz_expand":
+        return toInt(w.bizExpands, 0);
+      case "w_labour_hire":
+        return toInt(w.labourHires, 0);
+      case "w_labour_finish_contracts":
+        return toInt(w.labourOwnerContractFinishes, 0);
+      case "w_stocks_profit":
+        return toInt(w.stocksProfitSells, 0);
+      case "w_stocks_5companies":
+        return toInt(w.stocksHoldings5, 0);
+      case "w_stocks_invest":
+        return toInt(w.stocksInvested, 0);
+      case "w_thief_3attempts":
+        return toInt(w.thiefAttempts, 0);
+      case "w_thief_total":
+        return toInt(w.thiefStolen, 0);
+      default:
+        return 0;
+    }
+  }
+
+  _applyQuestCompletion(u, scope, outEvents) {
+    const state = scope === "daily" ? u.quests.daily : u.quests.weekly;
+    let changed = false;
+    for (const q of state.list) {
+      if (!q || typeof q !== "object") continue;
+      const progressRaw = this._progressByQuestId(u, scope, q.id);
+      const isPortfolioQuest = q.id === "stocks_portfolio";
+      const progress = isPortfolioQuest ? progressRaw : Math.min(Math.max(0, progressRaw), Math.max(1, q.target));
+      if (progress !== q.progress) {
+        q.progress = progress;
+        changed = true;
+      }
+      const done = progressRaw >= q.target;
+      if (done && !q.done) {
+        q.done = true;
+        changed = true;
+      }
+      if (q.done && !q.paid) {
+        const reward = Math.max(0, toInt(q.rewardMoney, 0));
+        if (reward > 0) {
+          u.money = Math.max(0, toInt(u.money, 0)) + reward;
+        }
+        q.paid = true;
+        changed = true;
+        outEvents.push({ kind: "quest_done", scope, id: q.id, rewardMoney: reward });
+      }
+    }
+
+    const allDone = state.list.length > 0 && state.list.every((q) => q && q.done);
+    if (allDone && !state.bonusPaid) {
+      const gems = scope === "daily" ? this._dailyBonusGems() : this._weeklyBonusGems();
+      if (gems > 0) {
+        u.premium = Math.max(0, toInt(u.premium, 0)) + gems;
+      }
+      state.bonusPaid = true;
+      changed = true;
+      outEvents.push({ kind: "bonus_done", scope, rewardGems: gems });
+    }
+    return changed;
+  }
+
+  _updateBizStreakOnClaim(u, today) {
+    const w = u?.quests?.weekly;
+    if (!w || typeof w !== "object") return false;
+    if (String(w.lastBizClaimDay || "") === today) return false;
+    const prev = String(w.lastBizClaimDay || "");
+    const diff = prev ? dayDiff(prev, today) : 0;
+    if (!prev) {
+      w.bizStreakCurrent = 1;
+    } else if (diff === 1) {
+      w.bizStreakCurrent = Math.max(1, toInt(w.bizStreakCurrent, 0) + 1);
+    } else {
+      w.bizStreakCurrent = 1;
+    }
+    w.lastBizClaimDay = today;
+    w.counters.bizClaimDays = Math.max(0, toInt(w.counters.bizClaimDays, 0)) + 1;
+    return true;
+  }
+
+  _applyEventCounters(u, event, ctx = {}) {
+    const d = u.quests.daily.counters;
+    const w = u.quests.weekly.counters;
+    const today = dayStr(this.now());
+    let changed = false;
+    switch (String(event || "")) {
+      case "work_claim": {
+        const pay = Math.max(0, toInt(ctx?.pay, 0));
+        d.workShifts += 1;
+        d.workEarn += pay;
+        w.workShifts += 1;
+        w.workEarn += pay;
+        changed = true;
+        break;
+      }
+      case "gym_finish":
+        d.gymTrains += 1;
+        w.gymTrains += 1;
+        changed = true;
+        break;
+      case "fortune_spin":
+        d.fortuneSpins += 1;
+        changed = true;
+        break;
+      case "daily_claim":
+        d.dailyClaims += 1;
+        changed = true;
+        break;
+      case "biz_claim": {
+        const count = Math.max(0, toInt(ctx?.count, 1));
+        d.bizClaims += count;
+        if (ctx?.allClaim) d.bizCollectAll += 1;
+        changed = true;
+        if (count > 0) changed = this._updateBizStreakOnClaim(u, today) || changed;
+        break;
+      }
+      case "biz_expand":
+        w.bizExpands += 1;
+        changed = true;
+        break;
+      case "guard_buy":
+        d.bizGuard += 1;
+        changed = true;
+        break;
+      case "labour_hire":
+        d.labourHires += 1;
+        w.labourHires += 1;
+        changed = true;
+        break;
+      case "labour_owner_contract_finish":
+        w.labourOwnerContractFinishes += Math.max(1, toInt(ctx?.count, 1));
+        changed = true;
+        break;
+      case "stocks_buy": {
+        d.stocksBuys += 1;
+        const holdingsCount = Math.max(0, toInt(ctx?.holdingsCount, this._holdingsCount(u)));
+        if (holdingsCount >= 3) d.stocksHoldings3 = 1;
+        if (holdingsCount >= 5) w.stocksHoldings5 = 1;
+        const portfolioValue = Math.max(0, toInt(ctx?.portfolioValue, 0));
+        if (portfolioValue > d.stocksPortfolioMax) d.stocksPortfolioMax = portfolioValue;
+        w.stocksInvested += Math.max(0, toInt(ctx?.cost, 0));
+        changed = true;
+        break;
+      }
+      case "stocks_sell": {
+        d.stocksSells += 1;
+        const pnl = n(ctx?.pnl || 0);
+        if (pnl > 0) w.stocksProfitSells += 1;
+        changed = true;
+        break;
+      }
+      case "thief_attempt":
+        d.thiefAttempts += 1;
+        w.thiefAttempts += 1;
+        changed = true;
+        break;
+      case "thief_success": {
+        const amount = Math.max(0, toInt(ctx?.amount, 0));
+        d.thiefSuccesses += 1;
+        w.thiefStolen += amount;
+        changed = true;
+        break;
+      }
+      case "sub_bonus_claim":
+        changed = true;
+        break;
+      default:
+        break;
+    }
+    return changed;
+  }
+
+  _dailyToNextMs(nowTs) {
+    const d = new Date(nowTs);
+    const next = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1, 0, 0, 0, 0);
+    return Math.max(0, next - nowTs);
+  }
+
+  _weeklyToNextMs(nowTs) {
+    const d = new Date(nowTs);
+    const weekday = (d.getUTCDay() + 6) % 7;
+    const start = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - weekday, 0, 0, 0, 0);
+    const next = start + 7 * DAY_MS;
+    return Math.max(0, next - nowTs);
+  }
+
+  _formatLeft(source, ms) {
+    const l = this._lang(source);
+    const totalMinutes = Math.max(0, Math.floor(ms / 60000));
+    const days = Math.floor(totalMinutes / (24 * 60));
+    const hours = Math.floor((totalMinutes % (24 * 60)) / 60);
+    const minutes = totalMinutes % 60;
+    if (l === "en") {
+      if (days > 0) return `${days}d ${hours}h`;
+      return `${hours}h ${minutes}m`;
+    }
+    if (l === "uk") {
+      if (days > 0) return `${days}д ${hours}год`;
+      return `${hours}год ${minutes}хв`;
+    }
+    if (days > 0) return `${days}д ${hours}ч`;
+    return `${hours}ч ${minutes}мин`;
+  }
+
+  _questTitle(source, id, target) {
+    const lang = this._lang(source);
+    const l = lang === "en" ? "en" : (lang === "uk" ? "uk" : "ru");
+    const map = {
+      ru: {
+        work_1shift: "Завершить 1 смену",
+        work_2shifts: "Завершить 2 смены",
+        work_earn: `Заработать $${target} на сменах`,
+        gym_train: "Сделать 1 тренировку",
+        gym_2trains: "Сделать 2 тренировки",
+        fortune_spin: "Крутануть колесо фортуны",
+        daily_bonus: "Забрать ежедневный бонус",
+        biz_collect: "Забрать доход с любого бизнеса",
+        biz_collect_all: "Забрать доход со всех бизнесов",
+        biz_guard: "Поставить охрану на любой бизнес",
+        labour_hire: "Нанять наёмника в свободный слот",
+        stocks_buy: "Купить акции любой компании",
+        stocks_buy3: "Держать акции 3 компаний одновременно",
+        stocks_sell: "Продать любые акции",
+        stocks_portfolio: `Собрать портфель на $${target}`,
+        thief_attempt: "Совершить 1 попытку воровства",
+        thief_success: "Успешно украсть",
+        w_work_10shifts: "Завершить 10 смен за неделю",
+        w_work_earn: "Заработать $20 000 на сменах",
+        w_gym_7trains: "Сделать 7 тренировок за неделю",
+        w_biz_streak: "Собирать доход 5 дней подряд",
+        w_biz_expand: "Купить новый бизнес или слот",
+        w_labour_hire: "Нанять наёмника",
+        w_labour_finish_contracts: "Завершить 2 контракта как владелец",
+        w_stocks_profit: "Продать акции с прибылью",
+        w_stocks_5companies: "Держать акции 5 компаний одновременно",
+        w_stocks_invest: "Инвестировать $50 000 за неделю",
+        w_thief_3attempts: "Совершить 3 кражи за неделю",
+        w_thief_total: `Украсть суммарно $${target}`
+      },
+      uk: {
+        work_1shift: "Завершити 1 зміну",
+        work_2shifts: "Завершити 2 зміни",
+        work_earn: `Заробити $${target} на змінах`,
+        gym_train: "Зробити 1 тренування",
+        gym_2trains: "Зробити 2 тренування",
+        fortune_spin: "Прокрутити колесо фортуни",
+        daily_bonus: "Забрати щоденний бонус",
+        biz_collect: "Забрати дохід з будь-якого бізнесу",
+        biz_collect_all: "Забрати дохід з усіх бізнесів",
+        biz_guard: "Поставити охорону на будь-який бізнес",
+        labour_hire: "Найняти найманця у вільний слот",
+        stocks_buy: "Купити акції будь-якої компанії",
+        stocks_buy3: "Тримати акції 3 компаній одночасно",
+        stocks_sell: "Продати будь-які акції",
+        stocks_portfolio: `Зібрати портфель на $${target}`,
+        thief_attempt: "Здійснити 1 спробу крадіжки",
+        thief_success: "Успішно вкрасти",
+        w_work_10shifts: "Завершити 10 змін за тиждень",
+        w_work_earn: "Заробити $20 000 на змінах",
+        w_gym_7trains: "Зробити 7 тренувань за тиждень",
+        w_biz_streak: "Збирати дохід 5 днів поспіль",
+        w_biz_expand: "Купити новий бізнес або слот",
+        w_labour_hire: "Найняти найманця",
+        w_labour_finish_contracts: "Завершити 2 контракти як власник",
+        w_stocks_profit: "Продати акції з прибутком",
+        w_stocks_5companies: "Тримати акції 5 компаній одночасно",
+        w_stocks_invest: "Інвестувати $50 000 за тиждень",
+        w_thief_3attempts: "Здійснити 3 крадіжки за тиждень",
+        w_thief_total: `Вкрасти сумарно $${target}`
+      },
+      en: {
+        work_1shift: "Complete 1 shift",
+        work_2shifts: "Complete 2 shifts",
+        work_earn: `Earn $${target} from shifts`,
+        gym_train: "Do 1 workout",
+        gym_2trains: "Do 2 workouts",
+        fortune_spin: "Spin the wheel of fortune",
+        daily_bonus: "Claim daily bonus",
+        biz_collect: "Collect income from any business",
+        biz_collect_all: "Collect income from all businesses",
+        biz_guard: "Buy guard for any business",
+        labour_hire: "Hire a worker to a free slot",
+        stocks_buy: "Buy shares of any company",
+        stocks_buy3: "Hold shares of 3 companies at once",
+        stocks_sell: "Sell any shares",
+        stocks_portfolio: `Build portfolio worth $${target}`,
+        thief_attempt: "Make 1 theft attempt",
+        thief_success: "Steal successfully",
+        w_work_10shifts: "Complete 10 shifts this week",
+        w_work_earn: "Earn $20,000 from shifts",
+        w_gym_7trains: "Do 7 workouts this week",
+        w_biz_streak: "Collect business income 5 days in a row",
+        w_biz_expand: "Buy a new business or slot",
+        w_labour_hire: "Hire a worker",
+        w_labour_finish_contracts: "Finish 2 owner contracts",
+        w_stocks_profit: "Sell shares with profit",
+        w_stocks_5companies: "Hold shares of 5 companies at once",
+        w_stocks_invest: "Invest $50,000 this week",
+        w_thief_3attempts: "Make 3 theft attempts this week",
+        w_thief_total: `Steal total $${target}`
+      }
+    };
+    return map[l]?.[id] || map.ru[id] || id;
+  }
+
+  _strings(source) {
+    const l = this._lang(source);
+    if (l === "en") {
+      return {
+        barTitle: "🍺 Bar",
+        dailyTitle: "📋 Daily quests",
+        weeklyTitle: "📅 Weekly quests",
+        updateIn: "⏳ Refresh in",
+        bonusDaily: `🎯 Complete all three -> +💎${this._dailyBonusGems()}`,
+        bonusWeekly: `🎯 Complete both -> +💎${this._weeklyBonusGems()}`,
+        doneLine: "Completed · reward received",
+        none: "No quests yet.",
+        subTitle: "⭐ Special quest",
+        subText: "Claim subscription reward",
+        back: "⬅️ Back",
+        refresh: "🔄 Refresh",
+        donePrefix: "✅",
+        todoPrefix: "⬜",
+        questDoneTitle: "🏆 Quest completed!",
+        bonusDoneTitle: "🎉 Quest set completed!"
+      };
+    }
+    if (l === "uk") {
+      return {
+        barTitle: "🍺 Бар",
+        dailyTitle: "📋 Завдання на сьогодні",
+        weeklyTitle: "📅 Завдання на тиждень",
+        updateIn: "⏳ Оновлення через",
+        bonusDaily: `🎯 Виконай усі три -> +💎${this._dailyBonusGems()}`,
+        bonusWeekly: `🎯 Виконай обидва -> +💎${this._weeklyBonusGems()}`,
+        doneLine: "Виконано · нагороду отримано",
+        none: "Поки немає завдань.",
+        subTitle: "⭐ Спец-завдання",
+        subText: "Забрати нагороду за підписку",
+        back: "⬅️ Назад",
+        refresh: "🔄 Оновити",
+        donePrefix: "✅",
+        todoPrefix: "⬜",
+        questDoneTitle: "🏆 Нове завдання виконано!",
+        bonusDoneTitle: "🎉 Увесь блок завдань виконано!"
+      };
+    }
+    return {
+      barTitle: "🍺 Бар",
+      dailyTitle: "📋 Задания на сегодня",
+      weeklyTitle: "📅 Задания на неделю",
+      updateIn: "⏳ Обновление через",
+      bonusDaily: `🎯 Выполни все три -> +💎${this._dailyBonusGems()}`,
+      bonusWeekly: `🎯 Выполни оба -> +💎${this._weeklyBonusGems()}`,
+      doneLine: "Выполнено · награда получена",
+      none: "Пока заданий нет.",
+      subTitle: "⭐ Спец-задача",
+      subText: "Забрать награду за подписку",
+      back: "⬅️ Назад",
+      refresh: "🔄 Обновить",
+      donePrefix: "✅",
+      todoPrefix: "⬜",
+      questDoneTitle: "🏆 Новое задание!",
+      bonusDoneTitle: "🎉 Весь набор заданий закрыт!"
+    };
+  }
+
+  async ensureCycles(u, { persist = true } = {}) {
+    let dirty = this._ensureModel(u);
+    const nowTs = this.now();
+    const day = dayStr(nowTs);
+    const week = isoWeekKey(nowTs);
+
+    if (u.quests.daily.day !== day) {
+      u.quests.daily.day = day;
+      u.quests.daily.list = this._generateDaily(u, day);
+      u.quests.daily.bonusPaid = false;
+      u.quests.daily.counters = this._dailyCounterDefaults();
+      dirty = true;
+    } else {
+      const normalized = this._normalizeQuestList(u.quests.daily.list, "daily");
+      if (normalized.length !== u.quests.daily.list.length) dirty = true;
+      u.quests.daily.list = normalized;
+    }
+
+    if (u.quests.weekly.week !== week) {
+      u.quests.weekly.week = week;
+      u.quests.weekly.list = this._generateWeekly(u, week);
+      u.quests.weekly.bonusPaid = false;
+      u.quests.weekly.counters = this._weeklyCounterDefaults();
+      u.quests.weekly.bizStreakCurrent = 0;
+      u.quests.weekly.lastBizClaimDay = "";
+      dirty = true;
+    } else {
+      const normalized = this._normalizeQuestList(u.quests.weekly.list, "weekly");
+      if (normalized.length !== u.quests.weekly.list.length) dirty = true;
+      u.quests.weekly.list = normalized;
+    }
+
+    const events = [];
+    dirty = this._applyQuestCompletion(u, "daily", events) || dirty;
+    dirty = this._applyQuestCompletion(u, "weekly", events) || dirty;
+
+    if (dirty && persist) {
+      await this.users.save(u);
+    }
+    return { changed: dirty, events };
+  }
+
+  async onEvent(u, event, ctx = {}, options = {}) {
+    const persist = options.persist !== false;
+    const notify = options.notify !== false;
+    let dirty = this._ensureModel(u);
+
+    const cycleRes = await this.ensureCycles(u, { persist: false });
+    dirty = dirty || !!cycleRes?.changed;
+
+    dirty = this._applyEventCounters(u, event, ctx) || dirty;
+
+    const events = [];
+    dirty = this._applyQuestCompletion(u, "daily", events) || dirty;
+    dirty = this._applyQuestCompletion(u, "weekly", events) || dirty;
+
+    if (String(event || "") === "sub_bonus_claim" && !u.flags.subBonusClaimed) {
+      u.flags.subBonusClaimed = true;
+      const reward = this._subBonusRewardMoney();
+      if (reward > 0) {
+        u.money = Math.max(0, toInt(u.money, 0)) + reward;
+      }
+      events.push({ kind: "quest_done", scope: "special", id: "sub_bonus", rewardMoney: reward });
+      dirty = true;
+    }
+
+    if (dirty && persist) {
+      await this.users.save(u);
+    }
+    if (notify && events.length) {
+      await this.notifyEvents(u, events);
+    }
+    return { ok: true, changed: dirty, events };
+  }
+
+  async notifyEvents(u, events = []) {
+    if (!this.bot || !u?.chatId || !Array.isArray(events) || !events.length) return;
+    const s = this._strings(u);
+    for (const ev of events) {
+      if (!ev || typeof ev !== "object") continue;
+      if (ev.kind === "quest_done") {
+        const title = ev.id === "sub_bonus"
+          ? s.subText
+          : this._questTitle(u, ev.id, ev.target || 1);
+        const reward = Math.max(0, toInt(ev.rewardMoney, 0));
+        const text = `${s.questDoneTitle}\n${title}\n+${formatMoney(reward, this._lang(u))}`;
+        try {
+          await this.bot.sendMessage(u.chatId, text);
+        } catch {}
+      } else if (ev.kind === "bonus_done") {
+        const gems = Math.max(0, toInt(ev.rewardGems, 0));
+        const text = `${s.bonusDoneTitle}\n+💎${gems}`;
+        try {
+          await this.bot.sendMessage(u.chatId, text);
+        } catch {}
+      }
+    }
+  }
+
+  _questLine(source, q) {
+    const s = this._strings(source);
+    const title = this._questTitle(source, q.id, q.target);
+    const rewardText = formatMoney(q.rewardMoney, this._lang(source));
+    if (q.done) {
+      return `${s.donePrefix} ${title} — ${rewardText}\n   ${s.doneLine}`;
+    }
+    const progress = `${Math.max(0, toInt(q.progress, 0))}/${Math.max(1, toInt(q.target, 1))}`;
+    return `${s.todoPrefix} ${title} — ${rewardText}\n   ${progress}`;
+  }
+
+  async buildBarTasksView(u) {
+    await this.ensureCycles(u, { persist: false });
+    const s = this._strings(u);
+    const nowTs = this.now();
+    const dailyLeft = this._formatLeft(u, this._dailyToNextMs(nowTs));
+    const weeklyLeft = this._formatLeft(u, this._weeklyToNextMs(nowTs));
+
+    const daily = Array.isArray(u?.quests?.daily?.list) ? u.quests.daily.list : [];
+    const weekly = Array.isArray(u?.quests?.weekly?.list) ? u.quests.weekly.list : [];
+
+    const lines = [
+      s.barTitle,
+      "",
+      s.dailyTitle,
+      `${s.updateIn} ${dailyLeft}`,
+      ""
+    ];
+    if (daily.length) {
+      for (const q of daily) lines.push(this._questLine(u, q), "");
+    } else {
+      lines.push(s.none, "");
+    }
+    lines.push(s.bonusDaily, "");
+    lines.push("━━━━━━━━━━━━━━━━", "");
+    lines.push(s.weeklyTitle, `${s.updateIn} ${weeklyLeft}`, "");
+    if (weekly.length) {
+      for (const q of weekly) lines.push(this._questLine(u, q), "");
+    } else {
+      lines.push(s.none, "");
+    }
+    lines.push(s.bonusWeekly);
+
+    if (!u?.flags?.subBonusClaimed) {
+      lines.push("", "━━━━━━━━━━━━━━━━", "", s.subTitle);
+      lines.push(`⬜ ${s.subText} — ${formatMoney(this._subBonusRewardMoney(), this._lang(u))}`);
+    }
+
+    const keyboard = [
+      [{ text: s.refresh, callback_data: "bar:tasks" }],
+      [{ text: s.back, callback_data: "go:Bar" }]
+    ];
+    return { caption: lines.join("\n").trim(), keyboard };
+  }
+}

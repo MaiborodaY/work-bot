@@ -97,6 +97,54 @@ export const CONFIG = {
     VIEW_LIST_LIMIT: 20
   },
 
+  QUESTS: {
+    DAILY_COUNT: 3,
+    WEEKLY_COUNT: 2,
+    DAILY_BONUS_GEMS: 1,
+    WEEKLY_BONUS_GEMS: 3,
+    SUB_BONUS_REWARD_MONEY: 300,
+    DAILY_WORK_EARN_TARGET: 500,
+    DAILY_STOCKS_PORTFOLIO_TARGET: 5000,
+    WEEKLY_WORK_EARN_TARGET: 20000,
+    WEEKLY_STOCKS_INVEST_TARGET: 50000,
+    WEEKLY_THIEF_TOTAL_TARGET: 10000,
+
+    DAILY_POOL: [
+      { id: "work_1shift", type: "daily", category: "work", difficulty: "easy", rewardMoney: 300, target: 1 },
+      { id: "work_2shifts", type: "daily", category: "work", difficulty: "medium", rewardMoney: 700, target: 2 },
+      { id: "work_earn", type: "daily", category: "work", difficulty: "medium", rewardMoney: 500, target: 500 },
+      { id: "gym_train", type: "daily", category: "gym", difficulty: "easy", rewardMoney: 300, target: 1 },
+      { id: "gym_2trains", type: "daily", category: "gym", difficulty: "hard", rewardMoney: 600, target: 2 },
+      { id: "fortune_spin", type: "daily", category: "fortune", difficulty: "easy", rewardMoney: 300, target: 1 },
+      { id: "daily_bonus", type: "daily", category: "daily", difficulty: "easy", rewardMoney: 300, target: 1 },
+      { id: "biz_collect", type: "daily", category: "biz", difficulty: "easy", rewardMoney: 400, target: 1 },
+      { id: "biz_collect_all", type: "daily", category: "biz", difficulty: "hard", rewardMoney: 800, target: 1 },
+      { id: "biz_guard", type: "daily", category: "biz", difficulty: "medium", rewardMoney: 400, target: 1 },
+      { id: "labour_hire", type: "daily", category: "labour", difficulty: "medium", rewardMoney: 600, target: 1 },
+      { id: "stocks_buy", type: "daily", category: "stocks", difficulty: "easy", rewardMoney: 400, target: 1 },
+      { id: "stocks_buy3", type: "daily", category: "stocks", difficulty: "hard", rewardMoney: 700, target: 1 },
+      { id: "stocks_sell", type: "daily", category: "stocks", difficulty: "medium", rewardMoney: 500, target: 1 },
+      { id: "stocks_portfolio", type: "daily", category: "stocks", difficulty: "hard", rewardMoney: 600, target: 5000 },
+      { id: "thief_attempt", type: "daily", category: "thief", difficulty: "medium", rewardMoney: 700, target: 1 },
+      { id: "thief_success", type: "daily", category: "thief", difficulty: "hard", rewardMoney: 1200, target: 1 }
+    ],
+
+    WEEKLY_POOL: [
+      { id: "w_work_10shifts", type: "weekly", category: "work", difficulty: "medium", rewardMoney: 5000, target: 10 },
+      { id: "w_work_earn", type: "weekly", category: "work", difficulty: "hard", rewardMoney: 8000, target: 20000 },
+      { id: "w_gym_7trains", type: "weekly", category: "gym", difficulty: "hard", rewardMoney: 4000, target: 7 },
+      { id: "w_biz_streak", type: "weekly", category: "biz", difficulty: "hard", rewardMoney: 6000, target: 5 },
+      { id: "w_biz_expand", type: "weekly", category: "biz", difficulty: "hard", rewardMoney: 10000, target: 1 },
+      { id: "w_labour_hire", type: "weekly", category: "labour", difficulty: "medium", rewardMoney: 5000, target: 1 },
+      { id: "w_labour_finish_contracts", type: "weekly", category: "labour", difficulty: "hard", rewardMoney: 4000, target: 2 },
+      { id: "w_stocks_profit", type: "weekly", category: "stocks", difficulty: "hard", rewardMoney: 8000, target: 1 },
+      { id: "w_stocks_5companies", type: "weekly", category: "stocks", difficulty: "hard", rewardMoney: 6000, target: 1 },
+      { id: "w_stocks_invest", type: "weekly", category: "stocks", difficulty: "hard", rewardMoney: 7000, target: 50000 },
+      { id: "w_thief_3attempts", type: "weekly", category: "thief", difficulty: "medium", rewardMoney: 6000, target: 3 },
+      { id: "w_thief_total", type: "weekly", category: "thief", difficulty: "hard", rewardMoney: 10000, target: 10000 }
+    ]
+  },
+
   DAILY_TOP_REWARDS: {
     1:  { stars: 3, money: 0 },
     2:  { stars: 2, money: 0 },

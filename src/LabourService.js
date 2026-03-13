@@ -10,11 +10,12 @@ const CONTRACT_MODEL_LEGACY = "legacy_claim_share";
 const CONTRACT_MODEL_BG_V1 = "bg_fixed_v1";
 
 export class LabourService {
-  constructor({ db, users, now, bot }) {
+  constructor({ db, users, now, bot, quests = null }) {
     this.db = db;
     this.users = users;
     this.now = now || (() => Date.now());
     this.bot = bot || null;
+    this.quests = quests || null;
   }
 
   _lang(source) {
@@ -698,6 +699,7 @@ export class LabourService {
     let ownerMoneyTotal = 0;
     let ownerGemsTotal = 0;
     let legacyTotal = 0;
+    let ownerQuestRes = null;
     if (ownerId) {
       owner = await this.users.load(ownerId).catch(() => null);
       if (owner) {
@@ -745,8 +747,24 @@ export class LabourService {
           }
         }
 
+        if (contractModel === CONTRACT_MODEL_BG_V1 && this.quests?.onEvent) {
+          try {
+            ownerQuestRes = await this.quests.onEvent(owner, "labour_owner_contract_finish", {
+              count: 1,
+              bizId
+            }, {
+              persist: false,
+              notify: false
+            });
+            if (ownerQuestRes?.changed) ownerDirty = true;
+          } catch {}
+        }
+
         if (ownerDirty) {
           await this.users.save(owner);
+        }
+        if (ownerQuestRes?.events?.length && this.quests?.notifyEvents) {
+          await this.quests.notifyEvents(owner, ownerQuestRes.events);
         }
       }
     }
@@ -1060,7 +1078,24 @@ export class LabourService {
     slot.bgOwnerMoneyTotal = bgPlan.ownerMoneyTotal;
     slot.bgOwnerGemsTotal = bgPlan.ownerGemsTotal;
 
+    let questRes = null;
+    if (this.quests?.onEvent) {
+      try {
+        questRes = await this.quests.onEvent(owner, "labour_hire", {
+          bizId,
+          employeeId: reserved.id,
+          slotIndex: targetIdx
+        }, {
+          persist: false,
+          notify: false
+        });
+      } catch {}
+    }
+
     await this.users.save(owner);
+    if (questRes?.events?.length && this.quests?.notifyEvents) {
+      await this.quests.notifyEvents(owner, questRes.events);
+    }
     await this.removeFreePlayer(reserved.id);
     try {
       await this._markContractDue(reserved.id, contractEnd);

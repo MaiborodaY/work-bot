@@ -112,45 +112,10 @@ export class UiFactory {
 
   barTasks(user, lang = null) {
     const l = this._lang(lang || user?.lang);
-    const kb = [];
-    const tasks = Array.isArray(user?.bar?.tasks) ? user.bar.tasks : [];
-  
-    if (!tasks.length) {
-      kb.push([{ text: this._t(l, "ui.bar.no_tasks"), callback_data: "noop" }]);
-      kb.push([{ text: this._t(l, "ui.back.default"), callback_data: this._go(Routes.BAR) }]);
-      return kb;
-    }
-  
-    const fmtReward = (r) => {
-      if (!r) return "";
-      if (r.t === "premium") return `${CONFIG.PREMIUM.emoji}${r.n}`;
-      if (r.t === "energy")  return `${r.n}⚡`;
-      if (r.t === "money")   return `$${r.n}`;
-      return "";
-    };
-  
-    for (const t of tasks) {
-      const rText = fmtReward(t.reward);
-      const unit =
-        t.id === "W1" ? this._t(l, "ui.bar.unit.shifts") :
-        (t.id === "C1" || t.id === "C2") ? this._t(l, "ui.bar.unit.attempts") :
-        "";
-      const prog = unit ? `${t.progress}/${t.goal} ${unit}` : `${t.progress}/${t.goal}`;
-  
-      kb.push([{ text: `🎯 ${t.title} (${this._t(l, "ui.bar.reward")}: ${rText})`, callback_data: "noop" }]);
-      kb.push([{ text: `📊 ${this._t(l, "ui.bar.progress")}: ${prog}`, callback_data: "noop" }]);
-  
-      if (t.status === "done") {
-        kb.push([{ text: this._t(l, "ui.bar.claim"), callback_data: `bar:claim:${t.id}` }]);
-      } else if (t.status === "claimed") {
-        kb.push([{ text: this._t(l, "ui.bar.claimed"), callback_data: "noop" }]);
-      } else {
-        kb.push([{ text: this._t(l, "ui.bar.in_progress"), callback_data: "noop" }]);
-      }
-    }
-  
-    kb.push([{ text: this._t(l, "ui.back.default"), callback_data: this._go(Routes.BAR) }]);
-    return kb;
+    return [
+      [{ text: "🔄", callback_data: "bar:tasks" }],
+      [{ text: this._t(l, "ui.back.default"), callback_data: this._go(Routes.BAR) }]
+    ];
   }
   
   

@@ -2,9 +2,10 @@
 import { CONFIG } from "./GameConfig.js";
 
 export class DailyBonusService {
-  constructor({ users, now }) {
+  constructor({ users, now, quests = null }) {
     this.users = users;
     this.now = now || (() => Date.now());
+    this.quests = quests || null;
     this.base = 20;   // $
     this.step = 25;   // $ за день стрика
     this.cap  = 7;   // максимум учитываемых дней в формуле
@@ -39,7 +40,19 @@ export class DailyBonusService {
     const { amount, newStreak, today } = this.preview(u);
     u.money = (u.money || 0) + amount;
     u.bonus = { last: today, streak: newStreak };
+    let questRes = null;
+    if (this.quests?.onEvent) {
+      try {
+        questRes = await this.quests.onEvent(u, "daily_claim", { amount }, {
+          persist: false,
+          notify: false
+        });
+      } catch {}
+    }
     await this.users.save(u);
+    if (questRes?.events?.length && this.quests?.notifyEvents) {
+      await this.quests.notifyEvents(u, questRes.events);
+    }
     return { ok: true, amount, streak: newStreak };
   }
 }

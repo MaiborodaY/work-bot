@@ -1,4 +1,3 @@
-import { BarService } from "../BarService.js";
 import { CONFIG } from "../GameConfig.js";
 import { normalizeLang, t } from "../i18n/index.js";
 
@@ -8,7 +7,6 @@ export const barHandler = {
   match: (data) =>
     data === "go:Bar" ||
     data === "bar:tasks" ||
-    data.startsWith("bar:claim:") ||
     data === "bar:sub" ||
     data === "bar:sub:check",
 
@@ -25,12 +23,11 @@ export const barHandler = {
       sendPhoto,
       sendWithInline,
       deleteMsg,
+      quests,
     } = ctx;
 
     const lang = normalizeLang(u?.lang || "ru");
     const tt = (key, vars = {}) => t(key, lang, vars);
-    const bar = new BarService({ users, now });
-
     const showBarMain = async () => {
       await locations.show(u, null, "Bar");
     };
@@ -83,14 +80,18 @@ export const barHandler = {
 
     if (data === "go:Bar") {
       await answer(cb.id);
-      await bar.open(u);
+      if (quests?.ensureCycles) {
+        await quests.ensureCycles(u, { persist: true });
+      }
       await showBarMain();
       return;
     }
 
     if (data === "bar:tasks") {
       await answer(cb.id);
-      await bar.open(u);
+      if (quests?.ensureCycles) {
+        await quests.ensureCycles(u, { persist: true });
+      }
       await showBarTasks();
       return;
     }
@@ -122,24 +123,14 @@ export const barHandler = {
       u.subReward = u.subReward || { day: "", eligible: false };
       u.subReward.day = todayDay;
       u.subReward.eligible = true;
+      if (quests?.onEvent) {
+        await quests.onEvent(u, "sub_bonus_claim", {}, { persist: false, notify: true });
+      }
       await users.save(u);
 
       await answer(cb.id, tt("bar.sub.info.ready"));
       await showSubScreen();
       return;
     }
-
-    if (data.startsWith("bar:claim:")) {
-      const taskId = data.split(":")[2];
-      const res = await bar.claim(u, taskId, lang);
-      if (!res.ok) {
-        await answer(cb.id, res.error || tt("bar.claim.default_error"));
-        return;
-      }
-      await answer(cb.id, tt("bar.claim.success"));
-      await showBarTasks();
-      return;
-    }
   },
 };
-

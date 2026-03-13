@@ -1,4 +1,3 @@
-import { HomeService } from "./HomeService.js";
 import { CONFIG } from "./GameConfig.js";
 import { normalizeLang, t } from "./i18n/index.js";
 
@@ -220,82 +219,19 @@ export class BarService {
   }
 
   async open(u) {
-    const changed = this.ensureToday(u);
-    if (changed) await this.users.save(u);
-    return { ok: true, tasks: Array.isArray(u.bar.tasks) ? u.bar.tasks : [] };
+    this._ensureBar(u);
+    return { ok: true, tasks: [] };
   }
 
   static async onWorkClaim({ u, users, now, pay = 0 }) {
-    if (!u) return;
-    const svc = new BarService({ users, now });
-    svc._ensureBar(u);
-    svc.ensureToday(u);
-    if (!Array.isArray(u.bar.tasks)) u.bar.tasks = [];
-
-    let changed = false;
-    for (const tsk of u.bar.tasks) {
-      if (tsk.status !== "active") continue;
-      if (tsk.id === "W1") {
-        const before = tsk.progress;
-        tsk.progress = Math.min(tsk.goal, (tsk.progress || 0) + 1);
-        if (tsk.progress !== before) changed = true;
-        if (tsk.progress >= tsk.goal) tsk.status = "done";
-      }
-      if (tsk.id === "W2") {
-        const inc = Math.max(0, Math.round(Number(pay) || 0));
-        if (inc > 0) {
-          const before = tsk.progress;
-          tsk.progress = Math.min(tsk.goal, (tsk.progress || 0) + inc);
-          if (tsk.progress !== before) changed = true;
-          if (tsk.progress >= tsk.goal) tsk.status = "done";
-        }
-      }
-    }
-    if (changed) await users.save(u);
+    return;
   }
 
   static async onCasinoSpin({ u, users, now }) {
-    if (!u) return;
-    const svc = new BarService({ users, now });
-    svc._ensureBar(u);
-    svc.ensureToday(u);
-    if (!Array.isArray(u.bar.tasks)) u.bar.tasks = [];
-
-    let changed = false;
-    for (const tsk of u.bar.tasks) {
-      if (tsk.status !== "active") continue;
-      if (tsk.id === "C1" || tsk.id === "C2") {
-        const before = tsk.progress;
-        tsk.progress = Math.min(tsk.goal, (tsk.progress || 0) + 1);
-        if (tsk.progress !== before) changed = true;
-        if (tsk.progress >= tsk.goal) tsk.status = "done";
-      }
-    }
-    if (changed) await users.save(u);
+    return;
   }
 
   async claim(u, taskId, lang = null) {
-    const l = BarService._lang(u, lang);
-    this._ensureBar(u);
-    this.ensureToday(u);
-
-    const tsk = (u.bar.tasks || []).find((x) => x && x.id === taskId);
-    if (!tsk) return { ok: false, error: BarService._t(l, "bar.err.task_not_found") };
-    if (tsk.status !== "done") return { ok: false, error: BarService._t(l, "bar.err.task_not_done") };
-
-    if (tsk.reward?.t === "premium") {
-      const n = Number(tsk.reward?.n || 0);
-      u.premium = (u.premium || 0) + n;
-    } else if (tsk.reward?.t === "energy") {
-      const n = Number(tsk.reward?.n || 0);
-      HomeService.applyEnergy(u, n, { autoStopRest: true });
-    } else if (tsk.reward?.t === "money") {
-      const n = Number(tsk.reward?.n || 0);
-      u.money = (u.money || 0) + n;
-    }
-
-    tsk.status = "claimed";
-    await this.users.save(u);
-    return { ok: true, reward: tsk.reward };
+    return { ok: false, error: "legacy_bar_tasks_disabled" };
   }
 }

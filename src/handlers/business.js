@@ -8,7 +8,7 @@ export const businessHandler = {
   match: (data) => data.startsWith("biz:"),
 
   async handle(ctx) {
-    const { data, u, users, answer, goTo, now, send, clans, thief, achievements, ratings, cb, locations } = ctx;
+    const { data, u, users, answer, goTo, now, send, clans, thief, achievements, ratings, quests, cb, locations } = ctx;
     const lang = normalizeLang(u?.lang || "ru");
     const tt = (key, vars = {}) => t(key, lang, vars);
     const parts = String(data || "").split(":");
@@ -72,6 +72,11 @@ export const businessHandler = {
       try {
         if (achievements?.onEvent) {
           await achievements.onEvent(u, "business_buy", { bizId: B.id });
+        }
+      } catch {}
+      try {
+        if (quests?.onEvent) {
+          await quests.onEvent(u, "biz_expand", { bizId: B.id });
         }
       } catch {}
 
@@ -190,6 +195,11 @@ export const businessHandler = {
         return;
       }
 
+      try {
+        if (quests?.onEvent) {
+          await quests.onEvent(u, "guard_buy", { bizId: id });
+        }
+      } catch {}
       await ack(tt("biz.protect.guard.set_ok"));
       await goTo(u, bizRoute(id));
       return;
@@ -258,7 +268,19 @@ export const businessHandler = {
       ownedArr[idx] = entry;
       u.biz = u.biz || {};
       u.biz.owned = ownedArr;
+      let questRes = null;
+      if (quests?.onEvent) {
+        try {
+          questRes = await quests.onEvent(u, "biz_claim", { count: reward > 0 ? 1 : 0, allClaim: false }, {
+            persist: false,
+            notify: false
+          });
+        } catch {}
+      }
       await users.save(u);
+      if (questRes?.events?.length && quests?.notifyEvents) {
+        await quests.notifyEvents(u, questRes.events);
+      }
 
       try {
         if (clans?.recordBusinessMoney) {
@@ -316,7 +338,22 @@ export const businessHandler = {
       u.money = Math.max(0, Number(u.money) || 0) + total;
       u.biz = u.biz || {};
       u.biz.owned = normalizedOwned;
+      let questRes = null;
+      if (quests?.onEvent && total > 0 && rewardedCount > 0) {
+        try {
+          questRes = await quests.onEvent(u, "biz_claim", {
+            count: rewardedCount,
+            allClaim: rewardedCount === processed
+          }, {
+            persist: false,
+            notify: false
+          });
+        } catch {}
+      }
       await users.save(u);
+      if (questRes?.events?.length && quests?.notifyEvents) {
+        await quests.notifyEvents(u, questRes.events);
+      }
 
       try {
         if (clans?.recordBusinessMoney && total > 0) {

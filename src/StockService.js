@@ -5,11 +5,12 @@ const STOCK_STATE_KEY = "stocks:state:v1";
 const STOCK_ACTIVITY_PREFIX = "stocks:activity:";
 
 export class StockService {
-  constructor({ db, users, now, achievements = null }) {
+  constructor({ db, users, now, achievements = null, quests = null }) {
     this.db = db;
     this.users = users;
     this.now = now || (() => Date.now());
     this.achievements = achievements || null;
+    this.quests = quests || null;
   }
 
   _lang(source) {
@@ -258,6 +259,17 @@ export class StockService {
     };
   }
 
+  _holdingsCount(u) {
+    const holdings = (u?.stocks?.holdings && typeof u.stocks.holdings === "object")
+      ? u.stocks.holdings
+      : {};
+    let count = 0;
+    for (const h of Object.values(holdings)) {
+      if (Math.max(0, Math.floor(Number(h?.shares) || 0)) > 0) count += 1;
+    }
+    return count;
+  }
+
   _portfolioValue(u, state) {
     let sum = 0;
     for (const ticker of this._tickers()) {
@@ -494,6 +506,8 @@ export class StockService {
 
     u.money = money - cost;
     this._setHolding(u, ticker, totalShares, avgPrice);
+    const holdingsCount = this._holdingsCount(u);
+    const portfolioValue = Math.floor(this._portfolioValue(u, state));
     let achRes = null;
     if (this.achievements?.onEvent) {
       try {
@@ -503,9 +517,27 @@ export class StockService {
         });
       } catch {}
     }
+    let questRes = null;
+    if (this.quests?.onEvent) {
+      try {
+        questRes = await this.quests.onEvent(u, "stocks_buy", {
+          ticker,
+          shares,
+          cost,
+          holdingsCount,
+          portfolioValue
+        }, {
+          persist: false,
+          notify: false
+        });
+      } catch {}
+    }
     await this.users.save(u);
     if (achRes?.newlyEarned?.length && this.achievements?.notifyEarned) {
       await this.achievements.notifyEarned(u, achRes.newlyEarned);
+    }
+    if (questRes?.events?.length && this.quests?.notifyEvents) {
+      await this.quests.notifyEvents(u, questRes.events);
     }
 
     return {
@@ -534,10 +566,31 @@ export class StockService {
     const gross = Math.floor(price * shares);
     const fee = Math.floor(gross * feeRate);
     const net = Math.max(0, gross - fee);
+    const costBasis = Math.floor(Math.max(0, Number(old.avgPrice) || 0) * shares);
+    const pnl = net - costBasis;
 
     u.money = Math.max(0, Number(u.money) || 0) + net;
     this._setHolding(u, ticker, old.shares - shares, old.avgPrice);
+    let questRes = null;
+    if (this.quests?.onEvent) {
+      try {
+        questRes = await this.quests.onEvent(u, "stocks_sell", {
+          ticker,
+          shares,
+          net,
+          fee,
+          gross,
+          pnl
+        }, {
+          persist: false,
+          notify: false
+        });
+      } catch {}
+    }
     await this.users.save(u);
+    if (questRes?.events?.length && this.quests?.notifyEvents) {
+      await this.quests.notifyEvents(u, questRes.events);
+    }
 
     return {
       ok: true,
@@ -546,6 +599,8 @@ export class StockService {
       gross,
       fee,
       net,
+      pnl,
+      avgPrice: this._round2(old.avgPrice),
       leftShares: Math.max(0, old.shares - shares)
     };
   }
