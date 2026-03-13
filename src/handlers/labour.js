@@ -38,8 +38,8 @@ export const labourHandler = {
       Object.assign(u, fresh);
     };
 
-    const showBiz = async (bizId) => {
-      const view = await labour.buildBizView(u, bizId);
+    const showBiz = async (bizId, options = {}) => {
+      const view = await labour.buildBizView(u, bizId, options);
       await show(view);
     };
 
@@ -192,8 +192,7 @@ export const labourHandler = {
           });
         }
       } catch {}
-      await reloadSelf();
-      await showBiz(bizId);
+      await showBiz(bizId, { reconcile: false });
       return;
     }
 
@@ -217,8 +216,7 @@ export const labourHandler = {
           });
         }
       } catch {}
-      await reloadSelf();
-      await showBiz(bizId);
+      await showBiz(bizId, { reconcile: false });
       return;
     }
   }

@@ -6,6 +6,7 @@ const LABOUR_FREE_PLAYERS_KEY = "labour:free_players";
 const DAY_MS = 24 * 60 * 60 * 1000;
 const DUE_BUCKET_MS = 5 * 60 * 1000;
 const DUE_LOOKBACK_MINUTES = 20;
+const RECONCILE_GRACE_MS_DEFAULT = 10 * 60 * 1000;
 const CONTRACT_MODEL_LEGACY = "legacy_claim_share";
 const CONTRACT_MODEL_BG_V1 = "bg_fixed_v1";
 
@@ -87,6 +88,12 @@ export class LabourService {
 
   _indexSize() {
     return Math.max(this._listSize(), Number(this._cfg().INDEX_SIZE) || 20);
+  }
+
+  _reconcileGraceMs() {
+    const raw = Math.floor(Number(this._cfg().RECONCILE_GRACE_MS));
+    if (!Number.isFinite(raw) || raw < 0) return RECONCILE_GRACE_MS_DEFAULT;
+    return raw;
   }
 
   _bgCfg() {
@@ -835,6 +842,8 @@ export class LabourService {
     if (!owner) return owner;
     const arr = this._ownedArray(owner);
     let dirty = false;
+    const nowTs = this.now();
+    const graceMs = this._reconcileGraceMs();
 
     for (let i = 0; i < arr.length; i++) {
       let e = arr[i];
@@ -849,9 +858,15 @@ export class LabourService {
       for (let slotIndex = 0; slotIndex < slots.length; slotIndex++) {
         const slot = slots[slotIndex];
         if (!slot?.purchased || !slot.employeeId) continue;
+        const ownerSaysActive = Number(slot.contractEnd || 0) > nowTs;
+        const inGraceWindow =
+          ownerSaysActive &&
+          Number(slot.contractStart || 0) > 0 &&
+          (nowTs - Number(slot.contractStart || 0)) <= graceMs;
 
         const employee = await this.users.load(slot.employeeId).catch(() => null);
         if (!employee) {
+          if (ownerSaysActive) continue;
           this._clearSlotAssignment(slot);
           dirty = true;
           continue;
@@ -865,12 +880,14 @@ export class LabourService {
         const sameSlot = employeeSlotIdx < 0 || employeeSlotIdx === slotIndex;
 
         if (!active || !sameOwner || !sameBiz || !sameSlot) {
+          // KV can be briefly stale right after hire/update; do not clear active slot too early.
+          if (inGraceWindow) continue;
           this._clearSlotAssignment(slot);
           dirty = true;
           continue;
         }
 
-        if (Number(employee.employment.contractEnd || 0) <= this.now()) {
+        if (Number(employee.employment.contractEnd || 0) <= nowTs) {
           await this._expireEmploymentForUser(employee, { notify: true });
           return this.users.load(owner.id).catch(() => owner);
         }
@@ -1376,8 +1393,11 @@ export class LabourService {
     };
   }
 
-  async buildBizView(owner, bizId) {
-    owner = await this.reconcileOwnerSlots(owner);
+  async buildBizView(owner, bizId, options = {}) {
+    const doReconcile = options?.reconcile !== false;
+    if (doReconcile) {
+      owner = await this.reconcileOwnerSlots(owner);
+    }
     const langSource = owner;
     const B = CONFIG?.BUSINESS?.[String(bizId || "")];
     const maxSlots = this._maxSlots(bizId);

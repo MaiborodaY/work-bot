@@ -144,3 +144,63 @@ test("labour bg: pays employee+owner at contract end exactly once", async () => 
   assert.equal(ownerAfterSecond.money, ownerAfter.money);
   assert.equal(ownerAfterSecond.premium, ownerAfter.premium);
 });
+
+test("labour bg: stale employee read right after hire does not clear active slot", async () => {
+  const db = makeDb();
+  const { owner, employee } = makeFixture();
+
+  const map = new Map([
+    [String(owner.id), structuredClone(owner)],
+    [String(employee.id), structuredClone(employee)]
+  ]);
+  let staleEmployeeReadsLeft = 1;
+
+  const users = {
+    db,
+    async load(id) {
+      const key = String(id);
+      const cur = map.get(key);
+      if (!cur) throw new Error("not found");
+      if (key === String(employee.id) && staleEmployeeReadsLeft > 0) {
+        staleEmployeeReadsLeft -= 1;
+        return {
+          ...structuredClone(cur),
+          employment: {
+            active: false,
+            ownerId: "",
+            bizId: "",
+            ownerPct: 0,
+            contractEnd: 0,
+            slotIndex: -1
+          }
+        };
+      }
+      return structuredClone(cur);
+    },
+    async save(u) {
+      map.set(String(u.id), structuredClone(u));
+    },
+    async update(id, mutator) {
+      const key = String(id);
+      const current = map.get(key);
+      if (!current) throw new Error("not found");
+      const next = await mutator(structuredClone(current));
+      map.set(key, structuredClone(next));
+      return structuredClone(next);
+    }
+  };
+
+  let nowTs = Date.UTC(2026, 2, 13, 12, 0, 0);
+  const labour = new LabourService({ db, users, now: () => nowTs, bot: null });
+
+  const ownerLoaded = await users.load(owner.id);
+  const res = await labour.hire(ownerLoaded, "shawarma", 0, employee.id);
+  assert.equal(res.ok, true);
+
+  await labour.buildBizView(ownerLoaded, "shawarma");
+
+  const ownerAfter = await users.load(owner.id);
+  const slot = ownerAfter.biz?.owned?.[0]?.slots?.[0];
+  assert.equal(String(slot?.employeeId || ""), String(employee.id));
+  assert.ok(Number(slot?.contractEnd || 0) > nowTs);
+});
