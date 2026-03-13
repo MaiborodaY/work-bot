@@ -808,12 +808,12 @@ export class PetService {
       };
     }
 
-    if (!u?.pet || typeof u.pet !== "object") {
-      return this.buildTypePickerView(u);
-    }
-
     if (u.petDraft?.type && u.petDraft?.name) {
       return this.buildViewDraftConfirm(u);
+    }
+
+    if (!u?.pet || typeof u.pet !== "object") {
+      return this.buildTypePickerView(u);
     }
 
     const p = u.pet;

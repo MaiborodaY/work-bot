@@ -100,3 +100,21 @@ test("pet: feeding from hungry restarts streak from 1 and gives gems", async () 
   assert.equal(u.pet.streak, 1);
   assert.equal(u.premium, 1);
 });
+
+test("pet: draft confirmation is shown before type picker when name is set", async () => {
+  const nowTs = Date.UTC(2026, 2, 13, 12, 0, 0);
+  const svc = makeService(nowTs);
+  const u = {
+    id: "u-draft",
+    lang: "ru",
+    money: 100000,
+    premium: 0,
+    pet: null,
+    petDraft: { type: "dog", name: "Бобик" },
+    awaitingPetName: false
+  };
+
+  const view = await svc.buildView(u);
+  const cb = view?.keyboard?.[0]?.[0]?.callback_data || "";
+  assert.equal(cb, "pet:confirm_buy");
+});
