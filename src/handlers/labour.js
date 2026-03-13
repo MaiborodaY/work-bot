@@ -37,6 +37,11 @@ export const labourHandler = {
       for (const k of Object.keys(u)) delete u[k];
       Object.assign(u, fresh);
     };
+    const applyFreshOwner = (freshOwner) => {
+      if (!freshOwner || typeof freshOwner !== "object") return;
+      for (const k of Object.keys(u)) delete u[k];
+      Object.assign(u, freshOwner);
+    };
 
     const showBiz = async (bizId, options = {}) => {
       const view = await labour.buildBizView(u, bizId, options);
@@ -183,6 +188,7 @@ export const labourHandler = {
         await showBiz(bizId);
         return;
       }
+      applyFreshOwner(res?.owner);
       try {
         if (achievements?.onEvent) {
           await achievements.onEvent(u, "labour_hire", {
@@ -207,6 +213,7 @@ export const labourHandler = {
         await showBiz(bizId);
         return;
       }
+      applyFreshOwner(res?.owner);
       try {
         if (achievements?.onEvent) {
           await achievements.onEvent(u, "labour_hire", {

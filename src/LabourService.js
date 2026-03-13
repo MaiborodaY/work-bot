@@ -1163,7 +1163,8 @@ export class LabourService {
       contractEnd,
       slotIndex: targetIdx,
       slotNum: this._slotNum(targetIdx),
-      plan: bgPlan
+      plan: bgPlan,
+      owner
     };
   }
 
