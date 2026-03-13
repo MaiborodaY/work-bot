@@ -113,7 +113,6 @@ export class UiFactory {
   barTasks(user, lang = null) {
     const l = this._lang(lang || user?.lang);
     return [
-      [{ text: "🔄", callback_data: "bar:tasks" }],
       [{ text: this._t(l, "ui.back.default"), callback_data: this._go(Routes.BAR) }]
     ];
   }

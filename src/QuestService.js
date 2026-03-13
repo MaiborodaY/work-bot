@@ -257,6 +257,10 @@ export class QuestService {
     return false;
   }
 
+  _isNewbieQuestProfile(u) {
+    return !this._hasAnyBusiness(u);
+  }
+
   _iterBizOwnedObjects(u) {
     const arr = Array.isArray(u?.biz?.owned) ? u.biz.owned : [];
     const out = [];
@@ -354,32 +358,52 @@ export class QuestService {
     }
   }
 
-  _resolveTarget(id, fallbackTarget) {
+  _resolveTarget(u, id, fallbackTarget) {
     const cfg = this._cfg();
-    if (id === "work_earn") return Math.max(1, toInt(cfg.DAILY_WORK_EARN_TARGET, 500));
-    if (id === "stocks_portfolio") return Math.max(1, toInt(cfg.DAILY_STOCKS_PORTFOLIO_TARGET, 5000));
-    if (id === "w_work_earn") return Math.max(1, toInt(cfg.WEEKLY_WORK_EARN_TARGET, 20000));
-    if (id === "w_stocks_invest") return Math.max(1, toInt(cfg.WEEKLY_STOCKS_INVEST_TARGET, 50000));
-    if (id === "w_thief_total") return Math.max(1, toInt(cfg.WEEKLY_THIEF_TOTAL_TARGET, 10000));
+    const newbie = this._isNewbieQuestProfile(u);
+
+    if (id === "work_earn") return newbie ? 300 : Math.max(1, toInt(cfg.DAILY_WORK_EARN_TARGET, 500));
+    if (id === "stocks_portfolio") return newbie ? 1000 : Math.max(1, toInt(cfg.DAILY_STOCKS_PORTFOLIO_TARGET, 5000));
+    if (id === "w_work_earn") return newbie ? 5000 : Math.max(1, toInt(cfg.WEEKLY_WORK_EARN_TARGET, 20000));
+    if (id === "w_stocks_invest") return newbie ? 5000 : Math.max(1, toInt(cfg.WEEKLY_STOCKS_INVEST_TARGET, 50000));
+    if (id === "w_thief_total") return newbie ? 2000 : Math.max(1, toInt(cfg.WEEKLY_THIEF_TOTAL_TARGET, 10000));
+
+    if (id === "work_2shifts") return newbie ? 1 : 2;
+    if (id === "gym_2trains") return newbie ? 1 : 2;
+    if (id === "stocks_buy3") return newbie ? 2 : 3;
+    if (id === "w_work_10shifts") return newbie ? 6 : 10;
+    if (id === "w_gym_7trains") return newbie ? 4 : 7;
+    if (id === "w_biz_streak") return newbie ? 3 : 5;
+    if (id === "w_labour_finish_contracts") return newbie ? 1 : 2;
+    if (id === "w_stocks_5companies") return newbie ? 3 : 5;
+    if (id === "w_thief_3attempts") return newbie ? 2 : 3;
+
     return Math.max(1, toInt(fallbackTarget, 1));
   }
 
-  _toQuest(def) {
+  _resolveRewardMoney(u, def) {
+    const base = Math.max(0, toInt(def?.rewardMoney, 0));
+    if (!this._isNewbieQuestProfile(u)) return base;
+    const scaled = Math.round((base * 0.85) / 50) * 50;
+    return Math.max(100, scaled);
+  }
+
+  _toQuest(u, def) {
     const id = String(def?.id || "");
     return {
       id,
       type: String(def?.type || "daily"),
       category: String(def?.category || "work"),
       difficulty: String(def?.difficulty || "easy"),
-      rewardMoney: Math.max(0, toInt(def?.rewardMoney, 0)),
-      target: this._resolveTarget(id, def?.target),
+      rewardMoney: this._resolveRewardMoney(u, def),
+      target: this._resolveTarget(u, id, def?.target),
       progress: 0,
       done: false,
       paid: false
     };
   }
 
-  _pickDailyQuests(pool, seed) {
+  _pickDailyQuests(u, pool, seed) {
     const desired = ["easy", "easy", "hard"];
     const rng = rngFromSeed(seed);
     const shuffled = shuffleDeterministic(pool, rng);
@@ -415,10 +439,10 @@ export class QuestService {
       if (da !== db) return da - db;
       return String(a?.id || "").localeCompare(String(b?.id || ""));
     });
-    return selected.slice(0, this._dailyCount()).map((q) => this._toQuest(q));
+    return selected.slice(0, this._dailyCount()).map((q) => this._toQuest(u, q));
   }
 
-  _pickWeeklyQuests(pool, seed) {
+  _pickWeeklyQuests(u, pool, seed) {
     const rng = rngFromSeed(seed);
     const shuffled = shuffleDeterministic(pool, rng);
     shuffled.sort((a, b) => {
@@ -450,16 +474,16 @@ export class QuestService {
       if (da !== db) return db - da;
       return String(a?.id || "").localeCompare(String(b?.id || ""));
     });
-    return selected.slice(0, this._weeklyCount()).map((q) => this._toQuest(q));
+    return selected.slice(0, this._weeklyCount()).map((q) => this._toQuest(u, q));
   }
 
   _generateDaily(u, day) {
     const pool = this._dailyPool().filter((q) => this._dailyQuestAvailable(u, q?.id));
-    const picked = this._pickDailyQuests(pool, `${u?.id || ""}:${day}:daily`);
+    const picked = this._pickDailyQuests(u, pool, `${u?.id || ""}:${day}:daily`);
     if (picked.length >= this._dailyCount()) return picked;
 
     const fallbackWork = this._dailyPool().filter((q) => String(q?.category || "") === "work");
-    const add = this._pickDailyQuests(fallbackWork, `${u?.id || ""}:${day}:daily:fallback`);
+    const add = this._pickDailyQuests(u, fallbackWork, `${u?.id || ""}:${day}:daily:fallback`);
     const byId = new Map();
     for (const q of [...picked, ...add]) byId.set(q.id, q);
     return [...byId.values()].slice(0, this._dailyCount());
@@ -467,11 +491,11 @@ export class QuestService {
 
   _generateWeekly(u, week) {
     const pool = this._weeklyPool().filter((q) => this._weeklyQuestAvailable(u, q?.id));
-    const picked = this._pickWeeklyQuests(pool, `${u?.id || ""}:${week}:weekly`);
+    const picked = this._pickWeeklyQuests(u, pool, `${u?.id || ""}:${week}:weekly`);
     if (picked.length >= this._weeklyCount()) return picked;
 
     const fallbackWork = this._weeklyPool().filter((q) => String(q?.category || "") === "work");
-    const add = this._pickWeeklyQuests(fallbackWork, `${u?.id || ""}:${week}:weekly:fallback`);
+    const add = this._pickWeeklyQuests(u, fallbackWork, `${u?.id || ""}:${week}:weekly:fallback`);
     const byId = new Map();
     for (const q of [...picked, ...add]) byId.set(q.id, q);
     return [...byId.values()].slice(0, this._weeklyCount());
@@ -757,10 +781,10 @@ export class QuestService {
     const map = {
       ru: {
         work_1shift: "Завершить 1 смену",
-        work_2shifts: "Завершить 2 смены",
-        work_earn: `Заработать $${target} на сменах`,
+        work_2shifts: `Завершить ${target} смен(ы)`,
+        work_earn: `Получить выплатами со смен $${target} за сегодня`,
         gym_train: "Сделать 1 тренировку",
-        gym_2trains: "Сделать 2 тренировки",
+        gym_2trains: `Сделать ${target} тренировк(и)`,
         fortune_spin: "Крутануть колесо фортуны",
         daily_bonus: "Забрать ежедневный бонус",
         biz_collect: "Забрать доход с любого бизнеса",
@@ -768,30 +792,30 @@ export class QuestService {
         biz_guard: "Поставить охрану на любой бизнес",
         labour_hire: "Нанять наёмника в свободный слот",
         stocks_buy: "Купить акции любой компании",
-        stocks_buy3: "Держать акции 3 компаний одновременно",
-        stocks_sell: "Продать любые акции",
-        stocks_portfolio: `Собрать портфель на $${target}`,
+        stocks_buy3: `Держать акции ${target} компаний одновременно`,
+        stocks_sell: "Продать любые акции (любое количество)",
+        stocks_portfolio: `Держать портфель акций на сумму от $${target} в любой момент`,
         thief_attempt: "Совершить 1 попытку воровства",
         thief_success: "Успешно украсть",
-        w_work_10shifts: "Завершить 10 смен за неделю",
-        w_work_earn: "Заработать $20 000 на сменах",
-        w_gym_7trains: "Сделать 7 тренировок за неделю",
-        w_biz_streak: "Собирать доход 5 дней подряд",
+        w_work_10shifts: `Завершить ${target} смен за неделю`,
+        w_work_earn: `Получить выплатами со смен $${target} за неделю`,
+        w_gym_7trains: `Сделать ${target} тренировок за неделю`,
+        w_biz_streak: `Собирать доход с бизнеса ${target} дней подряд`,
         w_biz_expand: "Купить новый бизнес или слот",
         w_labour_hire: "Нанять наёмника",
-        w_labour_finish_contracts: "Завершить 2 контракта как владелец",
-        w_stocks_profit: "Продать акции с прибылью",
-        w_stocks_5companies: "Держать акции 5 компаний одновременно",
-        w_stocks_invest: "Инвестировать $50 000 за неделю",
-        w_thief_3attempts: "Совершить 3 кражи за неделю",
+        w_labour_finish_contracts: `Завершить ${target} контракт(а) как владелец`,
+        w_stocks_profit: "Сделать 1 продажу акций в плюс (продажа выше твоей средней цены покупки)",
+        w_stocks_5companies: `Держать акции ${target} компаний одновременно`,
+        w_stocks_invest: `Купить акций суммарно на $${target} за неделю`,
+        w_thief_3attempts: `Совершить ${target} попытк(и) кражи за неделю`,
         w_thief_total: `Украсть суммарно $${target}`
       },
       uk: {
         work_1shift: "Завершити 1 зміну",
-        work_2shifts: "Завершити 2 зміни",
-        work_earn: `Заробити $${target} на змінах`,
+        work_2shifts: `Завершити ${target} змін(и)`,
+        work_earn: `Отримати виплатами зі змін $${target} за сьогодні`,
         gym_train: "Зробити 1 тренування",
-        gym_2trains: "Зробити 2 тренування",
+        gym_2trains: `Зробити ${target} тренуванн(я)`,
         fortune_spin: "Прокрутити колесо фортуни",
         daily_bonus: "Забрати щоденний бонус",
         biz_collect: "Забрати дохід з будь-якого бізнесу",
@@ -799,30 +823,30 @@ export class QuestService {
         biz_guard: "Поставити охорону на будь-який бізнес",
         labour_hire: "Найняти найманця у вільний слот",
         stocks_buy: "Купити акції будь-якої компанії",
-        stocks_buy3: "Тримати акції 3 компаній одночасно",
-        stocks_sell: "Продати будь-які акції",
-        stocks_portfolio: `Зібрати портфель на $${target}`,
+        stocks_buy3: `Тримати акції ${target} компаній одночасно`,
+        stocks_sell: "Продати будь-які акції (будь-яку кількість)",
+        stocks_portfolio: `Тримати портфель акцій на суму від $${target} у будь-який момент`,
         thief_attempt: "Здійснити 1 спробу крадіжки",
         thief_success: "Успішно вкрасти",
-        w_work_10shifts: "Завершити 10 змін за тиждень",
-        w_work_earn: "Заробити $20 000 на змінах",
-        w_gym_7trains: "Зробити 7 тренувань за тиждень",
-        w_biz_streak: "Збирати дохід 5 днів поспіль",
+        w_work_10shifts: `Завершити ${target} змін за тиждень`,
+        w_work_earn: `Отримати виплатами зі змін $${target} за тиждень`,
+        w_gym_7trains: `Зробити ${target} тренувань за тиждень`,
+        w_biz_streak: `Збирати дохід з бізнесу ${target} днів поспіль`,
         w_biz_expand: "Купити новий бізнес або слот",
         w_labour_hire: "Найняти найманця",
-        w_labour_finish_contracts: "Завершити 2 контракти як власник",
-        w_stocks_profit: "Продати акції з прибутком",
-        w_stocks_5companies: "Тримати акції 5 компаній одночасно",
-        w_stocks_invest: "Інвестувати $50 000 за тиждень",
-        w_thief_3attempts: "Здійснити 3 крадіжки за тиждень",
+        w_labour_finish_contracts: `Завершити ${target} контракт(и) як власник`,
+        w_stocks_profit: "Зробити 1 продаж акцій у плюс (продаж вище твоєї середньої ціни покупки)",
+        w_stocks_5companies: `Тримати акції ${target} компаній одночасно`,
+        w_stocks_invest: `Купити акцій сумарно на $${target} за тиждень`,
+        w_thief_3attempts: `Здійснити ${target} спроб(и) крадіжки за тиждень`,
         w_thief_total: `Вкрасти сумарно $${target}`
       },
       en: {
         work_1shift: "Complete 1 shift",
-        work_2shifts: "Complete 2 shifts",
-        work_earn: `Earn $${target} from shifts`,
+        work_2shifts: `Complete ${target} shift(s)`,
+        work_earn: `Get $${target} from shift payouts today`,
         gym_train: "Do 1 workout",
-        gym_2trains: "Do 2 workouts",
+        gym_2trains: `Do ${target} workout(s)`,
         fortune_spin: "Spin the wheel of fortune",
         daily_bonus: "Claim daily bonus",
         biz_collect: "Collect income from any business",
@@ -830,22 +854,22 @@ export class QuestService {
         biz_guard: "Buy guard for any business",
         labour_hire: "Hire a worker to a free slot",
         stocks_buy: "Buy shares of any company",
-        stocks_buy3: "Hold shares of 3 companies at once",
-        stocks_sell: "Sell any shares",
-        stocks_portfolio: `Build portfolio worth $${target}`,
+        stocks_buy3: `Hold shares of ${target} companies at once`,
+        stocks_sell: "Sell any shares (any amount)",
+        stocks_portfolio: `Hold a stock portfolio worth at least $${target} at any moment`,
         thief_attempt: "Make 1 theft attempt",
         thief_success: "Steal successfully",
-        w_work_10shifts: "Complete 10 shifts this week",
-        w_work_earn: "Earn $20,000 from shifts",
-        w_gym_7trains: "Do 7 workouts this week",
-        w_biz_streak: "Collect business income 5 days in a row",
+        w_work_10shifts: `Complete ${target} shifts this week`,
+        w_work_earn: `Get $${target} from shift payouts this week`,
+        w_gym_7trains: `Do ${target} workouts this week`,
+        w_biz_streak: `Collect business income ${target} days in a row`,
         w_biz_expand: "Buy a new business or slot",
         w_labour_hire: "Hire a worker",
-        w_labour_finish_contracts: "Finish 2 owner contracts",
-        w_stocks_profit: "Sell shares with profit",
-        w_stocks_5companies: "Hold shares of 5 companies at once",
-        w_stocks_invest: "Invest $50,000 this week",
-        w_thief_3attempts: "Make 3 theft attempts this week",
+        w_labour_finish_contracts: `Finish ${target} contract(s) as owner`,
+        w_stocks_profit: "Make 1 profitable share sale (sale price above your average buy price)",
+        w_stocks_5companies: `Hold shares of ${target} companies at once`,
+        w_stocks_invest: `Buy shares for total $${target} this week`,
+        w_thief_3attempts: `Make ${target} theft attempt(s) this week`,
         w_thief_total: `Steal total $${target}`
       }
     };
@@ -1062,7 +1086,6 @@ export class QuestService {
     }
 
     const keyboard = [
-      [{ text: s.refresh, callback_data: "bar:tasks" }],
       [{ text: s.back, callback_data: "go:Bar" }]
     ];
     return { caption: lines.join("\n").trim(), keyboard };
