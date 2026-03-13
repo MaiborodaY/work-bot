@@ -112,6 +112,7 @@ export class Locations {
       place,
       caption,
       keyboard: view.keyboard || [[{ text: this._t(user, fallbackBackTextKey), callback_data: fallbackBackCb }]],
+      asset: view.asset || undefined,
       policy,
     });
     this._sourceMsg = null;

@@ -374,8 +374,12 @@ export const CONFIG = {
 
   PET: {
     PRICES: {
-      cat: 15000,
-      dog: 15000
+      cat: 150,
+      dog: 150
+    },
+    ASSETS: {
+      cat: "AgACAgIAAxkBAAJ1Kmm0gp_EiHik_4gzNm9DXMnRNMJNAAKNGGsbbd2gSeZMTTxQYoMlAQADAgADeQADOgQ",
+      dog: "AgACAgIAAxkBAAJ1LGm0gqxx9ng5mSzckE-dPI2bmX6uAAKOGGsbbd2gSfgC7w-_q8eVAQADAgADeQADOgQ"
     },
     NAME_MIN: 2,
     NAME_MAX: 12,

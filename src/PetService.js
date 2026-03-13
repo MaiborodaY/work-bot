@@ -555,10 +555,18 @@ export class PetService {
     this._ensureDraft(u);
     await this._syncState(u, { persist: false });
     if (this._isAlivePet(u)) {
-      return { ok: false, error: "You already have a living pet." };
+      const lang = this._lang(u);
+      return {
+        ok: false,
+        error: lang === "en"
+          ? "You already have a living pet."
+          : (lang === "uk" ? "У тебе вже є живий улюбленець." : "У тебя уже есть живой питомец.")
+      };
     }
     const t = String(type || "");
-    if (t !== "cat" && t !== "dog") return { ok: false, error: "Invalid pet type." };
+    if (t !== "cat" && t !== "dog") {
+      return { ok: false, error: this._lang(u) === "en" ? "Invalid pet type." : "Некорректный тип питомца." };
+    }
     u.petDraft.type = t;
     u.petDraft.name = "";
     u.awaitingPetName = true;
@@ -579,7 +587,13 @@ export class PetService {
     this._ensureDraft(u);
     const check = this._validateName(rawName);
     if (!check.ok) return { ok: false, error: this._s(u).errName };
-    if (!u.petDraft.type) return { ok: false, error: "Choose pet type first." };
+    if (!u.petDraft.type) {
+      const lang = this._lang(u);
+      return {
+        ok: false,
+        error: lang === "en" ? "Choose pet type first." : (lang === "uk" ? "Спочатку обери тип улюбленця." : "Сначала выбери тип питомца.")
+      };
+    }
     u.petDraft.name = check.value;
     u.awaitingPetName = false;
     await this.users.save(u);
@@ -590,12 +604,24 @@ export class PetService {
     this._ensureDraft(u);
     await this._syncState(u, { persist: false });
     if (this._isAlivePet(u)) {
-      return { ok: false, error: "You already have a living pet." };
+      const lang = this._lang(u);
+      return {
+        ok: false,
+        error: lang === "en"
+          ? "You already have a living pet."
+          : (lang === "uk" ? "У тебе вже є живий улюбленець." : "У тебя уже есть живой питомец.")
+      };
     }
     const type = String(u?.petDraft?.type || "");
     const name = String(u?.petDraft?.name || "").trim();
     if (!type || !name) {
-      return { ok: false, error: "Choose pet type and name first." };
+      const lang = this._lang(u);
+      return {
+        ok: false,
+        error: lang === "en"
+          ? "Choose pet type and name first."
+          : (lang === "uk" ? "Спочатку обери тип і ім'я улюбленця." : "Сначала выбери тип и имя питомца.")
+      };
     }
     const check = this._validateName(name);
     if (!check.ok) return { ok: false, error: this._s(u).errName };
@@ -717,6 +743,58 @@ export class PetService {
     };
   }
 
+  buildTypePickerView(u, opts = {}) {
+    const lang = this._lang(u);
+    const s = this._s(u);
+    const deadName = String(opts?.deadName || "").trim();
+    const caption = deadName
+      ? (lang === "en"
+        ? `💀 ${deadName} died...\n\nChoose a new pet.`
+        : (lang === "uk"
+          ? `💀 ${deadName} помер...\n\nОбери нового улюбленця.`
+          : `💀 ${deadName} умер...\n\nВыбери нового питомца.`))
+      : (lang === "en"
+        ? "🐾 Choose your pet\n\nOpen a card to see photo and details."
+        : (lang === "uk"
+          ? "🐾 Обери улюбленця\n\nВідкрий картку, щоб побачити фото та деталі."
+          : "🐾 Выбери питомца\n\nОткрой карточку, чтобы увидеть фото и детали."));
+
+    return {
+      caption,
+      keyboard: [
+        [{ text: "🐱 Кошка", callback_data: "pet:card:cat" }],
+        [{ text: "🐶 Собака", callback_data: "pet:card:dog" }],
+        [{ text: s.backBtn, callback_data: "go:Home" }]
+      ]
+    };
+  }
+
+  buildTypeCardView(u, type) {
+    const t = String(type || "") === "dog" ? "dog" : "cat";
+    const price = this._price(t);
+    const lang = this._lang(u);
+    const isDog = t === "dog";
+    const caption = lang === "en"
+      ? `${isDog ? "🐶 Dog" : "🐱 Cat"}\n\nPrice: $${price}\nAfter purchase, choose a name (2-12 symbols).`
+      : (lang === "uk"
+        ? `${isDog ? "🐶 Собака" : "🐱 Кішка"}\n\nЦіна: $${price}\nПісля покупки обери ім'я (2-12 символів).`
+        : `${isDog ? "🐶 Собака" : "🐱 Кошка"}\n\nЦена: $${price}\nПосле покупки выбери имя (2-12 символов).`);
+    const buyText = lang === "en"
+      ? `💰 Buy ${isDog ? "dog" : "cat"} — $${price}`
+      : (lang === "uk"
+        ? `💰 Купити ${isDog ? "собаку" : "кішку"} — $${price}`
+        : `💰 Купить ${isDog ? "собаку" : "кошку"} — $${price}`);
+    const asset = String(this._cfg()?.ASSETS?.[t] || "");
+    return {
+      caption,
+      asset,
+      keyboard: [
+        [{ text: buyText, callback_data: `pet:buy:${t}` }],
+        [{ text: lang === "en" ? "⬅️ Back to pets" : (lang === "uk" ? "⬅️ До вибору" : "⬅️ К выбору"), callback_data: "go:Pet" }]
+      ]
+    };
+  }
+
   async buildView(u) {
     await this._syncState(u, { persist: true });
     this._ensureDraft(u);
@@ -731,16 +809,7 @@ export class PetService {
     }
 
     if (!u?.pet || typeof u.pet !== "object") {
-      const catPrice = this._price("cat");
-      const dogPrice = this._price("dog");
-      return {
-        caption: `${s.titleNoPet}\n\n${s.noPet}`,
-        keyboard: [
-          [{ text: `${s.buyCat} — $${catPrice}`, callback_data: "pet:buy:cat" }],
-          [{ text: `${s.buyDog} — $${dogPrice}`, callback_data: "pet:buy:dog" }],
-          backRow
-        ]
-      };
+      return this.buildTypePickerView(u);
     }
 
     if (u.petDraft?.type && u.petDraft?.name) {
@@ -757,13 +826,7 @@ export class PetService {
     const kb = [];
 
     if (status === "dead") {
-      lines.push(`${s.deadPrefix} ${p.name}...`, "", s.deadHint);
-      const catPrice = this._price("cat");
-      const dogPrice = this._price("dog");
-      kb.push([{ text: `${s.buyCat} — $${catPrice}`, callback_data: "pet:buy:cat" }]);
-      kb.push([{ text: `${s.buyDog} — $${dogPrice}`, callback_data: "pet:buy:dog" }]);
-      kb.push(backRow);
-      return { caption: lines.join("\n"), keyboard: kb };
+      return this.buildTypePickerView(u, { deadName: p.name });
     }
 
     if (status === "sick") {
