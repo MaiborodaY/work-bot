@@ -315,6 +315,21 @@ export default {
       return found ? found.label : code.toUpperCase();
     };
 
+    const menuLabelSet = new Set([
+      "Меню",
+      "🧭 Меню",
+      "Menu",
+      "🧭 Menu",
+      ...LANG_OPTIONS.map((x) => t("ui.reply.menu", x.code))
+    ]);
+    const profileLabelSet = new Set([
+      "Профиль",
+      "👤 Профиль",
+      "Profile",
+      "👤 Profile",
+      ...LANG_OPTIONS.map((x) => t("ui.reply.profile", x.code))
+    ]);
+
     const startLangPickerText = (lang) => {
       const l = normalizeLang(lang || "en");
       return `${t("worker.start.lang_pick", l)}\n\n${t("worker.start.lang_pick_hint", l)}`;
@@ -833,15 +848,13 @@ export default {
       }
 
       const langNow = normalizeLang(u?.lang || "en");
-      const menuLabel = t("ui.reply.menu", langNow);
-      const profileLabel = t("ui.reply.profile", langNow);
 
-      if (text === "Меню" || text === "🧭 Меню" || text === menuLabel) {
+      if (menuLabelSet.has(text)) {
         await goTo(u, "Square");
         return new Response("ok");
       }
 
-      if (text === "Профиль" || text === "👤 Профиль" || text === profileLabel) {
+      if (profileLabelSet.has(text)) {
         await renderProfile(u);
         return new Response("ok");
       }
@@ -1013,12 +1026,15 @@ export default {
       if (data.startsWith("profile:lang:set:")) {
         const next = normalizeLang(data.split(":")[3] || "");
         const prev = normalizeLang(u.lang || "en");
+        u.lang = next;
+        replyLang = next;
         if (next !== prev) {
-          u.lang = next;
-          replyLang = next;
           await users.save(u);
         }
-        await answer(cb.id, t("profile.lang.changed", next, { lang: langOptionLabel(next) }));
+        await answer(cb.id);
+        await send(t("profile.lang.changed", next, { lang: langOptionLabel(next) }), {
+          reply_markup: ui.mainReply(next)
+        });
         await renderProfile(u, cb.message);
         return new Response("ok");
       }
