@@ -408,7 +408,9 @@ export class PetService {
       changed = true;
     }
 
-    if (nextStatus === "hungry" && prevStatus !== "hungry" && missed >= hungryAfter && p.streak !== 0) {
+    // Do not break streak on first day gap (player can still feed today).
+    // Break only after a real missed day.
+    if (missed > 1 && p.streak !== 0) {
       p.streak = 0;
       changed = true;
     }
@@ -682,9 +684,10 @@ export class PetService {
       return { ok: false, error: s.errAlreadyFed };
     }
 
-    const prevStatus = String(p.status || "");
-    const wasConsecutive = prevStatus === "healthy" && diffDays(String(p.lastFedDay || ""), today) === 1;
-    p.streak = wasConsecutive ? Math.max(0, toInt(p.streak, 0)) + 1 : 1;
+    const prevStreak = Math.max(0, toInt(p.streak, 0));
+    const dayGap = diffDays(String(p.lastFedDay || ""), today);
+    const wasConsecutive = dayGap === 1 && prevStreak > 0;
+    p.streak = wasConsecutive ? prevStreak + 1 : 1;
     p.lastFedDay = today;
     p.status = "healthy";
     p.sickSince = "";
@@ -957,7 +960,7 @@ export class PetService {
       const missed = this._missedDays(p, today);
       const sickAfter = Math.max(2, toInt(this._cfg().SICK_AFTER_DAYS, 3));
       const left = Math.max(0, sickAfter - missed);
-      lines.push(s.hungry, "", `${s.streak}: 0`, this._fmt(s.hungryWarn, { days: left }));
+      lines.push(s.hungry, "", `${s.streak}: ${streak}`, this._fmt(s.hungryWarn, { days: left }));
       kb.push([{ text: s.feedBtn, callback_data: "pet:feed" }]);
       kb.push([{ text: this._helpBtn(u), callback_data: "pet:help" }]);
       kb.push(backRow);

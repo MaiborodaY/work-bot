@@ -101,6 +101,23 @@ test("pet: feeding from hungry restarts streak from 1 and gives gems", async () 
   assert.equal(u.premium, 1);
 });
 
+test("pet: consecutive daily feeding keeps and increments streak", async () => {
+  const nowTs = Date.UTC(2026, 2, 13, 12, 0, 0);
+  const svc = makeService(nowTs);
+  const u = makeUser(nowTs);
+
+  u.pet.status = "healthy";
+  u.pet.streak = 3;
+  u.pet.lastFedDay = dayStr(nowTs - 1 * DAY_MS);
+  u.premium = 0;
+
+  const res = await svc.feed(u);
+  assert.equal(res.ok, true);
+  assert.equal(u.pet.status, "healthy");
+  assert.equal(u.pet.streak, 4);
+  assert.equal(u.premium, 1);
+});
+
 test("pet: draft confirmation is shown before type picker when name is set", async () => {
   const nowTs = Date.UTC(2026, 2, 13, 12, 0, 0);
   const svc = makeService(nowTs);
