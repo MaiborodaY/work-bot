@@ -139,6 +139,10 @@ export class QuestService {
     return Math.max(0, toInt(this._cfg().STUDY5_GUIDE_REWARD_GEMS, 0));
   }
 
+  _clanJoinGuideRewardMoney() {
+    return Math.max(0, toInt(this._cfg().CLAN_JOIN_GUIDE_REWARD_MONEY, 0));
+  }
+
   _dailyCounterDefaults() {
     return {
       workShifts: 0,
@@ -203,6 +207,10 @@ export class QuestService {
     }
     if (typeof u.flags.studyLevel5GuideClaimed !== "boolean") {
       u.flags.studyLevel5GuideClaimed = false;
+      dirty = true;
+    }
+    if (typeof u.flags.clanJoinGuideClaimed !== "boolean") {
+      u.flags.clanJoinGuideClaimed = false;
       dirty = true;
     }
 
@@ -810,6 +818,7 @@ export class QuestService {
         fortune_spin: "Крутануть колесо фортуны",
         daily_bonus: "Забрать ежедневный бонус",
         study_level_5: "Дойти до 5 уровня учёбы (Прогресс → Учёба → Начать учёбу)",
+        clan_join_first: "Вступить в клан или создать свой (Город → Кланы)",
         biz_collect: "Забрать доход с любого бизнеса",
         biz_collect_all: "Забрать доход со всех бизнесов",
         biz_guard: "Поставить охрану на любой бизнес",
@@ -843,6 +852,7 @@ export class QuestService {
         fortune_spin: "Прокрутити колесо фортуни",
         daily_bonus: "Забрати щоденний бонус",
         study_level_5: "Дійти до 5 рівня навчання (Прогрес → Навчання → Почати навчання)",
+        clan_join_first: "Вступити в клан або створити свій (Місто → Клани)",
         biz_collect: "Забрати дохід з будь-якого бізнесу",
         biz_collect_all: "Забрати дохід з усіх бізнесів",
         biz_guard: "Поставити охорону на будь-який бізнес",
@@ -876,6 +886,7 @@ export class QuestService {
         fortune_spin: "Spin the wheel of fortune",
         daily_bonus: "Claim daily bonus",
         study_level_5: "Reach Study level 5 (Progress → Study → Start study)",
+        clan_join_first: "Join a clan or create your own (City -> Clans)",
         biz_collect: "Collect income from any business",
         biz_collect_all: "Collect income from all businesses",
         biz_guard: "Buy guard for any business",
@@ -918,6 +929,7 @@ export class QuestService {
         subTitle: "⭐ Special quest",
         subText: "Claim subscription reward",
         studyGuideHint: "Tip: after Study, go to Jobs and run shifts for income.",
+        clanGuideHint: "Tip: open City -> Clans and join any open clan or create your own.",
         back: "⬅️ Back",
         refresh: "🔄 Refresh",
         donePrefix: "✅",
@@ -939,6 +951,7 @@ export class QuestService {
         subTitle: "⭐ Спец-завдання",
         subText: "Забрати нагороду за підписку",
         studyGuideHint: "Порада: після навчання повернись у Роботи й запускай зміни для доходу.",
+        clanGuideHint: "Порада: відкрий Місто -> Клани та вступи у відкритий клан або створи свій.",
         back: "⬅️ Назад",
         refresh: "🔄 Оновити",
         donePrefix: "✅",
@@ -959,6 +972,7 @@ export class QuestService {
       subTitle: "⭐ Спец-задача",
       subText: "Забрать награду за подписку",
       studyGuideHint: "Подсказка: после учёбы вернись в Работы и запускай смены для дохода.",
+      clanGuideHint: "Подсказка: открой Город -> Кланы и вступи в открытый клан или создай свой.",
       back: "⬅️ Назад",
       refresh: "🔄 Обновить",
       donePrefix: "✅",
@@ -1052,6 +1066,24 @@ export class QuestService {
           id: "study_level_5",
           rewardMoney,
           rewardGems
+        });
+        dirty = true;
+      }
+    }
+
+    if (String(event || "") === "clan_join" && !u.flags.clanJoinGuideClaimed) {
+      const clanId = String(ctx?.clanId || u?.clan?.clanId || "").trim();
+      if (clanId) {
+        const rewardMoney = this._clanJoinGuideRewardMoney();
+        if (rewardMoney > 0) {
+          u.money = Math.max(0, toInt(u.money, 0)) + rewardMoney;
+        }
+        u.flags.clanJoinGuideClaimed = true;
+        events.push({
+          kind: "quest_done",
+          scope: "special",
+          id: "clan_join_first",
+          rewardMoney
         });
         dirty = true;
       }
@@ -1154,6 +1186,13 @@ export class QuestService {
       specialLines.push(`⬜ ${specialTitle} — ${rewardText}`);
       specialLines.push(`   ${studyLevel}/5`);
       specialLines.push(`   ${s.studyGuideHint}`);
+    }
+    const hasClan = !!String(u?.clan?.clanId || "").trim();
+    if (!u?.flags?.clanJoinGuideClaimed && !hasClan) {
+      const specialTitle = this._questTitle(u, "clan_join_first", 1);
+      const rewardMoney = this._clanJoinGuideRewardMoney();
+      specialLines.push(`⬜ ${specialTitle} — ${formatMoney(rewardMoney, this._lang(u))}`);
+      specialLines.push(`   ${s.clanGuideHint}`);
     }
     if (specialLines.length) {
       lines.push("", "━━━━━━━━━━━━━━━━", "", s.subTitle);

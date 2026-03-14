@@ -145,3 +145,28 @@ test("stocks_buy3 stale counter is recovered from current holdings on cycle ensu
   assert.equal(u.quests.daily.list[0].progress, 3);
   assert.equal(u.quests.daily.list[0].done, true);
 });
+
+test("bar tasks view: shows clan join special quest when user has no clan", async () => {
+  const qs = makeService();
+  const u = makeUser({ withBusiness: false });
+
+  const view = await qs.buildBarTasksView(u);
+  const text = String(view?.caption || "");
+
+  assert.match(text, /Вступить в клан или создать свой/);
+  assert.match(text, /\$1000/);
+});
+
+test("clan join special quest: awards money once", async () => {
+  const qs = makeService();
+  const u = makeUser({ withBusiness: false });
+
+  const first = await qs.onEvent(u, "clan_join", { clanId: "clan_1" }, { persist: false, notify: false });
+  assert.equal(u.flags.clanJoinGuideClaimed, true);
+  assert.equal(u.money, 1000);
+  assert.ok(first.events.some((ev) => ev.id === "clan_join_first"));
+
+  const second = await qs.onEvent(u, "clan_join", { clanId: "clan_1" }, { persist: false, notify: false });
+  assert.equal(u.money, 1000);
+  assert.equal(second.events.some((ev) => ev.id === "clan_join_first"), false);
+});

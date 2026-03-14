@@ -730,6 +730,11 @@ export default {
             await achievements.onEvent(u, "clan_create", { clanId: String(res?.clan?.id || "") });
           }
         });
+        await safeCall("worker.message.quests.clan_join", async () => {
+          if (quests?.onEvent) {
+            await quests.onEvent(u, "clan_join", { clanId: String(res?.clan?.id || "") });
+          }
+        });
 
         await goTo(u, "Clan", t("worker.clan.create_ok", normalizeLang(u?.lang || "en"), { name: res.clan?.name || "" }));
         return new Response("ok");
