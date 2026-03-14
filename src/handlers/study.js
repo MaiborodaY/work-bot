@@ -7,7 +7,7 @@ export const studyHandler = {
   match: (data) => data === "study:start" || data === "study:skip" || data === "study:finish",
 
   async handle(ctx) {
-    const { u, cb, answer, users, locations, now, send, goTo, orders, social, achievements } = ctx;
+    const { u, cb, answer, users, locations, now, send, goTo, orders, social, achievements, quests } = ctx;
     const lang = normalizeLang(u?.lang || "ru");
     const tt = (key, vars = {}) => t(key, lang, vars);
     const study = new StudyService({ users, send, now, social });
@@ -24,6 +24,11 @@ export const studyHandler = {
       try {
         if (achievements?.onEvent) {
           await achievements.onEvent(u, "study_finish", { level: fin.level, source: "finish" });
+        }
+      } catch {}
+      try {
+        if (quests?.onEvent) {
+          await quests.onEvent(u, "study_finish", { level: fin.level, source: "finish" });
         }
       } catch {}
       await goTo(u, "Study", tt("handler.study.finish_ok", { level: fin.level }));
@@ -47,6 +52,11 @@ export const studyHandler = {
       try {
         if (achievements?.onEvent) {
           await achievements.onEvent(u, "study_finish", { level: fin.level, source: "skip" });
+        }
+      } catch {}
+      try {
+        if (quests?.onEvent) {
+          await quests.onEvent(u, "study_finish", { level: fin.level, source: "skip" });
         }
       } catch {}
       await answer(cb.id, tt("handler.study.skip_ok", { gems: CONFIG.PREMIUM.emoji, cost: res.cost }));

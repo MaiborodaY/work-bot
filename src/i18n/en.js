@@ -588,7 +588,7 @@ export const EN = {
   "handler.gym.onboarding_use_free_skip": "Use the free finish in onboarding.",
   "handler.gym.skip_free_unavailable": "Free finish is unavailable right now.",
   "handler.gym.skip_free_ok": "⚡ Training finished for free.",
-  "worker.onboarding.done": "🎉 That's it - the city is yours.\nFrom the main square you can go to:\n🍻 Bar - daily tasks and crystals\n🏋️ Gym - more energy means more earnings\n💰 Goal - save up $20,000 for your first business\n\nGood luck. Lekha is at the bar if you need anything.",
+  "worker.onboarding.done": "🎉 That's it - the city is yours.\nYou are already in the Bar: this is where daily and weekly tasks give money and crystals.\n\nWhat to do next:\n1) Open the \"📋 Tasks\" section in the Bar and complete 2-3 easy goals.\n2) Push Study to level 5 to unlock the Arcane Hall.\n3) Then go back to Jobs and run shifts to save for your first business.\n\nGood luck. Lekha is at the bar if you need anything.",
   "worker.onboarding.welcome": "👋 Welcome to World of Life.\n\nFirst steps:\n1) ▶️ Start your first 1-minute shift.\n2) ⚡ Finish it for free and claim money.\n3) 🏋️ Go to gym, start training, and finish it for free too.\n\n✨ While you're new, we show only essential buttons.",
   "ui.city.thief": "🌑 Theft",
   "loc.thief.unavailable": "🌑 Theft is temporarily unavailable.",

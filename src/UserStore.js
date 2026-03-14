@@ -548,6 +548,7 @@ export class UserStore {
     if (typeof u.flags.freeSkipUsed_work !== "boolean") { u.flags.freeSkipUsed_work = false; dirty = true; }
     if (typeof u.flags.freeSkipUsed_gym !== "boolean") { u.flags.freeSkipUsed_gym = false; dirty = true; }
     if (typeof u.flags.awaitingLangPick !== "boolean") { u.flags.awaitingLangPick = false; dirty = true; }
+    if (typeof u.flags.studyLevel5GuideClaimed !== "boolean") { u.flags.studyLevel5GuideClaimed = false; dirty = true; }
 
     // Daily top stats and reward marker
     if (!u.stats || typeof u.stats !== "object") {
@@ -661,7 +662,8 @@ export class UserStore {
         onboardingFlowV2: false,
         freeSkipUsed_work: false,
         freeSkipUsed_gym: false,
-        awaitingLangPick: false
+        awaitingLangPick: false,
+        studyLevel5GuideClaimed: false
       }
     };
   }

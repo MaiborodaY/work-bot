@@ -131,6 +131,14 @@ export class QuestService {
     return Math.max(0, toInt(this._cfg().SUB_BONUS_REWARD_MONEY, 0));
   }
 
+  _studyGuideRewardMoney() {
+    return Math.max(0, toInt(this._cfg().STUDY5_GUIDE_REWARD_MONEY, 0));
+  }
+
+  _studyGuideRewardGems() {
+    return Math.max(0, toInt(this._cfg().STUDY5_GUIDE_REWARD_GEMS, 0));
+  }
+
   _dailyCounterDefaults() {
     return {
       workShifts: 0,
@@ -191,6 +199,10 @@ export class QuestService {
     }
     if (typeof u.flags.subBonusClaimed !== "boolean") {
       u.flags.subBonusClaimed = false;
+      dirty = true;
+    }
+    if (typeof u.flags.studyLevel5GuideClaimed !== "boolean") {
+      u.flags.studyLevel5GuideClaimed = false;
       dirty = true;
     }
 
@@ -797,6 +809,7 @@ export class QuestService {
         pet_feed: "Покормить питомца",
         fortune_spin: "Крутануть колесо фортуны",
         daily_bonus: "Забрать ежедневный бонус",
+        study_level_5: "Дойти до 5 уровня учёбы (Прогресс → Учёба → Начать учёбу)",
         biz_collect: "Забрать доход с любого бизнеса",
         biz_collect_all: "Забрать доход со всех бизнесов",
         biz_guard: "Поставить охрану на любой бизнес",
@@ -829,6 +842,7 @@ export class QuestService {
         pet_feed: "Погодувати улюбленця",
         fortune_spin: "Прокрутити колесо фортуни",
         daily_bonus: "Забрати щоденний бонус",
+        study_level_5: "Дійти до 5 рівня навчання (Прогрес → Навчання → Почати навчання)",
         biz_collect: "Забрати дохід з будь-якого бізнесу",
         biz_collect_all: "Забрати дохід з усіх бізнесів",
         biz_guard: "Поставити охорону на будь-який бізнес",
@@ -861,6 +875,7 @@ export class QuestService {
         pet_feed: "Feed your pet",
         fortune_spin: "Spin the wheel of fortune",
         daily_bonus: "Claim daily bonus",
+        study_level_5: "Reach Study level 5 (Progress → Study → Start study)",
         biz_collect: "Collect income from any business",
         biz_collect_all: "Collect income from all businesses",
         biz_guard: "Buy guard for any business",
@@ -902,6 +917,7 @@ export class QuestService {
         none: "No quests yet.",
         subTitle: "⭐ Special quest",
         subText: "Claim subscription reward",
+        studyGuideHint: "Tip: after Study, go to Jobs and run shifts for income.",
         back: "⬅️ Back",
         refresh: "🔄 Refresh",
         donePrefix: "✅",
@@ -922,6 +938,7 @@ export class QuestService {
         none: "Поки немає завдань.",
         subTitle: "⭐ Спец-завдання",
         subText: "Забрати нагороду за підписку",
+        studyGuideHint: "Порада: після навчання повернись у Роботи й запускай зміни для доходу.",
         back: "⬅️ Назад",
         refresh: "🔄 Оновити",
         donePrefix: "✅",
@@ -941,6 +958,7 @@ export class QuestService {
       none: "Пока заданий нет.",
       subTitle: "⭐ Спец-задача",
       subText: "Забрать награду за подписку",
+      studyGuideHint: "Подсказка: после учёбы вернись в Работы и запускай смены для дохода.",
       back: "⬅️ Назад",
       refresh: "🔄 Обновить",
       donePrefix: "✅",
@@ -1016,6 +1034,29 @@ export class QuestService {
       dirty = true;
     }
 
+    if (String(event || "") === "study_finish" && !u.flags.studyLevel5GuideClaimed) {
+      const levelNow = Math.max(0, toInt(ctx?.level, toInt(u?.study?.level, 0)));
+      if (levelNow === 5) {
+        const rewardMoney = this._studyGuideRewardMoney();
+        const rewardGems = this._studyGuideRewardGems();
+        if (rewardMoney > 0) {
+          u.money = Math.max(0, toInt(u.money, 0)) + rewardMoney;
+        }
+        if (rewardGems > 0) {
+          u.premium = Math.max(0, toInt(u.premium, 0)) + rewardGems;
+        }
+        u.flags.studyLevel5GuideClaimed = true;
+        events.push({
+          kind: "quest_done",
+          scope: "special",
+          id: "study_level_5",
+          rewardMoney,
+          rewardGems
+        });
+        dirty = true;
+      }
+    }
+
     if (dirty && persist) {
       await this.users.save(u);
     }
@@ -1034,8 +1075,13 @@ export class QuestService {
         const title = ev.id === "sub_bonus"
           ? s.subText
           : this._questTitle(u, ev.id, ev.target || 1);
-        const reward = Math.max(0, toInt(ev.rewardMoney, 0));
-        const text = `${s.questDoneTitle}\n${title}\n+${formatMoney(reward, this._lang(u))}`;
+        const rewardMoney = Math.max(0, toInt(ev.rewardMoney, 0));
+        const rewardGems = Math.max(0, toInt(ev.rewardGems, 0));
+        const rewardParts = [];
+        if (rewardMoney > 0) rewardParts.push(`+${formatMoney(rewardMoney, this._lang(u))}`);
+        if (rewardGems > 0) rewardParts.push(`+💎${rewardGems}`);
+        const rewardLine = rewardParts.length ? rewardParts.join("  ") : "+$0";
+        const text = `${s.questDoneTitle}\n${title}\n${rewardLine}`;
         try {
           await this.bot.sendMessage(u.chatId, text);
         } catch {}
@@ -1092,9 +1138,26 @@ export class QuestService {
     }
     lines.push(s.bonusWeekly);
 
+    const specialLines = [];
     if (!u?.flags?.subBonusClaimed) {
+      specialLines.push(`⬜ ${s.subText} — ${formatMoney(this._subBonusRewardMoney(), this._lang(u))}`);
+    }
+    const studyLevel = Math.max(0, toInt(u?.study?.level, 0));
+    if (!u?.flags?.studyLevel5GuideClaimed && studyLevel < 5) {
+      const specialTitle = this._questTitle(u, "study_level_5", 5);
+      const rewardParts = [];
+      const rewardMoney = this._studyGuideRewardMoney();
+      const rewardGems = this._studyGuideRewardGems();
+      if (rewardMoney > 0) rewardParts.push(formatMoney(rewardMoney, this._lang(u)));
+      if (rewardGems > 0) rewardParts.push(`💎${rewardGems}`);
+      const rewardText = rewardParts.length ? rewardParts.join(" + ") : "$0";
+      specialLines.push(`⬜ ${specialTitle} — ${rewardText}`);
+      specialLines.push(`   ${studyLevel}/5`);
+      specialLines.push(`   ${s.studyGuideHint}`);
+    }
+    if (specialLines.length) {
       lines.push("", "━━━━━━━━━━━━━━━━", "", s.subTitle);
-      lines.push(`⬜ ${s.subText} — ${formatMoney(this._subBonusRewardMoney(), this._lang(u))}`);
+      lines.push(...specialLines);
     }
 
     const keyboard = [

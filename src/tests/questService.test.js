@@ -14,7 +14,10 @@ function makeUser({ withBusiness = false } = {}) {
   return {
     id: withBusiness ? "u-mid" : "u-new",
     lang: "ru",
-    flags: { subBonusClaimed: true },
+    flags: { subBonusClaimed: true, studyLevel5GuideClaimed: false },
+    money: 0,
+    premium: 0,
+    study: { level: 0, active: false },
     biz: {
       owned: withBusiness
         ? [{ id: "shawarma", boughtAt: 0, lastClaimDayUTC: "" }]
@@ -61,3 +64,29 @@ test("bar tasks view: does not render refresh button", async () => {
   assert.equal(view.keyboard[0]?.[0]?.callback_data, "go:Bar");
 });
 
+test("bar tasks view: shows study level 5 special quest for newbies", async () => {
+  const qs = makeService();
+  const u = makeUser({ withBusiness: false });
+
+  const view = await qs.buildBarTasksView(u);
+  const text = String(view?.caption || "");
+
+  assert.match(text, /Дойти до 5 уровня учёбы/);
+  assert.match(text, /0\/5/);
+});
+
+test("study level 5 special quest: auto-awards money and gems once", async () => {
+  const qs = makeService();
+  const u = makeUser({ withBusiness: false });
+
+  const first = await qs.onEvent(u, "study_finish", { level: 5 });
+  assert.equal(u.flags.studyLevel5GuideClaimed, true);
+  assert.equal(u.money, 800);
+  assert.equal(u.premium, 2);
+  assert.ok(first.events.some((ev) => ev.id === "study_level_5"));
+
+  const second = await qs.onEvent(u, "study_finish", { level: 5 });
+  assert.equal(u.money, 800);
+  assert.equal(u.premium, 2);
+  assert.equal(second.events.some((ev) => ev.id === "study_level_5"), false);
+});
