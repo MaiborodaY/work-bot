@@ -565,7 +565,7 @@ export class QuestService {
         case "stocks_buy":
           return toInt(d.stocksBuys, 0);
         case "stocks_buy3":
-          return toInt(d.stocksHoldings3, 0);
+          return Math.max(toInt(d.stocksHoldings3, 0), this._holdingsCount(u));
         case "stocks_sell":
           return toInt(d.stocksSells, 0);
         case "stocks_portfolio":
@@ -597,7 +597,7 @@ export class QuestService {
       case "w_stocks_profit":
         return toInt(w.stocksProfitSells, 0);
       case "w_stocks_5companies":
-        return toInt(w.stocksHoldings5, 0);
+        return Math.max(toInt(w.stocksHoldings5, 0), this._holdingsCount(u));
       case "w_stocks_invest":
         return toInt(w.stocksInvested, 0);
       case "w_thief_3attempts":
@@ -728,8 +728,8 @@ export class QuestService {
       case "stocks_buy": {
         d.stocksBuys += 1;
         const holdingsCount = Math.max(0, toInt(ctx?.holdingsCount, this._holdingsCount(u)));
-        if (holdingsCount >= 3) d.stocksHoldings3 = 1;
-        if (holdingsCount >= 5) w.stocksHoldings5 = 1;
+        d.stocksHoldings3 = Math.max(toInt(d.stocksHoldings3, 0), holdingsCount);
+        w.stocksHoldings5 = Math.max(toInt(w.stocksHoldings5, 0), holdingsCount);
         const portfolioValue = Math.max(0, toInt(ctx?.portfolioValue, 0));
         if (portfolioValue > d.stocksPortfolioMax) d.stocksPortfolioMax = portfolioValue;
         w.stocksInvested += Math.max(0, toInt(ctx?.cost, 0));

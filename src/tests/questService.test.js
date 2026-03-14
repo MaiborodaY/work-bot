@@ -90,3 +90,58 @@ test("study level 5 special quest: auto-awards money and gems once", async () =>
   assert.equal(u.premium, 2);
   assert.equal(second.events.some((ev) => ev.id === "study_level_5"), false);
 });
+
+test("stocks_buy3 progress uses holdings count, not binary flag", async () => {
+  const qs = makeService();
+  const u = makeUser({ withBusiness: false });
+  await qs.ensureCycles(u, { persist: false });
+  u.quests.daily.list = [
+    {
+      id: "stocks_buy3",
+      type: "daily",
+      category: "stocks",
+      difficulty: "hard",
+      rewardMoney: 700,
+      target: 3,
+      progress: 0,
+      done: false,
+      paid: false
+    }
+  ];
+
+  const res = await qs.onEvent(u, "stocks_buy", { holdingsCount: 3, cost: 100, portfolioValue: 1000 }, { persist: false, notify: false });
+
+  assert.equal(u.quests.daily.list[0].progress, 3);
+  assert.equal(u.quests.daily.list[0].done, true);
+  assert.ok(res.events.some((ev) => ev.id === "stocks_buy3"));
+});
+
+test("stocks_buy3 stale counter is recovered from current holdings on cycle ensure", async () => {
+  const qs = makeService();
+  const u = makeUser({ withBusiness: false });
+  u.stocks.holdings = {
+    shawarma: { shares: 1, avgPrice: 100 },
+    dent: { shares: 1, avgPrice: 180 },
+    fitlife: { shares: 1, avgPrice: 220 }
+  };
+  u.quests.daily.day = "2026-03-13";
+  u.quests.daily.list = [
+    {
+      id: "stocks_buy3",
+      type: "daily",
+      category: "stocks",
+      difficulty: "hard",
+      rewardMoney: 700,
+      target: 3,
+      progress: 0,
+      done: false,
+      paid: false
+    }
+  ];
+  u.quests.daily.counters.stocksHoldings3 = 0;
+
+  await qs.ensureCycles(u, { persist: false });
+
+  assert.equal(u.quests.daily.list[0].progress, 3);
+  assert.equal(u.quests.daily.list[0].done, true);
+});
