@@ -29,6 +29,18 @@ export const stocksHandler = {
       locations.setSourceMessage(null);
     };
 
+    const showTickerWithNotice = async (ticker, notice) => {
+      const view = await stocks.buildTickerView(u, ticker);
+      if (!view) {
+        await goTo(u, "Stocks", notice);
+        return;
+      }
+      await show({
+        caption: notice ? `${notice}\n\n${view.caption}` : view.caption,
+        keyboard: view.keyboard
+      });
+    };
+
     if (data === "stocks:refresh") {
       await answer(cb.id);
       await goTo(u, "Stocks");
@@ -60,18 +72,15 @@ export const stocksHandler = {
       const qty = Number(data.split(":")[3] || 0);
       const res = await stocks.buy(u, ticker, qty);
       await answer(cb.id, res.ok ? tt("handler.stocks.buy_toast_ok") : (res.error || tt("handler.stocks.buy_toast_fail")));
-      await goTo(
-        u,
-        "Stocks",
-        res.ok
-          ? tt("handler.stocks.buy_ok", {
-            shares: res.sharesBought,
-            ticker,
-            price: res.price,
-            cost: res.cost
-          })
-          : tt("handler.stocks.buy_fail", { error: res.error || tt("handler.stocks.buy_default_error") })
-      );
+      const notice = res.ok
+        ? tt("handler.stocks.buy_ok", {
+          shares: res.sharesBought,
+          ticker,
+          price: res.price,
+          cost: res.cost
+        })
+        : tt("handler.stocks.buy_fail", { error: res.error || tt("handler.stocks.buy_default_error") });
+      await showTickerWithNotice(ticker, notice);
       return;
     }
 
@@ -85,19 +94,16 @@ export const stocksHandler = {
       }
       const res = await stocks.sell(u, ticker, shares);
       await answer(cb.id, res.ok ? tt("handler.stocks.sell_toast_ok") : (res.error || tt("handler.stocks.sell_toast_fail")));
-      await goTo(
-        u,
-        "Stocks",
-        res.ok
-          ? tt("handler.stocks.sell_ok", {
-            shares: res.sharesSold,
-            ticker,
-            gross: res.gross,
-            fee: res.fee,
-            net: res.net
-          })
-          : tt("handler.stocks.sell_fail", { error: res.error || tt("handler.stocks.sell_default_error") })
-      );
+      const notice = res.ok
+        ? tt("handler.stocks.sell_ok", {
+          shares: res.sharesSold,
+          ticker,
+          gross: res.gross,
+          fee: res.fee,
+          net: res.net
+        })
+        : tt("handler.stocks.sell_fail", { error: res.error || tt("handler.stocks.sell_default_error") });
+      await showTickerWithNotice(ticker, notice);
       return;
     }
 
@@ -106,19 +112,16 @@ export const stocksHandler = {
       const qty = Number(data.split(":")[3] || 0);
       const res = await stocks.sell(u, ticker, qty);
       await answer(cb.id, res.ok ? tt("handler.stocks.sell_toast_ok") : (res.error || tt("handler.stocks.sell_toast_fail")));
-      await goTo(
-        u,
-        "Stocks",
-        res.ok
-          ? tt("handler.stocks.sell_ok", {
-            shares: res.sharesSold,
-            ticker,
-            gross: res.gross,
-            fee: res.fee,
-            net: res.net
-          })
-          : tt("handler.stocks.sell_fail", { error: res.error || tt("handler.stocks.sell_default_error") })
-      );
+      const notice = res.ok
+        ? tt("handler.stocks.sell_ok", {
+          shares: res.sharesSold,
+          ticker,
+          gross: res.gross,
+          fee: res.fee,
+          net: res.net
+        })
+        : tt("handler.stocks.sell_fail", { error: res.error || tt("handler.stocks.sell_default_error") });
+      await showTickerWithNotice(ticker, notice);
       return;
     }
   }
