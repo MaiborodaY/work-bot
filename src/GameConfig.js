@@ -514,7 +514,7 @@ export const CONFIG = {
       emoji: "🌯",
       title: "Ларек с шавермой",
       titleKey: "cfg.biz.shawarma.title",
-      price: 20000,
+      price: 10000,
       daily: 500,
       resetPolicy: "utc_daily_burn",
       note: "Продает шаверму раз в день. Доход сгорает, если не забрать.",
