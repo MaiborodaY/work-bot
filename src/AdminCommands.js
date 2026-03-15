@@ -1,7 +1,7 @@
 // AdminCommands.js
 // Admin tools: legacy economy commands + broadcast workflow.
 import { CONFIG } from "./GameConfig.js";
-import { addDaysUtc, dayDiffUtc, dayStrUtc, hasActivityOnDay, isDayStr } from "./PlayerStats.js";
+import { addDaysUtc, dayDiffUtc, dayStrUtc, hasActivityOnDay, isDayStr, markUsefulActivity } from "./PlayerStats.js";
 
 const LABOUR_FREE_PLAYERS_KEY = "labour:free_players";
 
@@ -58,6 +58,7 @@ export class AdminCommands {
         "/admin_retention - retention by cohorts (last 30d)\n" +
         "/admin_funnel - onboarding funnel (all-time)\n" +
         "/admin_new_users [limit] - new users list (last 30d)\n" +
+        "/admin_backfill_activity_today - backfill useful activity for today\n" +
         "/admin_quiz - quiz stats\n" +
         "/admin_rebuild_ratings - rebuild top rating indexes once\n\n" +
         "<b>Broadcast</b>\n" +
@@ -355,6 +356,10 @@ export class AdminCommands {
       const limitRaw = Number(mAdminNewUsers[1] || 50);
       const limit = Math.max(1, Math.min(200, Number.isFinite(limitRaw) ? Math.floor(limitRaw) : 50));
       await this._sendNewUsers(limit);
+      return true;
+    }
+    if (/^\/admin_backfill_activity_today(?:@\w+)?\s*$/i.test(input)) {
+      await this._backfillActivityToday();
       return true;
     }
     if (/^\/labour_reindex(?:@\w+)?\s*$/i.test(input)) {
@@ -976,6 +981,109 @@ export class AdminCommands {
       }
       await this.send(lines.join("\n").trim());
     }
+  }
+
+  _todayDayKey() {
+    const d = new Date(Date.now());
+    const y = d.getUTCFullYear();
+    const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+    const day = String(d.getUTCDate()).padStart(2, "0");
+    return `${y}${m}${day}`;
+  }
+
+  _hasUsefulActivityToday(u, todayDay, todayDayKey) {
+    const day = String(todayDay || "");
+    const dayKey = String(todayDayKey || "");
+
+    // Work claim today (legacy reliable marker).
+    const hasWorkToday = String(u?.dayKey || "") === dayKey && Math.max(0, Number(u?.dayTotal || 0)) > 0;
+    if (hasWorkToday) return true;
+
+    // Quest daily counters for today.
+    const qDaily = (u?.quests?.daily && typeof u.quests.daily === "object") ? u.quests.daily : null;
+    if (qDaily && String(qDaily.day || "") === day) {
+      const c = (qDaily.counters && typeof qDaily.counters === "object") ? qDaily.counters : {};
+      const work = Math.max(0, Number(c.workShifts || 0));
+      const gym = Math.max(0, Number(c.gymTrains || 0));
+      const biz = Math.max(0, Number(c.bizClaims || 0));
+      const pet = Math.max(0, Number(c.petFeeds || 0));
+      if (work > 0 || gym > 0 || biz > 0 || pet > 0) return true;
+    }
+
+    // Business claim today.
+    const owned = Array.isArray(u?.biz?.owned) ? u.biz.owned : [];
+    for (const b of owned) {
+      if (b && typeof b === "object" && String(b.lastClaimDayUTC || "") === day) return true;
+    }
+
+    // Pet feed today.
+    if (String(u?.pet?.lastFedDay || "") === day) return true;
+
+    return false;
+  }
+
+  async _backfillActivityToday() {
+    await this.send("Backfill activity started...");
+    const prefix = "u:";
+    const today = dayStrUtc(Date.now());
+    const todayDayKey = this._todayDayKey();
+    let cursor = undefined;
+    let scanned = 0;
+    let excludedAdmins = 0;
+    let matchedToday = 0;
+    let updated = 0;
+    let alreadyMarked = 0;
+    let skippedNoSignal = 0;
+
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const page = await this.db.list({ prefix, cursor });
+      const keys = Array.isArray(page?.keys) ? page.keys : [];
+      for (const k of keys) {
+        try {
+          const raw = await this.db.get(k.name);
+          if (!raw) continue;
+          const u = JSON.parse(raw);
+          const fallbackId = String(k.name || "").slice(prefix.length);
+          const id = String((u?.id ?? fallbackId) || "");
+          if (!id) continue;
+          if (this.isAdmin(id)) {
+            excludedAdmins += 1;
+            continue;
+          }
+
+          scanned += 1;
+          if (!this._hasUsefulActivityToday(u, today, todayDayKey)) {
+            skippedNoSignal += 1;
+            continue;
+          }
+          matchedToday += 1;
+
+          const changed = markUsefulActivity(u, Date.now());
+          if (changed) {
+            await this.users.save(u);
+            updated += 1;
+          } else {
+            alreadyMarked += 1;
+          }
+        } catch {
+          // skip invalid rows
+        }
+      }
+      if (!page || page.list_complete || !page.cursor) break;
+      cursor = page.cursor;
+    }
+
+    await this.send(
+      "<b>Backfill activity done</b>\n" +
+      `Day (UTC): ${today}\n` +
+      `Scanned users (non-admin): ${scanned}\n` +
+      `Matched today useful activity: ${matchedToday}\n` +
+      `Updated: ${updated}\n` +
+      `Already marked: ${alreadyMarked}\n` +
+      `No today signal: ${skippedNoSignal}\n` +
+      `Excluded admins: ${excludedAdmins}`
+    );
   }
 
   async _trySaveDraftFromMessage({ adminId, chatId, msg }) {
