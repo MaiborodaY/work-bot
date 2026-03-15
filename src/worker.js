@@ -192,14 +192,44 @@ export default {
        */
       show: async (p) => {
         const { sourceMsg, place, caption, keyboard, policy } = p;
-        const fileId = (p && p.asset) ? p.asset : (CONFIG.ASSETS?.[place]);
+        const fileCandidates = [];
+        const preferredAsset = (p && p.asset) ? String(p.asset) : "";
+        const placeAsset = String(CONFIG.ASSETS?.[place] || "");
+        if (preferredAsset) fileCandidates.push(preferredAsset);
+        if (placeAsset && placeAsset !== preferredAsset) fileCandidates.push(placeAsset);
+        const fileId = fileCandidates[0] || "";
+        const canUsePhoto = !!(sendPhoto && fileCandidates.length);
+        const safePhotoCaption = (fullCaption) => {
+          const text = String(fullCaption || "");
+          if (!text) return " ";
+          const firstLine = String(text.split("\n")[0] || "").trim() || " ";
+          return firstLine.slice(0, 1024);
+        };
         const sendPhotoOrFallback = async () => {
-          if (!sendPhoto || !fileId) {
+          if (!canUsePhoto) {
+            await sendWithInline(caption, keyboard);
+            return;
+          }
+          // Telegram photo captions are capped at 1024 chars.
+          const tooLongCaption = String(caption || "").length > 1024;
+          if (tooLongCaption) {
+            for (const candidate of fileCandidates) {
+              try {
+                await sendPhoto(chatId, candidate, safePhotoCaption(caption), undefined);
+                break;
+              } catch {}
+            }
             await sendWithInline(caption, keyboard);
             return;
           }
           try {
-            await sendPhoto(chatId, fileId, caption, keyboard);
+            for (const candidate of fileCandidates) {
+              try {
+                await sendPhoto(chatId, candidate, caption, keyboard);
+                return;
+              } catch {}
+            }
+            await sendWithInline(caption, keyboard);
           } catch {
             await sendWithInline(caption, keyboard);
           }
@@ -207,8 +237,7 @@ export default {
         const wantPhoto =
           policy === "photo" ||
           (policy === "auto" &&
-            fileId &&
-            sendPhoto &&
+            canUsePhoto &&
             (editPhotoMedia || deleteMsg));
         const isPhotoMsg =
           !!(sourceMsg && sourceMsg.photo && sourceMsg.photo.length);
@@ -236,6 +265,11 @@ export default {
               await edit(sourceMsg, caption, keyboard);
               return;
             } catch {
+              if (deleteMsg && sourceMsg?.chat?.id && sourceMsg?.message_id) {
+                await deleteMsg(sourceMsg.chat.id, sourceMsg.message_id).catch(
+                  () => {}
+                );
+              }
               await sendPhotoOrFallback();
               return;
             }
