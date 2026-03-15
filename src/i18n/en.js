@@ -83,7 +83,7 @@ export const EN = {
   "stocks.info.line3": "3) Prices recalc daily at {{hour}}:00 UTC.",
   "stocks.info.line4": "4) Sell fee is {{feePct}}% (sell only).",
   "stocks.info.line5": "5) Dividends: {{dividendPct}}% daily from current portfolio value, paid automatically after recalc.",
-  "stocks.info.line6": "6) LuckyHoldings also grows from casino activity (spins yesterday).",
+  "stocks.info.line6": "6) LuckyHoldings also grows from Arcana Hall activity (spins yesterday).",
   "stocks.info.line7": "7) Ticker card shows daily move and {{historyDays}}-day close history.",
   "stocks.info.risk": "Important: prices can go up and down. Profit is not guaranteed.",
   "stocks.ticker.price_line": "Price: ${{price}} {{arrow}} {{pct}} ({{abs}})",
