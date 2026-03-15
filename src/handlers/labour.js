@@ -31,12 +31,6 @@ export const labourHandler = {
       locations.setSourceMessage(null);
     };
 
-    const reloadSelf = async () => {
-      const fresh = await users.load(u.id).catch(() => null);
-      if (!fresh) return;
-      for (const k of Object.keys(u)) delete u[k];
-      Object.assign(u, fresh);
-    };
     const applyFreshOwner = (freshOwner) => {
       if (!freshOwner || typeof freshOwner !== "object") return;
       for (const k of Object.keys(u)) delete u[k];
@@ -118,7 +112,6 @@ export const labourHandler = {
         } catch {}
       }
 
-      await reloadSelf();
       await showBiz(bizId);
       return;
     }
@@ -155,7 +148,6 @@ export const labourHandler = {
           await ratings.updateUser(u, ["biz"]);
         }
       } catch {}
-      await reloadSelf();
       await showBiz(bizId);
       return;
     }
