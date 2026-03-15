@@ -131,6 +131,10 @@ export class QuestService {
     return Math.max(0, toInt(this._cfg().SUB_BONUS_REWARD_MONEY, 0));
   }
 
+  _petBuyGuideRewardMoney() {
+    return Math.max(0, toInt(this._cfg().PET_BUY_GUIDE_REWARD_MONEY, 0));
+  }
+
   _studyGuideRewardMoney() {
     return Math.max(0, toInt(this._cfg().STUDY5_GUIDE_REWARD_MONEY, 0));
   }
@@ -203,6 +207,10 @@ export class QuestService {
     }
     if (typeof u.flags.subBonusClaimed !== "boolean") {
       u.flags.subBonusClaimed = false;
+      dirty = true;
+    }
+    if (typeof u.flags.petBuyGuideClaimed !== "boolean") {
+      u.flags.petBuyGuideClaimed = false;
       dirty = true;
     }
     if (typeof u.flags.studyLevel5GuideClaimed !== "boolean") {
@@ -817,6 +825,7 @@ export class QuestService {
         pet_feed: "Покормить питомца",
         fortune_spin: "Крутануть колесо фортуны",
         daily_bonus: "Забрать ежедневный бонус",
+        pet_buy_first: "Купить питомца (Площадь → Город → Дом → Питомец)",
         study_level_5: "Дойти до 5 уровня учёбы (Прогресс → Учёба → Начать учёбу)",
         clan_join_first: "Вступить в клан или создать свой (Город → Кланы)",
         biz_collect: "Забрать доход с любого бизнеса",
@@ -851,6 +860,7 @@ export class QuestService {
         pet_feed: "Погодувати улюбленця",
         fortune_spin: "Прокрутити колесо фортуни",
         daily_bonus: "Забрати щоденний бонус",
+        pet_buy_first: "Купити улюбленця (Площа → Місто → Дім → Улюбленець)",
         study_level_5: "Дійти до 5 рівня навчання (Прогрес → Навчання → Почати навчання)",
         clan_join_first: "Вступити в клан або створити свій (Місто → Клани)",
         biz_collect: "Забрати дохід з будь-якого бізнесу",
@@ -885,6 +895,7 @@ export class QuestService {
         pet_feed: "Feed your pet",
         fortune_spin: "Spin the wheel of fortune",
         daily_bonus: "Claim daily bonus",
+        pet_buy_first: "Buy a pet (Square -> City -> Home -> Pet)",
         study_level_5: "Reach Study level 5 (Progress → Study → Start study)",
         clan_join_first: "Join a clan or create your own (City -> Clans)",
         biz_collect: "Collect income from any business",
@@ -928,6 +939,7 @@ export class QuestService {
         none: "No quests yet.",
         subTitle: "⭐ Special quest",
         subText: "Claim subscription reward",
+        petBuyGuideHint: "Tip: Square -> City -> Home -> Pet.",
         studyGuideHint: "Tip: after Study, go to Jobs and run shifts for income.",
         clanGuideHint: "Tip: open City -> Clans and join any open clan or create your own.",
         back: "⬅️ Back",
@@ -950,6 +962,7 @@ export class QuestService {
         none: "Поки немає завдань.",
         subTitle: "⭐ Спец-завдання",
         subText: "Забрати нагороду за підписку",
+        petBuyGuideHint: "Порада: Площа -> Місто -> Дім -> Улюбленець.",
         studyGuideHint: "Порада: після навчання повернись у Роботи й запускай зміни для доходу.",
         clanGuideHint: "Порада: відкрий Місто -> Клани та вступи у відкритий клан або створи свій.",
         back: "⬅️ Назад",
@@ -971,6 +984,7 @@ export class QuestService {
       none: "Пока заданий нет.",
       subTitle: "⭐ Спец-задача",
       subText: "Забрать награду за подписку",
+      petBuyGuideHint: "Подсказка: Площадь -> Город -> Дом -> Питомец.",
       studyGuideHint: "Подсказка: после учёбы вернись в Работы и запускай смены для дохода.",
       clanGuideHint: "Подсказка: открой Город -> Кланы и вступи в открытый клан или создай свой.",
       back: "⬅️ Назад",
@@ -1045,6 +1059,21 @@ export class QuestService {
         u.money = Math.max(0, toInt(u.money, 0)) + reward;
       }
       events.push({ kind: "quest_done", scope: "special", id: "sub_bonus", rewardMoney: reward });
+      dirty = true;
+    }
+
+    if (String(event || "") === "pet_buy" && !u.flags.petBuyGuideClaimed) {
+      const rewardMoney = this._petBuyGuideRewardMoney();
+      if (rewardMoney > 0) {
+        u.money = Math.max(0, toInt(u.money, 0)) + rewardMoney;
+      }
+      u.flags.petBuyGuideClaimed = true;
+      events.push({
+        kind: "quest_done",
+        scope: "special",
+        id: "pet_buy_first",
+        rewardMoney
+      });
       dirty = true;
     }
 
@@ -1173,6 +1202,12 @@ export class QuestService {
     const specialLines = [];
     if (!u?.flags?.subBonusClaimed) {
       specialLines.push(`⬜ ${s.subText} — ${formatMoney(this._subBonusRewardMoney(), this._lang(u))}`);
+    }
+    if (!u?.flags?.petBuyGuideClaimed && u?.pet == null) {
+      const specialTitle = this._questTitle(u, "pet_buy_first", 1);
+      const rewardMoney = this._petBuyGuideRewardMoney();
+      specialLines.push(`⬜ ${specialTitle} — ${formatMoney(rewardMoney, this._lang(u))}`);
+      specialLines.push(`   ${s.petBuyGuideHint}`);
     }
     const studyLevel = Math.max(0, toInt(u?.study?.level, 0));
     if (!u?.flags?.studyLevel5GuideClaimed && studyLevel < 5) {

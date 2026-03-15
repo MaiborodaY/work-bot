@@ -658,6 +658,11 @@ export class PetService {
     u.awaitingPetName = false;
     u.petDraft = { type: "", name: "" };
 
+    let qRes = null;
+    if (this.quests?.onEvent) {
+      qRes = await this.quests.onEvent(u, "pet_buy", { type }, { persist: false, notify: false }).catch(() => null);
+    }
+
     let achRes = null;
     if (this.achievements?.onEvent) {
       achRes = await this.achievements.onEvent(u, "pet_buy", {}, { persist: false, notify: false }).catch(() => null);
@@ -665,6 +670,9 @@ export class PetService {
 
     await this._scheduleNextDue(u);
     await this.users.save(u);
+    if (qRes?.events?.length && this.quests?.notifyEvents) {
+      await this.quests.notifyEvents(u, qRes.events).catch(() => {});
+    }
     if (achRes?.newlyEarned?.length && this.achievements?.notifyEarned) {
       await this.achievements.notifyEarned(u, achRes.newlyEarned);
     }

@@ -548,6 +548,7 @@ export class UserStore {
     if (typeof u.flags.freeSkipUsed_work !== "boolean") { u.flags.freeSkipUsed_work = false; dirty = true; }
     if (typeof u.flags.freeSkipUsed_gym !== "boolean") { u.flags.freeSkipUsed_gym = false; dirty = true; }
     if (typeof u.flags.awaitingLangPick !== "boolean") { u.flags.awaitingLangPick = false; dirty = true; }
+    if (typeof u.flags.petBuyGuideClaimed !== "boolean") { u.flags.petBuyGuideClaimed = false; dirty = true; }
     if (typeof u.flags.studyLevel5GuideClaimed !== "boolean") { u.flags.studyLevel5GuideClaimed = false; dirty = true; }
     if (typeof u.flags.clanJoinGuideClaimed !== "boolean") { u.flags.clanJoinGuideClaimed = false; dirty = true; }
 
@@ -664,6 +665,7 @@ export class UserStore {
         freeSkipUsed_work: false,
         freeSkipUsed_gym: false,
         awaitingLangPick: false,
+        petBuyGuideClaimed: false,
         studyLevel5GuideClaimed: false,
         clanJoinGuideClaimed: false
       }

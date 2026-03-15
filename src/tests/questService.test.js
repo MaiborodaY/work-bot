@@ -14,7 +14,7 @@ function makeUser({ withBusiness = false } = {}) {
   return {
     id: withBusiness ? "u-mid" : "u-new",
     lang: "ru",
-    flags: { subBonusClaimed: true, studyLevel5GuideClaimed: false },
+    flags: { subBonusClaimed: true, petBuyGuideClaimed: false, studyLevel5GuideClaimed: false, clanJoinGuideClaimed: false },
     money: 0,
     premium: 0,
     study: { level: 0, active: false },
@@ -169,4 +169,59 @@ test("clan join special quest: awards money once", async () => {
   const second = await qs.onEvent(u, "clan_join", { clanId: "clan_1" }, { persist: false, notify: false });
   assert.equal(u.money, 1000);
   assert.equal(second.events.some((ev) => ev.id === "clan_join_first"), false);
+});
+
+test("bar tasks view: shows pet buy special quest when pet is missing", async () => {
+  const qs = makeService();
+  const u = makeUser({ withBusiness: false });
+  u.lang = "en";
+  u.flags.subBonusClaimed = true;
+  u.flags.studyLevel5GuideClaimed = true;
+  u.flags.clanJoinGuideClaimed = true;
+  u.pet = null;
+
+  const view = await qs.buildBarTasksView(u);
+  const text = String(view?.caption || "");
+
+  assert.match(text, /Buy a pet \(Square -> City -> Home -> Pet\)/);
+  assert.match(text, /\$500/);
+});
+
+test("pet buy special quest: awards money once and does not repeat", async () => {
+  const qs = makeService();
+  const u = makeUser({ withBusiness: false });
+  u.flags.petBuyGuideClaimed = false;
+
+  const first = await qs.onEvent(u, "pet_buy", { type: "dog" }, { persist: false, notify: false });
+  assert.equal(u.flags.petBuyGuideClaimed, true);
+  assert.equal(u.money, 500);
+  assert.ok(first.events.some((ev) => ev.id === "pet_buy_first"));
+
+  const second = await qs.onEvent(u, "pet_buy", { type: "cat" }, { persist: false, notify: false });
+  assert.equal(u.money, 500);
+  assert.equal(second.events.some((ev) => ev.id === "pet_buy_first"), false);
+});
+
+test("bar tasks view: hides pet buy special quest for users with existing pet", async () => {
+  const qs = makeService();
+  const u = makeUser({ withBusiness: false });
+  u.lang = "en";
+  u.flags.subBonusClaimed = true;
+  u.flags.studyLevel5GuideClaimed = true;
+  u.flags.clanJoinGuideClaimed = true;
+  u.flags.petBuyGuideClaimed = false;
+  u.pet = {
+    type: "cat",
+    name: "Murka",
+    status: "healthy",
+    streak: 0,
+    lastFedDay: "",
+    sickSince: "",
+    boughtAt: Date.UTC(2026, 2, 12, 12, 0, 0)
+  };
+
+  const view = await qs.buildBarTasksView(u);
+  const text = String(view?.caption || "");
+
+  assert.doesNotMatch(text, /Buy a pet \(Square -> City -> Home -> Pet\)/);
 });
