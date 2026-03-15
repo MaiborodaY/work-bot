@@ -204,3 +204,60 @@ test("labour bg: stale employee read right after hire does not clear active slot
   assert.equal(String(slot?.employeeId || ""), String(employee.id));
   assert.ok(Number(slot?.contractEnd || 0) > nowTs);
 });
+
+test("labour bg: reconcileOwnerSlots does not reload owner from KV on dirty save", async () => {
+  const db = makeDb();
+  const owner = {
+    id: "owner-stale",
+    displayName: "Owner",
+    money: 1000,
+    premium: 10,
+    biz: {
+      owned: [{
+        id: "shawarma",
+        boughtAt: 0,
+        lastClaimDayUTC: "",
+        // Legacy shape forces dirty path inside reconcile (_ensureSlots migration).
+        slot: {
+          purchased: true,
+          employeeId: "",
+          contractStart: 0,
+          contractEnd: 0,
+          earnedTotal: 0,
+          lastEmployeeId: "",
+          ownerPct: 0.06
+        }
+      }]
+    }
+  };
+
+  const map = new Map([[String(owner.id), structuredClone(owner)]]);
+  let ownerLoadCalls = 0;
+  const users = {
+    db,
+    async load(id) {
+      if (String(id) === String(owner.id)) ownerLoadCalls += 1;
+      const u = map.get(String(id));
+      if (!u) throw new Error("not found");
+      return structuredClone(u);
+    },
+    async save(u) {
+      map.set(String(u.id), structuredClone(u));
+    },
+    async update(id, mutator) {
+      const current = map.get(String(id));
+      if (!current) throw new Error("not found");
+      const next = await mutator(structuredClone(current));
+      map.set(String(id), structuredClone(next));
+      return structuredClone(next);
+    }
+  };
+
+  const labour = new LabourService({ db, users, now: () => Date.UTC(2026, 2, 15, 12, 0, 0), bot: null });
+  const ownerInMemory = structuredClone(owner);
+  const after = await labour.reconcileOwnerSlots(ownerInMemory);
+
+  assert.equal(ownerLoadCalls, 0);
+  assert.ok(Array.isArray(after?.biz?.owned?.[0]?.slots));
+  assert.equal(Boolean(after?.biz?.owned?.[0]?.slots?.[0]?.purchased), true);
+});

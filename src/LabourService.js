@@ -835,7 +835,7 @@ export class LabourService {
   async ensureEmploymentFresh(u) {
     if (!u) return u;
     await this._expireEmploymentForUser(u, { notify: true });
-    return this.users.load(u.id).catch(() => u);
+    return u;
   }
 
   async reconcileOwnerSlots(owner) {
@@ -889,14 +889,16 @@ export class LabourService {
 
         if (Number(employee.employment.contractEnd || 0) <= nowTs) {
           await this._expireEmploymentForUser(employee, { notify: true });
-          return this.users.load(owner.id).catch(() => owner);
+          this._clearSlotAssignment(slot, String(employee.id || ""));
+          dirty = true;
+          continue;
         }
       }
     }
 
     if (dirty) {
       await this.users.save(owner);
-      return this.users.load(owner.id).catch(() => owner);
+      return owner;
     }
     return owner;
   }
