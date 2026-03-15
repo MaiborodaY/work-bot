@@ -58,7 +58,9 @@ export class AchievementService {
       defensesSuccess: 0,
       employeesHiredTotal: 0,
       clanContractsByUser: 0,
-      stockBuysTotal: 0
+      stockBuysTotal: 0,
+      quizPerfectTotal: 0,
+      quizPerfectStreak: 0
     };
     for (const [k, d] of Object.entries(defaultsNum)) {
       if (typeof p[k] !== "number" || !Number.isFinite(p[k])) {
@@ -177,6 +179,20 @@ export class AchievementService {
         changed = this._set(u, "referralsDone", count) || changed;
         break;
       }
+      case "quiz_play": {
+        const perfect = !!ctx?.perfect;
+        if (perfect) {
+          changed = this._inc(u, "quizPerfectTotal", 1) || changed;
+          const streakFromCtx = Math.max(0, Math.floor(n(ctx?.streak)));
+          const nextStreak = streakFromCtx > 0
+            ? streakFromCtx
+            : (Math.max(0, Math.floor(n(u?.achievements?.progress?.quizPerfectStreak))) + 1);
+          changed = this._set(u, "quizPerfectStreak", nextStreak) || changed;
+        } else {
+          changed = this._set(u, "quizPerfectStreak", 0) || changed;
+        }
+        break;
+      }
       default:
         break;
     }
@@ -212,6 +228,7 @@ export class AchievementService {
     if (s.startsWith("biz_") || s.startsWith("labour_")) return "biz";
     if (s.startsWith("gym_") || s.startsWith("study_")) return "growth";
     if (s.startsWith("pet_")) return "pet";
+    if (s.startsWith("quiz_")) return "quiz";
     if (s.startsWith("stocks_")) return "stocks";
     if (s.startsWith("thief_")) return "thief";
     if (s.startsWith("clan_")) return "clan";
@@ -227,6 +244,7 @@ export class AchievementService {
         biz: "🏢 Бизнес",
         growth: "🏋️ Зал и учёба",
         pet: "🐾 Питомец",
+        quiz: "🎯 Викторина",
         stocks: "📈 Биржа",
         thief: "🌑 Воровство",
         clan: "🤝 Клан",
@@ -238,6 +256,7 @@ export class AchievementService {
         biz: "🏢 Бізнес",
         growth: "🏋️ Зал і навчання",
         pet: "🐾 Улюбленець",
+        quiz: "🎯 Вікторина",
         stocks: "📈 Біржа",
         thief: "🌑 Крадіжки",
         clan: "🤝 Клан",
@@ -249,6 +268,7 @@ export class AchievementService {
         biz: "🏢 Business",
         growth: "🏋️ Gym & Study",
         pet: "🐾 Pet",
+        quiz: "🎯 Quiz",
         stocks: "📈 Stocks",
         thief: "🌑 Theft",
         clan: "🤝 Clan",
@@ -342,6 +362,8 @@ export class AchievementService {
       pet_owner: `${hasPetNow ? 1 : 0}/1 питомец`,
       pet_streak_30: `${petFeedStreak}/30 дней`,
       pet_streak_100: `${petFeedStreak}/100 дней`,
+      quiz_first_perfect: `${Math.max(0, Math.floor(n(p.quizPerfectTotal)))}/1`,
+      quiz_streak_7: `${Math.max(0, Math.floor(n(p.quizPerfectStreak)))}/7 подряд`,
       stocks_first_buy: `${stockBuys}/1 покупок`,
       stocks_portfolio_5: `${heldCompanies}/5 компаний`,
       stocks_dividends_50k: `$${totalDividends}/$50000`,
@@ -371,6 +393,8 @@ export class AchievementService {
       pet_owner: `${hasPetNow ? 1 : 0}/1 улюбленець`,
       pet_streak_30: `${petFeedStreak}/30 днів`,
       pet_streak_100: `${petFeedStreak}/100 днів`,
+      quiz_first_perfect: `${Math.max(0, Math.floor(n(p.quizPerfectTotal)))}/1`,
+      quiz_streak_7: `${Math.max(0, Math.floor(n(p.quizPerfectStreak)))}/7 поспіль`,
       stocks_first_buy: `${stockBuys}/1 покупок`,
       stocks_portfolio_5: `${heldCompanies}/5 компаній`,
       stocks_dividends_50k: `$${totalDividends}/$50000`,
@@ -400,6 +424,8 @@ export class AchievementService {
       pet_owner: `${hasPetNow ? 1 : 0}/1 pet`,
       pet_streak_30: `${petFeedStreak}/30 days`,
       pet_streak_100: `${petFeedStreak}/100 days`,
+      quiz_first_perfect: `${Math.max(0, Math.floor(n(p.quizPerfectTotal)))}/1`,
+      quiz_streak_7: `${Math.max(0, Math.floor(n(p.quizPerfectStreak)))}/7 streak`,
       stocks_first_buy: `${stockBuys}/1 buys`,
       stocks_portfolio_5: `${heldCompanies}/5 companies`,
       stocks_dividends_50k: `$${totalDividends}/$50000`,
@@ -465,7 +491,7 @@ export class AchievementService {
     lines.push(summaryMap[lang] || summaryMap.ru);
     lines.push("");
 
-    const catOrder = ["work", "biz", "growth", "pet", "stocks", "thief", "clan", "ref"];
+    const catOrder = ["work", "biz", "growth", "pet", "quiz", "stocks", "thief", "clan", "ref"];
     for (const cat of catOrder) {
       const group = defs.filter((d) => this._categoryForId(d.id) === cat);
       if (!group.length) continue;

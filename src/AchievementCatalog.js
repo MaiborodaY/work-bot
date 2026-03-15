@@ -174,6 +174,21 @@ export const ACHIEVEMENTS = [
   },
 
   {
+    id: "quiz_first_perfect",
+    reward: 2,
+    events: ["quiz_play"],
+    title: { ru: "Идеальный ученик", uk: "Ідеальний учень", en: "Perfect learner" },
+    done: (u) => p(u, "quizPerfectTotal") >= 1
+  },
+  {
+    id: "quiz_streak_7",
+    reward: 10,
+    events: ["quiz_play"],
+    title: { ru: "Серия знаний", uk: "Серія знань", en: "Knowledge streak" },
+    done: (u) => p(u, "quizPerfectStreak") >= 7
+  },
+
+  {
     id: "stocks_first_buy",
     reward: 1,
     events: ["stocks_buy", "retro"],

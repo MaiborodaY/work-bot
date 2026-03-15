@@ -478,6 +478,8 @@ export class UserStore {
           employeesHiredTotal: 0,
           clanContractsByUser: 0,
           stockBuysTotal: 0,
+          quizPerfectTotal: 0,
+          quizPerfectStreak: 0,
           referralsDone: 0,
           clanJoinedOnce: false,
           clanCreatedOnce: false
@@ -509,6 +511,8 @@ export class UserStore {
         employeesHiredTotal: 0,
         clanContractsByUser: 0,
         stockBuysTotal: 0,
+        quizPerfectTotal: 0,
+        quizPerfectStreak: 0,
         referralsDone: 0
       };
       for (const [k, d] of Object.entries(progressDefaults)) {
@@ -523,6 +527,67 @@ export class UserStore {
       }
       if (typeof u.achievements.progress.clanCreatedOnce !== "boolean") {
         u.achievements.progress.clanCreatedOnce = false;
+        dirty = true;
+      }
+    }
+
+    // Викторина
+    if (!u.quiz || typeof u.quiz !== "object") {
+      u.quiz = {
+        day: "",
+        questionIds: [],
+        optionOrder: [],
+        currentIndex: 0,
+        answers: [],
+        done: false,
+        correctTotal: 0,
+        streak: 0,
+        lastPerfectDay: "",
+        playedTotal: 0,
+        perfectTotal: 0
+      };
+      dirty = true;
+    } else {
+      if (typeof u.quiz.day !== "string") { u.quiz.day = ""; dirty = true; }
+      if (!Array.isArray(u.quiz.questionIds)) { u.quiz.questionIds = []; dirty = true; }
+      if (!Array.isArray(u.quiz.optionOrder)) { u.quiz.optionOrder = []; dirty = true; }
+      if (!Array.isArray(u.quiz.answers)) { u.quiz.answers = []; dirty = true; }
+      if (typeof u.quiz.done !== "boolean") { u.quiz.done = false; dirty = true; }
+      if (typeof u.quiz.currentIndex !== "number" || !Number.isFinite(u.quiz.currentIndex)) {
+        u.quiz.currentIndex = 0;
+        dirty = true;
+      }
+      if (typeof u.quiz.correctTotal !== "number" || !Number.isFinite(u.quiz.correctTotal)) {
+        u.quiz.correctTotal = 0;
+        dirty = true;
+      }
+      if (typeof u.quiz.streak !== "number" || !Number.isFinite(u.quiz.streak)) {
+        u.quiz.streak = 0;
+        dirty = true;
+      }
+      if (typeof u.quiz.lastPerfectDay !== "string") { u.quiz.lastPerfectDay = ""; dirty = true; }
+      if (typeof u.quiz.playedTotal !== "number" || !Number.isFinite(u.quiz.playedTotal)) {
+        u.quiz.playedTotal = 0;
+        dirty = true;
+      }
+      if (typeof u.quiz.perfectTotal !== "number" || !Number.isFinite(u.quiz.perfectTotal)) {
+        u.quiz.perfectTotal = 0;
+        dirty = true;
+      }
+
+      const fixedCurrent = Math.max(0, Math.floor(Number(u.quiz.currentIndex) || 0));
+      if (fixedCurrent !== u.quiz.currentIndex) { u.quiz.currentIndex = fixedCurrent; dirty = true; }
+      const fixedCorrect = Math.max(0, Math.floor(Number(u.quiz.correctTotal) || 0));
+      if (fixedCorrect !== u.quiz.correctTotal) { u.quiz.correctTotal = fixedCorrect; dirty = true; }
+      const fixedStreak = Math.max(0, Math.floor(Number(u.quiz.streak) || 0));
+      if (fixedStreak !== u.quiz.streak) { u.quiz.streak = fixedStreak; dirty = true; }
+      const fixedPlayed = Math.max(0, Math.floor(Number(u.quiz.playedTotal) || 0));
+      if (fixedPlayed !== u.quiz.playedTotal) { u.quiz.playedTotal = fixedPlayed; dirty = true; }
+      const fixedPerfect = Math.max(0, Math.floor(Number(u.quiz.perfectTotal) || 0));
+      if (fixedPerfect !== u.quiz.perfectTotal) { u.quiz.perfectTotal = fixedPerfect; dirty = true; }
+      const normAnswers = u.quiz.answers.map((x) => !!x);
+      if (normAnswers.length !== u.quiz.answers.length || normAnswers.some((v, i) => v !== u.quiz.answers[i])) {
+        u.quiz.answers = normAnswers;
         dirty = true;
       }
     }
@@ -647,11 +712,26 @@ export class UserStore {
           employeesHiredTotal: 0,
           clanContractsByUser: 0,
           stockBuysTotal: 0,
+          quizPerfectTotal: 0,
+          quizPerfectStreak: 0,
           referralsDone: 0,
           clanJoinedOnce: false,
           clanCreatedOnce: false
         },
         retroDone: false
+      },
+      quiz: {
+        day: "",
+        questionIds: [],
+        optionOrder: [],
+        currentIndex: 0,
+        answers: [],
+        done: false,
+        correctTotal: 0,
+        streak: 0,
+        lastPerfectDay: "",
+        playedTotal: 0,
+        perfectTotal: 0
       },
 
       // Flags

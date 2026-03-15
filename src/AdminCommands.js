@@ -12,13 +12,14 @@ export class AdminCommands {
    *  - isAdmin: (id: number|string) => boolean
    *  - botToken: Telegram bot token
    */
-  constructor({ users, send, isAdmin, botToken, ratings = null }) {
+  constructor({ users, send, isAdmin, botToken, ratings = null, quiz = null }) {
     this.users = users;
     this.send = send;
     this.isAdmin = isAdmin;
     this.botToken = botToken;
     this.db = users?.db;
     this.ratings = ratings || null;
+    this.quiz = quiz || null;
 
     this.K = {
       draft: (adminId) => `admin:broadcast:draft:${adminId}`,
@@ -53,6 +54,7 @@ export class AdminCommands {
         "/labour_reindex - rebuild free labour index once\n\n" +
         "/admin_referrals - referrals/ads stats\n" +
         "/admin_referrals &lt;userId&gt; - referral info for user\n" +
+        "/admin_quiz - quiz stats\n" +
         "/admin_rebuild_ratings - rebuild top rating indexes once\n\n" +
         "<b>Broadcast</b>\n" +
         "/broadcast - start draft mode\n" +
@@ -332,6 +334,10 @@ export class AdminCommands {
       }
       return true;
     }
+    if (/^\/admin_quiz(?:@\w+)?\s*$/i.test(input)) {
+      await this._sendQuizStats();
+      return true;
+    }
     if (/^\/labour_reindex(?:@\w+)?\s*$/i.test(input)) {
       await this.send("Labour reindex started...");
       try {
@@ -578,6 +584,39 @@ export class AdminCommands {
       }
     }
 
+    await this.send(lines.join("\n"));
+  }
+
+  async _sendQuizStats() {
+    if (!this.quiz || typeof this.quiz.collectAdminStats !== "function") {
+      await this.send("Quiz stats unavailable.");
+      return;
+    }
+    await this.send("Quiz stats started...");
+    const out = await this.quiz.collectAdminStats({ topLimit: 10 });
+    const avgCorrect = Number(out?.avgCorrectToday || 0);
+    const lines = [
+      "<b>Quiz stats</b>",
+      `Day (UTC): ${this._escapeHtml(String(out?.day || "-"))}`,
+      `Scanned users: ${Number(out?.scanned || 0)}`,
+      `Played today: ${Number(out?.playedToday || 0)}`,
+      `Perfect today: ${Number(out?.perfectToday || 0)}`,
+      `Average correct today: ${avgCorrect.toFixed(2)}`,
+      "",
+      `Total played: ${Number(out?.playedTotal || 0)}`,
+      `Total perfect: ${Number(out?.perfectTotal || 0)}`
+    ];
+
+    const top = Array.isArray(out?.topStreak) ? out.topStreak : [];
+    if (top.length) {
+      lines.push("", "<b>Top perfect streaks</b>");
+      for (const row of top) {
+        lines.push(
+          `<code>${this._escapeHtml(String(row?.id || "-"))}</code> ` +
+          `${this._escapeHtml(String(row?.name || "(no name)"))} - ${Number(row?.streak || 0)}`
+        );
+      }
+    }
     await this.send(lines.join("\n"));
   }
 

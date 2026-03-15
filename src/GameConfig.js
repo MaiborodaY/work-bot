@@ -121,6 +121,7 @@ export const CONFIG = {
       { id: "gym_2trains", type: "daily", category: "gym", difficulty: "hard", rewardMoney: 600, target: 2 },
       { id: "fortune_spin", type: "daily", category: "fortune", difficulty: "easy", rewardMoney: 300, target: 1 },
       { id: "daily_bonus", type: "daily", category: "daily", difficulty: "easy", rewardMoney: 300, target: 1 },
+      { id: "quiz_play", type: "daily", category: "quiz", difficulty: "easy", rewardMoney: 300, target: 1 },
       { id: "pet_feed", type: "daily", category: "pet", difficulty: "easy", rewardMoney: 300, target: 1 },
       { id: "biz_collect", type: "daily", category: "biz", difficulty: "easy", rewardMoney: 400, target: 1 },
       { id: "biz_collect_all", type: "daily", category: "biz", difficulty: "hard", rewardMoney: 800, target: 1 },
@@ -148,6 +149,12 @@ export const CONFIG = {
       { id: "w_thief_3attempts", type: "weekly", category: "thief", difficulty: "medium", rewardMoney: 6000, target: 3 },
       { id: "w_thief_total", type: "weekly", category: "thief", difficulty: "hard", rewardMoney: 10000, target: 10000 }
     ]
+  },
+
+  QUIZ: {
+    QUESTIONS_PER_DAY: 3,
+    REWARD_MONEY_PER_CORRECT: 300,
+    PERFECT_BONUS_GEMS: 1
   },
 
   DAILY_TOP_REWARDS: {

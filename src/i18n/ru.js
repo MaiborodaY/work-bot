@@ -48,6 +48,7 @@ export const RU = {
   "ui.back.default": "⬅️ Назад",
 
   "ui.bar.tasks": "📋 Задания бара",
+  "ui.bar.quiz": "🎯 Викторина",
   "ui.bar.arcana": "🌀 Зал арканы",
   "ui.bar.free": "🎁 Бесплатная попытка",
   "ui.bar.no_tasks": "😌 Заданий пока нет",
@@ -58,6 +59,7 @@ export const RU = {
   "ui.bar.in_progress": "⏳ Выполняется",
   "ui.bar.unit.shifts": "смен",
   "ui.bar.unit.attempts": "попыток",
+  "loc.quiz.unavailable": "Викторина временно недоступна.",
 
   "ui.work.claim": "💵 Получить выплату (${{pay}})",
   "ui.work.cancel_shift": "✖️ Отменить смену",

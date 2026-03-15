@@ -154,6 +154,7 @@ export class QuestService {
       gymTrains: 0,
       petFeeds: 0,
       fortuneSpins: 0,
+      quizPlays: 0,
       dailyClaims: 0,
       bizClaims: 0,
       bizCollectAll: 0,
@@ -568,6 +569,8 @@ export class QuestService {
           return toInt(d.petFeeds, 0);
         case "fortune_spin":
           return toInt(d.fortuneSpins, 0);
+        case "quiz_play":
+          return toInt(d.quizPlays, 0);
         case "daily_bonus":
           return toInt(d.dailyClaims, 0);
         case "biz_collect":
@@ -712,6 +715,10 @@ export class QuestService {
         d.fortuneSpins += 1;
         changed = true;
         break;
+      case "quiz_play":
+        d.quizPlays += 1;
+        changed = true;
+        break;
       case "daily_claim":
         d.dailyClaims += 1;
         changed = true;
@@ -824,6 +831,7 @@ export class QuestService {
         gym_2trains: `Сделать ${target} тренировк(и)`,
         pet_feed: "Покормить питомца",
         fortune_spin: "Крутануть колесо фортуны",
+        quiz_play: "Пройти викторину дня (3 вопроса в баре)",
         daily_bonus: "Забрать ежедневный бонус",
         pet_buy_first: "Купить питомца (Площадь → Город → Дом → Питомец)",
         study_level_5: "Дойти до 5 уровня учёбы (Прогресс → Учёба → Начать учёбу)",
@@ -859,6 +867,7 @@ export class QuestService {
         gym_2trains: `Зробити ${target} тренуванн(я)`,
         pet_feed: "Погодувати улюбленця",
         fortune_spin: "Прокрутити колесо фортуни",
+        quiz_play: "Пройти вікторину дня (3 питання в барі)",
         daily_bonus: "Забрати щоденний бонус",
         pet_buy_first: "Купити улюбленця (Площа → Місто → Дім → Улюбленець)",
         study_level_5: "Дійти до 5 рівня навчання (Прогрес → Навчання → Почати навчання)",
@@ -894,6 +903,7 @@ export class QuestService {
         gym_2trains: `Do ${target} workout(s)`,
         pet_feed: "Feed your pet",
         fortune_spin: "Spin the wheel of fortune",
+        quiz_play: "Complete the daily quiz (3 questions in the bar)",
         daily_bonus: "Claim daily bonus",
         pet_buy_first: "Buy a pet (Square -> City -> Home -> Pet)",
         study_level_5: "Reach Study level 5 (Progress → Study → Start study)",
