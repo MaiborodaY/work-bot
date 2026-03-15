@@ -108,7 +108,7 @@ export const labourHandler = {
         } catch {}
         try {
           if (quests?.onEvent) {
-            await quests.onEvent(u, "biz_expand", { bizId: B.id });
+            await quests.onEvent(u, "biz_expand", { bizId: B.id, kind: "business" });
           }
         } catch {}
         try {
@@ -150,6 +150,7 @@ export const labourHandler = {
         if (quests?.onEvent) {
           await quests.onEvent(u, "biz_expand", {
             bizId,
+            kind: "slot",
             slotIndex: Number.isFinite(slotIndex) ? slotIndex : -1
           });
         }

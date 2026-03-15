@@ -14,7 +14,13 @@ function makeUser({ withBusiness = false } = {}) {
   return {
     id: withBusiness ? "u-mid" : "u-new",
     lang: "ru",
-    flags: { subBonusClaimed: true, petBuyGuideClaimed: false, studyLevel5GuideClaimed: false, clanJoinGuideClaimed: false },
+    flags: {
+      subBonusClaimed: true,
+      petBuyGuideClaimed: false,
+      firstBizGuideClaimed: false,
+      studyLevel5GuideClaimed: false,
+      clanJoinGuideClaimed: false
+    },
     money: 0,
     premium: 0,
     study: { level: 0, active: false },
@@ -224,4 +230,39 @@ test("bar tasks view: hides pet buy special quest for users with existing pet", 
   const text = String(view?.caption || "");
 
   assert.doesNotMatch(text, /Buy a pet \(Square -> City -> Home -> Pet\)/);
+});
+
+test("bar tasks view: shows first business special quest when user has 0 businesses", async () => {
+  const qs = makeService();
+  const u = makeUser({ withBusiness: false });
+  u.lang = "en";
+  u.flags.subBonusClaimed = true;
+  u.flags.petBuyGuideClaimed = true;
+  u.flags.studyLevel5GuideClaimed = true;
+  u.flags.clanJoinGuideClaimed = true;
+
+  const view = await qs.buildBarTasksView(u);
+  const text = String(view?.caption || "");
+
+  assert.match(text, /Buy your first business \(Square -> Earnings -> Business\)/);
+  assert.match(text, /\$1000/);
+});
+
+test("first business special quest: awards money once on business buy only", async () => {
+  const qs = makeService();
+  const u = makeUser({ withBusiness: false });
+
+  const slotEvent = await qs.onEvent(u, "biz_expand", { bizId: "shawarma", kind: "slot" }, { persist: false, notify: false });
+  assert.equal(u.flags.firstBizGuideClaimed, false);
+  assert.equal(u.money, 0);
+  assert.equal(slotEvent.events.some((ev) => ev.id === "biz_buy_first"), false);
+
+  const first = await qs.onEvent(u, "biz_expand", { bizId: "shawarma", kind: "business" }, { persist: false, notify: false });
+  assert.equal(u.flags.firstBizGuideClaimed, true);
+  assert.equal(u.money, 1000);
+  assert.ok(first.events.some((ev) => ev.id === "biz_buy_first"));
+
+  const second = await qs.onEvent(u, "biz_expand", { bizId: "dent", kind: "business" }, { persist: false, notify: false });
+  assert.equal(u.money, 1000);
+  assert.equal(second.events.some((ev) => ev.id === "biz_buy_first"), false);
 });

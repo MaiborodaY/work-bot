@@ -76,7 +76,7 @@ export const businessHandler = {
       } catch {}
       try {
         if (quests?.onEvent) {
-          await quests.onEvent(u, "biz_expand", { bizId: B.id });
+          await quests.onEvent(u, "biz_expand", { bizId: B.id, kind: "business" });
         }
       } catch {}
 
