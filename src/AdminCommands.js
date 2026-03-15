@@ -57,6 +57,7 @@ export class AdminCommands {
         "/admin_referrals &lt;userId&gt; - referral info for user\n" +
         "/admin_retention - retention by cohorts (last 30d)\n" +
         "/admin_funnel - onboarding funnel (all-time)\n" +
+        "/admin_new_users [limit] - new users list (last 30d)\n" +
         "/admin_quiz - quiz stats\n" +
         "/admin_rebuild_ratings - rebuild top rating indexes once\n\n" +
         "<b>Broadcast</b>\n" +
@@ -347,6 +348,13 @@ export class AdminCommands {
     }
     if (/^\/admin_funnel(?:@\w+)?\s*$/i.test(input)) {
       await this._sendOnboardingFunnel();
+      return true;
+    }
+    const mAdminNewUsers = input.match(/^\/admin_new_users(?:@\w+)?(?:\s+(\d+))?\s*$/i);
+    if (mAdminNewUsers) {
+      const limitRaw = Number(mAdminNewUsers[1] || 50);
+      const limit = Math.max(1, Math.min(200, Number.isFinite(limitRaw) ? Math.floor(limitRaw) : 50));
+      await this._sendNewUsers(limit);
       return true;
     }
     if (/^\/labour_reindex(?:@\w+)?\s*$/i.test(input)) {
@@ -855,6 +863,119 @@ export class AdminCommands {
       `Excluded admins: ${excludedAdmins}`
     ];
     await this.send(lines.join("\n"));
+  }
+
+  _funnelState(stats) {
+    const s = (stats && typeof stats === "object") ? stats : {};
+    const marks = [
+      this._toBool(s.didFirstShift) ? "S" : "·",
+      this._toBool(s.didFirstClaim) ? "C" : "·",
+      this._toBool(s.didGym) ? "G" : "·",
+      this._toBool(s.didBar) ? "B" : "·",
+      this._toBool(s.didBusiness) ? "Z" : "·"
+    ];
+    const done = marks.filter((x) => x !== "·").length;
+    return { done, text: marks.join("") };
+  }
+
+  async _sendNewUsers(limit = 50) {
+    await this.send("New users list started...");
+    const prefix = "u:";
+    const today = dayStrUtc(Date.now());
+    let cursor = undefined;
+    const rows = [];
+    let excludedAdmins = 0;
+
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const page = await this.db.list({ prefix, cursor });
+      const keys = Array.isArray(page?.keys) ? page.keys : [];
+      for (const k of keys) {
+        try {
+          const raw = await this.db.get(k.name);
+          if (!raw) continue;
+          const u = JSON.parse(raw);
+          const fallbackId = String(k.name || "").slice(prefix.length);
+          const id = String((u?.id ?? fallbackId) || "");
+          if (!id) continue;
+          if (this.isAdmin(id)) {
+            excludedAdmins += 1;
+            continue;
+          }
+
+          const stats = (u?.stats && typeof u.stats === "object") ? u.stats : {};
+          const firstActiveDay = isDayStr(stats.firstActiveDay) ? String(stats.firstActiveDay) : "";
+          if (!firstActiveDay) continue;
+          const age = dayDiffUtc(firstActiveDay, today);
+          if (age < 0 || age > 29) continue;
+
+          const lastActiveDay = isDayStr(stats.lastActiveDay) ? String(stats.lastActiveDay) : "-";
+          const name = String(u?.displayName || "").trim() || "(no name)";
+          const snap = this._refSnapshot(u);
+          const source = this._cohortSource(snap);
+          const sourceLabel = source === "ads" ? "ads_*" : (source === "ref" ? "ref_*" : "organic");
+          const payload = String(snap?.startPayload || "").trim();
+          const funnel = this._funnelState(stats);
+
+          rows.push({
+            id,
+            name,
+            firstActiveDay,
+            lastActiveDay,
+            sourceLabel,
+            payload,
+            funnelDone: funnel.done,
+            funnelText: funnel.text
+          });
+        } catch {
+          // skip bad rows
+        }
+      }
+      if (!page || page.list_complete || !page.cursor) break;
+      cursor = page.cursor;
+    }
+
+    rows.sort((a, b) => {
+      if (String(b.firstActiveDay) !== String(a.firstActiveDay)) {
+        return String(b.firstActiveDay).localeCompare(String(a.firstActiveDay));
+      }
+      if (String(b.lastActiveDay) !== String(a.lastActiveDay)) {
+        return String(b.lastActiveDay).localeCompare(String(a.lastActiveDay));
+      }
+      return String(a.id).localeCompare(String(b.id));
+    });
+
+    if (!rows.length) {
+      await this.send("No new users for last 30 days.");
+      return;
+    }
+
+    const capped = rows.slice(0, limit);
+    const header = [
+      "<b>New users (last 30 days)</b>",
+      `Total: ${rows.length}`,
+      `Showing: ${capped.length} (limit ${limit})`,
+      `Excluded admins: ${excludedAdmins}`,
+      "",
+      "Funnel legend: S=first shift, C=first claim, G=first gym, B=opened bar, Z=bought business"
+    ];
+    await this.send(header.join("\n"));
+
+    const CHUNK = 20;
+    for (let i = 0; i < capped.length; i += CHUNK) {
+      const part = capped.slice(i, i + CHUNK);
+      const lines = [];
+      for (const r of part) {
+        const payloadSuffix = r.payload ? ` · ${this._escapeHtml(r.payload)}` : "";
+        lines.push(
+          `<code>${this._escapeHtml(r.id)}</code> ${this._escapeHtml(r.name)}`,
+          `first ${this._escapeHtml(r.firstActiveDay)} · last ${this._escapeHtml(r.lastActiveDay)} · ${this._escapeHtml(r.sourceLabel)}${payloadSuffix}`,
+          `funnel ${r.funnelDone}/5 [${this._escapeHtml(r.funnelText)}]`,
+          ""
+        );
+      }
+      await this.send(lines.join("\n").trim());
+    }
   }
 
   async _trySaveDraftFromMessage({ adminId, chatId, msg }) {
