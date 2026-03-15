@@ -31,8 +31,17 @@ export const labourHandler = {
       locations.setSourceMessage(null);
     };
 
-    const applyFreshOwner = (freshOwner) => {
+    const hasOwnedBiz = (userObj, bizId) => {
+      const id = String(bizId || "");
+      const owned = Array.isArray(userObj?.biz?.owned) ? userObj.biz.owned : [];
+      return owned.some((it) => (typeof it === "string" ? String(it) === id : String(it?.id || "") === id));
+    };
+
+    const applyFreshOwner = (freshOwner, bizId = "") => {
       if (!freshOwner || typeof freshOwner !== "object") return;
+      // Guard against eventual-consistency stale snapshots: keep current user
+      // if fresh owner unexpectedly lost the business we are working with.
+      if (bizId && hasOwnedBiz(u, bizId) && !hasOwnedBiz(freshOwner, bizId)) return;
       for (const k of Object.keys(u)) delete u[k];
       Object.assign(u, freshOwner);
     };
@@ -180,7 +189,7 @@ export const labourHandler = {
         await showBiz(bizId);
         return;
       }
-      applyFreshOwner(res?.owner);
+      applyFreshOwner(res?.owner, bizId);
       try {
         if (achievements?.onEvent) {
           await achievements.onEvent(u, "labour_hire", {
@@ -205,7 +214,7 @@ export const labourHandler = {
         await showBiz(bizId);
         return;
       }
-      applyFreshOwner(res?.owner);
+      applyFreshOwner(res?.owner, bizId);
       try {
         if (achievements?.onEvent) {
           await achievements.onEvent(u, "labour_hire", {
