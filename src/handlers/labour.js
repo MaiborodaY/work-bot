@@ -39,6 +39,8 @@ export const labourHandler = {
 
     const applyFreshOwner = (freshOwner, bizId = "") => {
       if (!freshOwner || typeof freshOwner !== "object") return;
+      // Service may return the same owner reference; do not self-reassign.
+      if (freshOwner === u) return;
       // Guard against eventual-consistency stale snapshots: keep current user
       // if fresh owner unexpectedly lost the business we are working with.
       if (bizId && hasOwnedBiz(u, bizId) && !hasOwnedBiz(freshOwner, bizId)) return;

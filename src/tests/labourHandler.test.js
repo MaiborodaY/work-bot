@@ -100,3 +100,50 @@ test("labour handler: hire ignores stale owner snapshot without target business"
 
   assert.equal(shownCaption, "biz owned");
 });
+
+test("labour handler: hire keeps state when service returns same owner reference", async () => {
+  let shownCaption = "";
+  const u = {
+    id: "u1",
+    lang: "ru",
+    money: 100000,
+    premium: 100,
+    biz: { owned: [{ id: "fitness_club", boughtAt: 0, lastClaimDayUTC: "", slots: [] }] }
+  };
+
+  await labourHandler.handle({
+    data: "labour:hire:fitness_club:0:emp2",
+    u,
+    cb: { id: "cb3", message: { message_id: 3 } },
+    answer: async () => {},
+    goTo: async () => {},
+    users: { load: async () => null },
+    locations: {
+      _sourceMsg: null,
+      media: {
+        show: async (view) => {
+          shownCaption = String(view?.caption || "");
+        }
+      },
+      setSourceMessage: () => {}
+    },
+    labour: {
+      hire: async (ownerArg) => {
+        ownerArg.hireApplied = true;
+        return { ok: true, owner: ownerArg };
+      },
+      buildBizView: async (ownerArg, bizId) => {
+        const owned = Array.isArray(ownerArg?.biz?.owned) ? ownerArg.biz.owned : [];
+        const hasBiz = owned.some((it) => (typeof it === "string" ? it === bizId : it?.id === bizId));
+        const hasFlag = ownerArg?.hireApplied === true;
+        return { caption: hasBiz && hasFlag ? "biz owned" : "biz missing", keyboard: [] };
+      }
+    },
+    thief: null,
+    achievements: null,
+    ratings: null,
+    quests: null
+  });
+
+  assert.equal(shownCaption, "biz owned");
+});
