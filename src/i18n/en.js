@@ -259,7 +259,7 @@ export const EN = {
   "clan.contract.business_money.hint": "Amount collected from owned businesses.",
   "clan.contract.business_money.unit": "$",
   "clan.contract.fortune_net_profit.title": "Arcana Hall net profit",
-  "clan.contract.fortune_net_profit.hint": "Only positive difference: max(0, win - bet).",
+  "clan.contract.fortune_net_profit.hint": "Only positive difference: max(0, win - attempt cost).",
   "clan.contract.fortune_net_profit.unit": "$",
   "clan.contract.active_actions.title": "Active actions",
   "clan.contract.active_actions.hint": "Useful in-game actions by clan members.",

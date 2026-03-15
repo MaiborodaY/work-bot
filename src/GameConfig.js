@@ -195,7 +195,7 @@ export const CONFIG = {
       fortune_net_profit: {
         id: "fortune_net_profit",
         title: "Чистая прибыль Зала арканы",
-        hint: "Только положительная разница: max(0, выигрыш - ставка).",
+        hint: "Только положительная разница: max(0, выигрыш - сумма попытки).",
         target: 15000,
         unit: "$",
         points: 100

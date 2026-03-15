@@ -259,7 +259,7 @@ export const UK = {
   "clan.contract.business_money.hint": "Сума, зібрана з куплених бізнесів.",
   "clan.contract.business_money.unit": "$",
   "clan.contract.fortune_net_profit.title": "Чистий прибуток Залу аркани",
-  "clan.contract.fortune_net_profit.hint": "Лише позитивна різниця: max(0, виграш - ставка).",
+  "clan.contract.fortune_net_profit.hint": "Лише позитивна різниця: max(0, виграш - сума спроби).",
   "clan.contract.fortune_net_profit.unit": "$",
   "clan.contract.active_actions.title": "Активні дії",
   "clan.contract.active_actions.hint": "Корисні ігрові дії учасників клану.",

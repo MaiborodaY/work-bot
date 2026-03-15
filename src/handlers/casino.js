@@ -117,7 +117,7 @@ const ensureStats = (u) => {
       return null;
     };
 
-    // Ядро одной попытки (UI: результат + клавиатура ещё ставок)
+    // Ядро одной попытки (UI: результат + клавиатура новых попыток)
     const spinCore = async ({ bet, headerText = "" }) => {
       const diceResp = await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendDice`, {
         method: "POST",
@@ -133,15 +133,15 @@ const ensureStats = (u) => {
       const { mult, win } = casino.payout(symbols, bet);
       
       // Итоговый баланс после СПИНА.
-      // Для платного спина ставка уже списана выше, поэтому тут просто +win.
-      // Для бесплатного — тоже корректно: ставки не было.
+      // Для платного спина сумма попытки уже списана выше, поэтому тут просто +win.
+      // Для бесплатного — тоже корректно: списания суммы попытки не было.
       const postMoney = (u.money || 0) + win;
       
       const text = `${headerText}${headerText ? "\n" : ""}${
         win > 0
           ? `🎉 Выигрыш: $${win} (×${mult})`
           : `🙃 Мимо. Попробуй ещё!`
-      }\nСтавка: $${bet}\n💰 Деньги: $${postMoney}\nПопыток сегодня: ${u.casino.spins}/${CONFIG.CASINO.daily_limit}`;
+      }\nПопытка: $${bet}\n💰 Деньги: $${postMoney}\nПопыток сегодня: ${u.casino.spins}/${CONFIG.CASINO.daily_limit}`;
       
       await tgSend("sendMessage", {
         chat_id: chatId,
@@ -263,7 +263,7 @@ try {
       const bet = Number(CONFIG?.CASINO?.price_low ?? 5);
       const { win } = await spinCore({
         bet,
-        headerText: `🌀 Бесплатная попытка (ставка $${bet}, без списания)`
+        headerText: `🌀 Бесплатная попытка (попытка $${bet}, без списания)`
       });
       
       // рекорд за 1 спин — учитываем и бесплатные спины
@@ -353,7 +353,7 @@ try {
 
       await tgSend("sendMessage", {
         chat_id: chatId,
-        text: `🃏 Поставить всё?\n${Formatters.moneyLine(u)}`,
+        text: `🃏 Использовать весь баланс?\n${Formatters.moneyLine(u)}`,
         parse_mode: "HTML",
         reply_markup: {
           inline_keyboard: [[
@@ -374,7 +374,7 @@ try {
     if (data === "casino_allin:no") {
       await tgSend("sendMessage", {
         chat_id: chatId,
-        text: "Выбери ставку:",
+        text: "Выбери сумму попытки:",
         parse_mode: "HTML",
         reply_markup: againKeyboard
       });

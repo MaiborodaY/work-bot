@@ -555,7 +555,7 @@ export const RU = {
   "clan.contract.business_money.hint": "Сумма, собранная с купленных бизнесов.",
   "clan.contract.business_money.unit": "$",
   "clan.contract.fortune_net_profit.title": "Чистая прибыль Зала арканы",
-  "clan.contract.fortune_net_profit.hint": "Только положительная разница: max(0, выигрыш - ставка).",
+  "clan.contract.fortune_net_profit.hint": "Только положительная разница: max(0, выигрыш - сумма попытки).",
   "clan.contract.fortune_net_profit.unit": "$",
   "clan.contract.active_actions.title": "Активные действия",
   "clan.contract.active_actions.hint": "Полезные игровые действия участников клана.",
