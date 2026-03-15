@@ -1,6 +1,7 @@
 ﻿// GymService.js
 import { CONFIG } from "./GameConfig.js";
 import { NotifyDueIndex } from "./NotifyDueIndex.js";
+import { markFunnelStep, markUsefulActivity } from "./PlayerStats.js";
 
 /**
  * Сервис тренажёрного зала:
@@ -115,6 +116,8 @@ export class GymService {
       C.MAX_ENERGY_CAP,
       (u.energy_max || CONFIG.ENERGY_MAX || 100) + (C.REWARD_ENERGY_MAX || 1)
     );
+    markFunnelStep(u, "didGym");
+    markUsefulActivity(u, now);
     await this.users.save(u);
 
     // обновляем "Топ силачей" (best effort), как в study для умников

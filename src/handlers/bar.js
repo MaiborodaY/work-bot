@@ -1,5 +1,6 @@
 import { CONFIG } from "../GameConfig.js";
 import { normalizeLang, t } from "../i18n/index.js";
+import { markFunnelStep } from "../PlayerStats.js";
 
 const CHANNEL_USERNAME = "WorldOfLifeGame";
 
@@ -80,18 +81,24 @@ export const barHandler = {
 
     if (data === "go:Bar") {
       await answer(cb.id);
+      let needSave = markFunnelStep(u, "didBar");
       if (quests?.ensureCycles) {
-        await quests.ensureCycles(u, { persist: true });
+        const qRes = await quests.ensureCycles(u, { persist: false });
+        needSave = needSave || !!qRes?.changed;
       }
+      if (needSave) await users.save(u);
       await showBarMain();
       return;
     }
 
     if (data === "bar:tasks") {
       await answer(cb.id);
+      let needSave = markFunnelStep(u, "didBar");
       if (quests?.ensureCycles) {
-        await quests.ensureCycles(u, { persist: true });
+        const qRes = await quests.ensureCycles(u, { persist: false });
+        needSave = needSave || !!qRes?.changed;
       }
+      if (needSave) await users.save(u);
       await showBarTasks();
       return;
     }

@@ -1,5 +1,6 @@
 import { CONFIG } from "../GameConfig.js";
 import { normalizeLang, t } from "../i18n/index.js";
+import { markFunnelStep } from "../PlayerStats.js";
 
 export const labourHandler = {
   match: (data) =>
@@ -100,6 +101,7 @@ export const labourHandler = {
           immunityUntil: 0,
           guardBlocked: 0
         });
+        markFunnelStep(u, "didBusiness");
         await users.save(u);
         try {
           if (achievements?.onEvent) {

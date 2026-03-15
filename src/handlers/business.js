@@ -3,6 +3,7 @@ import { CONFIG } from "../GameConfig.js";
 import { applyBusinessClaim, getTodayUTC, normalizeBusinessEntry } from "../BusinessPayout.js";
 import { normalizeLang, t } from "../i18n/index.js";
 import { getBusinessTitle } from "../I18nCatalog.js";
+import { markFunnelStep, markUsefulActivity } from "../PlayerStats.js";
 
 export const businessHandler = {
   match: (data) => data.startsWith("biz:"),
@@ -68,6 +69,7 @@ export const businessHandler = {
         immunityUntil: 0,
         guardBlocked: 0
       });
+      markFunnelStep(u, "didBusiness");
       await users.save(u);
       try {
         if (achievements?.onEvent) {
@@ -268,6 +270,9 @@ export const businessHandler = {
       ownedArr[idx] = entry;
       u.biz = u.biz || {};
       u.biz.owned = ownedArr;
+      if (reward > 0) {
+        markUsefulActivity(u, now());
+      }
       let questRes = null;
       if (quests?.onEvent) {
         try {
@@ -338,6 +343,9 @@ export const businessHandler = {
       u.money = Math.max(0, Number(u.money) || 0) + total;
       u.biz = u.biz || {};
       u.biz.owned = normalizedOwned;
+      if (total > 0 && rewardedCount > 0) {
+        markUsefulActivity(u, now());
+      }
       let questRes = null;
       if (quests?.onEvent && total > 0 && rewardedCount > 0) {
         try {

@@ -2,6 +2,7 @@
 import { CONFIG } from "./GameConfig.js";
 import { HomeService } from "./HomeService.js";
 import { NotifyDueIndex } from "./NotifyDueIndex.js";
+import { markFunnelStep, markUsefulActivity } from "./PlayerStats.js";
 
 export class JobService {
   constructor({ users, now, social, achievements = null, quests = null }) {
@@ -71,6 +72,7 @@ export class JobService {
     };
 
     u.jobs.active = [inst];
+    markFunnelStep(u, "didFirstShift");
 
     await this.users.save(u);
 
@@ -122,6 +124,8 @@ export class JobService {
     u.jobs.active = [];
     u.dayTotal  = (u.dayTotal  || 0) + pay;
     u.weekTotal = (u.weekTotal || 0) + pay;
+    markFunnelStep(u, "didFirstClaim");
+    markUsefulActivity(u, now);
 
     let achRes = null;
     if (this.achievements?.onEvent) {

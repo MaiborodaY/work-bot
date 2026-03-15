@@ -1,5 +1,6 @@
 // UserStore.js
 import { CONFIG } from "./GameConfig.js";
+import { ensurePlayerStatsShape } from "./PlayerStats.js";
 
 export class UserStore {
   static START_ENERGY_MIN = 20;
@@ -618,15 +619,8 @@ export class UserStore {
     if (typeof u.flags.studyLevel5GuideClaimed !== "boolean") { u.flags.studyLevel5GuideClaimed = false; dirty = true; }
     if (typeof u.flags.clanJoinGuideClaimed !== "boolean") { u.flags.clanJoinGuideClaimed = false; dirty = true; }
 
-    // Daily top stats and reward marker
-    if (!u.stats || typeof u.stats !== "object") {
-      u.stats = { dailyTop1Count: 0, dailyTop3Count: 0, dailyTop10Count: 0 };
-      dirty = true;
-    } else {
-      if (typeof u.stats.dailyTop1Count !== "number") { u.stats.dailyTop1Count = 0; dirty = true; }
-      if (typeof u.stats.dailyTop3Count !== "number") { u.stats.dailyTop3Count = 0; dirty = true; }
-      if (typeof u.stats.dailyTop10Count !== "number") { u.stats.dailyTop10Count = 0; dirty = true; }
-    }
+    // Player stats (tops + retention/funnel telemetry)
+    if (ensurePlayerStatsShape(u)) dirty = true;
     if (typeof u.lastDailyRewardDay !== "string") { u.lastDailyRewardDay = ""; dirty = true; }
 
     if (dirty) await this.save(u);
@@ -670,7 +664,19 @@ export class UserStore {
       weekTotal: 0,
       weekKey: "",
 
-      stats: { dailyTop1Count: 0, dailyTop3Count: 0, dailyTop10Count: 0 },
+      stats: {
+        dailyTop1Count: 0,
+        dailyTop3Count: 0,
+        dailyTop10Count: 0,
+        lastActiveDay: "",
+        firstActiveDay: "",
+        activeDays: [],
+        didFirstShift: false,
+        didFirstClaim: false,
+        didGym: false,
+        didBar: false,
+        didBusiness: false
+      },
       lastDailyRewardDay: "",
 
       premium: 20,

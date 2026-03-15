@@ -1,6 +1,7 @@
 // AdminCommands.js
 // Admin tools: legacy economy commands + broadcast workflow.
 import { CONFIG } from "./GameConfig.js";
+import { addDaysUtc, dayDiffUtc, dayStrUtc, hasActivityOnDay, isDayStr } from "./PlayerStats.js";
 
 const LABOUR_FREE_PLAYERS_KEY = "labour:free_players";
 
@@ -54,6 +55,8 @@ export class AdminCommands {
         "/labour_reindex - rebuild free labour index once\n\n" +
         "/admin_referrals - referrals/ads stats\n" +
         "/admin_referrals &lt;userId&gt; - referral info for user\n" +
+        "/admin_retention - retention by cohorts (last 30d)\n" +
+        "/admin_funnel - onboarding funnel (all-time)\n" +
         "/admin_quiz - quiz stats\n" +
         "/admin_rebuild_ratings - rebuild top rating indexes once\n\n" +
         "<b>Broadcast</b>\n" +
@@ -338,6 +341,14 @@ export class AdminCommands {
       await this._sendQuizStats();
       return true;
     }
+    if (/^\/admin_retention(?:@\w+)?\s*$/i.test(input)) {
+      await this._sendRetentionStats();
+      return true;
+    }
+    if (/^\/admin_funnel(?:@\w+)?\s*$/i.test(input)) {
+      await this._sendOnboardingFunnel();
+      return true;
+    }
     if (/^\/labour_reindex(?:@\w+)?\s*$/i.test(input)) {
       await this.send("Labour reindex started...");
       try {
@@ -617,6 +628,232 @@ export class AdminCommands {
         );
       }
     }
+    await this.send(lines.join("\n"));
+  }
+
+  _retentionCounters() {
+    return { total: 0, d1e: 0, d1r: 0, d3e: 0, d3r: 0, d7e: 0, d7r: 0 };
+  }
+
+  _fmtRetentionPair(done, eligible) {
+    const e = Math.max(0, Number(eligible || 0));
+    const d = Math.max(0, Number(done || 0));
+    const pct = e > 0 ? Math.round((d * 100) / e) : 0;
+    return `${d}/${e} (${pct}%)`;
+  }
+
+  _cohortSource(refSnapshot) {
+    const src = String(refSnapshot?.startSource || "").trim().toLowerCase();
+    const payload = String(refSnapshot?.startPayload || "").trim().toLowerCase();
+    if (src === "ads" || payload.startsWith("ads_")) return "ads";
+    if (src === "ref" || payload.startsWith("ref_") || String(refSnapshot?.referredBy || "").trim()) return "ref";
+    return "organic";
+  }
+
+  async _sendRetentionStats() {
+    await this.send("Retention stats started...");
+    const prefix = "u:";
+    const today = dayStrUtc(Date.now());
+    let cursor = undefined;
+
+    let scannedUsers = 0;
+    let excludedAdmins = 0;
+    let noFirstActiveDay = 0;
+    let activeToday = 0;
+    let active7d = 0;
+    let active30d = 0;
+    let newPlayers = 0;
+
+    const cohortCounts = { ads: 0, ref: 0, organic: 0 };
+    const overall = this._retentionCounters();
+    const byCohort = {
+      ads: this._retentionCounters(),
+      ref: this._retentionCounters(),
+      organic: this._retentionCounters()
+    };
+
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const page = await this.db.list({ prefix, cursor });
+      const keys = Array.isArray(page?.keys) ? page.keys : [];
+      for (const k of keys) {
+        try {
+          const raw = await this.db.get(k.name);
+          if (!raw) continue;
+          const u = JSON.parse(raw);
+          const fallbackId = String(k.name || "").slice(prefix.length);
+          const id = String((u?.id ?? fallbackId) || "");
+          if (!id) continue;
+          if (this.isAdmin(id)) {
+            excludedAdmins += 1;
+            continue;
+          }
+
+          scannedUsers += 1;
+          const stats = (u?.stats && typeof u.stats === "object") ? u.stats : {};
+          const firstActiveDay = isDayStr(stats.firstActiveDay) ? String(stats.firstActiveDay) : "";
+          const lastActiveDay = isDayStr(stats.lastActiveDay) ? String(stats.lastActiveDay) : "";
+
+          if (lastActiveDay) {
+            const lastAge = dayDiffUtc(lastActiveDay, today);
+            if (lastAge === 0) activeToday += 1;
+            if (lastAge >= 0 && lastAge <= 6) active7d += 1;
+            if (lastAge >= 0 && lastAge <= 29) active30d += 1;
+          }
+
+          if (!firstActiveDay) {
+            noFirstActiveDay += 1;
+            continue;
+          }
+
+          const age = dayDiffUtc(firstActiveDay, today);
+          if (age < 0 || age > 29) continue;
+
+          newPlayers += 1;
+          const snap = this._refSnapshot(u);
+          const cohort = this._cohortSource(snap);
+          cohortCounts[cohort] += 1;
+          overall.total += 1;
+          byCohort[cohort].total += 1;
+
+          const checks = [
+            { n: 1, e: "d1e", r: "d1r" },
+            { n: 3, e: "d3e", r: "d3r" },
+            { n: 7, e: "d7e", r: "d7r" }
+          ];
+          for (const c of checks) {
+            if (age < c.n) continue;
+            overall[c.e] += 1;
+            byCohort[cohort][c.e] += 1;
+            const targetDay = addDaysUtc(firstActiveDay, c.n);
+            if (targetDay && hasActivityOnDay(u, targetDay)) {
+              overall[c.r] += 1;
+              byCohort[cohort][c.r] += 1;
+            }
+          }
+        } catch {
+          // skip bad rows
+        }
+      }
+      if (!page || page.list_complete || !page.cursor) break;
+      cursor = page.cursor;
+    }
+
+    const lines = [
+      "<b>Retention (last 30 days)</b>",
+      "",
+      `New players (first useful action): ${newPlayers}`,
+      `  ads_*: ${cohortCounts.ads}`,
+      `  ref_*: ${cohortCounts.ref}`,
+      `  organic: ${cohortCounts.organic}`,
+      "",
+      `D1 retention: ${this._fmtRetentionPair(overall.d1r, overall.d1e)}`,
+      `D3 retention: ${this._fmtRetentionPair(overall.d3r, overall.d3e)}`,
+      `D7 retention: ${this._fmtRetentionPair(overall.d7r, overall.d7e)}`,
+      "",
+      "<b>By cohorts</b>",
+      `ads_*: D1 ${this._fmtRetentionPair(byCohort.ads.d1r, byCohort.ads.d1e)} · D3 ${this._fmtRetentionPair(byCohort.ads.d3r, byCohort.ads.d3e)} · D7 ${this._fmtRetentionPair(byCohort.ads.d7r, byCohort.ads.d7e)}`,
+      `ref_*: D1 ${this._fmtRetentionPair(byCohort.ref.d1r, byCohort.ref.d1e)} · D3 ${this._fmtRetentionPair(byCohort.ref.d3r, byCohort.ref.d3e)} · D7 ${this._fmtRetentionPair(byCohort.ref.d7r, byCohort.ref.d7e)}`,
+      `organic: D1 ${this._fmtRetentionPair(byCohort.organic.d1r, byCohort.organic.d1e)} · D3 ${this._fmtRetentionPair(byCohort.organic.d3r, byCohort.organic.d3e)} · D7 ${this._fmtRetentionPair(byCohort.organic.d7r, byCohort.organic.d7e)}`,
+      "",
+      `Active today: ${activeToday}`,
+      `Active last 7d: ${active7d}`,
+      `Active last 30d: ${active30d}`,
+      "",
+      `Scanned users (non-admin): ${scannedUsers}`,
+      `Excluded admins: ${excludedAdmins}`
+    ];
+    if (noFirstActiveDay > 0) {
+      lines.push(`⚠️ Without firstActiveDay (legacy users): ${noFirstActiveDay} — not included in cohorts`);
+    }
+
+    await this.send(lines.join("\n"));
+  }
+
+  _toBool(v) {
+    return !!v;
+  }
+
+  _hasAnyBusiness(u) {
+    const owned = Array.isArray(u?.biz?.owned) ? u.biz.owned : [];
+    for (const b of owned) {
+      const id = String(typeof b === "string" ? b : b?.id || "").trim();
+      if (id) return true;
+    }
+    return false;
+  }
+
+  _pct(part, total) {
+    const p = Math.max(0, Number(part || 0));
+    const t = Math.max(0, Number(total || 0));
+    if (t <= 0) return 0;
+    return Math.round((p * 100) / t);
+  }
+
+  async _sendOnboardingFunnel() {
+    await this.send("Onboarding funnel started...");
+    const prefix = "u:";
+    let cursor = undefined;
+    let registered = 0;
+    let excludedAdmins = 0;
+
+    let firstShift = 0;
+    let firstClaim = 0;
+    let firstGym = 0;
+    let firstBar = 0;
+    let firstBiz = 0;
+
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const page = await this.db.list({ prefix, cursor });
+      const keys = Array.isArray(page?.keys) ? page.keys : [];
+      for (const k of keys) {
+        try {
+          const raw = await this.db.get(k.name);
+          if (!raw) continue;
+          const u = JSON.parse(raw);
+          const fallbackId = String(k.name || "").slice(prefix.length);
+          const id = String((u?.id ?? fallbackId) || "");
+          if (!id) continue;
+          if (this.isAdmin(id)) {
+            excludedAdmins += 1;
+            continue;
+          }
+
+          registered += 1;
+          const stats = (u?.stats && typeof u.stats === "object") ? u.stats : {};
+          const shiftByHistory = Math.max(0, Number(u?.achievements?.progress?.totalShifts || 0)) > 0;
+          const didFirstShift = this._toBool(stats.didFirstShift) || shiftByHistory;
+          const didFirstClaim = this._toBool(stats.didFirstClaim) || shiftByHistory;
+          const didGym = this._toBool(stats.didGym) || Math.max(0, Number(u?.gym?.level || 0)) > 0;
+          const didBar = this._toBool(stats.didBar);
+          const didBusiness = this._toBool(stats.didBusiness) || this._hasAnyBusiness(u);
+
+          if (didFirstShift) firstShift += 1;
+          if (didFirstClaim) firstClaim += 1;
+          if (didGym) firstGym += 1;
+          if (didBar) firstBar += 1;
+          if (didBusiness) firstBiz += 1;
+        } catch {
+          // skip bad rows
+        }
+      }
+      if (!page || page.list_complete || !page.cursor) break;
+      cursor = page.cursor;
+    }
+
+    const lines = [
+      "<b>Onboarding funnel (all-time)</b>",
+      "",
+      `Registered users: ${registered}`,
+      `First shift started: ${firstShift} (${this._pct(firstShift, registered)}%)`,
+      `First payout claimed: ${firstClaim} (${this._pct(firstClaim, registered)}%)`,
+      `First workout finished: ${firstGym} (${this._pct(firstGym, registered)}%)`,
+      `Opened bar: ${firstBar} (${this._pct(firstBar, registered)}%)`,
+      `Bought first business: ${firstBiz} (${this._pct(firstBiz, registered)}%)`,
+      "",
+      `Excluded admins: ${excludedAdmins}`
+    ];
     await this.send(lines.join("\n"));
   }
 

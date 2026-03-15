@@ -1,0 +1,80 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {
+  ensurePlayerStatsShape,
+  hasActivityOnDay,
+  markFunnelStep,
+  markUsefulActivity
+} from "../PlayerStats.js";
+
+test("ensurePlayerStatsShape fills retention and funnel fields", () => {
+  const u = { id: "u1", stats: { dailyTop1Count: 1 } };
+  const changed = ensurePlayerStatsShape(u);
+  assert.equal(changed, true);
+  assert.equal(typeof u.stats.firstActiveDay, "string");
+  assert.equal(typeof u.stats.lastActiveDay, "string");
+  assert.ok(Array.isArray(u.stats.activeDays));
+  assert.equal(typeof u.stats.didFirstShift, "boolean");
+  assert.equal(typeof u.stats.didFirstClaim, "boolean");
+  assert.equal(typeof u.stats.didGym, "boolean");
+  assert.equal(typeof u.stats.didBar, "boolean");
+  assert.equal(typeof u.stats.didBusiness, "boolean");
+});
+
+test("markUsefulActivity sets firstActiveDay from createdAt and appends active day", () => {
+  const u = {
+    id: "u2",
+    createdAt: Date.UTC(2026, 2, 10, 9, 0, 0),
+    stats: {}
+  };
+  const nowTs = Date.UTC(2026, 2, 12, 12, 0, 0);
+  const changed = markUsefulActivity(u, nowTs);
+  assert.equal(changed, true);
+  assert.equal(u.stats.firstActiveDay, "2026-03-10");
+  assert.equal(u.stats.lastActiveDay, "2026-03-12");
+  assert.ok(u.stats.activeDays.includes("2026-03-12"));
+});
+
+test("markUsefulActivity is idempotent on same day", () => {
+  const u = {
+    id: "u3",
+    stats: {
+      dailyTop1Count: 0,
+      dailyTop3Count: 0,
+      dailyTop10Count: 0,
+      firstActiveDay: "2026-03-12",
+      lastActiveDay: "2026-03-12",
+      activeDays: ["2026-03-12"],
+      didFirstShift: false,
+      didFirstClaim: false,
+      didGym: false,
+      didBar: false,
+      didBusiness: false
+    }
+  };
+  const nowTs = Date.UTC(2026, 2, 12, 18, 0, 0);
+  const changed = markUsefulActivity(u, nowTs);
+  assert.equal(changed, false);
+});
+
+test("markFunnelStep sets flag only once", () => {
+  const u = { id: "u4", stats: {} };
+  const first = markFunnelStep(u, "didBar");
+  const second = markFunnelStep(u, "didBar");
+  assert.equal(first, true);
+  assert.equal(second, false);
+  assert.equal(u.stats.didBar, true);
+});
+
+test("hasActivityOnDay reads activeDays and falls back to lastActiveDay", () => {
+  const u = {
+    id: "u5",
+    stats: {
+      activeDays: ["2026-03-10"],
+      lastActiveDay: "2026-03-11"
+    }
+  };
+  assert.equal(hasActivityOnDay(u, "2026-03-10"), true);
+  assert.equal(hasActivityOnDay(u, "2026-03-11"), true);
+  assert.equal(hasActivityOnDay(u, "2026-03-12"), false);
+});

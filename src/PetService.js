@@ -1,5 +1,6 @@
 import { CONFIG } from "./GameConfig.js";
 import { normalizeLang } from "./i18n/index.js";
+import { markUsefulActivity } from "./PlayerStats.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -712,6 +713,7 @@ export class PetService {
       aRes = await this.achievements.onEvent(u, "pet_feed", { streak: p.streak }, { persist: false, notify: false }).catch(() => null);
     }
 
+    markUsefulActivity(u, this.now());
     await this._scheduleNextDue(u);
     await this.users.save(u);
 
