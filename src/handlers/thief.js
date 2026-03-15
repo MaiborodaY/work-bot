@@ -24,6 +24,7 @@ export const thiefHandler = {
         place: "Thief",
         caption: view.caption,
         keyboard: view.keyboard,
+        asset: view.asset || undefined,
         policy: "auto"
       });
       locations.setSourceMessage(null);

@@ -710,6 +710,7 @@ export class ThiefService {
   }
 
   async buildHelpView(user) {
+    const helpAsset = String(this._cfg()?.HELP_ASSET || "").trim();
     const maxLevel = Math.max(1, Number(this._cfg()?.MAX_LEVEL) || 5);
     const levels = Array.from({ length: maxLevel }, (_, i) => i + 1);
     const energyMultiplier = 2;
@@ -763,6 +764,7 @@ export class ThiefService {
 
     return {
       caption: lines.join("\n"),
+      asset: helpAsset || undefined,
       keyboard: [[{ text: this._t(user, "thief.btn.back"), callback_data: "go:Thief" }]]
     };
   }

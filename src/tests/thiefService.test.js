@@ -278,3 +278,15 @@ test("thief service: active guard increases window and reduces success chance", 
   assert.equal(Number(attack.resolveAt), nowTs + (20 * 60 * 1000) + (20 * 60 * 1000));
   assert.equal(Number(attack.successChance), 0.15);
 });
+
+test("thief service: help view includes configured image asset", async () => {
+  const db = new FakeDb();
+  const users = new FakeUsers({});
+  const service = new ThiefService({ db, users, now: () => Date.now(), bot: null });
+  const view = await service.buildHelpView({ id: "u1", lang: "ru" });
+
+  assert.equal(
+    view.asset,
+    "AgACAgIAAxkBAAJ6y2m2n9iHnqm7tr1kXVm2g-1eQl9NAAKZFGsby1KwSXEibtL1lMpfAQADAgADeQADOgQ"
+  );
+});
