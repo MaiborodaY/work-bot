@@ -335,9 +335,9 @@ export function buildQuizCatalog(cfg = CONFIG) {
       },
       correct: 1,
       explain: {
-        ru: "Лечение фиксированное и берётся из конфига питомца.",
-        uk: "Лікування фіксоване та береться з конфіга улюбленця.",
-        en: "Heal cost is fixed and taken from pet config."
+        ru: "Стоимость лечения фиксированная. Точную цену смотри в разделе питомца.",
+        uk: "Вартість лікування фіксована. Точну ціну дивись у розділі улюбленця.",
+        en: "Heal cost is fixed. You can always check the exact price in the pet section."
       }
     },
     {
@@ -414,4 +414,3 @@ export function buildQuizCatalog(cfg = CONFIG) {
     }
   ];
 }
-
