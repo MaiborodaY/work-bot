@@ -261,3 +261,38 @@ test("labour bg: reconcileOwnerSlots does not reload owner from KV on dirty save
   assert.ok(Array.isArray(after?.biz?.owned?.[0]?.slots));
   assert.equal(Boolean(after?.biz?.owned?.[0]?.slots?.[0]?.purchased), true);
 });
+
+test("labour bg: expiry payout survives legacy string totals", async () => {
+  const db = makeDb();
+  const { owner, employee } = makeFixture();
+  const users = makeUsers(db, { [owner.id]: owner, [employee.id]: employee });
+
+  let nowTs = Date.UTC(2026, 2, 13, 12, 0, 0);
+  const labour = new LabourService({ db, users, now: () => nowTs, bot: null });
+
+  const hireRes = await labour.hire(await users.load(owner.id), "shawarma", 0, employee.id);
+  assert.equal(hireRes.ok, true);
+
+  const empAfterHire = await users.load(employee.id);
+  empAfterHire.employment.bgEmployeeTotal = "900";
+  empAfterHire.employment.bgOwnerMoneyTotal = "54";
+  empAfterHire.employment.bgOwnerGemsTotal = "1";
+  empAfterHire.employment.bgShiftPay = "37.5";
+  empAfterHire.employment.bgTotalShifts = "24";
+  empAfterHire.employment.ownerPct = "0.06";
+  await users.save(empAfterHire);
+
+  const ownerAfterHire = await users.load(owner.id);
+  ownerAfterHire.biz.owned[0].slots[0].bgOwnerMoneyTotal = "54";
+  ownerAfterHire.biz.owned[0].slots[0].bgOwnerGemsTotal = "1";
+  await users.save(ownerAfterHire);
+
+  nowTs = Number(hireRes.contractEnd) + 1;
+  await labour.ensureEmploymentFresh(await users.load(employee.id));
+
+  const empAfter = await users.load(employee.id);
+  const ownerAfter = await users.load(owner.id);
+  assert.equal(empAfter.money, 500 + 900);
+  assert.equal(ownerAfter.money, 100000 + 54);
+  assert.equal(ownerAfter.premium, 100 + 1);
+});

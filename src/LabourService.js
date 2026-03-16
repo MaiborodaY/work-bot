@@ -148,6 +148,11 @@ export class LabourService {
     };
   }
 
+  _numOr(value, fallback = 0) {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : fallback;
+  }
+
   _safeJson(raw, fallback) {
     if (!raw) return fallback;
     try {
@@ -317,13 +322,19 @@ export class LabourService {
       u.employment.bizId = "";
       dirty = true;
     }
-    if (typeof u.employment.ownerPct !== "number") {
-      u.employment.ownerPct = 0;
-      dirty = true;
+    {
+      const ownerPct = this._numOr(u.employment.ownerPct, 0);
+      if (ownerPct !== u.employment.ownerPct) {
+        u.employment.ownerPct = ownerPct;
+        dirty = true;
+      }
     }
-    if (typeof u.employment.contractEnd !== "number") {
-      u.employment.contractEnd = 0;
-      dirty = true;
+    {
+      const contractEnd = this._numOr(u.employment.contractEnd, 0);
+      if (contractEnd !== u.employment.contractEnd) {
+        u.employment.contractEnd = contractEnd;
+        dirty = true;
+      }
     }
     if (typeof u.employment.model !== "string") {
       u.employment.model = CONTRACT_MODEL_LEGACY;
@@ -338,20 +349,17 @@ export class LabourService {
       bgOwnerGemsTotal: 0
     };
     for (const [k, v] of Object.entries(employmentNumDefaults)) {
-      if (typeof u.employment[k] !== "number" || !Number.isFinite(u.employment[k])) {
-        u.employment[k] = v;
+      const num = this._numOr(u.employment[k], v);
+      if (num !== u.employment[k]) {
+        u.employment[k] = num;
         dirty = true;
       }
     }
-    if (typeof u.employment.slotIndex !== "number" || !Number.isFinite(u.employment.slotIndex)) {
-      u.employment.slotIndex = -1;
+    const slotIdxRaw = this._numOr(u.employment.slotIndex, -1);
+    const slotIdx = Math.max(-1, Math.floor(slotIdxRaw));
+    if (slotIdx !== u.employment.slotIndex) {
+      u.employment.slotIndex = slotIdx;
       dirty = true;
-    } else {
-      const idx = Math.floor(Number(u.employment.slotIndex));
-      if (idx !== u.employment.slotIndex || idx < -1) {
-        u.employment.slotIndex = Math.max(-1, idx);
-        dirty = true;
-      }
     }
     if (!u.employment.active && u.employment.slotIndex !== -1) {
       u.employment.slotIndex = -1;
@@ -388,12 +396,27 @@ export class LabourService {
     let dirty = false;
     if (typeof slot.purchased !== "boolean") { slot.purchased = false; dirty = true; }
     if (typeof slot.employeeId !== "string") { slot.employeeId = ""; dirty = true; }
-    if (typeof slot.contractStart !== "number") { slot.contractStart = 0; dirty = true; }
-    if (typeof slot.contractEnd !== "number") { slot.contractEnd = 0; dirty = true; }
-    if (typeof slot.earnedTotal !== "number") { slot.earnedTotal = 0; dirty = true; }
+    {
+      const n = this._numOr(slot.contractStart, 0);
+      if (n !== slot.contractStart) { slot.contractStart = n; dirty = true; }
+    }
+    {
+      const n = this._numOr(slot.contractEnd, 0);
+      if (n !== slot.contractEnd) { slot.contractEnd = n; dirty = true; }
+    }
+    {
+      const n = this._numOr(slot.earnedTotal, 0);
+      if (n !== slot.earnedTotal) { slot.earnedTotal = n; dirty = true; }
+    }
     if (typeof slot.lastEmployeeId !== "string") { slot.lastEmployeeId = ""; dirty = true; }
-    if (typeof slot.ownerPct !== "number") { slot.ownerPct = 0; dirty = true; }
-    if (typeof slot.bonusCarry !== "number") { slot.bonusCarry = 0; dirty = true; }
+    {
+      const n = this._numOr(slot.ownerPct, 0);
+      if (n !== slot.ownerPct) { slot.ownerPct = n; dirty = true; }
+    }
+    {
+      const n = this._numOr(slot.bonusCarry, 0);
+      if (n !== slot.bonusCarry) { slot.bonusCarry = n; dirty = true; }
+    }
     if (typeof slot.contractModel !== "string") { slot.contractModel = CONTRACT_MODEL_LEGACY; dirty = true; }
     const bgDefaults = {
       bgShiftMs: 0,
@@ -404,8 +427,9 @@ export class LabourService {
       bgOwnerGemsTotal: 0
     };
     for (const [k, v] of Object.entries(bgDefaults)) {
-      if (typeof slot[k] !== "number" || !Number.isFinite(slot[k])) {
-        slot[k] = v;
+      const num = this._numOr(slot[k], v);
+      if (num !== slot[k]) {
+        slot[k] = num;
         dirty = true;
       }
     }
@@ -687,9 +711,39 @@ export class LabourService {
     const contractModel = String(user?.employment?.model || CONTRACT_MODEL_LEGACY);
     const employmentSnapshot = { ...(user?.employment || {}) };
 
-    const snapshotEmployeeTotal = Math.max(0, Math.floor(Number(employmentSnapshot?.bgEmployeeTotal) || 0));
-    const snapshotOwnerMoneyTotal = Math.max(0, Math.floor(Number(employmentSnapshot?.bgOwnerMoneyTotal) || 0));
-    const snapshotOwnerGemsTotal = Math.max(0, Math.floor(Number(employmentSnapshot?.bgOwnerGemsTotal) || 0));
+    let snapshotEmployeeTotal = Math.max(0, Math.floor(Number(employmentSnapshot?.bgEmployeeTotal) || 0));
+    let snapshotOwnerMoneyTotal = Math.max(0, Math.floor(Number(employmentSnapshot?.bgOwnerMoneyTotal) || 0));
+    let snapshotOwnerGemsTotal = Math.max(0, Math.floor(Number(employmentSnapshot?.bgOwnerGemsTotal) || 0));
+    const snapshotShiftPay = Math.max(0, Number(employmentSnapshot?.bgShiftPay) || 0);
+    const snapshotTotalShifts = Math.max(0, Math.floor(Number(employmentSnapshot?.bgTotalShifts) || 0));
+    const snapshotOwnerPct = Math.max(
+      0,
+      Number(employmentSnapshot?.ownerPct) || 0,
+      Number(this._slotLevelCfg(bizId, slotIndex)?.ownerPct) || 0
+    );
+
+    if (contractModel === CONTRACT_MODEL_BG_V1) {
+      if (snapshotEmployeeTotal <= 0 && snapshotShiftPay > 0 && snapshotTotalShifts > 0) {
+        snapshotEmployeeTotal = Math.max(0, Math.floor(snapshotShiftPay * snapshotTotalShifts));
+      }
+      if (snapshotOwnerMoneyTotal <= 0 && snapshotEmployeeTotal > 0 && snapshotOwnerPct > 0) {
+        snapshotOwnerMoneyTotal = Math.max(0, Math.floor(snapshotEmployeeTotal * snapshotOwnerPct));
+      }
+      if (snapshotOwnerGemsTotal <= 0 && bizId) {
+        snapshotOwnerGemsTotal = this._bgOwnerGems(bizId);
+      }
+      if ((snapshotEmployeeTotal <= 0 || snapshotOwnerMoneyTotal <= 0) && bizId) {
+        const endAt = Math.max(0, Number(employmentSnapshot?.contractEnd) || 0);
+        if (endAt > 0) {
+          const days = Math.max(1, this._contractDays(bizId));
+          const startAt = Math.max(0, endAt - days * DAY_MS);
+          const plan = this._buildBgPlan(bizId, startAt, endAt, snapshotOwnerPct);
+          if (snapshotEmployeeTotal <= 0) snapshotEmployeeTotal = Math.max(0, Math.floor(Number(plan.employeeTotal) || 0));
+          if (snapshotOwnerMoneyTotal <= 0) snapshotOwnerMoneyTotal = Math.max(0, Math.floor(Number(plan.ownerMoneyTotal) || 0));
+          if (snapshotOwnerGemsTotal <= 0) snapshotOwnerGemsTotal = Math.max(0, Math.floor(Number(plan.ownerGemsTotal) || 0));
+        }
+      }
+    }
 
     let employeePayout = 0;
     if (contractModel === CONTRACT_MODEL_BG_V1) {
@@ -721,6 +775,24 @@ export class LabourService {
             if (slot) {
               ownerMoneyTotal = Math.max(0, Math.floor(Number(slot.bgOwnerMoneyTotal) || 0));
               ownerGemsTotal = Math.max(0, Math.floor(Number(slot.bgOwnerGemsTotal) || 0));
+              if (ownerMoneyTotal <= 0 || ownerGemsTotal <= 0) {
+                const resolvedSlotIndex = resolved.slotIndex >= 0 ? resolved.slotIndex : slotIndex;
+                const ownerPctForPlan = Math.max(
+                  0,
+                  Number(slot.ownerPct) || 0,
+                  Number(this._slotLevelCfg(bizId, resolvedSlotIndex)?.ownerPct) || 0
+                );
+                const endAt = Math.max(0, Number(slot.contractEnd) || Number(employmentSnapshot?.contractEnd) || 0);
+                if (bizId && endAt > 0) {
+                  const defaultStart = Math.max(0, endAt - Math.max(1, this._contractDays(bizId)) * DAY_MS);
+                  const startAt = Math.max(0, Number(slot.contractStart) || defaultStart);
+                  const plan = this._buildBgPlan(bizId, startAt, endAt, ownerPctForPlan);
+                  if (ownerMoneyTotal <= 0) ownerMoneyTotal = Math.max(0, Math.floor(Number(plan.ownerMoneyTotal) || 0));
+                  if (ownerGemsTotal <= 0) ownerGemsTotal = Math.max(0, Math.floor(Number(plan.ownerGemsTotal) || 0));
+                }
+              }
+              if (ownerMoneyTotal <= 0) ownerMoneyTotal = snapshotOwnerMoneyTotal;
+              if (ownerGemsTotal <= 0) ownerGemsTotal = snapshotOwnerGemsTotal;
             } else {
               ownerMoneyTotal = snapshotOwnerMoneyTotal;
               ownerGemsTotal = snapshotOwnerGemsTotal;
