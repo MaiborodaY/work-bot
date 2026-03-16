@@ -158,6 +158,12 @@ export const CONFIG = {
     PERFECT_BONUS_GEMS: 1
   },
 
+  QUIZ_GENERAL: {
+    QUESTIONS_PER_DAY: 3,
+    REWARD_MONEY_PER_CORRECT: 100,
+    PERFECT_BONUS_MONEY: 200
+  },
+
   DAILY_TOP_REWARDS: {
     1:  { stars: 3, money: 0 },
     2:  { stars: 2, money: 0 },

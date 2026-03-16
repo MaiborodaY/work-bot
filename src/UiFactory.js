@@ -96,6 +96,7 @@ export class UiFactory {
   
     kb.push([{ text: this._t(l, "ui.bar.tasks"), callback_data: "bar:tasks" }]);
     kb.push([{ text: this._t(l, "ui.bar.quiz"), callback_data: "quiz:open" }]);
+    kb.push([{ text: this._t(l, "ui.bar.quiz_general"), callback_data: "gquiz:open" }]);
     kb.push([{ text: this._t(l, "ui.bar.arcana"), callback_data: this._go(Routes.CASINO) }]);
   
     const today = new Date().toISOString().slice(0,10);

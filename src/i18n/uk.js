@@ -670,5 +670,7 @@ export const UK = {
   "thief.notify.owner_failed": "🛡️ Спроба крадіжки в {{bizTitle}} провалилась.",
   "thief.notify.attacker_failed": "❌ Спроба в {{bizTitle}} провалилась. Тимчасове блокування застосовано.",
   "thief.notify.guard_expired": "🛡️ Охорона бізнесу {{bizTitle}} завершилась — бізнес знову вразливий.",
-  "thief.notify.immunity_expired": "🔒 Імунітет бізнесу {{bizTitle}} завершився — бізнес знову видно злодіям."
+  "thief.notify.immunity_expired": "🔒 Імунітет бізнесу {{bizTitle}} завершився — бізнес знову видно злодіям.",
+  "ui.bar.quiz_general": "🧠 Загальна вікторина",
+  "loc.quiz_general.unavailable": "Загальна вікторина тимчасово недоступна."
 };

@@ -670,5 +670,7 @@ export const EN = {
   "thief.notify.owner_failed": "🛡️ Robbery attempt in {{bizTitle}} has failed.",
   "thief.notify.attacker_failed": "❌ Attempt in {{bizTitle}} failed. Temporary lock applied.",
   "thief.notify.guard_expired": "🛡️ Guard on {{bizTitle}} has expired — business is vulnerable again.",
-  "thief.notify.immunity_expired": "🔒 Immunity on {{bizTitle}} has expired — business is visible to thieves again."
+  "thief.notify.immunity_expired": "🔒 Immunity on {{bizTitle}} has expired — business is visible to thieves again.",
+  "ui.bar.quiz_general": "🧠 General Quiz",
+  "loc.quiz_general.unavailable": "General quiz is temporarily unavailable."
 };

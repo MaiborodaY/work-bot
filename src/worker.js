@@ -21,6 +21,7 @@ import { RatingService } from "./RatingService.js";
 import { QuestService } from "./QuestService.js";
 import { PetService } from "./PetService.js";
 import { QuizService } from "./QuizService.js";
+import { GeneralQuizService } from "./GeneralQuizService.js";
 import { ASSETS, JOB_ASSETS } from "./Assets.js";
 import { normalizeLang, t } from "./i18n/index.js";
 import { safeCall } from "./SafeCall.js";
@@ -47,6 +48,7 @@ import { referralHandler } from "./handlers/referral.js";
 import { ratingsHandler } from "./handlers/ratings.js";
 import { petHandler } from "./handlers/pet.js";
 import { quizHandler } from "./handlers/quiz.js";
+import { generalQuizHandler } from "./handlers/generalQuiz.js";
 
 // платежи Stars
 import { OrdersStore as StarsOrdersStore } from "./payments/OrdersStore.js";
@@ -147,6 +149,7 @@ export default {
     const achievements = new AchievementService({ users, db: env.DB, now, bot, ratings });
     const quests = new QuestService({ users, now, bot });
     const quiz = new QuizService({ users, now, bot, quests, achievements });
+    const generalQuiz = new GeneralQuizService({ users, now, bot });
     const social = new SocialService({ db: env.DB, users, now, economy });
     const clans = new ClanService({ db: env.DB, users, now, economy, achievements });
     const stocks = new StockService({ db: env.DB, users, now, achievements, quests });
@@ -1210,6 +1213,7 @@ export default {
         achievements,
         quests,
         quiz,
+        generalQuiz,
         // ui
         ui,
         // payments
@@ -1229,6 +1233,7 @@ export default {
         referralHandler,
         barHandler,
         quizHandler,
+        generalQuizHandler,
         dailyHandler,
         miniGamesHandler,
         workHandler,
