@@ -107,12 +107,19 @@ export class UserStore {
     }
 
     // Энергия
+    if (!u.flags || typeof u.flags !== "object") { u.flags = {}; dirty = true; }
     const minEnergy = UserStore.START_ENERGY_MIN;
     const baseEnergyMax = Math.max(Number(CONFIG.ENERGY_MAX) || 0, minEnergy);
     if (typeof u.energy_max !== "number") { u.energy_max = baseEnergyMax; dirty = true; }
     if (u.energy_max < minEnergy) { u.energy_max = minEnergy; dirty = true; }
     if (typeof u.energy !== "number") { u.energy = minEnergy; dirty = true; }
-    if (u.energy < minEnergy) { u.energy = minEnergy; dirty = true; }
+    if (u.energy < 0) { u.energy = 0; dirty = true; }
+    if (u.energy > u.energy_max) { u.energy = u.energy_max; dirty = true; }
+    if (u.flags.energyBackfill20Done !== true) {
+      if (u.energy < minEnergy) { u.energy = minEnergy; dirty = true; }
+      u.flags.energyBackfill20Done = true;
+      dirty = true;
+    }
 
     // Ник/онбординг
     if (typeof u.displayName !== "string") { u.displayName = ""; dirty = true; }
@@ -614,6 +621,7 @@ export class UserStore {
     if (typeof u.flags.freeSkipUsed_work !== "boolean") { u.flags.freeSkipUsed_work = false; dirty = true; }
     if (typeof u.flags.freeSkipUsed_gym !== "boolean") { u.flags.freeSkipUsed_gym = false; dirty = true; }
     if (typeof u.flags.awaitingLangPick !== "boolean") { u.flags.awaitingLangPick = false; dirty = true; }
+    if (typeof u.flags.energyBackfill20Done !== "boolean") { u.flags.energyBackfill20Done = false; dirty = true; }
     if (typeof u.flags.petBuyGuideClaimed !== "boolean") { u.flags.petBuyGuideClaimed = false; dirty = true; }
     if (typeof u.flags.firstBizGuideClaimed !== "boolean") { u.flags.firstBizGuideClaimed = false; dirty = true; }
     if (typeof u.flags.studyLevel5GuideClaimed !== "boolean") { u.flags.studyLevel5GuideClaimed = false; dirty = true; }
@@ -752,6 +760,7 @@ export class UserStore {
         freeSkipUsed_work: false,
         freeSkipUsed_gym: false,
         awaitingLangPick: false,
+        energyBackfill20Done: true,
         petBuyGuideClaimed: false,
         firstBizGuideClaimed: false,
         studyLevel5GuideClaimed: false,

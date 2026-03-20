@@ -62,8 +62,6 @@ export async function renderCasinoRoute(ctx, user, { lang = "ru" } = {}) {
 
   const today = new Date().toISOString().slice(0, 10);
   const spinsToday = (user.casino?.day === today) ? (user.casino?.spins || 0) : 0;
-  const freeUsedToday = (user.casino?.free?.day === today);
-  const freeLine = freeUsedToday ? ctx._t(user, "loc.casino.free_tomorrow") : ctx._t(user, "loc.casino.free_today");
   const statusLine = ctx._t(user, "loc.casino.status_line", { spins: spinsToday, limit: CONFIG.CASINO.daily_limit });
   const statsLines =
     typeof ctx.formatters?.casinoStatsLines === "function"
@@ -75,14 +73,11 @@ export async function renderCasinoRoute(ctx, user, { lang = "ru" } = {}) {
       ? ctx.formatters.casinoBestLine(user)
       : "";
 
-  let casinoKb = ctx.ui.casinoMenu(user, lang);
-  if (!freeUsedToday) {
-    casinoKb = [[{ text: ctx._t(user, "loc.casino.free_btn"), callback_data: "casino_free" }], ...casinoKb];
-  }
+  const casinoKb = ctx.ui.casinoMenu(user, lang);
 
   const captionCore =
     ctx._t(user, "loc.casino.caption_intro") + "\n\n" +
-    `${freeLine}\n${statusLine}`;
+    `${statusLine}`;
   const captionWithStats = statsLines ? `${captionCore}\n\n${statsLines}` : captionCore;
   const captionStatsBest = bestLine ? `${captionWithStats}\n${bestLine}` : captionWithStats;
   const finalCaption = `${captionStatsBest}\n\n${ctx.formatters.moneyLine(user)}`;

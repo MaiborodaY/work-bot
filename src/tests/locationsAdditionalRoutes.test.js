@@ -82,7 +82,7 @@ test("study route idle: renders Study with auto policy", async () => {
   assert.equal(mediaCalls[0].policy, "auto");
 });
 
-test("casino route: prepends free spin button when arcana is unlocked", async () => {
+test("casino route: shows standard casino menu when arcana is unlocked", async () => {
   const { locations, mediaCalls } = createLocations();
   const u = baseUser();
   u.displayName = "Tester";
@@ -93,7 +93,7 @@ test("casino route: prepends free spin button when arcana is unlocked", async ()
   assert.equal(mediaCalls.length, 1);
   assert.equal(mediaCalls[0].place, Routes.CASINO);
   assert.equal(mediaCalls[0].policy, "auto");
-  assert.equal(mediaCalls[0]?.keyboard?.[0]?.[0]?.callback_data, "casino_free");
+  assert.equal(mediaCalls[0]?.keyboard?.[0]?.[0]?.callback_data, "noop");
 });
 
 test("casino route: shows locked gate below required study level", async () => {
