@@ -93,11 +93,16 @@ export class UiFactory {
     const kb = [];
     const bar = user.bar || {};
     const tasks = Array.isArray(bar.tasks) ? bar.tasks : [];
+    const minStudy = Number(CONFIG?.CASINO?.MIN_STUDY_FOR_PAID ?? 5);
+    const studyLevel = Math.max(0, Number(user?.study?.level) || 0);
+    const canOpenArcana = studyLevel >= minStudy;
   
     kb.push([{ text: this._t(l, "ui.bar.tasks"), callback_data: "bar:tasks" }]);
     kb.push([{ text: this._t(l, "ui.bar.quiz"), callback_data: "quiz:open" }]);
     kb.push([{ text: this._t(l, "ui.bar.quiz_general"), callback_data: "gquiz:open" }]);
-    kb.push([{ text: this._t(l, "ui.bar.arcana"), callback_data: this._go(Routes.CASINO) }]);
+    if (canOpenArcana) {
+      kb.push([{ text: this._t(l, "ui.bar.arcana"), callback_data: this._go(Routes.CASINO) }]);
+    }
   
     const today = new Date().toISOString().slice(0,10);
     const subDay = user?.subReward?.day || "";

@@ -354,8 +354,16 @@ export class QuestService {
     return energyMax < maxCap;
   }
 
+  _canAccessArcana(u) {
+    const minStudy = Math.max(0, toInt(CONFIG?.CASINO?.MIN_STUDY_FOR_PAID, 5));
+    const studyLevel = Math.max(0, toInt(u?.study?.level, 0));
+    return studyLevel >= minStudy;
+  }
+
   _dailyQuestAvailable(u, id) {
     switch (id) {
+      case "fortune_spin":
+        return this._canAccessArcana(u);
       case "gym_train":
       case "gym_2trains":
         return this._canDoGymQuest(u);

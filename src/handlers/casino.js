@@ -1,6 +1,7 @@
 // handlers/casino.js
 import { CONFIG } from "../GameConfig.js";
 import { Formatters } from "../Formatters.js";
+import { normalizeLang, t } from "../i18n/index.js";
 
 export const casinoHandler = {
   match: (data) =>
@@ -12,10 +13,16 @@ export const casinoHandler = {
   async handle(ctx) {
     const { data, u, cb, answer, users, casino, now, env, social, clans, stocks, quests } = ctx; // goTo не используем здесь
     const chatId = cb.message.chat.id;
+    const lang = normalizeLang(u?.lang || "ru");
+    const tt = (key, vars = {}) => t(key, lang, vars);
 
     const minStudy = Number(CONFIG?.CASINO?.MIN_STUDY_FOR_PAID ?? 5);
     const studyLevel = Math.max(0, Number(u?.study?.level) || 0);
     const allowPaid = studyLevel >= minStudy;
+    if (!allowPaid) {
+      await answer(cb.id, tt("handler.casino.locked_gate", { level: minStudy }));
+      return;
+    }
 
     // гарантируем структуру пользователя
     u.casino = u.casino || { last: 0, day: "", spins: 0 };

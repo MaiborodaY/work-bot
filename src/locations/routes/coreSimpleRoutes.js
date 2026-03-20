@@ -45,17 +45,26 @@ export async function renderShopRoute(ctx, user, { header = "", lang = "ru" } = 
 export async function renderCasinoRoute(ctx, user, { lang = "ru" } = {}) {
   const minStudy = Number(CONFIG?.CASINO?.MIN_STUDY_FOR_PAID ?? 5);
   const studyLevel = Math.max(0, Number(user?.study?.level) || 0);
-  const paidLocked = studyLevel < minStudy;
+  if (studyLevel < minStudy) {
+    const finalCaption =
+      `${ctx._t(user, "loc.casino.locked_gate", { level: minStudy })}\n\n${ctx.formatters.moneyLine(user)}`;
+    await ctx.media.show({
+      sourceMsg: ctx._sourceMsg,
+      place: Routes.CASINO,
+      caption: finalCaption,
+      keyboard: [[{ text: ctx._t(user, "ui.casino.to_bar"), callback_data: "go:Bar" }]],
+      policy: "auto",
+    });
+    ctx._sourceMsg = null;
+    ctx._route = Routes.CASINO;
+    return;
+  }
 
   const today = new Date().toISOString().slice(0, 10);
   const spinsToday = (user.casino?.day === today) ? (user.casino?.spins || 0) : 0;
   const freeUsedToday = (user.casino?.free?.day === today);
   const freeLine = freeUsedToday ? ctx._t(user, "loc.casino.free_tomorrow") : ctx._t(user, "loc.casino.free_today");
   const statusLine = ctx._t(user, "loc.casino.status_line", { spins: spinsToday, limit: CONFIG.CASINO.daily_limit });
-  const lastPrizeLine = (user.casino?.free?.lastPrize ?? null) != null
-    ? `\n${ctx._t(user, "loc.casino.last_free_prize", { prize: user.casino.free.lastPrize || 0 })}`
-    : "";
-
   const statsLines =
     typeof ctx.formatters?.casinoStatsLines === "function"
       ? ctx.formatters.casinoStatsLines(user)
@@ -73,12 +82,9 @@ export async function renderCasinoRoute(ctx, user, { lang = "ru" } = {}) {
 
   const captionCore =
     ctx._t(user, "loc.casino.caption_intro") + "\n\n" +
-    `${freeLine}\n${statusLine}${lastPrizeLine}`;
+    `${freeLine}\n${statusLine}`;
   const captionWithStats = statsLines ? `${captionCore}\n\n${statsLines}` : captionCore;
-  const captionWithLocks = paidLocked
-    ? `${captionWithStats}\n\n${ctx._t(user, "loc.casino.locked_more", { level: minStudy })}`
-    : captionWithStats;
-  const captionStatsBest = bestLine ? `${captionWithLocks}\n${bestLine}` : captionWithLocks;
+  const captionStatsBest = bestLine ? `${captionWithStats}\n${bestLine}` : captionWithStats;
   const finalCaption = `${captionStatsBest}\n\n${ctx.formatters.moneyLine(user)}`;
 
   await ctx.media.show({

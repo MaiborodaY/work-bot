@@ -82,10 +82,11 @@ test("study route idle: renders Study with auto policy", async () => {
   assert.equal(mediaCalls[0].policy, "auto");
 });
 
-test("casino route: prepends free spin button when daily free is available", async () => {
+test("casino route: prepends free spin button when arcana is unlocked", async () => {
   const { locations, mediaCalls } = createLocations();
   const u = baseUser();
   u.displayName = "Tester";
+  u.study.level = 5;
 
   await locations.show(u, null, Routes.CASINO);
 
@@ -93,6 +94,21 @@ test("casino route: prepends free spin button when daily free is available", asy
   assert.equal(mediaCalls[0].place, Routes.CASINO);
   assert.equal(mediaCalls[0].policy, "auto");
   assert.equal(mediaCalls[0]?.keyboard?.[0]?.[0]?.callback_data, "casino_free");
+});
+
+test("casino route: shows locked gate below required study level", async () => {
+  const { locations, mediaCalls } = createLocations();
+  const u = baseUser();
+  u.displayName = "Tester";
+  u.study.level = 4;
+
+  await locations.show(u, null, Routes.CASINO);
+
+  assert.equal(mediaCalls.length, 1);
+  assert.equal(mediaCalls[0].place, Routes.CASINO);
+  assert.equal(mediaCalls[0].policy, "auto");
+  assert.match(String(mediaCalls[0].caption || ""), /Arcana Hall unlocks at Study level 5/i);
+  assert.equal(mediaCalls[0]?.keyboard?.[0]?.[0]?.callback_data, "go:Bar");
 });
 
 test("bar tasks route: renders tasks screen", async () => {
