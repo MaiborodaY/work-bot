@@ -167,6 +167,7 @@ export class QuestService {
       stocksBuys: 0,
       stocksSells: 0,
       stocksHoldings3: 0,
+      stocksInvested: 0,
       stocksPortfolioMax: 0,
       thiefAttempts: 0,
       thiefSuccesses: 0
@@ -411,7 +412,10 @@ export class QuestService {
     const newbie = this._isNewbieQuestProfile(u);
 
     if (id === "work_earn") return newbie ? 300 : Math.max(1, toInt(cfg.DAILY_WORK_EARN_TARGET, 500));
-    if (id === "stocks_portfolio") return newbie ? 1000 : Math.max(1, toInt(cfg.DAILY_STOCKS_PORTFOLIO_TARGET, 5000));
+    if (id === "stocks_invest_daily") {
+      const cfgTarget = toInt(cfg.DAILY_STOCKS_INVEST_TARGET, toInt(cfg.DAILY_STOCKS_PORTFOLIO_TARGET, 5000));
+      return newbie ? 1000 : Math.max(1, cfgTarget);
+    }
     if (id === "w_work_earn") return newbie ? 5000 : Math.max(1, toInt(cfg.WEEKLY_WORK_EARN_TARGET, 20000));
     if (id === "w_stocks_invest") return newbie ? 5000 : Math.max(1, toInt(cfg.WEEKLY_STOCKS_INVEST_TARGET, 50000));
     if (id === "w_thief_total") return newbie ? 2000 : Math.max(1, toInt(cfg.WEEKLY_THIEF_TOTAL_TARGET, 10000));
@@ -551,10 +555,15 @@ export class QuestService {
 
   _normalizeQuestList(list, type) {
     if (!Array.isArray(list)) return [];
+    const remapId = (rawId) => {
+      const id = String(rawId || "");
+      if (id === "stocks_portfolio") return "stocks_invest_daily";
+      return id;
+    };
     return list
       .filter((q) => q && typeof q === "object" && String(q.id || ""))
       .map((q) => ({
-        id: String(q.id || ""),
+        id: remapId(q.id),
         type: String(q.type || type),
         category: String(q.category || "work"),
         difficulty: String(q.difficulty || "easy"),
@@ -603,8 +612,8 @@ export class QuestService {
           return Math.max(toInt(d.stocksHoldings3, 0), this._holdingsCount(u));
         case "stocks_sell":
           return toInt(d.stocksSells, 0);
-        case "stocks_portfolio":
-          return toInt(d.stocksPortfolioMax, 0);
+        case "stocks_invest_daily":
+          return toInt(d.stocksInvested, 0);
         case "thief_attempt":
           return toInt(d.thiefAttempts, 0);
         case "thief_success":
@@ -650,8 +659,7 @@ export class QuestService {
     for (const q of state.list) {
       if (!q || typeof q !== "object") continue;
       const progressRaw = this._progressByQuestId(u, scope, q.id);
-      const isPortfolioQuest = q.id === "stocks_portfolio";
-      const progress = isPortfolioQuest ? progressRaw : Math.min(Math.max(0, progressRaw), Math.max(1, q.target));
+      const progress = Math.min(Math.max(0, progressRaw), Math.max(1, q.target));
       if (progress !== q.progress) {
         q.progress = progress;
         changed = true;
@@ -769,9 +777,11 @@ export class QuestService {
         const holdingsCount = Math.max(0, toInt(ctx?.holdingsCount, this._holdingsCount(u)));
         d.stocksHoldings3 = Math.max(toInt(d.stocksHoldings3, 0), holdingsCount);
         w.stocksHoldings5 = Math.max(toInt(w.stocksHoldings5, 0), holdingsCount);
+        const buyCost = Math.max(0, toInt(ctx?.cost, 0));
+        d.stocksInvested += buyCost;
         const portfolioValue = Math.max(0, toInt(ctx?.portfolioValue, 0));
         if (portfolioValue > d.stocksPortfolioMax) d.stocksPortfolioMax = portfolioValue;
-        w.stocksInvested += Math.max(0, toInt(ctx?.cost, 0));
+        w.stocksInvested += buyCost;
         changed = true;
         break;
       }
@@ -860,7 +870,7 @@ export class QuestService {
         stocks_buy: "Купить акции любой компании",
         stocks_buy3: `Держать акции ${target} компаний одновременно`,
         stocks_sell: "Продать любые акции (любое количество)",
-        stocks_portfolio: `Держать портфель акций на сумму от $${target} в любой момент`,
+        stocks_invest_daily: `Купить акций суммарно на $${target} за сегодня`,
         thief_attempt: "Совершить 1 попытку воровства",
         thief_success: "Успешно украсть",
         w_work_10shifts: `Завершить ${target} смен за неделю`,
@@ -897,7 +907,7 @@ export class QuestService {
         stocks_buy: "Купити акції будь-якої компанії",
         stocks_buy3: `Тримати акції ${target} компаній одночасно`,
         stocks_sell: "Продати будь-які акції (будь-яку кількість)",
-        stocks_portfolio: `Тримати портфель акцій на суму від $${target} у будь-який момент`,
+        stocks_invest_daily: `Купити акцій сумарно на $${target} за сьогодні`,
         thief_attempt: "Здійснити 1 спробу крадіжки",
         thief_success: "Успішно вкрасти",
         w_work_10shifts: `Завершити ${target} змін за тиждень`,
@@ -934,7 +944,7 @@ export class QuestService {
         stocks_buy: "Buy shares of any company",
         stocks_buy3: `Hold shares of ${target} companies at once`,
         stocks_sell: "Sell any shares (any amount)",
-        stocks_portfolio: `Hold a stock portfolio worth at least $${target} at any moment`,
+        stocks_invest_daily: `Buy shares for total $${target} today`,
         thief_attempt: "Make 1 theft attempt",
         thief_success: "Steal successfully",
         w_work_10shifts: `Complete ${target} shifts this week`,

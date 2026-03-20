@@ -409,7 +409,7 @@ export const EN = {
   "loc.work.bonuses": "✨ Bonuses from study and upgrades:",
   "loc.study.ready_title": "📘 Study finished - you can level up",
   "loc.study.active_title": "📘 Study in progress (~{{mins}} min)",
-  "loc.study.caption_intro": "🎓 Study\n+1% shift speed per level.\nLevel 5 unlocks Arcana Hall.\nHigher level unlocks more expensive businesses.",
+  "loc.study.caption_intro": "🎓 Study\n+1% shift speed per level.\nHigher level unlocks more expensive businesses.",
   "loc.home.caption": "🏠 You're home. Restore energy with bed bonus.",
   "loc.home.hint": "Tap Rest to start resting or Stop to claim energy gained.",
   "loc.shop.caption": "🛒 You're in shop. What to buy?",

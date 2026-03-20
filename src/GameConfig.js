@@ -110,6 +110,7 @@ export const CONFIG = {
     CLAN_JOIN_GUIDE_REWARD_MONEY: 1000,
     DAILY_WORK_EARN_TARGET: 500,
     DAILY_STOCKS_PORTFOLIO_TARGET: 5000,
+    DAILY_STOCKS_INVEST_TARGET: 5000,
     WEEKLY_WORK_EARN_TARGET: 20000,
     WEEKLY_STOCKS_INVEST_TARGET: 50000,
     WEEKLY_THIEF_TOTAL_TARGET: 10000,
@@ -131,7 +132,7 @@ export const CONFIG = {
       { id: "stocks_buy", type: "daily", category: "stocks", difficulty: "easy", rewardMoney: 400, target: 1 },
       { id: "stocks_buy3", type: "daily", category: "stocks", difficulty: "hard", rewardMoney: 700, target: 1 },
       { id: "stocks_sell", type: "daily", category: "stocks", difficulty: "medium", rewardMoney: 500, target: 1 },
-      { id: "stocks_portfolio", type: "daily", category: "stocks", difficulty: "hard", rewardMoney: 600, target: 5000 },
+      { id: "stocks_invest_daily", type: "daily", category: "stocks", difficulty: "hard", rewardMoney: 600, target: 5000 },
       { id: "thief_attempt", type: "daily", category: "thief", difficulty: "medium", rewardMoney: 700, target: 1 },
       { id: "thief_success", type: "daily", category: "thief", difficulty: "hard", rewardMoney: 1200, target: 1 }
     ],
