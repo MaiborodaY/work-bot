@@ -195,6 +195,20 @@ export class ThiefService {
     return Math.max(1, Math.floor(Number(this._cfg()?.DAILY_ATTEMPTS_PER_TARGET) || 2));
   }
 
+  _revealCost() {
+    return Math.max(1, Math.floor(Number(this._cfg()?.REVEAL_COST) || 100));
+  }
+
+  _theftLogMax() {
+    return Math.max(1, Math.floor(Number(this._cfg()?.LOG_MAX) || 20));
+  }
+
+  _newRevealEventId() {
+    const a = Math.floor(this.now()).toString(36);
+    const b = Math.random().toString(36).slice(2, 8);
+    return `${a}${b}`;
+  }
+
   _dueBucketMs() {
     return Math.max(1000, Math.floor(Number(this._cfg()?.DUE_BUCKET_MS) || 60_000));
   }
@@ -407,6 +421,205 @@ export class ThiefService {
     const available = getBusinessStealableForNextClaim(found.entry, daily, this._ownerRemainPct());
     const pending = Math.max(0, Math.floor(Number(found.entry.pendingTheftAmount) || 0));
     return { available, daily, entry: found.entry, arr: found.arr, pending };
+  }
+
+  _appendTheftLog(owner, bizId, { thiefId, amount, ts, revealed = false, eventId = "" } = {}) {
+    const found = this._findOwnedEntry(owner, bizId);
+    if (found.idx < 0 || !found.entry) return "";
+    const eid = String(eventId || this._newRevealEventId()).trim();
+    const thief = String(thiefId || "").trim();
+    const biz = String(bizId || found.entry.id || "").trim();
+    const safeAmount = Math.max(0, Math.floor(Number(amount) || 0));
+    const safeTs = Math.max(0, Math.floor(Number(ts) || this.now()));
+    if (!eid || !thief || !biz || !safeAmount || !safeTs) return "";
+
+    const prev = Array.isArray(found.entry.theftLog) ? found.entry.theftLog : [];
+    const next = [];
+    for (const raw of prev) {
+      if (!raw || typeof raw !== "object") continue;
+      const rowEventId = String(raw.eventId || "").trim();
+      const rowThiefId = String(raw.thiefId || "").trim();
+      const rowAmount = Math.max(0, Math.floor(Number(raw.amount) || 0));
+      const rowTs = Math.max(0, Math.floor(Number(raw.ts) || 0));
+      const rowBizId = String(raw.bizId || biz).trim();
+      if (!rowEventId || !rowThiefId || !rowAmount || !rowTs || !rowBizId) continue;
+      next.push({
+        eventId: rowEventId,
+        thiefId: rowThiefId,
+        amount: rowAmount,
+        bizId: rowBizId,
+        ts: rowTs,
+        revealed: !!raw.revealed
+      });
+    }
+    next.push({ eventId: eid, thiefId: thief, amount: safeAmount, bizId: biz, ts: safeTs, revealed: !!revealed });
+    next.sort((a, b) => Number(b.ts || 0) - Number(a.ts || 0));
+    found.entry.theftLog = next.slice(0, this._theftLogMax());
+    found.arr[found.idx] = found.entry;
+    owner.biz = owner.biz || {};
+    owner.biz.owned = found.arr;
+    return eid;
+  }
+
+  _findTheftLog(owner, eventId) {
+    const id = String(eventId || "").trim();
+    if (!id) return null;
+    const arr = this._ownedArray(owner);
+    for (let i = 0; i < arr.length; i++) {
+      const raw = arr[i];
+      if (!raw || typeof raw !== "object") continue;
+      const entry = normalizeBusinessEntry(raw, String(raw.id || ""));
+      const log = Array.isArray(entry.theftLog) ? entry.theftLog : [];
+      for (let j = 0; j < log.length; j++) {
+        const row = log[j];
+        if (!row || typeof row !== "object") continue;
+        if (String(row.eventId || "").trim() !== id) continue;
+        return { arr, idx: i, entry, logIndex: j, row };
+      }
+    }
+    return null;
+  }
+
+  _buildRevealProfileView(owner, thief) {
+    const earned = thief?.achievements?.earned;
+    const achCount = Array.isArray(earned)
+      ? earned.length
+      : (earned && typeof earned === "object" ? Object.keys(earned).length : 0);
+    const owned = Array.isArray(thief?.biz?.owned) ? thief.biz.owned : [];
+    let bizCount = 0;
+    for (const b of owned) {
+      const id = String(typeof b === "string" ? b : b?.id || "").trim();
+      if (id) bizCount += 1;
+    }
+    const caption = this._t(owner, "thief.reveal.profile.caption", {
+      name: this._userName(thief, owner),
+      level: Math.max(0, Math.floor(Number(thief?.thief?.level) || 0)),
+      energy: Math.max(0, Math.floor(Number(thief?.energy) || 0)),
+      energyMax: Math.max(0, Math.floor(Number(thief?.energy_max) || 0)),
+      bizCount,
+      achCount: Math.max(0, Math.floor(Number(achCount) || 0))
+    });
+    return {
+      caption,
+      keyboard: [[{ text: this._t(owner, "thief.btn.back"), callback_data: "go:Business" }]]
+    };
+  }
+
+  async buildRevealEntryView(owner, eventId) {
+    const found = this._findTheftLog(owner, eventId);
+    if (!found) {
+      return {
+        caption: this._t(owner, "thief.reveal.err.stale"),
+        keyboard: [[{ text: this._t(owner, "thief.btn.back"), callback_data: "go:Business" }]]
+      };
+    }
+    if (found.row.revealed) {
+      const thief = await this.users.load(String(found.row.thiefId || "")).catch(() => null);
+      if (!thief) {
+        return {
+          caption: this._t(owner, "thief.reveal.err.thief_missing"),
+          keyboard: [[{ text: this._t(owner, "thief.btn.back"), callback_data: "go:Business" }]]
+        };
+      }
+      return this._buildRevealProfileView(owner, thief);
+    }
+    const bizTitle = this._bizTitle(found.row.bizId || found.entry?.id || "", owner);
+    const cost = this._money(owner, this._revealCost());
+    return {
+      caption: this._t(owner, "thief.reveal.confirm.caption", { cost, bizTitle }),
+      keyboard: [
+        [{ text: this._t(owner, "thief.btn.reveal_confirm"), callback_data: `thief:reveal:confirm:${found.row.eventId}` }],
+        [{ text: this._t(owner, "thief.btn.reveal_cancel"), callback_data: "go:Business" }]
+      ]
+    };
+  }
+
+  async confirmReveal(ownerId, eventId) {
+    const uid = String(ownerId || "").trim();
+    const eid = String(eventId || "").trim();
+    const cost = this._revealCost();
+    if (!uid || !eid) {
+      const fallbackOwner = { lang: "ru" };
+      return {
+        caption: this._t(fallbackOwner, "thief.reveal.err.stale"),
+        keyboard: [[{ text: this._t(fallbackOwner, "thief.btn.back"), callback_data: "go:Business" }]]
+      };
+    }
+
+    let outcome = { status: "stale", thief: null, owner: null, have: 0 };
+    await this.users.update(uid, async (owner) => {
+      outcome.owner = owner;
+      const found = this._findTheftLog(owner, eid);
+      if (!found) {
+        outcome.status = "stale";
+        return owner;
+      }
+
+      const thiefId = String(found.row.thiefId || "").trim();
+      if (found.row.revealed) {
+        outcome.status = "already";
+        if (thiefId) outcome.thief = await this.users.load(thiefId).catch(() => null);
+        return owner;
+      }
+
+      const thief = thiefId ? await this.users.load(thiefId).catch(() => null) : null;
+      if (!thief) {
+        outcome.status = "thief_missing";
+        return owner;
+      }
+
+      const have = Math.max(0, Math.floor(Number(owner?.money) || 0));
+      if (have < cost) {
+        outcome.status = "not_enough";
+        outcome.have = have;
+        return owner;
+      }
+
+      owner.money = have - cost;
+      found.row.revealed = true;
+      found.entry.theftLog[found.logIndex] = found.row;
+      found.arr[found.idx] = found.entry;
+      owner.biz = owner.biz || {};
+      owner.biz.owned = found.arr;
+      outcome.status = "paid";
+      outcome.thief = thief;
+      return owner;
+    });
+
+    const owner = outcome.owner || (await this.users.load(uid).catch(() => null));
+    const safeOwner = owner || { lang: "ru" };
+
+    if (outcome.status === "paid" || outcome.status === "already") {
+      if (!outcome.thief) {
+        return {
+          caption: this._t(safeOwner, "thief.reveal.err.thief_missing"),
+          keyboard: [[{ text: this._t(safeOwner, "thief.btn.back"), callback_data: "go:Business" }]]
+        };
+      }
+      return this._buildRevealProfileView(safeOwner, outcome.thief);
+    }
+
+    if (outcome.status === "not_enough") {
+      return {
+        caption: this._t(safeOwner, "thief.reveal.err.not_enough", {
+          cost: this._money(safeOwner, cost),
+          have: this._money(safeOwner, outcome.have)
+        }),
+        keyboard: [[{ text: this._t(safeOwner, "thief.btn.back"), callback_data: "go:Business" }]]
+      };
+    }
+
+    if (outcome.status === "thief_missing") {
+      return {
+        caption: this._t(safeOwner, "thief.reveal.err.thief_missing"),
+        keyboard: [[{ text: this._t(safeOwner, "thief.btn.back"), callback_data: "go:Business" }]]
+      };
+    }
+
+    return {
+      caption: this._t(safeOwner, "thief.reveal.err.stale"),
+      keyboard: [[{ text: this._t(safeOwner, "thief.btn.back"), callback_data: "go:Business" }]]
+    };
   }
 
   _rand(min, max) {
@@ -1117,6 +1330,7 @@ export class ThiefService {
     let success = false;
     let stolen = 0;
 
+    let revealEventId = "";
     if (owner && B) {
       const avail = this._availableForOwner(owner, bizId, todayUTC);
       const available = Math.max(0, Math.floor(Number(avail.available) || 0));
@@ -1134,6 +1348,12 @@ export class ThiefService {
             stolen = Math.max(0, applied);
             success = stolen > 0;
             if (success) {
+              revealEventId = this._appendTheftLog(owner, bizId, {
+                thiefId: String(attack.attackerId || ""),
+                amount: stolen,
+                ts: this.now(),
+                revealed: false
+              });
               await this.users.save(owner);
             }
           }
@@ -1203,12 +1423,15 @@ export class ThiefService {
 
     if (success) {
       if (owner?.chatId) {
-        const attackerName = attacker ? this._userName(attacker, owner) : this._t(owner, "thief.player_unknown");
         const bizTitle = this._bizTitle(bizId, owner);
+        const cost = this._money(owner, this._revealCost());
+        const revealKb = revealEventId
+          ? [[{ text: this._t(owner, "thief.btn.reveal", { cost }), callback_data: `thief:reveal:${revealEventId}` }]]
+          : [[{ text: this._t(owner, "thief.btn.business"), callback_data: "go:Business" }]];
         await this._sendInline(
           owner.chatId,
-          this._t(owner, "thief.notify.owner_robbed", { attackerName, bizTitle, amount: this._money(owner, stolen) }),
-          [[{ text: this._t(owner, "thief.btn.business"), callback_data: "go:Business" }]]
+          this._t(owner, "thief.notify.owner_robbed_unknown", { bizTitle, amount: this._money(owner, stolen) }),
+          revealKb
         );
       }
       if (attacker?.chatId) {

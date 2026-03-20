@@ -322,6 +322,26 @@ export class UserStore {
           dirty = true;
         }
 
+        if (!Array.isArray(entry.theftLog)) {
+          entry.theftLog = [];
+          dirty = true;
+        } else {
+          const normalizedTheftLog = [];
+          for (const raw of entry.theftLog) {
+            if (!raw || typeof raw !== "object") { dirty = true; continue; }
+            const eventId = String(raw.eventId || "").trim();
+            const thiefId = String(raw.thiefId || "").trim();
+            const amount = Math.max(0, Math.floor(Number(raw.amount) || 0));
+            const ts = Math.max(0, Math.floor(Number(raw.ts) || 0));
+            const bizId = String(raw.bizId || entry.id || "").trim();
+            const revealed = !!raw.revealed;
+            if (!eventId || !thiefId || !amount || !ts || !bizId) { dirty = true; continue; }
+            normalizedTheftLog.push({ eventId, thiefId, amount, bizId, ts, revealed });
+          }
+          if (normalizedTheftLog.length !== entry.theftLog.length) dirty = true;
+          entry.theftLog = normalizedTheftLog;
+        }
+
         if (entry.slot && typeof entry.slot === "object" && !Array.isArray(entry.slots)) {
           entry.slots = [entry.slot];
           delete entry.slot;

@@ -6,6 +6,8 @@ export const thiefHandler = {
     data === "thief:upgrade" ||
     data.startsWith("thief:targets:") ||
     data.startsWith("thief:attack:") ||
+    data.startsWith("thief:reveal:confirm:") ||
+    data.startsWith("thief:reveal:") ||
     data.startsWith("thief:defend:"),
 
   async handle(ctx) {
@@ -81,6 +83,23 @@ export const thiefHandler = {
       }
       await reloadSelf();
       const view = await thief.buildMainView(u);
+      await show(view);
+      return;
+    }
+
+    if (data.startsWith("thief:reveal:confirm:")) {
+      const eventId = String(data.split(":")[3] || "");
+      await answer(cb.id);
+      const view = await thief.confirmReveal(u.id, eventId);
+      await reloadSelf();
+      await show(view);
+      return;
+    }
+
+    if (data.startsWith("thief:reveal:")) {
+      const eventId = String(data.split(":")[2] || "");
+      await answer(cb.id);
+      const view = await thief.buildRevealEntryView(u, eventId);
       await show(view);
       return;
     }

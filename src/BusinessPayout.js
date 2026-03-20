@@ -23,6 +23,23 @@ export function normalizeBusinessEntry(entry, bizId = "") {
   out.guardBlocked = Number.isFinite(guardBlockedParsed)
     ? Math.max(0, Math.floor(guardBlockedParsed))
     : 0;
+  if (!Array.isArray(out.theftLog)) {
+    out.theftLog = [];
+  } else {
+    const normLog = [];
+    for (const raw of out.theftLog) {
+      if (!raw || typeof raw !== "object") continue;
+      const eventId = String(raw.eventId || "").trim();
+      const thiefId = String(raw.thiefId || "").trim();
+      const amount = Math.max(0, Math.floor(Number(raw.amount) || 0));
+      const ts = Math.max(0, Math.floor(Number(raw.ts) || 0));
+      const biz = String(raw.bizId || out.id || bizId || "").trim();
+      const revealed = !!raw.revealed;
+      if (!eventId || !thiefId || !amount || !ts || !biz) continue;
+      normLog.push({ eventId, thiefId, amount, bizId: biz, ts, revealed });
+    }
+    out.theftLog = normLog;
+  }
   // Legacy thief fields. Kept for safe migration from older data.
   if (typeof out.stolenDayUTC !== "string") out.stolenDayUTC = "";
   if (typeof out.stolenAmountToday !== "number" || !Number.isFinite(out.stolenAmountToday)) out.stolenAmountToday = 0;
