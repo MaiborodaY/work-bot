@@ -118,7 +118,7 @@ export const barHandler = {
         return;
       }
 
-      if (u.casino?.free?.day === todayDay) {
+      if (u?.subReward?.day === todayDay) {
         u.subReward = u.subReward || { day: "", eligible: false };
         u.subReward.day = todayDay;
         u.subReward.eligible = false;
@@ -129,7 +129,8 @@ export const barHandler = {
 
       u.subReward = u.subReward || { day: "", eligible: false };
       u.subReward.day = todayDay;
-      u.subReward.eligible = true;
+      u.subReward.eligible = false;
+      u.premium = Math.max(0, Math.floor(Number(u.premium) || 0)) + 1;
       if (quests?.onEvent) {
         await quests.onEvent(u, "sub_bonus_claim", {}, { persist: false, notify: true });
       }

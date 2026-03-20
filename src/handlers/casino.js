@@ -219,89 +219,17 @@ try {
 
     // ---------- БЕСПЛАТНАЯ ПОПЫТКА ----------
     if (data === "casino_free") {
-      const today = todayStr();
-
-      // уже использован сегодня → обычный ответ
-      if (u.casino.free.day === today) {
-        await answer(cb.id, "🌀 Бесплатная попытка уже использована. Доступна завтра.");
-        return;
-      }
-
-      // проверка права на сегодня: приходит из Бара
-      const eligibleToday = (u.subReward.day === today) && u.subReward.eligible === true;
-
-      if (!eligibleToday) {
-        // нет права → НЕ крутим, предлагаем идти в Бар
-        await tgSend("sendMessage", {
-          chat_id: chatId,
-          text: "Чтобы получить бесплатную попытку, зайдите в Бар и заберите ежедневную награду за подписку.",
-          parse_mode: "HTML",
-          reply_markup: {
-            inline_keyboard: [
-              [{ text: "🍻 В бар «Две Лисы»", callback_data: "go:Bar" }]
-            ]
-          }
-        });
-        await answer(cb.id, "");
-        return;
-      }
-
-      // есть право → помечаем использование и сразу сбрасываем право
-      u.casino.free.day = today;
-      u.subReward.eligible = false;
-      await users.save(u);
-
-      // >>> Прогресс квеста Бара по казино (по факту спина)
-      try {
-        if (stocks?.recordCasinoSpin) {
-          await stocks.recordCasinoSpin(1);
+      await answer(cb.id, "За подписку в Баре теперь начисляется +💎1 в день.");
+      await tgSend("sendMessage", {
+        chat_id: chatId,
+        text: "🎁 Бесплатная попытка в Зале арканы больше не выдается.\nТеперь за подписку в Баре: +💎1 в день.",
+        parse_mode: "HTML",
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: "🍻 В бар «Две Лисы»", callback_data: "go:Bar" }]
+          ]
         }
-      } catch {}
-
-      await answer(cb.id, "🌀 Бесплатная попытка!");
-
-      const bet = Number(CONFIG?.CASINO?.price_low ?? 5);
-      const { win } = await spinCore({
-        bet,
-        headerText: `🌀 Бесплатная попытка (попытка $${bet}, без списания)`
       });
-      
-      // рекорд за 1 спин — учитываем и бесплатные спины
-// --- рекорд за 1 спин (free тоже учитываем)
-const prevBest = Number(u.casino.bestSingleWin || 0);
-if (win > prevBest) {
-  u.casino.bestSingleWin = win;
-  try {
-    if (social?.maybeUpdateLuckyTop) {
-      await social.maybeUpdateLuckyTop({
-        userId: u.id,
-        displayName: u.displayName || String(u.id),
-        best: win
-      });
-    }
-  } catch {}
-}
-// статистика: бесплатный — ТОЛЬКО выигрыш
-const st = ensureStats(u);
-st.won  = Math.max(0, (st.won  || 0) + Math.max(0, win));
-st.wonW = Math.max(0, (st.wonW || 0) + Math.max(0, win));
-
-if (win > 0) u.money += win;
-u.casino.free.lastPrize = win;
-await users.save(u);
-try {
-  if (clans?.recordFortuneSpin) {
-    await clans.recordFortuneSpin(u, { bet: 0, win });
-  }
-} catch {}
-try {
-  if (quests?.onEvent) {
-    await quests.onEvent(u, "fortune_spin");
-  }
-} catch {}
-      
-
-      // остаёмся в потоковом меню
       return;
     }
 

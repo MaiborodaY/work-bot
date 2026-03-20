@@ -100,12 +100,10 @@ export class UiFactory {
     kb.push([{ text: this._t(l, "ui.bar.arcana"), callback_data: this._go(Routes.CASINO) }]);
   
     const today = new Date().toISOString().slice(0,10);
-    const freeUsed = (user?.casino?.free?.day === today);
     const subDay = user?.subReward?.day || "";
-    const eligible = !!(user?.subReward?.eligible);
-    const showSubBtn = !freeUsed && (subDay !== today || eligible === true);
+    const showSubBtn = subDay !== today;
     if (showSubBtn) {
-      kb.push([{ text: this._t(l, "ui.bar.free"), callback_data: "bar:sub" }]);
+      kb.push([{ text: this._t(l, "ui.bar.sub_reward"), callback_data: "bar:sub" }]);
     }
   
     kb.push([{ text: this._t(l, "ui.back.earn"), callback_data: this._go(Routes.EARN) }]);
