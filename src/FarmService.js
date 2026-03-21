@@ -49,6 +49,7 @@ export class FarmService {
         btnPlant: "🌱 Plant (plot {{num}})",
         btnHarvest: "🧺 Harvest & sell {{emoji}} {{name}} — ${{price}}",
         btnRefresh: "🔄 Refresh",
+        btnHelp: "ℹ️ How farm works",
         btnBackCity: "⬅️ Back",
         plantMenuTitle: "🟫 Plot {{num}} — empty\n\nWhat to plant?",
         plantOption: "{{emoji}} {{name}} — ${{seed}} · {{time}}",
@@ -65,6 +66,13 @@ export class FarmService {
         notifySingle: "🌱 {{emoji}} {{name}} on plot #{{num}} is ready — harvest now!",
         notifyMany: "🌱 {{count}} farm plots are ready — harvest now!",
         btnOpenFarm: "🌱 Open farm",
+        helpTitle: "ℹ️ How farm works",
+        helpIntro: "Buy seeds, wait for growth, then harvest and sell.",
+        helpPlots: "Plots: 1 free for everyone +1 per purchased business (max {{max}}).",
+        helpCropsHeader: "🌾 Crops:",
+        helpCropLine: "{{emoji}} {{name}}: seed ${{seed}}, grow {{time}}, sell ${{sell}} (profit +${{profit}})",
+        helpPush: "Push: you'll get a notification when crop is ready.",
+        helpRule: "Harvest does not disappear: it waits until you collect it.",
         timeMin: "min",
         timeHour: "h",
         timeDay: "d"
@@ -83,6 +91,7 @@ export class FarmService {
         btnPlant: "🌱 Посадити (грядка {{num}})",
         btnHarvest: "🧺 Зібрати й продати {{emoji}} {{name}} — ${{price}}",
         btnRefresh: "🔄 Оновити",
+        btnHelp: "ℹ️ Як працює ферма",
         btnBackCity: "⬅️ Назад",
         plantMenuTitle: "🟫 Грядка {{num}} — порожня\n\nЩо посадити?",
         plantOption: "{{emoji}} {{name}} — ${{seed}} · {{time}}",
@@ -99,6 +108,13 @@ export class FarmService {
         notifySingle: "🌱 {{emoji}} {{name}} на грядці №{{num}} дозріла — можна збирати!",
         notifyMany: "🌱 Готово {{count}} грядок — можна збирати врожай!",
         btnOpenFarm: "🌱 До ферми",
+        helpTitle: "ℹ️ Як працює ферма",
+        helpIntro: "Купуй насіння, дочекайся росту та збирай урожай для продажу.",
+        helpPlots: "Грядки: 1 безкоштовна для всіх +1 за кожен куплений бізнес (макс {{max}}).",
+        helpCropsHeader: "🌾 Культури:",
+        helpCropLine: "{{emoji}} {{name}}: насіння ${{seed}}, ріст {{time}}, продаж ${{sell}} (прибуток +${{profit}})",
+        helpPush: "Пуш: коли врожай дозріє, прийде повідомлення.",
+        helpRule: "Врожай не зникає — чекатиме, доки ти його не збереш.",
         timeMin: "хв",
         timeHour: "год",
         timeDay: "д"
@@ -116,6 +132,7 @@ export class FarmService {
       btnPlant: "🌱 Посадить (грядка {{num}})",
       btnHarvest: "🧺 Собрать и продать {{emoji}} {{name}} — ${{price}}",
       btnRefresh: "🔄 Обновить",
+      btnHelp: "ℹ️ Как работает ферма",
       btnBackCity: "⬅️ Назад",
       plantMenuTitle: "🟫 Грядка {{num}} — пустая\n\nЧто посадить?",
       plantOption: "{{emoji}} {{name}} — ${{seed}} · {{time}}",
@@ -132,6 +149,13 @@ export class FarmService {
       notifySingle: "🌱 {{emoji}} {{name}} на грядке №{{num}} выросла — можно собирать!",
       notifyMany: "🌱 Готово {{count}} грядок — можно собирать урожай!",
       btnOpenFarm: "🌱 Открыть ферму",
+      helpTitle: "ℹ️ Как работает ферма",
+      helpIntro: "Покупай семена, дождись роста и собирай урожай на продажу.",
+      helpPlots: "Грядки: 1 бесплатная для всех +1 за каждый купленный бизнес (макс {{max}}).",
+      helpCropsHeader: "🌾 Культуры:",
+      helpCropLine: "{{emoji}} {{name}}: семя ${{seed}}, рост {{time}}, продажа ${{sell}} (прибыль +${{profit}})",
+      helpPush: "Пуш: когда урожай созреет, придёт уведомление.",
+      helpRule: "Урожай не пропадает — ждёт, пока ты его соберёшь.",
       timeMin: "мин",
       timeHour: "ч",
       timeDay: "д"
@@ -339,6 +363,7 @@ export class FarmService {
     }
 
     kb.push([{ text: s.btnRefresh, callback_data: "farm:refresh" }]);
+    kb.push([{ text: s.btnHelp, callback_data: "farm:help" }]);
     kb.push([{ text: s.btnBackCity, callback_data: "go:City" }]);
 
     return {
@@ -381,6 +406,40 @@ export class FarmService {
     }
     kb.push([{ text: s.btnCancel, callback_data: "go:Farm" }]);
     return { caption, keyboard: kb };
+  }
+
+  async buildHelpView(u) {
+    this._normalizeModel(u);
+    const s = this._s(u);
+    const maxPlots = this._maxPlots();
+    const lines = [
+      s.helpTitle,
+      "",
+      s.helpIntro,
+      this._fmt(s.helpPlots, { max: maxPlots }),
+      "",
+      s.helpCropsHeader
+    ];
+    for (const cropId of this._cropIds()) {
+      const crop = this._cropInfo(u, cropId);
+      if (!crop) continue;
+      const time = this._durationLabel(u, crop.growMs);
+      const profit = Math.max(0, crop.sellPrice - crop.seedPrice);
+      lines.push(this._fmt(s.helpCropLine, {
+        emoji: crop.emoji,
+        name: crop.name,
+        seed: crop.seedPrice,
+        time,
+        sell: crop.sellPrice,
+        profit
+      }));
+    }
+    lines.push("", s.helpPush, s.helpRule);
+
+    return {
+      caption: lines.join("\n").trim(),
+      keyboard: [[{ text: s.btnBackCity, callback_data: "go:Farm" }]]
+    };
   }
 
   buildPlantResultView(u, data = {}) {
@@ -625,4 +684,3 @@ export class FarmService {
     return { processed, notified };
   }
 }
-

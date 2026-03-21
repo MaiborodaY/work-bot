@@ -133,3 +133,19 @@ test("farm: dailyTick sends push for ready unnotified plots", async () => {
   assert.equal(u.farm.plots[0].notifiedReady, true);
 });
 
+test("farm: main view contains help button and help view shows crop economics", async () => {
+  const nowTs = Date.UTC(2026, 2, 21, 18, 0, 0);
+  const db = new MockDb();
+  const users = { db, async save() {} };
+  const svc = new FarmService({ db, users, now: () => nowTs });
+  const u = makeUser();
+
+  const main = await svc.buildMainView(u);
+  const helpBtn = (main.keyboard || []).flat().find((x) => x.callback_data === "farm:help");
+  assert.ok(helpBtn);
+
+  const help = await svc.buildHelpView(u);
+  assert.match(help.caption, /Морковь/);
+  assert.match(help.caption, /\$200/);
+  assert.match(help.caption, /\$350/);
+});

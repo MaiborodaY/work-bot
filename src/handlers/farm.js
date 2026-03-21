@@ -3,6 +3,7 @@ import { normalizeLang, t } from "../i18n/index.js";
 export const farmHandler = {
   match: (data) =>
     data === "farm:refresh" ||
+    data === "farm:help" ||
     data.startsWith("farm:plant_menu:") ||
     data.startsWith("farm:plant:") ||
     data.startsWith("farm:harvest:"),
@@ -31,6 +32,13 @@ export const farmHandler = {
     if (data === "farm:refresh") {
       await answer(cb.id);
       await goTo(u, "Farm");
+      return;
+    }
+
+    if (data === "farm:help") {
+      await answer(cb.id);
+      const view = await farm.buildHelpView(u);
+      await show(view);
       return;
     }
 
