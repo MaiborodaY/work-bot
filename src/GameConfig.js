@@ -447,6 +447,7 @@ export const CONFIG = {
     MIN_EARNERS: 3,
     TOP_EARNERS_LIMIT: 10,
     TOP_BIZ_LIMIT: 3,
+    TOP_THIEF_LIMIT: 3,
     SNAPSHOT_TTL_SEC: 7 * 24 * 60 * 60
   },
 

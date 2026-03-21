@@ -60,6 +60,10 @@ export class ChannelService {
     return Math.max(1, toInt(this._cfg()?.TOP_BIZ_LIMIT, 3));
   }
 
+  _topThiefLimit() {
+    return Math.max(1, toInt(this._cfg()?.TOP_THIEF_LIMIT, 3));
+  }
+
   _scheduleDays() {
     const raw = Array.isArray(this._cfg()?.POST_DAYS_UTC) ? this._cfg().POST_DAYS_UTC : [1, 3, 5];
     const allowed = new Set([0, 1, 2, 3, 4, 5, 6]);
@@ -188,6 +192,16 @@ export class ChannelService {
         score: Math.max(0, toInt(row?.score, 0))
       }));
 
+    const topThievesRaw = this.ratings?.getTop ? await this.ratings.getTop("thief") : [];
+    const topThieves = (Array.isArray(topThievesRaw) ? topThievesRaw : [])
+      .slice(0, this._topThiefLimit())
+      .map((row, idx) => ({
+        place: idx + 1,
+        userId: String(row?.userId || "").trim(),
+        name: this._name(row?.name, row?.userId),
+        stolen: Math.max(0, toInt(row?.score, 0))
+      }));
+
     const bestThief = this.thief?.getDailyBestStolen
       ? await this.thief.getDailyBestStolen(day)
       : null;
@@ -200,6 +214,7 @@ export class ChannelService {
       date: day,
       topEarners,
       topBiz,
+      topThieves,
       bestThief: bestThiefAmount > 0 ? {
         userId: String(bestThief?.userId || "").trim(),
         name: this._name(bestThief?.name, bestThief?.userId),
@@ -229,6 +244,7 @@ export class ChannelService {
     const date = String(snapshot?.date || this._yesterday());
     const topEarners = Array.isArray(snapshot?.topEarners) ? snapshot.topEarners : [];
     const topBiz = Array.isArray(snapshot?.topBiz) ? snapshot.topBiz : [];
+    const topThieves = Array.isArray(snapshot?.topThieves) ? snapshot.topThieves : [];
     const bestThief = snapshot?.bestThief || null;
     const dateTs = Date.parse(`${date}T00:00:00Z`);
 
@@ -258,6 +274,17 @@ export class ChannelService {
         const name = this._escapeHtml(this._name(row?.name, row?.userId));
         const score = Math.max(0, toInt(row?.score, 0));
         lines.push(`${marker} ${name} — ${score} pts`);
+      }
+    }
+
+    if (topThieves.length) {
+      lines.push("");
+      lines.push("🌑 <b>Top thieves (all-time)</b>");
+      for (const row of topThieves) {
+        const marker = this._placePrefix(row?.place);
+        const name = this._escapeHtml(this._name(row?.name, row?.userId));
+        const stolen = this._formatMoney(row?.stolen);
+        lines.push(`${marker} ${name} — ${stolen} stolen`);
       }
     }
 
