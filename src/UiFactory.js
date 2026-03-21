@@ -52,6 +52,7 @@ export class UiFactory {
       [{ text: this._t(l, "ui.earn.work"), callback_data: this._go(Routes.WORK) }],
       [{ text: this._t(l, "ui.earn.bar"), callback_data: this._go(Routes.BAR) }],
       [{ text: this._t(l, "ui.earn.business"), callback_data: this._go(Routes.BUSINESS) }],
+      [{ text: this._t(l, "ui.earn.farm"), callback_data: this._go(Routes.FARM) }],
       [{ text: this._t(l, "ui.earn.labour"), callback_data: this._go(Routes.LABOUR) }],
       [{ text: this._t(l, "ui.earn.stocks"), callback_data: this._go(Routes.STOCKS) }],
       [{ text: this._t(l, "ui.back.city"), callback_data: this._go(Routes.SQUARE) }]
@@ -70,7 +71,6 @@ export class UiFactory {
     const l = this._lang(lang);
     return [
       [{ text: this._t(l, "ui.city.home"), callback_data: this._go(Routes.HOME) }],
-      [{ text: this._t(l, "ui.city.farm"), callback_data: this._go(Routes.FARM) }],
       [{ text: this._t(l, "ui.city.board"), callback_data: this._go(Routes.CITY_BOARD) }],
       [{ text: this._t(l, "ui.city.ratings"), callback_data: this._go(Routes.RATINGS) }],
       [{ text: this._t(l, "ui.city.clans"), callback_data: this._go(Routes.CLAN) }],

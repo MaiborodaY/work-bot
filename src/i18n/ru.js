@@ -22,6 +22,7 @@ export const RU = {
   "ui.earn.work": "🛠️ Работы",
   "ui.earn.bar": "🍻 Бар",
   "ui.earn.business": "🏢 Бизнес",
+  "ui.earn.farm": "🌱 Ферма",
   "ui.earn.labour": "👔 Наёмники",
   "ui.earn.stocks": "📈 Биржа",
 

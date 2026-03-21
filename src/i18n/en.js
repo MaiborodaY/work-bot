@@ -305,6 +305,7 @@ export const EN = {
   "ui.earn.work": "🛠️ Jobs",
   "ui.earn.bar": "🍻 Bar",
   "ui.earn.business": "🏢 Business",
+  "ui.earn.farm": "🌱 Farm",
   "ui.earn.labour": "👔 Hires",
   "ui.earn.stocks": "📈 Exchange",
   "ui.progress.study": "🎓 Study",

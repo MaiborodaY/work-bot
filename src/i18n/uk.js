@@ -305,6 +305,7 @@ export const UK = {
   "ui.earn.work": "🛠️ Роботи",
   "ui.earn.bar": "🍻 Бар",
   "ui.earn.business": "🏢 Бізнес",
+  "ui.earn.farm": "🌱 Ферма",
   "ui.earn.labour": "👔 Найманці",
   "ui.earn.stocks": "📈 Біржа",
   "ui.progress.study": "🎓 Навчання",
