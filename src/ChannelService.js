@@ -230,7 +230,13 @@ export class ChannelService {
     if (raw) {
       try {
         const parsed = JSON.parse(raw);
-        if (parsed && typeof parsed === "object") return parsed;
+        const valid =
+          parsed &&
+          typeof parsed === "object" &&
+          Array.isArray(parsed.topEarners) &&
+          Array.isArray(parsed.topBiz) &&
+          Array.isArray(parsed.topThieves);
+        if (valid) return parsed;
       } catch {
         // ignore broken snapshot and rebuild
       }
@@ -277,15 +283,17 @@ export class ChannelService {
       }
     }
 
+    lines.push("");
+    lines.push("🌑 <b>Top thieves (all-time)</b>");
     if (topThieves.length) {
-      lines.push("");
-      lines.push("🌑 <b>Top thieves (all-time)</b>");
       for (const row of topThieves) {
         const marker = this._placePrefix(row?.place);
         const name = this._escapeHtml(this._name(row?.name, row?.userId));
         const stolen = this._formatMoney(row?.stolen);
         lines.push(`${marker} ${name} — ${stolen} stolen`);
       }
+    } else {
+      lines.push("No thief records yet.");
     }
 
     if (bestThief && Math.max(0, toInt(bestThief?.stolen, 0)) > 0) {
@@ -302,7 +310,8 @@ export class ChannelService {
 
   async previewYesterday(adminChatId) {
     const day = this._yesterday();
-    const snapshot = await this._ensureSnapshot(day);
+    const snapshot = await this._buildSnapshot(day);
+    await this.db.put(this._snapshotKey(day), JSON.stringify(snapshot), { expirationTtl: this._snapshotTtlSec() });
     const text = this._buildText(snapshot);
     await this.bot.sendMessage(adminChatId, text, { reply_markup: undefined });
     return { ok: true, day, posted: false, reason: snapshot?.shouldPost ? "preview_ready" : "below_threshold" };
