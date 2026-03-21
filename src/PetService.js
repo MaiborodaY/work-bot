@@ -237,6 +237,10 @@ export class PetService {
     return Math.max(0, toInt(p[String(type || "")], 0));
   }
 
+  _feedCost() {
+    return Math.max(0, toInt(this._cfg().FEED_COST_MONEY, 0));
+  }
+
   _rewardGems(streak) {
     const tiers = Array.isArray(this._cfg().REWARD_TIERS) ? this._cfg().REWARD_TIERS : [];
     const n = Math.max(0, toInt(streak, 0));
@@ -692,6 +696,10 @@ export class PetService {
     if (String(p.lastFedDay || "") === today && String(p.status || "") === "healthy") {
       return { ok: false, error: s.errAlreadyFed };
     }
+    const feedCost = this._feedCost();
+    if (Math.max(0, toInt(u.money, 0)) < feedCost) {
+      return { ok: false, error: s.errNoMoney };
+    }
 
     const prevStreak = Math.max(0, toInt(p.streak, 0));
     const dayGap = diffDays(String(p.lastFedDay || ""), today);
@@ -700,6 +708,7 @@ export class PetService {
     p.lastFedDay = today;
     p.status = "healthy";
     p.sickSince = "";
+    u.money = Math.max(0, toInt(u.money, 0)) - feedCost;
 
     const gems = this._rewardGems(p.streak);
     u.premium = Math.max(0, toInt(u.premium, 0)) + gems;
@@ -724,7 +733,7 @@ export class PetService {
       await this.achievements.notifyEarned(u, aRes.newlyEarned).catch(() => {});
     }
 
-    return { ok: true, gems, streak: p.streak, name: p.name };
+    return { ok: true, gems, streak: p.streak, name: p.name, cost: feedCost };
   }
 
   async heal(u) {
@@ -826,6 +835,7 @@ export class PetService {
     const lang = this._lang(u);
     const priceCat = this._price("cat");
     const priceDog = this._price("dog");
+    const feedCost = this._feedCost();
     const healCost = Math.max(0, toInt(this._cfg().SICK_HEAL_GEMS, 3));
 
     let caption = "";
@@ -912,6 +922,13 @@ export class PetService {
       ].join("\n");
     }
 
+    const feedCostLine = lang === "en"
+      ? `🍖 Feed costs $${feedCost} per day.`
+      : (lang === "uk"
+        ? `🍖 Годування коштує $${feedCost} на день.`
+        : `🍖 Кормление стоит $${feedCost} в день.`);
+    caption += `\n\n${feedCostLine}`;
+
     return {
       caption,
       keyboard: [[{ text: lang === "en" ? "⬅️ Back" : "⬅️ Назад", callback_data: "go:Pet" }]]
@@ -949,6 +966,7 @@ export class PetService {
     const petAsset = this._petAsset(p.type) || undefined;
     const lines = [title, ""];
     const kb = [];
+    const feedBtnWithCost = `${s.feedBtn} — $${this._feedCost()}`;
 
     if (status === "dead") {
       const view = this.buildTypePickerView(u, { deadName: p.name });
@@ -971,7 +989,7 @@ export class PetService {
       const sickAfter = Math.max(2, toInt(this._cfg().SICK_AFTER_DAYS, 3));
       const left = Math.max(0, sickAfter - missed);
       lines.push(s.hungry, "", `${s.streak}: ${streak}`, this._fmt(s.hungryWarn, { days: left }));
-      kb.push([{ text: s.feedBtn, callback_data: "pet:feed" }]);
+      kb.push([{ text: feedBtnWithCost, callback_data: "pet:feed" }]);
       kb.push([{ text: this._helpBtn(u), callback_data: "pet:help" }]);
       kb.push(backRow);
       return { caption: lines.join("\n"), keyboard: kb, asset: petAsset };
@@ -987,7 +1005,7 @@ export class PetService {
       kb.push([{ text: this._helpBtn(u), callback_data: "pet:help" }]);
       kb.push(backRow);
     } else {
-      kb.push([{ text: s.feedBtn, callback_data: "pet:feed" }]);
+      kb.push([{ text: feedBtnWithCost, callback_data: "pet:feed" }]);
       kb.push([{ text: this._helpBtn(u), callback_data: "pet:help" }]);
       kb.push(backRow);
     }

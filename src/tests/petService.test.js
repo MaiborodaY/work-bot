@@ -118,6 +118,25 @@ test("pet: consecutive daily feeding keeps and increments streak", async () => {
   assert.equal(u.premium, 1);
 });
 
+test("pet: feeding fails when money is below feed cost", async () => {
+  const nowTs = Date.UTC(2026, 2, 13, 12, 0, 0);
+  const svc = makeService(nowTs);
+  const u = makeUser(nowTs);
+
+  u.pet.status = "hungry";
+  u.pet.streak = 2;
+  u.pet.lastFedDay = dayStr(nowTs - 2 * DAY_MS);
+  u.money = 99;
+  u.premium = 0;
+
+  const prevLastFed = u.pet.lastFedDay;
+  const res = await svc.feed(u);
+  assert.equal(res.ok, false);
+  assert.equal(u.money, 99);
+  assert.equal(u.premium, 0);
+  assert.equal(u.pet.lastFedDay, prevLastFed);
+});
+
 test("pet: draft confirmation is shown before type picker when name is set", async () => {
   const nowTs = Date.UTC(2026, 2, 13, 12, 0, 0);
   const svc = makeService(nowTs);

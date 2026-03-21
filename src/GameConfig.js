@@ -396,6 +396,7 @@ export const CONFIG = {
       cat: 150,
       dog: 150
     },
+    FEED_COST_MONEY: 100,
     ASSETS: {
       cat: "AgACAgIAAxkBAAJ1Umm0id_SiY8AATO8FwftUZEtaohRVQACqhhrG23doEnwpLyuEBT6wAEAAwIAA3kAAzoE",
       dog: "AgACAgIAAxkBAAJ1WWm0jLcN1EthAAGZmpecxE30v3YFCAACrhhrG23doElC83hXcht2IwEAAwIAA3kAAzoE"
