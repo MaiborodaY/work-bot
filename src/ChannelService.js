@@ -277,7 +277,7 @@ export class ChannelService {
     const day = this._yesterday();
     const snapshot = await this._ensureSnapshot(day);
     const text = this._buildText(snapshot);
-    await this.bot.sendMessage(adminChatId, text);
+    await this.bot.sendMessage(adminChatId, text, { reply_markup: undefined });
     return { ok: true, day, posted: false, reason: snapshot?.shouldPost ? "preview_ready" : "below_threshold" };
   }
 
@@ -296,7 +296,7 @@ export class ChannelService {
     }
 
     const text = this._buildText(snapshot);
-    await this.bot.sendMessage(channelId, text);
+    await this.bot.sendMessage(channelId, text, { reply_markup: undefined });
     await this.db.put(postedKey, String(this.now()), { expirationTtl: this._snapshotTtlSec() });
     return { ok: true, day, posted: true, forced: !!force };
   }
