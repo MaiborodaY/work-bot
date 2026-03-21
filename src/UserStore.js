@@ -175,11 +175,21 @@ export class UserStore {
 
     // Ферма
     if (!u.farm || typeof u.farm !== "object") {
-      u.farm = { plots: [] };
+      u.farm = { plotCount: 1, plots: [] };
       dirty = true;
     } else {
-      if (!Array.isArray(u.farm.plots)) { u.farm.plots = []; dirty = true; }
+      const hadPlotCount = typeof u.farm.plotCount === "number" && Number.isFinite(u.farm.plotCount);
+      if (!hadPlotCount) {
+        u.farm.plotCount = 1;
+        dirty = true;
+      }
       const maxPlots = Math.max(1, Number(CONFIG?.FARM?.MAX_PLOTS) || 6);
+      const normalizedPlotCount = Math.max(1, Math.min(maxPlots, Math.floor(Number(u.farm.plotCount) || 1)));
+      if (normalizedPlotCount !== u.farm.plotCount) {
+        u.farm.plotCount = normalizedPlotCount;
+        dirty = true;
+      }
+      if (!Array.isArray(u.farm.plots)) { u.farm.plots = []; dirty = true; }
       const normalizedPlots = [];
       for (let i = 0; i < Math.min(maxPlots, u.farm.plots.length); i += 1) {
         const rawPlot = u.farm.plots[i];
@@ -223,6 +233,13 @@ export class UserStore {
       }
       if (normalizedPlots.length !== u.farm.plots.length) dirty = true;
       u.farm.plots = normalizedPlots;
+      if (!hadPlotCount) {
+        const legacyOpenByPlots = Math.max(1, Math.min(maxPlots, normalizedPlots.length));
+        if (legacyOpenByPlots > u.farm.plotCount) {
+          u.farm.plotCount = legacyOpenByPlots;
+          dirty = true;
+        }
+      }
     }
 
     // Биржа
@@ -768,6 +785,7 @@ export class UserStore {
       premium: 20,
       pet: null,
       farm: {
+        plotCount: 1,
         plots: [
           { id: 1, status: "empty", cropId: "", plantedAt: 0, readyAt: 0, notifiedReady: false }
         ]

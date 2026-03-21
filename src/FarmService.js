@@ -39,14 +39,16 @@ export class FarmService {
     if (lang === "en") {
       return {
         title: "🌱 Uncle Zhenya's Farm",
-        plotsLine: "Plots: {{plots}} (businesses: {{biz}})",
+        plotsLine: "Plots opened: {{opened}}/{{max}}",
         cropCarrot: "Carrot",
         cropTomato: "Tomato",
         cropCorn: "Corn",
         plotReady: "{{emoji}} Plot {{num}} — ready!",
         plotGrowing: "⏳ Plot {{num}} — {{emoji}} {{name}}\nReady in {{left}}",
         plotEmpty: "🟫 Plot {{num}} — empty",
+        plotLocked: "🔒 Plot {{num}} — locked",
         btnPlant: "🌱 Plant (plot {{num}})",
+        btnBuyPlot: "💳 Buy plot {{num}} — ${{price}}",
         btnHarvest: "🧺 Harvest & sell {{emoji}} {{name}} — ${{price}}",
         btnRefresh: "🔄 Refresh",
         btnHelp: "ℹ️ How farm works",
@@ -56,8 +58,11 @@ export class FarmService {
         btnCancel: "⬅️ Cancel",
         plantOk: "🌱 {{emoji}} {{name}} planted on plot {{num}}.\nReady in {{time}}.",
         harvestOk: "{{emoji}} {{name}} harvested and sold!\n+${{money}}",
+        buyPlotOk: "💳 Plot {{num}} purchased for ${{price}}.",
         errNoMoney: "Not enough money.",
         errPlotBusy: "This plot is already occupied.",
+        errPlotOrder: "You can buy only the next plot in order.",
+        errPlotMax: "All plots are already purchased.",
         errPlotInvalid: "Plot not found.",
         errCropInvalid: "Crop not found.",
         errNotReady: "The crop is not ready yet.",
@@ -68,8 +73,10 @@ export class FarmService {
         btnOpenFarm: "🌱 Open farm",
         helpTitle: "ℹ️ How farm works",
         helpIntro: "Buy seeds, wait for growth, then harvest and sell.",
-        helpPlots: "Plots: 1 free for everyone +1 per purchased business (max {{max}}).",
+        helpPlots: "Plots: {{free}} free at start. Next plots are bought with money (max {{max}}).",
+        helpPlotPriceLine: "Plot {{num}} — ${{price}}",
         helpCropsHeader: "🌾 Crops:",
+        helpPlotsHeader: "🧱 Plot prices:",
         helpCropLine: "{{emoji}} {{name}}: seed ${{seed}}, grow {{time}}, sell ${{sell}} (profit +${{profit}})",
         helpPush: "Push: you'll get a notification when crop is ready.",
         helpRule: "Harvest does not disappear: it waits until you collect it.",
@@ -81,14 +88,16 @@ export class FarmService {
     if (lang === "uk") {
       return {
         title: "🌱 Ферма дядька Євгена",
-        plotsLine: "Грядок: {{plots}} (бізнесів: {{biz}})",
+        plotsLine: "Відкрито грядок: {{opened}}/{{max}}",
         cropCarrot: "Морква",
         cropTomato: "Помідор",
         cropCorn: "Кукурудза",
         plotReady: "{{emoji}} Грядка {{num}} — готово!",
         plotGrowing: "⏳ Грядка {{num}} — {{emoji}} {{name}}\nГотово через {{left}}",
         plotEmpty: "🟫 Грядка {{num}} — порожня",
+        plotLocked: "🔒 Грядка {{num}} — не куплена",
         btnPlant: "🌱 Посадити (грядка {{num}})",
+        btnBuyPlot: "💳 Купити грядку {{num}} — ${{price}}",
         btnHarvest: "🧺 Зібрати й продати {{emoji}} {{name}} — ${{price}}",
         btnRefresh: "🔄 Оновити",
         btnHelp: "ℹ️ Як працює ферма",
@@ -98,8 +107,11 @@ export class FarmService {
         btnCancel: "⬅️ Скасувати",
         plantOk: "🌱 {{emoji}} {{name}} посаджено на грядці {{num}}.\nБуде готово через {{time}}.",
         harvestOk: "{{emoji}} {{name}} зібрано і продано!\n+${{money}}",
+        buyPlotOk: "💳 Грядку {{num}} куплено за ${{price}}.",
         errNoMoney: "Недостатньо коштів.",
         errPlotBusy: "Ця грядка вже зайнята.",
+        errPlotOrder: "Можна купити тільки наступну грядку по порядку.",
+        errPlotMax: "Усі грядки вже куплені.",
         errPlotInvalid: "Грядку не знайдено.",
         errCropInvalid: "Культуру не знайдено.",
         errNotReady: "Урожай ще не готовий.",
@@ -110,8 +122,10 @@ export class FarmService {
         btnOpenFarm: "🌱 До ферми",
         helpTitle: "ℹ️ Як працює ферма",
         helpIntro: "Купуй насіння, дочекайся росту та збирай урожай для продажу.",
-        helpPlots: "Грядки: 1 безкоштовна для всіх +1 за кожен куплений бізнес (макс {{max}}).",
+        helpPlots: "Грядки: {{free}} безкоштовна на старті. Наступні купуються за гроші (макс {{max}}).",
+        helpPlotPriceLine: "Грядка {{num}} — ${{price}}",
         helpCropsHeader: "🌾 Культури:",
+        helpPlotsHeader: "🧱 Ціни грядок:",
         helpCropLine: "{{emoji}} {{name}}: насіння ${{seed}}, ріст {{time}}, продаж ${{sell}} (прибуток +${{profit}})",
         helpPush: "Пуш: коли врожай дозріє, прийде повідомлення.",
         helpRule: "Врожай не зникає — чекатиме, доки ти його не збереш.",
@@ -122,14 +136,16 @@ export class FarmService {
     }
     return {
       title: "🌱 Ферма дяди Жени",
-      plotsLine: "Грядок: {{plots}} (бизнесов: {{biz}})",
+      plotsLine: "Открыто грядок: {{opened}}/{{max}}",
       cropCarrot: "Морковь",
       cropTomato: "Помидор",
       cropCorn: "Кукуруза",
       plotReady: "{{emoji}} Грядка {{num}} — готово!",
       plotGrowing: "⏳ Грядка {{num}} — {{emoji}} {{name}}\nГотово через {{left}}",
       plotEmpty: "🟫 Грядка {{num}} — пустая",
+      plotLocked: "🔒 Грядка {{num}} — не куплена",
       btnPlant: "🌱 Посадить (грядка {{num}})",
+      btnBuyPlot: "💳 Купить грядку {{num}} — ${{price}}",
       btnHarvest: "🧺 Собрать и продать {{emoji}} {{name}} — ${{price}}",
       btnRefresh: "🔄 Обновить",
       btnHelp: "ℹ️ Как работает ферма",
@@ -139,8 +155,11 @@ export class FarmService {
       btnCancel: "⬅️ Отмена",
       plantOk: "🌱 {{emoji}} {{name}} посажена на грядке {{num}}.\nГотово через {{time}}.",
       harvestOk: "{{emoji}} {{name}} собрана и продана!\n+${{money}}",
+      buyPlotOk: "💳 Грядка {{num}} куплена за ${{price}}.",
       errNoMoney: "Недостаточно средств.",
       errPlotBusy: "Эта грядка уже занята.",
+      errPlotOrder: "Можно купить только следующую грядку по порядку.",
+      errPlotMax: "Все грядки уже куплены.",
       errPlotInvalid: "Грядка не найдена.",
       errCropInvalid: "Культура не найдена.",
       errNotReady: "Урожай еще не готов.",
@@ -151,8 +170,10 @@ export class FarmService {
       btnOpenFarm: "🌱 Открыть ферму",
       helpTitle: "ℹ️ Как работает ферма",
       helpIntro: "Покупай семена, дождись роста и собирай урожай на продажу.",
-      helpPlots: "Грядки: 1 бесплатная для всех +1 за каждый купленный бизнес (макс {{max}}).",
+      helpPlots: "Грядки: {{free}} бесплатная на старте. Следующие покупаются за деньги (макс {{max}}).",
+      helpPlotPriceLine: "Грядка {{num}} — ${{price}}",
       helpCropsHeader: "🌾 Культуры:",
+      helpPlotsHeader: "🧱 Цены грядок:",
       helpCropLine: "{{emoji}} {{name}}: семя ${{seed}}, рост {{time}}, продажа ${{sell}} (прибыль +${{profit}})",
       helpPush: "Пуш: когда урожай созреет, придёт уведомление.",
       helpRule: "Урожай не пропадает — ждёт, пока ты его соберёшь.",
@@ -166,27 +187,30 @@ export class FarmService {
     return String(text || "").replace(/\{\{(\w+)\}\}/g, (_, key) => String(vars[key] ?? ""));
   }
 
-  _ownedBusinessesCount(u) {
-    const arr = Array.isArray(u?.biz?.owned) ? u.biz.owned : [];
-    let count = 0;
-    for (const item of arr) {
-      const id = String(typeof item === "string" ? item : item?.id || "");
-      if (id && CONFIG?.BUSINESS?.[id]) count += 1;
-    }
-    return count;
-  }
-
-  _plotLimit(u) {
-    const base = Math.max(1, toInt(this._cfg().BASE_PLOTS, 1));
-    const perBiz = Math.max(0, toInt(this._cfg().PLOTS_PER_BUSINESS, 1));
-    const maxPlots = Math.max(base, toInt(this._cfg().MAX_PLOTS, 6));
-    const total = base + perBiz * this._ownedBusinessesCount(u);
-    return Math.max(base, Math.min(maxPlots, total));
+  _freePlots() {
+    return Math.max(1, toInt(this._cfg().FREE_PLOTS, 1));
   }
 
   _maxPlots() {
-    const base = Math.max(1, toInt(this._cfg().BASE_PLOTS, 1));
-    return Math.max(base, toInt(this._cfg().MAX_PLOTS, 6));
+    const free = this._freePlots();
+    return Math.max(free, toInt(this._cfg().MAX_PLOTS, 6));
+  }
+
+  _plotPriceByIndex(plotIndex) {
+    const idx = Math.max(1, Math.floor(Number(plotIndex) || 1));
+    if (idx <= this._freePlots()) return 0;
+    const prices = Array.isArray(this._cfg().PLOT_PRICES) ? this._cfg().PLOT_PRICES : [];
+    const arrIndex = idx - this._freePlots() - 1;
+    const direct = toInt(prices[arrIndex], 0);
+    if (direct > 0) return direct;
+    const fallback = [5000, 15000, 35000, 75000, 150000];
+    return toInt(fallback[Math.max(0, Math.min(fallback.length - 1, arrIndex))], 5000);
+  }
+
+  _plotLimit(u) {
+    const maxPlots = this._maxPlots();
+    const raw = toInt(u?.farm?.plotCount, this._freePlots());
+    return Math.max(this._freePlots(), Math.min(maxPlots, raw));
   }
 
   _defaultPlot(id) {
@@ -242,15 +266,33 @@ export class FarmService {
     if (!u || typeof u !== "object") return false;
     let dirty = false;
     if (!u.farm || typeof u.farm !== "object") {
-      u.farm = { plots: [] };
+      u.farm = { plots: [], plotCount: this._freePlots() };
       dirty = true;
     }
+    const hadPlotCount = Number.isFinite(Number(u?.farm?.plotCount));
     if (!Array.isArray(u.farm.plots)) {
       u.farm.plots = [];
       dirty = true;
     }
+    if (!hadPlotCount) {
+      u.farm.plotCount = this._freePlots();
+      dirty = true;
+    }
 
     const maxPlots = this._maxPlots();
+    if (!hadPlotCount) {
+      const legacyOpen = Math.max(this._freePlots(), Math.min(maxPlots, toInt(u.farm.plots.length, this._freePlots())));
+      const currentOpen = Math.max(this._freePlots(), Math.min(maxPlots, toInt(u.farm.plotCount, this._freePlots())));
+      if (legacyOpen > currentOpen) {
+        u.farm.plotCount = legacyOpen;
+        dirty = true;
+      }
+    }
+    const normalizedOpen = Math.max(this._freePlots(), Math.min(maxPlots, toInt(u.farm.plotCount, this._freePlots())));
+    if (normalizedOpen !== u.farm.plotCount) {
+      u.farm.plotCount = normalizedOpen;
+      dirty = true;
+    }
     for (let i = 0; i < maxPlots; i += 1) {
       if (!u.farm.plots[i] || typeof u.farm.plots[i] !== "object") {
         u.farm.plots[i] = this._defaultPlot(i + 1);
@@ -330,14 +372,24 @@ export class FarmService {
     this._normalizeModel(u);
     const s = this._s(u);
     const nowTs = this.now();
-    const bizCount = this._ownedBusinessesCount(u);
     const plotsCount = this._plotLimit(u);
+    const maxPlots = this._maxPlots();
     const plots = Array.isArray(u?.farm?.plots) ? u.farm.plots : [];
 
-    const lines = [s.title, "", this._fmt(s.plotsLine, { plots: plotsCount, biz: bizCount }), ""];
+    const lines = [s.title, "", this._fmt(s.plotsLine, { opened: plotsCount, max: maxPlots }), ""];
     const kb = [];
 
-    for (let i = 1; i <= plotsCount; i += 1) {
+    for (let i = 1; i <= maxPlots; i += 1) {
+      if (i > plotsCount) {
+        lines.push(this._fmt(s.plotLocked, { num: i }), "");
+        if (i === plotsCount + 1) {
+          kb.push([{
+            text: this._fmt(s.btnBuyPlot, { num: i, price: this._plotPriceByIndex(i) }),
+            callback_data: `farm:buy_plot:${i}`
+          }]);
+        }
+        continue;
+      }
       const p = plots[i - 1] || this._defaultPlot(i);
       if (String(p.status || "") === "growing") {
         const crop = this._cropInfo(u, p.cropId);
@@ -364,7 +416,7 @@ export class FarmService {
 
     kb.push([{ text: s.btnRefresh, callback_data: "farm:refresh" }]);
     kb.push([{ text: s.btnHelp, callback_data: "farm:help" }]);
-    kb.push([{ text: s.btnBackCity, callback_data: "go:City" }]);
+    kb.push([{ text: s.btnBackCity, callback_data: "go:Earn" }]);
 
     return {
       caption: lines.join("\n").trim(),
@@ -412,14 +464,22 @@ export class FarmService {
     this._normalizeModel(u);
     const s = this._s(u);
     const maxPlots = this._maxPlots();
+    const freePlots = this._freePlots();
     const lines = [
       s.helpTitle,
       "",
       s.helpIntro,
-      this._fmt(s.helpPlots, { max: maxPlots }),
+      this._fmt(s.helpPlots, { free: freePlots, max: maxPlots }),
+      "",
+      s.helpPlotsHeader,
+    ];
+    for (let i = freePlots + 1; i <= maxPlots; i += 1) {
+      lines.push(this._fmt(s.helpPlotPriceLine, { num: i, price: this._plotPriceByIndex(i) }));
+    }
+    lines.push(
       "",
       s.helpCropsHeader
-    ];
+    );
     for (const cropId of this._cropIds()) {
       const crop = this._cropInfo(u, cropId);
       if (!crop) continue;
@@ -440,6 +500,26 @@ export class FarmService {
       caption: lines.join("\n").trim(),
       keyboard: [[{ text: s.btnBackCity, callback_data: "go:Farm" }]]
     };
+  }
+
+  async buyPlot(u, plotIndex) {
+    this._normalizeModel(u);
+    const s = this._s(u);
+    const maxPlots = this._maxPlots();
+    const open = this._plotLimit(u);
+    const idx = Math.max(1, Math.floor(Number(plotIndex) || 0));
+    if (idx < 1 || idx > maxPlots) return { ok: false, error: s.errPlotInvalid };
+    if (open >= maxPlots) return { ok: false, error: s.errPlotMax };
+    if (idx !== open + 1) return { ok: false, error: s.errPlotOrder };
+    const price = this._plotPriceByIndex(idx);
+    const money = toInt(u?.money, 0);
+    if (money < price) return { ok: false, error: s.errNoMoney };
+
+    u.money = money - price;
+    u.farm.plotCount = idx;
+    markUsefulActivity(u, this.now());
+    await this.users.save(u);
+    return { ok: true, plotIndex: idx, price };
   }
 
   buildPlantResultView(u, data = {}) {
@@ -471,6 +551,17 @@ export class FarmService {
       : s.toastOk;
     return {
       caption,
+      keyboard: [[{ text: s.btnBackCity, callback_data: "go:Farm" }]]
+    };
+  }
+
+  buildBuyPlotResultView(u, data = {}) {
+    const s = this._s(u);
+    return {
+      caption: this._fmt(s.buyPlotOk, {
+        num: toInt(data.plotIndex, 1),
+        price: toInt(data.price, 0)
+      }),
       keyboard: [[{ text: s.btnBackCity, callback_data: "go:Farm" }]]
     };
   }

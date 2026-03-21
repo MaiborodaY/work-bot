@@ -4,6 +4,7 @@ export const farmHandler = {
   match: (data) =>
     data === "farm:refresh" ||
     data === "farm:help" ||
+    data.startsWith("farm:buy_plot:") ||
     data.startsWith("farm:plant_menu:") ||
     data.startsWith("farm:plant:") ||
     data.startsWith("farm:harvest:"),
@@ -38,6 +39,20 @@ export const farmHandler = {
     if (data === "farm:help") {
       await answer(cb.id);
       const view = await farm.buildHelpView(u);
+      await show(view);
+      return;
+    }
+
+    if (data.startsWith("farm:buy_plot:")) {
+      await answer(cb.id);
+      const plotIndex = Number(data.split(":")[2] || 0);
+      const res = await farm.buyPlot(u, plotIndex);
+      if (!res.ok) {
+        await answer(cb.id, res.error || tt("handler.common.unknown_command"));
+        await goTo(u, "Farm");
+        return;
+      }
+      const view = farm.buildBuyPlotResultView(u, res);
       await show(view);
       return;
     }

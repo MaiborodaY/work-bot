@@ -27,7 +27,7 @@ function makeUser() {
     lang: "ru",
     money: 10_000,
     biz: { owned: [] },
-    farm: { plots: [{ id: 1, status: "empty", cropId: "", plantedAt: 0, readyAt: 0, notifiedReady: false }] }
+    farm: { plotCount: 1, plots: [{ id: 1, status: "empty", cropId: "", plantedAt: 0, readyAt: 0, notifiedReady: false }] }
   };
 }
 
@@ -148,4 +148,22 @@ test("farm: main view contains help button and help view shows crop economics", 
   assert.match(help.caption, /Морковь/);
   assert.match(help.caption, /\$200/);
   assert.match(help.caption, /\$350/);
+});
+
+test("farm: buy next plot deducts money and unlocks new plot", async () => {
+  const nowTs = Date.UTC(2026, 2, 21, 18, 0, 0);
+  const db = new MockDb();
+  const users = { db, async save() {} };
+  const svc = new FarmService({ db, users, now: () => nowTs });
+  const u = makeUser();
+  u.money = 10_000;
+
+  const res = await svc.buyPlot(u, 2);
+  assert.equal(res.ok, true);
+  assert.equal(u.money, 5_000);
+  assert.equal(u.farm.plotCount, 2);
+
+  const main = await svc.buildMainView(u);
+  const buyNext = (main.keyboard || []).flat().find((x) => x.callback_data === "farm:buy_plot:3");
+  assert.ok(buyNext);
 });

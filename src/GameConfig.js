@@ -424,9 +424,9 @@ export const CONFIG = {
   },
 
   FARM: {
-    BASE_PLOTS: 1,
-    PLOTS_PER_BUSINESS: 1,
+    FREE_PLOTS: 1,
     MAX_PLOTS: 6,
+    PLOT_PRICES: [5000, 15000, 35000, 75000, 150000],
     CROPS: {
       carrot: { emoji: "🥕", seedPrice: 200, growMs: 30 * 60_000, sellPrice: 350 },
       tomato: { emoji: "🍅", seedPrice: 600, growMs: 60 * 60_000, sellPrice: 900 },

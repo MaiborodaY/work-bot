@@ -187,8 +187,8 @@ export class Locations {
           return null;
         },
         fallbackCaptionKey: "loc.farm.unavailable",
-        fallbackBackTextKey: "ui.back.default",
-        fallbackBackCb: toGoCallback(Routes.CITY)
+        fallbackBackTextKey: "ui.back.earn",
+        fallbackBackCb: toGoCallback(Routes.EARN)
       }),
       [Routes.PET]: async () => this._renderServiceRoute({
         user,
