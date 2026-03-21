@@ -848,6 +848,11 @@ export class QuestService {
   _questTitle(source, id, target) {
     const lang = this._lang(source);
     const l = lang === "en" ? "en" : (lang === "uk" ? "uk" : "ru");
+    if (id === "fortune_spin") {
+      if (l === "en") return "Test yourself in Arcana Hall";
+      if (l === "uk") return "Спробуй себе в Залі аркани";
+      return "Испытай себя в Зале арканы";
+    }
     const map = {
       ru: {
         work_1shift: "Завершить 1 смену",
