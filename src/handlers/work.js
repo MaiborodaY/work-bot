@@ -5,6 +5,8 @@ import { CONFIG } from "../GameConfig.js";
 import { normalizeLang, t } from "../i18n/index.js";
 import { getJobTitle } from "../I18nCatalog.js";
 import { safeCall } from "../SafeCall.js";
+import { Routes } from "../Routes.js";
+import { showEnergyChoicePanel } from "./energy.js";
 
 export async function applyWorkClaimSideEffects(ctx, pay, endAt) {
   const { clans, labour, referrals, u, logger } = ctx || {};
@@ -77,12 +79,12 @@ export const workHandler = {
 
     if (data.startsWith("work:start:")) {
       const typeId = data.split(":")[2];
+      const jobType = (CONFIG && CONFIG.JOBS) ? CONFIG.JOBS[typeId] : null;
+      const hasCoffee = Array.isArray(u?.upgrades) && u.upgrades.includes("coffee");
+      const requiredEnergy = jobType ? (hasCoffee ? Math.ceil(jobType.energy * 0.95) : jobType.energy) : 0;
 
       // Если максимальной энергии не хватает для выбранной работы — сразу ведём в зал
       const redirectedToGym = await safeCall("work.start.energy_cap_gate", async () => {
-        const jobType = (CONFIG && CONFIG.JOBS) ? CONFIG.JOBS[typeId] : null;
-        const hasCoffee = Array.isArray(u?.upgrades) && u.upgrades.includes("coffee");
-        const requiredEnergy = jobType ? (hasCoffee ? Math.ceil(jobType.energy * 0.95) : jobType.energy) : null;
         const energyCap = typeof u?.energy_max === "number" ? u.energy_max : (CONFIG?.ENERGY_MAX ?? 100);
         if (requiredEnergy == null || energyCap >= requiredEnergy) return false;
 
@@ -99,14 +101,13 @@ export const workHandler = {
 
       const res = await jobs.start(u, typeId);
       if (!res.ok) {
-        const lowEnergy = /энерг|energy/i.test(String(res.error || ""));
+        const lowEnergy = res.code === "not_enough_energy" || /energy/i.test(String(res.error || ""));
         if (lowEnergy) {
-          u.nav = typeof u.nav === "object" && u.nav ? u.nav : {};
-          u.nav.backTo = "Work";
-          await users.save(u);
-
-          await answer(cb.id, tt("handler.work.low_energy_to_shop"));
-          await ctx.goTo(u, "Shop", tt("handler.common.shop_energy_intro"));
+          await answer(cb.id);
+          await showEnergyChoicePanel(ctx, {
+            origin: Routes.WORK,
+            need: Math.max(0, Number(res?.needEnergy) || Number(requiredEnergy) || 0)
+          });
           return;
         }
         await answer(cb.id, res.error || tt("handler.work.start_failed"));

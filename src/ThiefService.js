@@ -1145,6 +1145,9 @@ export class ThiefService {
     if (Math.max(0, Number(attacker?.energy) || 0) < requiredEnergy) {
       return {
         ok: false,
+        code: "not_enough_energy",
+        needEnergy: Math.max(0, Number(requiredEnergy) || 0),
+        haveEnergy: Math.max(0, Number(attacker?.energy) || 0),
         error: this._t(attacker, "thief.err.not_enough_energy", { need: requiredEnergy })
       };
     }
@@ -1256,7 +1259,13 @@ export class ThiefService {
 
     const defendEnergy = Math.max(1, Math.floor(Number(attack.defendEnergy) || this._defendEnergy(attack.bizId)));
     if (Math.max(0, Number(owner?.energy) || 0) < defendEnergy) {
-      return { ok: false, error: this._t(owner, "thief.err.not_enough_energy_defend", { need: defendEnergy }) };
+      return {
+        ok: false,
+        code: "not_enough_energy_defend",
+        needEnergy: Math.max(0, Number(defendEnergy) || 0),
+        haveEnergy: Math.max(0, Number(owner?.energy) || 0),
+        error: this._t(owner, "thief.err.not_enough_energy_defend", { need: defendEnergy })
+      };
     }
 
     owner.energy = Math.max(0, Math.floor(Number(owner.energy) || 0) - defendEnergy);

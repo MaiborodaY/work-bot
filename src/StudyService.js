@@ -37,7 +37,15 @@ export class StudyService {
     const { timeMs, costMoney, costEnergy } = this._paramsForLevel(level);
 
     if ((u.money || 0) < costMoney)  return { ok: false, error: "Недостаточно денег." };
-    if ((u.energy || 0) < costEnergy) return { ok: false, error: "Недостаточно энергии." };
+    if ((u.energy || 0) < costEnergy) {
+      return {
+        ok: false,
+        code: "not_enough_energy",
+        needEnergy: Math.max(0, Number(costEnergy) || 0),
+        haveEnergy: Math.max(0, Number(u.energy) || 0),
+        error: "Недостаточно энергии."
+      };
+    }
 
     u.money  = (u.money  || 0) - costMoney;
     HomeService.applyEnergy(u, -costEnergy, { autoStopRest: true });

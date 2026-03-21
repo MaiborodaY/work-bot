@@ -49,6 +49,7 @@ import { ratingsHandler } from "./handlers/ratings.js";
 import { petHandler } from "./handlers/pet.js";
 import { quizHandler } from "./handlers/quiz.js";
 import { generalQuizHandler } from "./handlers/generalQuiz.js";
+import { energyHandler } from "./handlers/energy.js";
 
 // платежи Stars
 import { OrdersStore as StarsOrdersStore } from "./payments/OrdersStore.js";
@@ -1225,6 +1226,7 @@ export default {
       // Minimal set during onboarding: navigation + work only
       const FULL_HANDLERS = [
         navigationHandler,
+        energyHandler,
         clanHandler,
         thiefHandler,
         ratingsHandler,
@@ -1249,7 +1251,7 @@ export default {
         upgradesHandler
       ];
 
-      const baseHandlers = [navigationHandler, workHandler];
+      const baseHandlers = [navigationHandler, energyHandler, workHandler];
 
       let handlers;
       if (u?.flags?.onboarding) {

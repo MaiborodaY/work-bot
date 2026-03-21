@@ -2,6 +2,8 @@ import { GymService } from "../GymService.js";
 import { FastForwardService } from "../FastForwardService.js";
 import { normalizeLang, t } from "../i18n/index.js";
 import { markFunnelStep } from "../PlayerStats.js";
+import { Routes } from "../Routes.js";
+import { showEnergyChoicePanel } from "./energy.js";
 
 export const gymHandler = {
   match: (data) =>
@@ -49,14 +51,13 @@ export const gymHandler = {
 
       const res = await gym.start(u);
       if (!res.ok) {
-        const lowEnergy = /энерг|energy/i.test(String(res.error || ""));
+        const lowEnergy = res.code === "not_enough_energy" || /energy/i.test(String(res.error || ""));
         if (lowEnergy) {
-          u.nav = typeof u.nav === "object" && u.nav ? u.nav : {};
-          u.nav.backTo = "Gym";
-          await users.save(u);
-
-          await answer(cb.id, tt("handler.gym.low_energy_to_shop"));
-          await ctx.goTo(u, "Shop", tt("handler.common.shop_energy_intro"));
+          await answer(cb.id);
+          await showEnergyChoicePanel(ctx, {
+            origin: Routes.GYM,
+            need: Math.max(0, Number(res?.needEnergy) || Number(GymService.computeForUser(u)?.costEnergy) || 0)
+          });
           return;
         }
 

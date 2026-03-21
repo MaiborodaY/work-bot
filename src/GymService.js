@@ -66,7 +66,15 @@ export class GymService {
     const { timeMs, costMoney, costEnergy, level } = GymService.computeForUser(u);
 
     if ((u.money || 0) < costMoney)  return { ok: false, error: "Недостаточно денег." };
-    if ((u.energy || 0) < costEnergy) return { ok: false, error: "Недостаточно энергии." };
+    if ((u.energy || 0) < costEnergy) {
+      return {
+        ok: false,
+        code: "not_enough_energy",
+        needEnergy: Math.max(0, Number(costEnergy) || 0),
+        haveEnergy: Math.max(0, Number(u.energy) || 0),
+        error: "Недостаточно энергии."
+      };
+    }
 
     // списания
     u.money  = (u.money  || 0) - costMoney;

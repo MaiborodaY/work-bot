@@ -54,7 +54,15 @@ export class JobService {
     const startAt = this.now();
     let endAt = startAt + mod.duration;
 
-    if ((u.energy || 0) < mod.energy) return { ok: false, error: "Недостаточно энергии." };
+    if ((u.energy || 0) < mod.energy) {
+      return {
+        ok: false,
+        code: "not_enough_energy",
+        needEnergy: Math.max(0, Number(mod.energy) || 0),
+        haveEnergy: Math.max(0, Number(u.energy) || 0),
+        error: "Недостаточно энергии."
+      };
+    }
 
     // списываем энергию через HomeService (на случай, если игрок отдыхает)
     HomeService.applyEnergy(u, -mod.energy, { autoStopRest: true });

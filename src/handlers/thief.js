@@ -1,4 +1,6 @@
 import { normalizeLang, t } from "../i18n/index.js";
+import { Routes } from "../Routes.js";
+import { showEnergyChoicePanel } from "./energy.js";
 
 export const thiefHandler = {
   match: (data) =>
@@ -73,6 +75,14 @@ export const thiefHandler = {
       const ownerId = String(parts[3] || "");
       const res = await thief.startAttack(u, bizId, ownerId);
       if (!res.ok) {
+        if (res.code === "not_enough_energy") {
+          await answer(cb.id);
+          await showEnergyChoicePanel(ctx, {
+            origin: Routes.THIEF,
+            need: Math.max(0, Number(res?.needEnergy) || 0)
+          });
+          return;
+        }
         await answer(cb.id, res.error || tt("handler.thief.attack_failed"));
         await reloadSelf();
         const view = await thief.buildTargetsView(u, bizId);
@@ -108,6 +118,14 @@ export const thiefHandler = {
       const attackId = String(data.split(":")[2] || "");
       const res = await thief.defend(u, attackId);
       if (!res.ok) {
+        if (res.code === "not_enough_energy_defend") {
+          await answer(cb.id);
+          await showEnergyChoicePanel(ctx, {
+            origin: Routes.BUSINESS,
+            need: Math.max(0, Number(res?.needEnergy) || 0)
+          });
+          return;
+        }
         await answer(cb.id, res.error || tt("handler.thief.defend_failed"));
         await reloadSelf();
         await goTo(u, "Business");

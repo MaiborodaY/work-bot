@@ -2,6 +2,8 @@ import { StudyService } from "../StudyService.js";
 import { FastForwardService } from "../FastForwardService.js";
 import { CONFIG } from "../GameConfig.js";
 import { normalizeLang, t } from "../i18n/index.js";
+import { Routes } from "../Routes.js";
+import { showEnergyChoicePanel } from "./energy.js";
 
 export const studyHandler = {
   match: (data) => data === "study:start" || data === "study:skip" || data === "study:finish",
@@ -68,17 +70,17 @@ export const studyHandler = {
 
     // Старт
 // Пытаемся запустить обучение
+const studyLevel = Math.max(0, Number(u?.study?.level) || 0);
+const studyNeedEnergy = Math.max(0, Number(study?._paramsForLevel?.(studyLevel)?.costEnergy) || 0);
 const res = await study.start(u);
 if (!res.ok) {
-  const lowEnergy = String(res.error || "").toLowerCase().includes("энерг");
+  const lowEnergy = res.code === "not_enough_energy" || /energy/i.test(String(res.error || ""));
   if (lowEnergy) {
-    // записываем «куда вернуться» в БД
-    u.nav = typeof u.nav === "object" && u.nav ? u.nav : {};
-    u.nav.backTo = "Study";
-    await users.save(u);
-
-    await answer(cb.id, tt("handler.study.low_energy_to_shop"));
-    await goTo(u, "Shop", tt("handler.common.shop_energy_intro"));
+    await answer(cb.id);
+    await showEnergyChoicePanel(ctx, {
+      origin: Routes.STUDY,
+      need: Math.max(0, Number(res?.needEnergy) || studyNeedEnergy)
+    });
     return;
   }
 
