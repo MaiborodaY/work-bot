@@ -266,7 +266,11 @@ export class FarmService {
     if (!u || typeof u !== "object") return false;
     let dirty = false;
     if (!u.farm || typeof u.farm !== "object") {
-      u.farm = { plots: [], plotCount: this._freePlots() };
+      u.farm = { plotMode: "purchase_v1", plots: [], plotCount: this._freePlots() };
+      dirty = true;
+    }
+    if (typeof u.farm.plotMode !== "string" || !u.farm.plotMode) {
+      u.farm.plotMode = "purchase_v1";
       dirty = true;
     }
     const hadPlotCount = Number.isFinite(Number(u?.farm?.plotCount));
@@ -280,14 +284,6 @@ export class FarmService {
     }
 
     const maxPlots = this._maxPlots();
-    if (!hadPlotCount) {
-      const legacyOpen = Math.max(this._freePlots(), Math.min(maxPlots, toInt(u.farm.plots.length, this._freePlots())));
-      const currentOpen = Math.max(this._freePlots(), Math.min(maxPlots, toInt(u.farm.plotCount, this._freePlots())));
-      if (legacyOpen > currentOpen) {
-        u.farm.plotCount = legacyOpen;
-        dirty = true;
-      }
-    }
     const normalizedOpen = Math.max(this._freePlots(), Math.min(maxPlots, toInt(u.farm.plotCount, this._freePlots())));
     if (normalizedOpen !== u.farm.plotCount) {
       u.farm.plotCount = normalizedOpen;
@@ -516,6 +512,7 @@ export class FarmService {
     if (money < price) return { ok: false, error: s.errNoMoney };
 
     u.money = money - price;
+    u.farm.plotMode = "purchase_v1";
     u.farm.plotCount = idx;
     markUsefulActivity(u, this.now());
     await this.users.save(u);

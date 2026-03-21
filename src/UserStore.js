@@ -175,9 +175,16 @@ export class UserStore {
 
     // Ферма
     if (!u.farm || typeof u.farm !== "object") {
-      u.farm = { plotCount: 1, plots: [] };
+      u.farm = { plotMode: "purchase_v1", plotCount: 1, plots: [] };
       dirty = true;
     } else {
+      if (typeof u.farm.plotMode !== "string" || !u.farm.plotMode) {
+        // One-time migration to purchased-plots mode:
+        // old farm used business-based unlocked plots, so reset to 1 free plot.
+        u.farm.plotMode = "purchase_v1";
+        u.farm.plotCount = 1;
+        dirty = true;
+      }
       const hadPlotCount = typeof u.farm.plotCount === "number" && Number.isFinite(u.farm.plotCount);
       if (!hadPlotCount) {
         u.farm.plotCount = 1;
@@ -233,13 +240,6 @@ export class UserStore {
       }
       if (normalizedPlots.length !== u.farm.plots.length) dirty = true;
       u.farm.plots = normalizedPlots;
-      if (!hadPlotCount) {
-        const legacyOpenByPlots = Math.max(1, Math.min(maxPlots, normalizedPlots.length));
-        if (legacyOpenByPlots > u.farm.plotCount) {
-          u.farm.plotCount = legacyOpenByPlots;
-          dirty = true;
-        }
-      }
     }
 
     // Биржа
@@ -785,6 +785,7 @@ export class UserStore {
       premium: 20,
       pet: null,
       farm: {
+        plotMode: "purchase_v1",
         plotCount: 1,
         plots: [
           { id: 1, status: "empty", cropId: "", plantedAt: 0, readyAt: 0, notifiedReady: false }
