@@ -21,6 +21,10 @@ export class TelegramClient {
     }
 
     if (!resp.ok) {
+      const desc = String(payload?.description || "").trim();
+      if (desc) {
+        throw new Error(`Telegram HTTP ${resp.status} on ${method}: ${desc}`);
+      }
       throw new Error(`Telegram HTTP ${resp.status} on ${method}`);
     }
     if (!payload || payload.ok !== true) {

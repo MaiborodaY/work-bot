@@ -64,6 +64,7 @@ export class AdminCommands {
         "/admin_channel_preview - preview yesterday channel post\n" +
         "/admin_channel_publish - publish yesterday channel post\n" +
         "/admin_channel_force - force publish yesterday channel post\n" +
+        "/admin_channel_check [chat] - validate channel id/rights\n" +
         "/admin_rebuild_ratings - rebuild top rating indexes once\n\n" +
         "<b>Broadcast</b>\n" +
         "/broadcast - start draft mode\n" +
@@ -357,6 +358,12 @@ export class AdminCommands {
     }
     if (/^\/admin_channel_force(?:@\w+)?\s*$/i.test(input)) {
       await this._sendChannelPublish({ force: true });
+      return true;
+    }
+    const mChannelCheck = input.match(/^\/admin_channel_check(?:@\w+)?(?:\s+(.+))?\s*$/i);
+    if (mChannelCheck) {
+      const target = String(mChannelCheck[1] || "").trim();
+      await this._sendChannelCheck(target);
       return true;
     }
     if (/^\/admin_retention(?:@\w+)?\s*$/i.test(input)) {
@@ -714,6 +721,86 @@ export class AdminCommands {
       await this.send(`Publish skipped: ${this._escapeHtml(reason)}.`);
     } catch (e) {
       await this.send(`Publish failed: ${this._escapeHtml(e?.message || e)}`);
+    }
+  }
+
+  async _sendChannelCheck(inputTarget = "") {
+    const target = String(inputTarget || this.channel?.channelId || "").trim();
+    if (!target) {
+      await this.send("Channel check failed: target is empty. Use /admin_channel_check @channel_username");
+      return;
+    }
+
+    await this.send(`Channel check started for <code>${this._escapeHtml(target)}</code>...`);
+
+    let chat = null;
+    try {
+      const chatResp = await fetch(`https://api.telegram.org/bot${this.botToken}/getChat`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ chat_id: target })
+      });
+      const chatJson = await chatResp.json().catch(() => null);
+      if (!chatResp.ok || !chatJson?.ok) {
+        const err = this._escapeHtml(String(chatJson?.description || `HTTP ${chatResp.status}`));
+        await this.send(`Channel getChat failed: ${err}`);
+        return;
+      }
+      chat = chatJson?.result || null;
+    } catch (e) {
+      await this.send(`Channel getChat error: ${this._escapeHtml(e?.message || e)}`);
+      return;
+    }
+
+    const chatId = String(chat?.id || "").trim();
+    const title = this._escapeHtml(String(chat?.title || ""));
+    const username = this._escapeHtml(String(chat?.username || ""));
+    const type = this._escapeHtml(String(chat?.type || ""));
+
+    let meStatus = "";
+    try {
+      const memberResp = await fetch(`https://api.telegram.org/bot${this.botToken}/getChatMember`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ chat_id: target, user_id: "me" })
+      });
+      const memberJson = await memberResp.json().catch(() => null);
+      if (memberResp.ok && memberJson?.ok) {
+        meStatus = String(memberJson?.result?.status || "");
+      }
+    } catch {
+      // ignore optional status probe
+    }
+
+    await this.send(
+      "<b>Channel check result</b>\n" +
+      `Target: <code>${this._escapeHtml(target)}</code>\n` +
+      `Resolved id: <code>${this._escapeHtml(chatId || "-")}</code>\n` +
+      `Type: ${type || "-"}\n` +
+      `Title: ${title || "-"}\n` +
+      `Username: ${username ? `@${username}` : "-"}\n` +
+      (meStatus ? `Bot status: ${this._escapeHtml(meStatus)}\n` : "")
+    );
+
+    try {
+      const testResp = await fetch(`https://api.telegram.org/bot${this.botToken}/sendMessage`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          chat_id: target,
+          text: "✅ Channel post check from /admin_channel_check",
+          parse_mode: "HTML"
+        })
+      });
+      const testJson = await testResp.json().catch(() => null);
+      if (!testResp.ok || !testJson?.ok) {
+        const err = this._escapeHtml(String(testJson?.description || `HTTP ${testResp.status}`));
+        await this.send(`sendMessage test failed: ${err}`);
+        return;
+      }
+      await this.send("sendMessage test: success.");
+    } catch (e) {
+      await this.send(`sendMessage test error: ${this._escapeHtml(e?.message || e)}`);
     }
   }
 
