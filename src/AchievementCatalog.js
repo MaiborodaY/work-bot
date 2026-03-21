@@ -174,6 +174,28 @@ export const ACHIEVEMENTS = [
   },
 
   {
+    id: "farm_first",
+    reward: 2,
+    events: ["farm_harvest", "retro"],
+    title: { ru: "Фермер", uk: "Фермер", en: "Farmer" },
+    done: (u) => p(u, "farmHarvestTotal") >= 1
+  },
+  {
+    id: "farm_corn_10",
+    reward: 5,
+    events: ["farm_harvest", "retro"],
+    title: { ru: "Кукурузный барон", uk: "Кукурудзяний барон", en: "Corn baron" },
+    done: (u) => p(u, "farmCornHarvest") >= 10
+  },
+  {
+    id: "farm_all_crops",
+    reward: 3,
+    events: ["farm_harvest", "retro"],
+    title: { ru: "Урожайник", uk: "Врожайник", en: "Crop collector" },
+    done: (u) => (p(u, "farmHarvestedTypesMask") & 7) === 7
+  },
+
+  {
     id: "quiz_first_perfect",
     reward: 2,
     events: ["quiz_play"],

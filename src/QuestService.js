@@ -157,6 +157,7 @@ export class QuestService {
       workEarn: 0,
       gymTrains: 0,
       petFeeds: 0,
+      farmHarvests: 0,
       fortuneSpins: 0,
       quizPlays: 0,
       dailyClaims: 0,
@@ -592,6 +593,8 @@ export class QuestService {
           return toInt(d.gymTrains, 0);
         case "pet_feed":
           return toInt(d.petFeeds, 0);
+        case "farm_harvest":
+          return toInt(d.farmHarvests, 0);
         case "fortune_spin":
           return toInt(d.fortuneSpins, 0);
         case "quiz_play":
@@ -735,6 +738,10 @@ export class QuestService {
         d.petFeeds += 1;
         changed = true;
         break;
+      case "farm_harvest":
+        d.farmHarvests += 1;
+        changed = true;
+        break;
       case "fortune_spin":
         d.fortuneSpins += 1;
         changed = true;
@@ -848,6 +855,11 @@ export class QuestService {
   _questTitle(source, id, target) {
     const lang = this._lang(source);
     const l = lang === "en" ? "en" : (lang === "uk" ? "uk" : "ru");
+    if (id === "farm_harvest") {
+      if (l === "en") return "Harvest and sell any farm crop";
+      if (l === "uk") return "Зібрати й продати будь-який врожай на фермі";
+      return "Собрать и продать любой урожай на ферме";
+    }
     if (id === "fortune_spin") {
       if (l === "en") return "Test yourself in Arcana Hall";
       if (l === "uk") return "Спробуй себе в Залі аркани";

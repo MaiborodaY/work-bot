@@ -124,6 +124,7 @@ export const CONFIG = {
       { id: "fortune_spin", type: "daily", category: "fortune", difficulty: "easy", rewardMoney: 300, target: 1 },
       { id: "daily_bonus", type: "daily", category: "daily", difficulty: "easy", rewardMoney: 300, target: 1 },
       { id: "quiz_play", type: "daily", category: "quiz", difficulty: "easy", rewardMoney: 300, target: 1 },
+      { id: "farm_harvest", type: "daily", category: "farm", difficulty: "easy", rewardMoney: 400, target: 1 },
       { id: "pet_feed", type: "daily", category: "pet", difficulty: "easy", rewardMoney: 300, target: 1 },
       { id: "biz_collect", type: "daily", category: "biz", difficulty: "easy", rewardMoney: 400, target: 1 },
       { id: "biz_collect_all", type: "daily", category: "biz", difficulty: "hard", rewardMoney: 800, target: 1 },
@@ -417,6 +418,22 @@ export const CONFIG = {
       REMINDER_HOUR_UTC: 18,
       STATUS_HOUR_UTC: 10,
       DUE_BUCKET_MS: 5 * 60 * 1000,
+      DUE_LOOKBACK_MINUTES: 30,
+      MAX_PROCESS_PER_RUN: 500
+    }
+  },
+
+  FARM: {
+    BASE_PLOTS: 1,
+    PLOTS_PER_BUSINESS: 1,
+    MAX_PLOTS: 6,
+    CROPS: {
+      carrot: { emoji: "🥕", seedPrice: 200, growMs: 30 * 60_000, sellPrice: 350 },
+      tomato: { emoji: "🍅", seedPrice: 600, growMs: 60 * 60_000, sellPrice: 900 },
+      corn: { emoji: "🌽", seedPrice: 1500, growMs: 120 * 60_000, sellPrice: 2400 }
+    },
+    NOTIFY: {
+      DUE_BUCKET_MS: 5 * 60_000,
       DUE_LOOKBACK_MINUTES: 30,
       MAX_PROCESS_PER_RUN: 500
     }

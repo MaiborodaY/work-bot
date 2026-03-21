@@ -31,6 +31,7 @@ export class Locations {
    *  clans?:any
    *  stocks?:any,
    *  labour?:any,
+   *  farm?:any,
    *  pet?:any,
    *  ratings?:any,
    *  thief?:any,
@@ -38,7 +39,7 @@ export class Locations {
    *  quests?:any
    * }} deps
    */
-  constructor({ media, ui, economy, formatters, pct, now, maybeFinishStudy, daily, fastForward, users, social, clans, stocks, labour, pet, ratings, thief, referrals, quests }) {
+  constructor({ media, ui, economy, formatters, pct, now, maybeFinishStudy, daily, fastForward, users, social, clans, stocks, labour, farm, pet, ratings, thief, referrals, quests }) {
     this.media = media;
     this.ui = ui;
     this.economy = economy;
@@ -53,6 +54,7 @@ export class Locations {
     this.clans = clans || null;
     this.stocks = stocks || null;
     this.labour = labour || null;
+    this.farm = farm || null;
     this.pet = pet || null;
     this.ratings = ratings || null;
     this.thief = thief || null;
@@ -171,6 +173,22 @@ export class Locations {
         fallbackCaptionKey: "loc.labour.unavailable",
         fallbackBackTextKey: "ui.back.earn",
         fallbackBackCb: toGoCallback(Routes.EARN)
+      }),
+      [Routes.FARM]: async () => this._renderServiceRoute({
+        user,
+        header,
+        routeName: Routes.FARM,
+        place: Routes.FARM,
+        policy: "auto",
+        buildView: async () => {
+          if (this.farm && typeof this.farm.buildMainView === "function") {
+            return this.farm.buildMainView(user);
+          }
+          return null;
+        },
+        fallbackCaptionKey: "loc.farm.unavailable",
+        fallbackBackTextKey: "ui.back.default",
+        fallbackBackCb: toGoCallback(Routes.CITY)
       }),
       [Routes.PET]: async () => this._renderServiceRoute({
         user,

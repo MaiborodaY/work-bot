@@ -20,6 +20,7 @@ import { AchievementService } from "./AchievementService.js";
 import { RatingService } from "./RatingService.js";
 import { QuestService } from "./QuestService.js";
 import { PetService } from "./PetService.js";
+import { FarmService } from "./FarmService.js";
 import { QuizService } from "./QuizService.js";
 import { GeneralQuizService } from "./GeneralQuizService.js";
 import { ASSETS, JOB_ASSETS } from "./Assets.js";
@@ -47,6 +48,7 @@ import { thiefHandler } from "./handlers/thief.js";
 import { referralHandler } from "./handlers/referral.js";
 import { ratingsHandler } from "./handlers/ratings.js";
 import { petHandler } from "./handlers/pet.js";
+import { farmHandler } from "./handlers/farm.js";
 import { quizHandler } from "./handlers/quiz.js";
 import { generalQuizHandler } from "./handlers/generalQuiz.js";
 import { energyHandler } from "./handlers/energy.js";
@@ -93,6 +95,7 @@ export default {
       const labour = new LabourService({ db: env.DB, users, now: () => Date.now(), bot, quests });
       const thief = new ThiefService({ db: env.DB, users, now: () => Date.now(), bot, achievements, ratings, quests });
       const pet = new PetService({ db: env.DB, users, now: () => Date.now(), bot, quests, achievements });
+      const farm = new FarmService({ db: env.DB, users, now: () => Date.now(), bot, quests, achievements });
       const notifier = new NotificationService({
         users,
         bot,
@@ -116,6 +119,9 @@ export default {
       });
       await safeCall("worker.cron.pet.daily_tick", async () => {
         await pet.dailyTick();
+      });
+      await safeCall("worker.cron.farm.daily_tick", async () => {
+        await farm.dailyTick();
       });
       await notifier.run();
       return new Response("ok");
@@ -157,6 +163,7 @@ export default {
     const labour = new LabourService({ db: env.DB, users, now, bot, quests });
     const thief = new ThiefService({ db: env.DB, users, now, bot, achievements, ratings, quests });
     const pet = new PetService({ db: env.DB, users, now, bot, quests, achievements });
+    const farm = new FarmService({ db: env.DB, users, now, bot, quests, achievements });
     const referrals = new ReferralService({
       users,
       now,
@@ -331,6 +338,7 @@ export default {
       clans,
       stocks,
       labour,
+      farm,
       pet,
       ratings,
       thief,
@@ -1207,6 +1215,7 @@ export default {
         clans,
         stocks,
         labour,
+        farm,
         pet,
         ratings,
         thief,
@@ -1241,6 +1250,7 @@ export default {
         workHandler,
         businessHandler,
         labourHandler,
+        farmHandler,
         petHandler,
         stocksHandler,
         studyHandler,
@@ -1289,6 +1299,7 @@ export default {
     const labour = new LabourService({ db: env.DB, users, now: () => Date.now(), bot, quests });
     const thief = new ThiefService({ db: env.DB, users, now: () => Date.now(), bot, achievements, ratings, quests });
     const pet = new PetService({ db: env.DB, users, now: () => Date.now(), bot, quests, achievements });
+    const farm = new FarmService({ db: env.DB, users, now: () => Date.now(), bot, quests, achievements });
 
     const notifier = new NotificationService({
       users,
@@ -1305,7 +1316,8 @@ export default {
       labour.runDueExpirations(),
       thief.resolveExpired(),
       thief.resolveProtectionExpirations(),
-      pet.dailyTick()
+      pet.dailyTick(),
+      farm.dailyTick()
     ]));
   }
 };

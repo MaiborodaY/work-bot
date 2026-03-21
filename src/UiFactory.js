@@ -70,6 +70,7 @@ export class UiFactory {
     const l = this._lang(lang);
     return [
       [{ text: this._t(l, "ui.city.home"), callback_data: this._go(Routes.HOME) }],
+      [{ text: this._t(l, "ui.city.farm"), callback_data: this._go(Routes.FARM) }],
       [{ text: this._t(l, "ui.city.board"), callback_data: this._go(Routes.CITY_BOARD) }],
       [{ text: this._t(l, "ui.city.ratings"), callback_data: this._go(Routes.RATINGS) }],
       [{ text: this._t(l, "ui.city.clans"), callback_data: this._go(Routes.CLAN) }],

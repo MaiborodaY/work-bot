@@ -59,6 +59,9 @@ export class AchievementService {
       employeesHiredTotal: 0,
       clanContractsByUser: 0,
       stockBuysTotal: 0,
+      farmHarvestTotal: 0,
+      farmCornHarvest: 0,
+      farmHarvestedTypesMask: 0,
       quizPerfectTotal: 0,
       quizPerfectStreak: 0
     };
@@ -137,6 +140,19 @@ export class AchievementService {
       }
       case "stocks_buy": {
         changed = this._inc(u, "stockBuysTotal", 1) || changed;
+        break;
+      }
+      case "farm_harvest": {
+        changed = this._inc(u, "farmHarvestTotal", 1) || changed;
+        if (String(ctx?.cropId || "") === "corn") {
+          changed = this._inc(u, "farmCornHarvest", 1) || changed;
+        }
+        const bitByCrop = { carrot: 1, tomato: 2, corn: 4 };
+        const bit = bitByCrop[String(ctx?.cropId || "")] || 0;
+        if (bit > 0) {
+          const prevMask = Math.max(0, Math.floor(n(u?.achievements?.progress?.farmHarvestedTypesMask)));
+          changed = this._set(u, "farmHarvestedTypesMask", prevMask | bit) || changed;
+        }
         break;
       }
       case "stocks_dividend": {
@@ -228,6 +244,7 @@ export class AchievementService {
     if (s.startsWith("biz_") || s.startsWith("labour_")) return "biz";
     if (s.startsWith("gym_") || s.startsWith("study_")) return "growth";
     if (s.startsWith("pet_")) return "pet";
+    if (s.startsWith("farm_")) return "farm";
     if (s.startsWith("quiz_")) return "quiz";
     if (s.startsWith("stocks_")) return "stocks";
     if (s.startsWith("thief_")) return "thief";
@@ -238,6 +255,9 @@ export class AchievementService {
 
   _categoryTitle(cat, lang) {
     const l = this._lang(lang);
+    if (cat === "farm") {
+      return l === "en" ? "🌱 Farm" : "🌱 Ферма";
+    }
     const map = {
       ru: {
         work: "💼 Работа",
@@ -335,6 +355,10 @@ export class AchievementService {
     const studyLevel = Math.max(0, Math.floor(n(u?.study?.level)));
     const hasPetNow = !!(u?.pet && typeof u.pet === "object" && String(u?.pet?.type || ""));
     const petFeedStreak = Math.max(0, Math.floor(n(u?.pet?.streak)));
+    const farmHarvestTotal = Math.max(0, Math.floor(n(p.farmHarvestTotal)));
+    const farmCornHarvest = Math.max(0, Math.floor(n(p.farmCornHarvest)));
+    const farmMask = Math.max(0, Math.floor(n(p.farmHarvestedTypesMask)));
+    const farmTypesCount = ((farmMask & 1) ? 1 : 0) + ((farmMask & 2) ? 1 : 0) + ((farmMask & 4) ? 1 : 0);
     const stockBuys = Math.max(0, Math.floor(n(p.stockBuysTotal)));
     const heldCompanies = this._heldCompanies(u);
     const totalDividends = Math.max(0, Math.floor(n(p.totalDividends)));
@@ -343,6 +367,16 @@ export class AchievementService {
     const defenses = Math.max(0, Math.floor(n(p.defensesSuccess)));
     const clanContracts = Math.max(0, Math.floor(n(p.clanContractsByUser)));
     const refs = this._rewardedReferrals(u);
+
+    if (id === "farm_first") {
+      return `${farmHarvestTotal}/1`;
+    }
+    if (id === "farm_corn_10") {
+      return `${farmCornHarvest}/10`;
+    }
+    if (id === "farm_all_crops") {
+      return `${farmTypesCount}/3`;
+    }
 
     const ru = {
       work_first_shift: `${totalShifts}/1 смен`,

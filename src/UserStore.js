@@ -173,6 +173,58 @@ export class UserStore {
       if (Object.prototype.hasOwnProperty.call(p, "missedDays")) { delete p.missedDays; dirty = true; }
     }
 
+    // Ферма
+    if (!u.farm || typeof u.farm !== "object") {
+      u.farm = { plots: [] };
+      dirty = true;
+    } else {
+      if (!Array.isArray(u.farm.plots)) { u.farm.plots = []; dirty = true; }
+      const maxPlots = Math.max(1, Number(CONFIG?.FARM?.MAX_PLOTS) || 6);
+      const normalizedPlots = [];
+      for (let i = 0; i < Math.min(maxPlots, u.farm.plots.length); i += 1) {
+        const rawPlot = u.farm.plots[i];
+        if (!rawPlot || typeof rawPlot !== "object") {
+          normalizedPlots.push({
+            id: i + 1,
+            status: "empty",
+            cropId: "",
+            plantedAt: 0,
+            readyAt: 0,
+            notifiedReady: false
+          });
+          dirty = true;
+          continue;
+        }
+        const status = String(rawPlot.status || "");
+        normalizedPlots.push({
+          id: i + 1,
+          status: status === "growing" ? "growing" : "empty",
+          cropId: String(rawPlot.cropId || ""),
+          plantedAt: Math.max(0, Math.floor(Number(rawPlot.plantedAt) || 0)),
+          readyAt: Math.max(0, Math.floor(Number(rawPlot.readyAt) || 0)),
+          notifiedReady: !!rawPlot.notifiedReady
+        });
+        if (rawPlot.id !== i + 1 ||
+            (status !== "empty" && status !== "growing") ||
+            typeof rawPlot.notifiedReady !== "boolean") {
+          dirty = true;
+        }
+      }
+      if (normalizedPlots.length < 1) {
+        normalizedPlots.push({
+          id: 1,
+          status: "empty",
+          cropId: "",
+          plantedAt: 0,
+          readyAt: 0,
+          notifiedReady: false
+        });
+        dirty = true;
+      }
+      if (normalizedPlots.length !== u.farm.plots.length) dirty = true;
+      u.farm.plots = normalizedPlots;
+    }
+
     // Биржа
     if (!u.stocks || typeof u.stocks !== "object") {
       u.stocks = { holdings: {}, lastDividendDay: "", lastDividendAmount: 0 };
@@ -506,6 +558,9 @@ export class UserStore {
           employeesHiredTotal: 0,
           clanContractsByUser: 0,
           stockBuysTotal: 0,
+          farmHarvestTotal: 0,
+          farmCornHarvest: 0,
+          farmHarvestedTypesMask: 0,
           quizPerfectTotal: 0,
           quizPerfectStreak: 0,
           referralsDone: 0,
@@ -539,6 +594,9 @@ export class UserStore {
         employeesHiredTotal: 0,
         clanContractsByUser: 0,
         stockBuysTotal: 0,
+        farmHarvestTotal: 0,
+        farmCornHarvest: 0,
+        farmHarvestedTypesMask: 0,
         quizPerfectTotal: 0,
         quizPerfectStreak: 0,
         referralsDone: 0
@@ -709,6 +767,11 @@ export class UserStore {
 
       premium: 20,
       pet: null,
+      farm: {
+        plots: [
+          { id: 1, status: "empty", cropId: "", plantedAt: 0, readyAt: 0, notifiedReady: false }
+        ]
+      },
 
       stocks: { holdings: {}, lastDividendDay: "", lastDividendAmount: 0 },
 
@@ -747,6 +810,9 @@ export class UserStore {
           employeesHiredTotal: 0,
           clanContractsByUser: 0,
           stockBuysTotal: 0,
+          farmHarvestTotal: 0,
+          farmCornHarvest: 0,
+          farmHarvestedTypesMask: 0,
           quizPerfectTotal: 0,
           quizPerfectStreak: 0,
           referralsDone: 0,
