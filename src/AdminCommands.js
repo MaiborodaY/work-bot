@@ -13,7 +13,7 @@ export class AdminCommands {
    *  - isAdmin: (id: number|string) => boolean
    *  - botToken: Telegram bot token
    */
-  constructor({ users, send, isAdmin, botToken, ratings = null, quiz = null }) {
+  constructor({ users, send, isAdmin, botToken, ratings = null, quiz = null, channel = null }) {
     this.users = users;
     this.send = send;
     this.isAdmin = isAdmin;
@@ -21,6 +21,7 @@ export class AdminCommands {
     this.db = users?.db;
     this.ratings = ratings || null;
     this.quiz = quiz || null;
+    this.channel = channel || null;
 
     this.K = {
       draft: (adminId) => `admin:broadcast:draft:${adminId}`,
@@ -60,6 +61,9 @@ export class AdminCommands {
         "/admin_new_users [limit] - new users list (last 30d)\n" +
         "/admin_backfill_activity_today - backfill useful activity for today\n" +
         "/admin_quiz - quiz stats\n" +
+        "/admin_channel_preview - preview yesterday channel post\n" +
+        "/admin_channel_publish - publish yesterday channel post\n" +
+        "/admin_channel_force - force publish yesterday channel post\n" +
         "/admin_rebuild_ratings - rebuild top rating indexes once\n\n" +
         "<b>Broadcast</b>\n" +
         "/broadcast - start draft mode\n" +
@@ -341,6 +345,18 @@ export class AdminCommands {
     }
     if (/^\/admin_quiz(?:@\w+)?\s*$/i.test(input)) {
       await this._sendQuizStats();
+      return true;
+    }
+    if (/^\/admin_channel_preview(?:@\w+)?\s*$/i.test(input)) {
+      await this._sendChannelPreview(chatId);
+      return true;
+    }
+    if (/^\/admin_channel_publish(?:@\w+)?\s*$/i.test(input)) {
+      await this._sendChannelPublish({ force: false });
+      return true;
+    }
+    if (/^\/admin_channel_force(?:@\w+)?\s*$/i.test(input)) {
+      await this._sendChannelPublish({ force: true });
       return true;
     }
     if (/^\/admin_retention(?:@\w+)?\s*$/i.test(input)) {
@@ -642,6 +658,63 @@ export class AdminCommands {
       }
     }
     await this.send(lines.join("\n"));
+  }
+
+  async _sendChannelPreview(chatId) {
+    if (!this.channel || typeof this.channel.previewYesterday !== "function") {
+      await this.send("Channel posts service unavailable.");
+      return;
+    }
+    const targetChatId = Number(chatId) || chatId;
+    if (!targetChatId) {
+      await this.send("Preview failed: admin chat id is missing.");
+      return;
+    }
+    await this.send("Channel preview started...");
+    try {
+      const out = await this.channel.previewYesterday(targetChatId);
+      if (out?.reason === "below_threshold") {
+        await this.send("Preview sent (note: yesterday is below auto-post threshold).");
+        return;
+      }
+      await this.send("Preview sent.");
+    } catch (e) {
+      await this.send(`Channel preview failed: ${this._escapeHtml(e?.message || e)}`);
+    }
+  }
+
+  async _sendChannelPublish({ force = false } = {}) {
+    if (!this.channel || typeof this.channel.publishYesterday !== "function") {
+      await this.send("Channel posts service unavailable.");
+      return;
+    }
+    await this.send(force ? "Force publish started..." : "Publish started...");
+    try {
+      const out = await this.channel.publishYesterday({ force: !!force });
+      if (out?.ok) {
+        await this.send(
+          `Published to channel for <code>${this._escapeHtml(String(out.day || "-"))}</code>.` +
+          (out?.forced ? " (forced)" : "")
+        );
+        return;
+      }
+      const reason = String(out?.reason || "unknown");
+      if (reason === "already_posted") {
+        await this.send(`Skipped: already posted for <code>${this._escapeHtml(String(out?.day || "-"))}</code>.`);
+        return;
+      }
+      if (reason === "below_threshold") {
+        await this.send(`Skipped: below threshold for <code>${this._escapeHtml(String(out?.day || "-"))}</code>.`);
+        return;
+      }
+      if (reason === "channel_id_missing") {
+        await this.send("Publish failed: CHANNEL_ID is not configured.");
+        return;
+      }
+      await this.send(`Publish skipped: ${this._escapeHtml(reason)}.`);
+    } catch (e) {
+      await this.send(`Publish failed: ${this._escapeHtml(e?.message || e)}`);
+    }
   }
 
   _retentionCounters() {

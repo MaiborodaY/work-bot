@@ -10,6 +10,7 @@ import { StudyService } from "./StudyService.js";
 import { AdminCommands } from "./AdminCommands.js";
 import { NotificationService } from "./NotificationService.js";
 import { SocialService } from "./SocialService.js";
+import { ChannelService } from "./ChannelService.js";
 import { ClanService } from "./ClanService.js";
 import { DailyBonusService } from "./DailyBonusService.js";
 import { StockService } from "./StockService.js";
@@ -91,9 +92,20 @@ export default {
       const ratings = new RatingService({ db: env.DB, users, now: () => Date.now() });
       const achievements = new AchievementService({ users, db: env.DB, now: () => Date.now(), bot, ratings });
       const quests = new QuestService({ users, now: () => Date.now(), bot });
+      const social = new SocialService({ db: env.DB, users, now: () => Date.now(), economy });
       const stocks = new StockService({ db: env.DB, users, now: () => Date.now(), achievements, quests });
       const labour = new LabourService({ db: env.DB, users, now: () => Date.now(), bot, quests });
       const thief = new ThiefService({ db: env.DB, users, now: () => Date.now(), bot, achievements, ratings, quests });
+      const channel = new ChannelService({
+        db: env.DB,
+        bot,
+        social,
+        ratings,
+        thief,
+        now: () => Date.now(),
+        channelId: env.CHANNEL_ID,
+        playUrl: CONFIG?.CHANNEL?.PLAY_URL
+      });
       const pet = new PetService({ db: env.DB, users, now: () => Date.now(), bot, quests, achievements });
       const farm = new FarmService({ db: env.DB, users, now: () => Date.now(), bot, quests, achievements });
       const notifier = new NotificationService({
@@ -122,6 +134,12 @@ export default {
       });
       await safeCall("worker.cron.farm.daily_tick", async () => {
         await farm.dailyTick();
+      });
+      await safeCall("worker.cron.social.ensure_period", async () => {
+        await social.ensurePeriod();
+      });
+      await safeCall("worker.cron.channel.run_scheduled", async () => {
+        await channel.runScheduled();
       });
       await notifier.run();
       return new Response("ok");
@@ -162,6 +180,16 @@ export default {
     const stocks = new StockService({ db: env.DB, users, now, achievements, quests });
     const labour = new LabourService({ db: env.DB, users, now, bot, quests });
     const thief = new ThiefService({ db: env.DB, users, now, bot, achievements, ratings, quests });
+    const channel = new ChannelService({
+      db: env.DB,
+      bot,
+      social,
+      ratings,
+      thief,
+      now,
+      channelId: env.CHANNEL_ID,
+      playUrl: CONFIG?.CHANNEL?.PLAY_URL
+    });
     const pet = new PetService({ db: env.DB, users, now, bot, quests, achievements });
     const farm = new FarmService({ db: env.DB, users, now, bot, quests, achievements });
     const referrals = new ReferralService({
@@ -554,7 +582,8 @@ export default {
       isAdmin,
       botToken: env.BOT_TOKEN,
       ratings,
-      quiz
+      quiz,
+      channel
     });
 
     // ===== Минимальная телеметрия оплаты =====
@@ -1295,9 +1324,20 @@ export default {
     const ratings = new RatingService({ db: env.DB, users, now: () => Date.now() });
     const achievements = new AchievementService({ users, db: env.DB, now: () => Date.now(), bot, ratings });
     const quests = new QuestService({ users, now: () => Date.now(), bot });
+    const social = new SocialService({ db: env.DB, users, now: () => Date.now(), economy });
     const stocks = new StockService({ db: env.DB, users, now: () => Date.now(), achievements, quests });
     const labour = new LabourService({ db: env.DB, users, now: () => Date.now(), bot, quests });
     const thief = new ThiefService({ db: env.DB, users, now: () => Date.now(), bot, achievements, ratings, quests });
+    const channel = new ChannelService({
+      db: env.DB,
+      bot,
+      social,
+      ratings,
+      thief,
+      now: () => Date.now(),
+      channelId: env.CHANNEL_ID,
+      playUrl: CONFIG?.CHANNEL?.PLAY_URL
+    });
     const pet = new PetService({ db: env.DB, users, now: () => Date.now(), bot, quests, achievements });
     const farm = new FarmService({ db: env.DB, users, now: () => Date.now(), bot, quests, achievements });
 
@@ -1311,13 +1351,15 @@ export default {
       debug: !!env.DEBUG
     });
     ctx.waitUntil(Promise.allSettled([
+      social.ensurePeriod(),
       stocks.runDailyUpdate(),
       notifier.run(),
       labour.runDueExpirations(),
       thief.resolveExpired(),
       thief.resolveProtectionExpirations(),
       pet.dailyTick(),
-      farm.dailyTick()
+      farm.dailyTick(),
+      channel.runScheduled()
     ]));
   }
 };

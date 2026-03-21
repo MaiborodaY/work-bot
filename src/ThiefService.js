@@ -257,6 +257,18 @@ export class ThiefService {
     return `thief:owners:${String(bizId || "")}`;
   }
 
+  _dailyStolenKey(dayUTC) {
+    return `thief:daily_stolen:${String(dayUTC || "")}`;
+  }
+
+  _dailyStolenLimit() {
+    return Math.max(1, Math.floor(Number(this._cfg()?.DAILY_LB_LIMIT) || 20));
+  }
+
+  _dailyStolenTtlSec() {
+    return Math.max(60, Math.floor(Number(this._cfg()?.DAILY_LB_TTL_SEC) || (8 * DAY_MS / 1000)));
+  }
+
   _attackTtlSec(attack) {
     const nowTs = this.now();
     const resolveAt = Math.max(nowTs, Number(attack?.resolveAt) || nowTs);
@@ -271,6 +283,54 @@ export class ThiefService {
     } catch {
       return fallback;
     }
+  }
+
+  async _recordDailyStolen(user, amount, dayUTC = getTodayUTC(this.now())) {
+    const uid = String(user?.id || "").trim();
+    const gain = Math.max(0, Math.floor(Number(amount) || 0));
+    const day = String(dayUTC || "").trim();
+    if (!uid || !day || gain <= 0) return;
+
+    const key = this._dailyStolenKey(day);
+    const raw = await this.db.get(key);
+    const list = this._safeJson(raw, []);
+    const arr = Array.isArray(list) ? list : [];
+    const idx = arr.findIndex((x) => String(x?.userId || "") === uid);
+    const name = String(user?.displayName || "").trim() || `Player #${uid.slice(-4).padStart(4, "0")}`;
+    if (idx >= 0) {
+      arr[idx] = {
+        userId: uid,
+        name,
+        stolen: Math.max(0, Math.floor(Number(arr[idx]?.stolen) || 0)) + gain
+      };
+    } else {
+      arr.push({ userId: uid, name, stolen: gain });
+    }
+    arr.sort((a, b) => Math.max(0, Number(b?.stolen) || 0) - Math.max(0, Number(a?.stolen) || 0));
+    const trimmed = arr.slice(0, this._dailyStolenLimit());
+    await this.db.put(key, JSON.stringify(trimmed), { expirationTtl: this._dailyStolenTtlSec() });
+  }
+
+  async getDailyTopStolen(dayUTC = getTodayUTC(this.now()), limit = 10) {
+    const day = String(dayUTC || "").trim();
+    if (!day) return [];
+    const raw = await this.db.get(this._dailyStolenKey(day));
+    const arr = this._safeJson(raw, []);
+    if (!Array.isArray(arr)) return [];
+    const out = arr
+      .map((row) => ({
+        userId: String(row?.userId || "").trim(),
+        name: String(row?.name || "").trim(),
+        stolen: Math.max(0, Math.floor(Number(row?.stolen) || 0))
+      }))
+      .filter((row) => row.userId && row.stolen > 0)
+      .sort((a, b) => b.stolen - a.stolen);
+    return out.slice(0, Math.max(1, Math.floor(Number(limit) || 10)));
+  }
+
+  async getDailyBestStolen(dayUTC = getTodayUTC(this.now())) {
+    const top = await this.getDailyTopStolen(dayUTC, 1);
+    return top[0] || null;
   }
 
   async _saveAttack(attack) {
@@ -1415,6 +1475,9 @@ export class ThiefService {
       }
 
       await this.users.save(attacker);
+      if (success && stolen > 0) {
+        await this._recordDailyStolen(attacker, stolen, todayUTC);
+      }
       if (success && this.ratings?.updateUser) {
         try {
           await this.ratings.updateUser(attacker, ["thief"]);

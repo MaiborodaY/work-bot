@@ -439,6 +439,17 @@ export const CONFIG = {
     }
   },
 
+  CHANNEL: {
+    PLAY_URL: "t.me/reallifesame_bot",
+    POST_DAYS_UTC: [1, 3, 5], // Mon / Wed / Fri
+    POST_HOUR_UTC: 9,
+    POST_MINUTE_UTC: 0,
+    MIN_EARNERS: 3,
+    TOP_EARNERS_LIMIT: 10,
+    TOP_BIZ_LIMIT: 3,
+    SNAPSHOT_TTL_SEC: 7 * 24 * 60 * 60
+  },
+
   THIEF: {
     HELP_ASSET: "AgACAgIAAxkBAAJ6y2m2n9iHnqm7tr1kXVm2g-1eQl9NAAKZFGsby1KwSXEibtL1lMpfAQADAgADeQADOgQ",
     REVEAL_COST: 100,
@@ -452,6 +463,8 @@ export const CONFIG = {
     OWNER_MIN_DAILY_REMAIN_PCT: 0.50,
     RESOLVE_LIMIT_PER_RUN: 200,
     DUE_BUCKET_MS: 60 * 1000,
+    DAILY_LB_LIMIT: 20,
+    DAILY_LB_TTL_SEC: 8 * 24 * 60 * 60,
     LEVEL_COSTS: {
       1: 10000,
       2: 25000,
