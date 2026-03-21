@@ -166,16 +166,16 @@ export const CONFIG = {
   },
 
   DAILY_TOP_REWARDS: {
-    1:  { stars: 3, money: 0 },
-    2:  { stars: 2, money: 0 },
-    3:  { stars: 1, money: 0 },
-    4:  { stars: 0, money: 100 },
-    5:  { stars: 0, money: 80 },
-    6:  { stars: 0, money: 60 },
-    7:  { stars: 0, money: 40 },
-    8:  { stars: 0, money: 30 },
-    9:  { stars: 0, money: 20 },
-    10: { stars: 0, money: 10 },
+    1:  { stars: 5, money: 0 },
+    2:  { stars: 4, money: 0 },
+    3:  { stars: 3, money: 0 },
+    4:  { stars: 2, money: 0 },
+    5:  { stars: 1, money: 0 },
+    6:  { stars: 0, money: 300 },
+    7:  { stars: 0, money: 200 },
+    8:  { stars: 0, money: 150 },
+    9:  { stars: 0, money: 100 },
+    10: { stars: 0, money: 50 },
   },
 
   FAST_FORWARD: {
