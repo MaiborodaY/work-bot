@@ -796,6 +796,17 @@ export class AdminCommands {
     return false;
   }
 
+  _petPurchaseStats(u) {
+    const stats = (u?.stats && typeof u.stats === "object") ? u.stats : {};
+    const petType = String(u?.pet?.type || "").trim();
+    const catByPet = petType === "cat";
+    const dogByPet = petType === "dog";
+    const cat = this._toBool(stats.didPetBuyCat) || catByPet;
+    const dog = this._toBool(stats.didPetBuyDog) || dogByPet;
+    const bought = this._toBool(stats.didPetBuy) || cat || dog;
+    return { bought, cat, dog };
+  }
+
   _pct(part, total) {
     const p = Math.max(0, Number(part || 0));
     const t = Math.max(0, Number(total || 0));
@@ -815,6 +826,9 @@ export class AdminCommands {
     let firstGym = 0;
     let firstBar = 0;
     let firstBiz = 0;
+    let petBought = 0;
+    let petCat = 0;
+    let petDog = 0;
 
     // eslint-disable-next-line no-constant-condition
     while (true) {
@@ -841,12 +855,16 @@ export class AdminCommands {
           const didGym = this._toBool(stats.didGym) || Math.max(0, Number(u?.gym?.level || 0)) > 0;
           const didBar = this._toBool(stats.didBar);
           const didBusiness = this._toBool(stats.didBusiness) || this._hasAnyBusiness(u);
+          const petStats = this._petPurchaseStats(u);
 
           if (didFirstShift) firstShift += 1;
           if (didFirstClaim) firstClaim += 1;
           if (didGym) firstGym += 1;
           if (didBar) firstBar += 1;
           if (didBusiness) firstBiz += 1;
+          if (petStats.bought) petBought += 1;
+          if (petStats.cat) petCat += 1;
+          if (petStats.dog) petDog += 1;
         } catch {
           // skip bad rows
         }
@@ -864,6 +882,8 @@ export class AdminCommands {
       `First workout finished: ${firstGym} (${this._pct(firstGym, registered)}%)`,
       `Opened bar: ${firstBar} (${this._pct(firstBar, registered)}%)`,
       `Bought first business: ${firstBiz} (${this._pct(firstBiz, registered)}%)`,
+      `Bought pet (ever): ${petBought} (${this._pct(petBought, registered)}%)`,
+      `  cat: ${petCat}, dog: ${petDog}`,
       "",
       `Excluded admins: ${excludedAdmins}`
     ];
