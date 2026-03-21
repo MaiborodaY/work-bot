@@ -1,5 +1,6 @@
 const DAY_MS = 24 * 60 * 60 * 1000;
 const ACTIVE_DAYS_LIMIT = 45;
+const FARM_INCOME_DAYS_LIMIT = 35;
 
 export function dayStrUtc(ts = Date.now()) {
   const d = new Date(ts);
@@ -101,6 +102,30 @@ export function ensurePlayerStatsShape(u) {
   }
   if (typeof s.farmWeekKey !== "string") {
     s.farmWeekKey = "";
+    changed = true;
+  }
+  const rawFarmIncomeDays = Array.isArray(s.farmIncomeDays) ? s.farmIncomeDays : [];
+  const dayMap = new Map();
+  for (const row of rawFarmIncomeDays) {
+    const day = String(row?.day || "");
+    if (!isDayStr(day)) continue;
+    const amount = Math.max(0, Math.floor(Number(row?.amount) || 0));
+    if (amount <= 0) continue;
+    dayMap.set(day, (dayMap.get(day) || 0) + amount);
+  }
+  const normalizedFarmIncomeDays = [...dayMap.entries()]
+    .sort((a, b) => String(a[0]).localeCompare(String(b[0])))
+    .slice(-FARM_INCOME_DAYS_LIMIT)
+    .map(([day, amount]) => ({ day, amount }));
+  if (
+    !Array.isArray(s.farmIncomeDays) ||
+    normalizedFarmIncomeDays.length !== rawFarmIncomeDays.length ||
+    normalizedFarmIncomeDays.some((row, i) => {
+      const prev = rawFarmIncomeDays[i] || {};
+      return String(prev?.day || "") !== row.day || Math.max(0, Math.floor(Number(prev?.amount) || 0)) !== row.amount;
+    })
+  ) {
+    s.farmIncomeDays = normalizedFarmIncomeDays;
     changed = true;
   }
   return changed;

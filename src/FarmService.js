@@ -11,6 +11,10 @@ function toInt(raw, fallback = 0) {
   return Math.max(0, Math.floor(n(raw) || fallback));
 }
 
+function isDayStr(value) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(String(value || ""));
+}
+
 export class FarmService {
   constructor({ db, users, now, bot = null, quests = null, achievements = null, social = null }) {
     this.db = db || users?.db || null;
@@ -387,7 +391,36 @@ export class FarmService {
       u.stats.farmMoneyWeek = 0;
       changed = true;
     }
+    if (!Array.isArray(u.stats.farmIncomeDays)) {
+      u.stats.farmIncomeDays = [];
+      changed = true;
+    }
     return changed;
+  }
+
+  _todayUTC(ts = this.now()) {
+    return new Date(Number(ts) || this.now()).toISOString().slice(0, 10);
+  }
+
+  _addFarmIncomeDay(u, amount, nowTs = this.now()) {
+    this._ensureFarmStats(u);
+    const add = Math.max(0, Math.floor(Number(amount) || 0));
+    if (add <= 0) return;
+    const today = this._todayUTC(nowTs);
+    const raw = Array.isArray(u?.stats?.farmIncomeDays) ? u.stats.farmIncomeDays : [];
+    const map = new Map();
+    for (const row of raw) {
+      const day = String(row?.day || "");
+      if (!isDayStr(day)) continue;
+      const amt = Math.max(0, Math.floor(Number(row?.amount) || 0));
+      if (amt <= 0) continue;
+      map.set(day, (map.get(day) || 0) + amt);
+    }
+    map.set(today, (map.get(today) || 0) + add);
+    u.stats.farmIncomeDays = [...map.entries()]
+      .sort((a, b) => String(a[0]).localeCompare(String(b[0])))
+      .slice(-35)
+      .map(([day, amt]) => ({ day, amount: amt }));
   }
 
   _leftLabel(source, msLeft) {
@@ -671,6 +704,7 @@ export class FarmService {
     u.stats.farmHarvestCount = toInt(u?.stats?.farmHarvestCount, 0) + 1;
     u.stats.farmMoneyTotal = toInt(u?.stats?.farmMoneyTotal, 0) + sellPrice;
     u.stats.farmMoneyWeek = toInt(u?.stats?.farmMoneyWeek, 0) + sellPrice;
+    this._addFarmIncomeDay(u, sellPrice, nowTs);
 
     Object.assign(p, this._defaultPlot(target.index));
     markUsefulActivity(u, nowTs);

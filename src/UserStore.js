@@ -782,7 +782,8 @@ export class UserStore {
         farmHarvestCount: 0,
         farmMoneyTotal: 0,
         farmWeekKey: "",
-        farmMoneyWeek: 0
+        farmMoneyWeek: 0,
+        farmIncomeDays: []
       },
       lastDailyRewardDay: "",
 

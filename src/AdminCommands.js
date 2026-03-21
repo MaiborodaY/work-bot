@@ -977,6 +977,7 @@ export class AdminCommands {
   async _sendOnboardingFunnel() {
     await this.send("Onboarding funnel started...");
     const prefix = "u:";
+    const today = dayStrUtc(Date.now());
     let cursor = undefined;
     let registered = 0;
     let excludedAdmins = 0;
@@ -992,6 +993,7 @@ export class AdminCommands {
     let farmUsers = 0;
     let farmHarvestTotal = 0;
     let farmIncomeTotal = 0;
+    let farmIncome7dTotal = 0;
 
     // eslint-disable-next-line no-constant-condition
     while (true) {
@@ -1025,6 +1027,15 @@ export class AdminCommands {
             Number(u?.achievements?.progress?.farmHarvestTotal || 0)
           );
           const farmMoneyTotal = Math.max(0, Number(stats.farmMoneyTotal || 0));
+          const farmIncomeDays = Array.isArray(stats.farmIncomeDays) ? stats.farmIncomeDays : [];
+          let farmIncome7d = 0;
+          for (const row of farmIncomeDays) {
+            const day = String(row?.day || "");
+            if (!isDayStr(day)) continue;
+            const age = dayDiffUtc(day, today);
+            if (age < 0 || age > 6) continue;
+            farmIncome7d += Math.max(0, Math.floor(Number(row?.amount) || 0));
+          }
 
           if (didFirstShift) firstShift += 1;
           if (didFirstClaim) firstClaim += 1;
@@ -1037,6 +1048,7 @@ export class AdminCommands {
           if (farmHarvestCount > 0) farmUsers += 1;
           farmHarvestTotal += Math.max(0, Math.floor(farmHarvestCount));
           farmIncomeTotal += Math.max(0, Math.floor(farmMoneyTotal));
+          farmIncome7dTotal += Math.max(0, Math.floor(farmIncome7d));
         } catch {
           // skip bad rows
         }
@@ -1059,6 +1071,7 @@ export class AdminCommands {
       `Farm users (harvested >=1): ${farmUsers} (${this._pct(farmUsers, registered)}%)`,
       `Farm harvests total: ${farmHarvestTotal}`,
       `Farm income total: $${farmIncomeTotal}`,
+      `Farm income last 7d: $${farmIncome7dTotal}`,
       "",
       `Excluded admins: ${excludedAdmins}`
     ];
