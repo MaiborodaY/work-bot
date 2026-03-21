@@ -91,6 +91,18 @@ export function ensurePlayerStatsShape(u) {
       changed = true;
     }
   }
+
+  const numFields = ["farmHarvestCount", "farmMoneyTotal", "farmMoneyWeek"];
+  for (const f of numFields) {
+    if (typeof s[f] !== "number" || !Number.isFinite(s[f])) {
+      s[f] = 0;
+      changed = true;
+    }
+  }
+  if (typeof s.farmWeekKey !== "string") {
+    s.farmWeekKey = "";
+    changed = true;
+  }
   return changed;
 }
 

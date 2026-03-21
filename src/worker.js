@@ -107,7 +107,7 @@ export default {
         playUrl: CONFIG?.CHANNEL?.PLAY_URL
       });
       const pet = new PetService({ db: env.DB, users, now: () => Date.now(), bot, quests, achievements });
-      const farm = new FarmService({ db: env.DB, users, now: () => Date.now(), bot, quests, achievements });
+      const farm = new FarmService({ db: env.DB, users, now: () => Date.now(), bot, quests, achievements, social });
       const notifier = new NotificationService({
         users,
         bot,
@@ -191,7 +191,7 @@ export default {
       playUrl: CONFIG?.CHANNEL?.PLAY_URL
     });
     const pet = new PetService({ db: env.DB, users, now, bot, quests, achievements });
-    const farm = new FarmService({ db: env.DB, users, now, bot, quests, achievements });
+    const farm = new FarmService({ db: env.DB, users, now, bot, quests, achievements, social });
     const referrals = new ReferralService({
       users,
       now,
@@ -460,6 +460,8 @@ export default {
       if (s === "smart") return "city:topsmart";
       if (s === "strong") return "city:topstrong";
       if (s === "lucky") return "city:toplucky";
+      if (s === "farmweek") return "city:topfarmweek";
+      if (s === "farmall") return "city:topfarmall";
       if (s === "rating") return "go:Ratings";
       return "go:CityBoard";
     };
@@ -1339,7 +1341,7 @@ export default {
       playUrl: CONFIG?.CHANNEL?.PLAY_URL
     });
     const pet = new PetService({ db: env.DB, users, now: () => Date.now(), bot, quests, achievements });
-    const farm = new FarmService({ db: env.DB, users, now: () => Date.now(), bot, quests, achievements });
+    const farm = new FarmService({ db: env.DB, users, now: () => Date.now(), bot, quests, achievements, social });
 
     const notifier = new NotificationService({
       users,

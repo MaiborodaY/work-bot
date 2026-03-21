@@ -431,6 +431,10 @@ export class UiFactory {
         { text: this._t(l, "ui.cityboard.topsmart"), callback_data: "city:topsmart" },
         { text: this._t(l, "ui.cityboard.topstrong"),    callback_data: "city:topstrong" }
       ],
+      [
+        { text: this._t(l, "ui.cityboard.topfarmweek"), callback_data: "city:topfarmweek" },
+        { text: this._t(l, "ui.cityboard.topfarmall"), callback_data: "city:topfarmall" }
+      ],
       [{ text: this._t(l, "ui.cityboard.rename"), callback_data: "social:name" }],
       [{ text: this._t(l, "ui.back.default"), callback_data: this._go(Routes.CITY) }],
     ];
@@ -525,6 +529,36 @@ export class UiFactory {
       const m = medals[i] || `${i+1}.`;
       const best = typeof x.best === "number" ? x.best : 0;
       lines.push(`${m} ${x.name} — $${best}`);
+    });
+    return lines.join("\n");
+  }
+
+  cityTopFarmWeekCaption(list, lang = "ru") {
+    const l = this._lang(lang);
+    if (!Array.isArray(list) || !list.length) {
+      return this._t(l, "ui.cityboard.farmweek.empty");
+    }
+    const medals = ["🥇", "🥈", "🥉"];
+    const lines = [this._t(l, "ui.cityboard.farmweek.title")];
+    list.forEach((x, i) => {
+      const m = medals[i] || `${i + 1}.`;
+      const total = Math.max(0, Number(x?.total || x?.money || 0));
+      lines.push(`${m} ${x.name} — $${total}`);
+    });
+    return lines.join("\n");
+  }
+
+  cityTopFarmAllCaption(list, lang = "ru") {
+    const l = this._lang(lang);
+    if (!Array.isArray(list) || !list.length) {
+      return this._t(l, "ui.cityboard.farmall.empty");
+    }
+    const medals = ["🥇", "🥈", "🥉"];
+    const lines = [this._t(l, "ui.cityboard.farmall.title")];
+    list.forEach((x, i) => {
+      const m = medals[i] || `${i + 1}.`;
+      const total = Math.max(0, Number(x?.total || x?.money || 0));
+      lines.push(`${m} ${x.name} — $${total}`);
     });
     return lines.join("\n");
   }

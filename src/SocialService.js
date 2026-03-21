@@ -102,6 +102,7 @@ export class SocialService {
       if (storedWeek !== curWeek) {
         await this.db.put("agg:week", "0");
         await this.db.put("lb:week", "[]");          // ← очищаем недельный топ
+        await this.db.put("lb:farm_week", "[]");
         await this.db.put("state:weekKey", curWeek);
       }
 
@@ -262,6 +263,47 @@ export class SocialService {
   async getWeeklyTop() {
     await this.ensurePeriod();
     const raw = (await this.db.get("lb:week")) || "[]";
+    return JSON.parse(raw);
+  }
+
+  // ====== Топ фермы: доход (неделя / all-time) ======
+  async _updateFarmTopKey(key, { userId, displayName, total }) {
+    const raw = (await this.db.get(key)) || "[]";
+    /** @type {{userId:string,name:string,total:number}[]} */
+    const list = JSON.parse(raw);
+
+    const safeTotal = Math.max(0, Number(total) || 0);
+    const idx = list.findIndex(x => String(x.userId) === String(userId));
+    if (idx >= 0) {
+      list[idx].name = displayName || String(userId);
+      list[idx].total = safeTotal;
+    } else {
+      list.push({ userId, name: displayName || String(userId), total: safeTotal });
+    }
+
+    list.sort((a, b) => (Number(b.total) || 0) - (Number(a.total) || 0));
+    const trimmed = list.slice(0, 10);
+    await this.db.put(key, JSON.stringify(trimmed));
+    return trimmed;
+  }
+
+  async maybeUpdateFarmTop({ userId, displayName, weekTotal, allTotal }) {
+    await this.ensurePeriod();
+    const safeWeek = Math.max(0, Number(weekTotal) || 0);
+    const safeAll = Math.max(0, Number(allTotal) || 0);
+    await this._updateFarmTopKey("lb:farm_week", { userId, displayName, total: safeWeek });
+    await this._updateFarmTopKey("lb:farm_all", { userId, displayName, total: safeAll });
+  }
+
+  async getFarmWeekTop() {
+    await this.ensurePeriod();
+    const raw = (await this.db.get("lb:farm_week")) || "[]";
+    return JSON.parse(raw);
+  }
+
+  async getFarmAllTop() {
+    await this.ensurePeriod();
+    const raw = (await this.db.get("lb:farm_all")) || "[]";
     return JSON.parse(raw);
   }
   // === Топ умников (уровень, all-time) ===

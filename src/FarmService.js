@@ -12,13 +12,14 @@ function toInt(raw, fallback = 0) {
 }
 
 export class FarmService {
-  constructor({ db, users, now, bot = null, quests = null, achievements = null }) {
+  constructor({ db, users, now, bot = null, quests = null, achievements = null, social = null }) {
     this.db = db || users?.db || null;
     this.users = users || null;
     this.now = now || (() => Date.now());
     this.bot = bot || null;
     this.quests = quests || null;
     this.achievements = achievements || null;
+    this.social = social || null;
   }
 
   _cfg() {
@@ -351,6 +352,44 @@ export class FarmService {
     return `${mins}${s.timeMin}`;
   }
 
+  _weekKey(ts = this.now()) {
+    const d = new Date(Number(ts) || this.now());
+    const tmp = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+    const dayNum = (tmp.getUTCDay() + 6) % 7; // 0..6, 0=Monday
+    const thursday = new Date(tmp);
+    thursday.setUTCDate(tmp.getUTCDate() - dayNum + 3);
+    const firstThursday = new Date(Date.UTC(thursday.getUTCFullYear(), 0, 4));
+    const diffDays = Math.floor((thursday.getTime() - firstThursday.getTime()) / 86400000);
+    const week = 1 + Math.floor(diffDays / 7);
+    return `${thursday.getUTCFullYear()}${String(week).padStart(2, "0")}`;
+  }
+
+  _ensureFarmStats(u) {
+    if (!u || typeof u !== "object") return false;
+    let changed = false;
+    if (!u.stats || typeof u.stats !== "object") {
+      u.stats = {};
+      changed = true;
+    }
+    if (typeof u.stats.farmHarvestCount !== "number" || !Number.isFinite(u.stats.farmHarvestCount)) {
+      u.stats.farmHarvestCount = 0;
+      changed = true;
+    }
+    if (typeof u.stats.farmMoneyTotal !== "number" || !Number.isFinite(u.stats.farmMoneyTotal)) {
+      u.stats.farmMoneyTotal = 0;
+      changed = true;
+    }
+    if (typeof u.stats.farmWeekKey !== "string") {
+      u.stats.farmWeekKey = "";
+      changed = true;
+    }
+    if (typeof u.stats.farmMoneyWeek !== "number" || !Number.isFinite(u.stats.farmMoneyWeek)) {
+      u.stats.farmMoneyWeek = 0;
+      changed = true;
+    }
+    return changed;
+  }
+
   _leftLabel(source, msLeft) {
     return this._durationLabel(source, Math.max(0, toInt(msLeft, 0)));
   }
@@ -599,6 +638,7 @@ export class FarmService {
 
   async harvest(u, plotIndex) {
     this._normalizeModel(u);
+    this._ensureFarmStats(u);
     const s = this._s(u);
     const limit = this._plotLimit(u);
     const target = this._plotByIndex(u, plotIndex);
@@ -622,8 +662,18 @@ export class FarmService {
 
     const sellPrice = crop.sellPrice;
     u.money = toInt(u?.money, 0) + sellPrice;
+    const nowTs = this.now();
+    const wk = this._weekKey(nowTs);
+    if (String(u.stats.farmWeekKey || "") !== wk) {
+      u.stats.farmWeekKey = wk;
+      u.stats.farmMoneyWeek = 0;
+    }
+    u.stats.farmHarvestCount = toInt(u?.stats?.farmHarvestCount, 0) + 1;
+    u.stats.farmMoneyTotal = toInt(u?.stats?.farmMoneyTotal, 0) + sellPrice;
+    u.stats.farmMoneyWeek = toInt(u?.stats?.farmMoneyWeek, 0) + sellPrice;
+
     Object.assign(p, this._defaultPlot(target.index));
-    markUsefulActivity(u, this.now());
+    markUsefulActivity(u, nowTs);
 
     let qRes = null;
     if (this.quests?.onEvent) {
@@ -641,6 +691,14 @@ export class FarmService {
     }
 
     await this.users.save(u);
+    if (this.social?.maybeUpdateFarmTop) {
+      await this.social.maybeUpdateFarmTop({
+        userId: u.id,
+        displayName: String(u?.displayName || "").trim(),
+        weekTotal: toInt(u?.stats?.farmMoneyWeek, 0),
+        allTotal: toInt(u?.stats?.farmMoneyTotal, 0)
+      }).catch(() => {});
+    }
     if (qRes?.events?.length && this.quests?.notifyEvents) {
       await this.quests.notifyEvents(u, qRes.events).catch(() => {});
     }

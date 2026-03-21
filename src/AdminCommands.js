@@ -989,6 +989,9 @@ export class AdminCommands {
     let petBought = 0;
     let petCat = 0;
     let petDog = 0;
+    let farmUsers = 0;
+    let farmHarvestTotal = 0;
+    let farmIncomeTotal = 0;
 
     // eslint-disable-next-line no-constant-condition
     while (true) {
@@ -1016,6 +1019,12 @@ export class AdminCommands {
           const didBar = this._toBool(stats.didBar);
           const didBusiness = this._toBool(stats.didBusiness) || this._hasAnyBusiness(u);
           const petStats = this._petPurchaseStats(u);
+          const farmHarvestCount = Math.max(
+            0,
+            Number(stats.farmHarvestCount || 0),
+            Number(u?.achievements?.progress?.farmHarvestTotal || 0)
+          );
+          const farmMoneyTotal = Math.max(0, Number(stats.farmMoneyTotal || 0));
 
           if (didFirstShift) firstShift += 1;
           if (didFirstClaim) firstClaim += 1;
@@ -1025,6 +1034,9 @@ export class AdminCommands {
           if (petStats.bought) petBought += 1;
           if (petStats.cat) petCat += 1;
           if (petStats.dog) petDog += 1;
+          if (farmHarvestCount > 0) farmUsers += 1;
+          farmHarvestTotal += Math.max(0, Math.floor(farmHarvestCount));
+          farmIncomeTotal += Math.max(0, Math.floor(farmMoneyTotal));
         } catch {
           // skip bad rows
         }
@@ -1044,6 +1056,9 @@ export class AdminCommands {
       `Bought first business: ${firstBiz} (${this._pct(firstBiz, registered)}%)`,
       `Bought pet (ever): ${petBought} (${this._pct(petBought, registered)}%)`,
       `  cat: ${petCat}, dog: ${petDog}`,
+      `Farm users (harvested >=1): ${farmUsers} (${this._pct(farmUsers, registered)}%)`,
+      `Farm harvests total: ${farmHarvestTotal}`,
+      `Farm income total: $${farmIncomeTotal}`,
       "",
       `Excluded admins: ${excludedAdmins}`
     ];

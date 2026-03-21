@@ -778,7 +778,11 @@ export class UserStore {
         didFirstClaim: false,
         didGym: false,
         didBar: false,
-        didBusiness: false
+        didBusiness: false,
+        farmHarvestCount: 0,
+        farmMoneyTotal: 0,
+        farmWeekKey: "",
+        farmMoneyWeek: 0
       },
       lastDailyRewardDay: "",
 

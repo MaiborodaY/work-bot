@@ -10,6 +10,8 @@ export const socialHandler = {
   data === "city:topsmart" ||     // ← добавили
   data === "city:topstrong" ||
   data === "city:toplucky" ||
+  data === "city:topfarmweek" ||
+  data === "city:topfarmall" ||
   data === "social:name",
 
 
@@ -103,6 +105,50 @@ export const socialHandler = {
         locations.setSourceMessage(null);
       }, "", lang);
 
+      return;
+    }
+
+    if (data === "city:topfarmweek") {
+      await answer(cb.id);
+      const raw = await social.getFarmWeekTop().catch(() => []);
+      const norm = (item) => {
+        const idStr = String(item.userId || "");
+        const looksLikeId = typeof item.name === "string" && /^[0-9]+$/.test(item.name.trim());
+        const empty = !item.name || !String(item.name).trim();
+        const masked = tt("loc.square.player_fallback_id", { id: idStr.slice(-4).padStart(4, "0") });
+        return { ...item, name: (empty || looksLikeId) ? masked : String(item.name).trim() };
+      };
+      const top = Array.isArray(raw) ? raw.map(norm) : [];
+      await locations.media.show({
+        sourceMsg: locations._sourceMsg,
+        place: "CityBoard",
+        caption: ui.cityTopFarmWeekCaption(top, lang),
+        keyboard: topProfileKb(top, "farmweek", ui.cityTopDay(lang)),
+        policy: "auto",
+      });
+      locations.setSourceMessage(null);
+      return;
+    }
+
+    if (data === "city:topfarmall") {
+      await answer(cb.id);
+      const raw = await social.getFarmAllTop().catch(() => []);
+      const norm = (item) => {
+        const idStr = String(item.userId || "");
+        const looksLikeId = typeof item.name === "string" && /^[0-9]+$/.test(item.name.trim());
+        const empty = !item.name || !String(item.name).trim();
+        const masked = tt("loc.square.player_fallback_id", { id: idStr.slice(-4).padStart(4, "0") });
+        return { ...item, name: (empty || looksLikeId) ? masked : String(item.name).trim() };
+      };
+      const top = Array.isArray(raw) ? raw.map(norm) : [];
+      await locations.media.show({
+        sourceMsg: locations._sourceMsg,
+        place: "CityBoard",
+        caption: ui.cityTopFarmAllCaption(top, lang),
+        keyboard: topProfileKb(top, "farmall", ui.cityTopDay(lang)),
+        policy: "auto",
+      });
+      locations.setSourceMessage(null);
       return;
     }
 
