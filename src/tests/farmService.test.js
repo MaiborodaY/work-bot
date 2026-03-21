@@ -46,7 +46,7 @@ test("farm: plant deducts money, stores growing state and due key", async () => 
 
   const res = await svc.plant(u, 1, "carrot");
   assert.equal(res.ok, true);
-  assert.equal(u.money, 9800);
+  assert.equal(u.money, 9750);
   assert.equal(u.farm.plots[0].status, "growing");
   assert.equal(u.farm.plots[0].cropId, "carrot");
   assert.ok(u.farm.plots[0].readyAt > nowTs);
@@ -94,7 +94,7 @@ test("farm: harvest resets plot and pays money", async () => {
 
   const res = await svc.harvest(u, 1);
   assert.equal(res.ok, true);
-  assert.equal(u.money, 900);
+  assert.equal(u.money, 2450);
   assert.equal(u.farm.plots[0].status, "empty");
   assert.equal(u.farm.plots[0].cropId, "");
   assert.equal(questEvents, 1);
@@ -146,8 +146,8 @@ test("farm: main view contains help button and help view shows crop economics", 
 
   const help = await svc.buildHelpView(u);
   assert.match(help.caption, /Морковь/);
-  assert.match(help.caption, /\$200/);
-  assert.match(help.caption, /\$350/);
+  assert.match(help.caption, /\$250/);
+  assert.match(help.caption, /\$900/);
 });
 
 test("farm: buy next plot deducts money and unlocks new plot", async () => {

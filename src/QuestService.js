@@ -180,6 +180,10 @@ export class QuestService {
       workShifts: 0,
       workEarn: 0,
       gymTrains: 0,
+      farmPlants: 0,
+      farmHarvestCarrot: 0,
+      farmHarvestTomato: 0,
+      farmHarvestCorn: 0,
       bizClaimDays: 0,
       bizExpands: 0,
       labourHires: 0,
@@ -495,7 +499,7 @@ export class QuestService {
     return selected.slice(0, this._dailyCount()).map((q) => this._toQuest(u, q));
   }
 
-  _pickWeeklyQuests(u, pool, seed) {
+  _pickWeeklyQuests(u, pool, seed, count = this._weeklyCount()) {
     const rng = rngFromSeed(seed);
     const shuffled = shuffleDeterministic(pool, rng);
     shuffled.sort((a, b) => {
@@ -507,7 +511,7 @@ export class QuestService {
 
     const selected = [];
     for (const q of shuffled) {
-      if (selected.length >= this._weeklyCount()) break;
+      if (selected.length >= count) break;
       if (!selected.length) {
         selected.push(q);
         continue;
@@ -517,7 +521,7 @@ export class QuestService {
       if (!duplicateCategory) selected.push(q);
     }
     for (const q of shuffled) {
-      if (selected.length >= this._weeklyCount()) break;
+      if (selected.length >= count) break;
       if (selected.some((x) => String(x?.id || "") === String(q?.id || ""))) continue;
       selected.push(q);
     }
@@ -527,7 +531,15 @@ export class QuestService {
       if (da !== db) return db - da;
       return String(a?.id || "").localeCompare(String(b?.id || ""));
     });
-    return selected.slice(0, this._weeklyCount()).map((q) => this._toQuest(u, q));
+    return selected.slice(0, count).map((q) => this._toQuest(u, q));
+  }
+
+  _pickRandomWeeklyQuest(u, pool, seed) {
+    if (!Array.isArray(pool) || !pool.length) return null;
+    const rng = rngFromSeed(seed);
+    const shuffled = shuffleDeterministic(pool, rng);
+    const one = shuffled[0] || null;
+    return one ? this._toQuest(u, one) : null;
   }
 
   _generateDaily(u, day) {
@@ -543,15 +555,28 @@ export class QuestService {
   }
 
   _generateWeekly(u, week) {
+    const count = this._weeklyCount();
+    const baseSeed = `${u?.id || ""}:${week}:weekly`;
     const pool = this._weeklyPool().filter((q) => this._weeklyQuestAvailable(u, q?.id));
-    const picked = this._pickWeeklyQuests(u, pool, `${u?.id || ""}:${week}:weekly`);
-    if (picked.length >= this._weeklyCount()) return picked;
+    const farmPool = pool.filter((q) => String(q?.category || "") === "farm");
+    const nonFarmPool = pool.filter((q) => String(q?.category || "") !== "farm");
 
-    const fallbackWork = this._weeklyPool().filter((q) => String(q?.category || "") === "work");
-    const add = this._pickWeeklyQuests(u, fallbackWork, `${u?.id || ""}:${week}:weekly:fallback`);
+    const selected = [];
+    const forcedFarm = this._pickRandomWeeklyQuest(u, farmPool, `${baseSeed}:farm`);
+    if (forcedFarm) selected.push(forcedFarm);
+
+    const needMain = Math.max(0, count - selected.length);
+    if (needMain > 0) {
+      const main = this._pickWeeklyQuests(u, nonFarmPool, `${baseSeed}:main`, needMain);
+      selected.push(...main);
+    }
+    if (selected.length >= count) return selected.slice(0, count);
+
+    const fallbackPool = this._weeklyPool().filter((q) => this._weeklyQuestAvailable(u, q?.id));
+    const add = this._pickWeeklyQuests(u, fallbackPool, `${baseSeed}:fallback`, count);
     const byId = new Map();
-    for (const q of [...picked, ...add]) byId.set(q.id, q);
-    return [...byId.values()].slice(0, this._weeklyCount());
+    for (const q of [...selected, ...add]) byId.set(q.id, q);
+    return [...byId.values()].slice(0, count);
   }
 
   _normalizeQuestList(list, type) {
@@ -633,6 +658,14 @@ export class QuestService {
         return toInt(w.workEarn, 0);
       case "w_gym_7trains":
         return toInt(w.gymTrains, 0);
+      case "w_farm_plant_seeds":
+        return toInt(w.farmPlants, 0);
+      case "w_farm_harvest_carrot":
+        return toInt(w.farmHarvestCarrot, 0);
+      case "w_farm_harvest_tomato":
+        return toInt(w.farmHarvestTomato, 0);
+      case "w_farm_harvest_corn":
+        return toInt(w.farmHarvestCorn, 0);
       case "w_biz_streak":
         return toInt(weekly.bizStreakCurrent, 0);
       case "w_biz_expand":
@@ -738,10 +771,19 @@ export class QuestService {
         d.petFeeds += 1;
         changed = true;
         break;
-      case "farm_harvest":
-        d.farmHarvests += 1;
+      case "farm_plant":
+        w.farmPlants += 1;
         changed = true;
         break;
+      case "farm_harvest": {
+        d.farmHarvests += 1;
+        const cropId = String(ctx?.cropId || "");
+        if (cropId === "carrot") w.farmHarvestCarrot += 1;
+        else if (cropId === "tomato") w.farmHarvestTomato += 1;
+        else if (cropId === "corn") w.farmHarvestCorn += 1;
+        changed = true;
+        break;
+      }
       case "fortune_spin":
         d.fortuneSpins += 1;
         changed = true;
@@ -900,6 +942,10 @@ export class QuestService {
         w_stocks_profit: "Сделать 1 продажу акций в плюс (продажа выше твоей средней цены покупки)",
         w_stocks_5companies: `Держать акции ${target} компаний одновременно`,
         w_stocks_invest: `Купить акций суммарно на $${target} за неделю`,
+        w_farm_harvest_carrot: `Собрать и продать ${target} моркови`,
+        w_farm_harvest_tomato: `Собрать и продать ${target} помидоров`,
+        w_farm_harvest_corn: `Собрать и продать ${target} кукурузы`,
+        w_farm_plant_seeds: `Посадить ${target} семян`,
         w_thief_3attempts: `Совершить ${target} попытк(и) кражи за неделю`,
         w_thief_total: `Украсть суммарно $${target}`
       },
@@ -937,6 +983,10 @@ export class QuestService {
         w_stocks_profit: "Зробити 1 продаж акцій у плюс (продаж вище твоєї середньої ціни покупки)",
         w_stocks_5companies: `Тримати акції ${target} компаній одночасно`,
         w_stocks_invest: `Купити акцій сумарно на $${target} за тиждень`,
+        w_farm_harvest_carrot: `Зібрати і продати ${target} морквин`,
+        w_farm_harvest_tomato: `Зібрати і продати ${target} помідорів`,
+        w_farm_harvest_corn: `Зібрати і продати ${target} кукурудзи`,
+        w_farm_plant_seeds: `Посадити ${target} насінин`,
         w_thief_3attempts: `Здійснити ${target} спроб(и) крадіжки за тиждень`,
         w_thief_total: `Вкрасти сумарно $${target}`
       },
@@ -974,6 +1024,10 @@ export class QuestService {
         w_stocks_profit: "Make 1 profitable share sale (sale price above your average buy price)",
         w_stocks_5companies: `Hold shares of ${target} companies at once`,
         w_stocks_invest: `Buy shares for total $${target} this week`,
+        w_farm_harvest_carrot: `Harvest and sell ${target} carrots`,
+        w_farm_harvest_tomato: `Harvest and sell ${target} tomatoes`,
+        w_farm_harvest_corn: `Harvest and sell ${target} corn`,
+        w_farm_plant_seeds: `Plant ${target} seeds`,
         w_thief_3attempts: `Make ${target} theft attempt(s) this week`,
         w_thief_total: `Steal total $${target}`
       }
@@ -990,7 +1044,7 @@ export class QuestService {
         weeklyTitle: "📅 Weekly quests",
         updateIn: "⏳ Refresh in",
         bonusDaily: `🎯 Complete all three -> +💎${this._dailyBonusGems()}`,
-        bonusWeekly: `🎯 Complete both -> +💎${this._weeklyBonusGems()}`,
+        bonusWeekly: `🎯 Complete all weekly quests -> +💎${this._weeklyBonusGems()}`,
         doneLine: "Completed · reward received",
         none: "No quests yet.",
         subTitle: "⭐ Special quest",
@@ -1014,7 +1068,7 @@ export class QuestService {
         weeklyTitle: "📅 Завдання на тиждень",
         updateIn: "⏳ Оновлення через",
         bonusDaily: `🎯 Виконай усі три -> +💎${this._dailyBonusGems()}`,
-        bonusWeekly: `🎯 Виконай обидва -> +💎${this._weeklyBonusGems()}`,
+        bonusWeekly: `🎯 Виконай усі тижневі -> +💎${this._weeklyBonusGems()}`,
         doneLine: "Виконано · нагороду отримано",
         none: "Поки немає завдань.",
         subTitle: "⭐ Спец-завдання",
@@ -1037,7 +1091,7 @@ export class QuestService {
       weeklyTitle: "📅 Задания на неделю",
       updateIn: "⏳ Обновление через",
       bonusDaily: `🎯 Выполни все три -> +💎${this._dailyBonusGems()}`,
-      bonusWeekly: `🎯 Выполни оба -> +💎${this._weeklyBonusGems()}`,
+      bonusWeekly: `🎯 Выполни все недельные -> +💎${this._weeklyBonusGems()}`,
       doneLine: "Выполнено · награда получена",
       none: "Пока заданий нет.",
       subTitle: "⭐ Спец-задача",

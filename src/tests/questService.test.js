@@ -266,3 +266,43 @@ test("first business special quest: awards money once on business buy only", asy
   assert.equal(u.money, 1000);
   assert.equal(second.events.some((ev) => ev.id === "biz_buy_first"), false);
 });
+
+test("weekly generation: always includes exactly one farm weekly quest and total is 3", async () => {
+  const qs = makeService();
+  const u = makeUser({ withBusiness: false });
+
+  await qs.ensureCycles(u, { persist: false });
+
+  const weekly = Array.isArray(u?.quests?.weekly?.list) ? u.quests.weekly.list : [];
+  assert.equal(weekly.length, 3);
+  const farmCount = weekly.filter((q) => String(q?.category || "") === "farm").length;
+  assert.equal(farmCount, 1);
+});
+
+test("weekly farm planting quest progresses on farm_plant events", async () => {
+  const qs = makeService();
+  const u = makeUser({ withBusiness: false });
+  await qs.ensureCycles(u, { persist: false });
+  u.quests.weekly.list = [
+    {
+      id: "w_farm_plant_seeds",
+      type: "weekly",
+      category: "farm",
+      difficulty: "medium",
+      rewardMoney: 500,
+      target: 2,
+      progress: 0,
+      done: false,
+      paid: false
+    }
+  ];
+
+  await qs.onEvent(u, "farm_plant", { cropId: "carrot" }, { persist: false, notify: false });
+  assert.equal(u.quests.weekly.list[0].progress, 1);
+  assert.equal(u.quests.weekly.list[0].done, false);
+
+  await qs.onEvent(u, "farm_plant", { cropId: "tomato" }, { persist: false, notify: false });
+  assert.equal(u.quests.weekly.list[0].progress, 2);
+  assert.equal(u.quests.weekly.list[0].done, true);
+  assert.equal(u.money, 500);
+});

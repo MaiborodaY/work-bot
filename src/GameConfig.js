@@ -99,7 +99,7 @@ export const CONFIG = {
 
   QUESTS: {
     DAILY_COUNT: 3,
-    WEEKLY_COUNT: 2,
+    WEEKLY_COUNT: 3,
     DAILY_BONUS_GEMS: 1,
     WEEKLY_BONUS_GEMS: 3,
     SUB_BONUS_REWARD_MONEY: 300,
@@ -150,7 +150,11 @@ export const CONFIG = {
       { id: "w_stocks_5companies", type: "weekly", category: "stocks", difficulty: "hard", rewardMoney: 6000, target: 1 },
       { id: "w_stocks_invest", type: "weekly", category: "stocks", difficulty: "hard", rewardMoney: 7000, target: 50000 },
       { id: "w_thief_3attempts", type: "weekly", category: "thief", difficulty: "medium", rewardMoney: 6000, target: 3 },
-      { id: "w_thief_total", type: "weekly", category: "thief", difficulty: "hard", rewardMoney: 10000, target: 10000 }
+      { id: "w_thief_total", type: "weekly", category: "thief", difficulty: "hard", rewardMoney: 10000, target: 10000 },
+      { id: "w_farm_harvest_carrot", type: "weekly", category: "farm", difficulty: "easy", rewardMoney: 3500, target: 6 },
+      { id: "w_farm_harvest_tomato", type: "weekly", category: "farm", difficulty: "medium", rewardMoney: 5000, target: 4 },
+      { id: "w_farm_harvest_corn", type: "weekly", category: "farm", difficulty: "hard", rewardMoney: 7000, target: 2 },
+      { id: "w_farm_plant_seeds", type: "weekly", category: "farm", difficulty: "medium", rewardMoney: 4500, target: 8 }
     ]
   },
 
@@ -428,9 +432,9 @@ export const CONFIG = {
     MAX_PLOTS: 6,
     PLOT_PRICES: [5000, 15000, 35000, 75000, 150000],
     CROPS: {
-      carrot: { emoji: "🥕", seedPrice: 200, growMs: 30 * 60_000, sellPrice: 350 },
-      tomato: { emoji: "🍅", seedPrice: 600, growMs: 60 * 60_000, sellPrice: 900 },
-      corn: { emoji: "🌽", seedPrice: 1500, growMs: 120 * 60_000, sellPrice: 2400 }
+      carrot: { emoji: "🥕", seedPrice: 250, growMs: 30 * 60_000, sellPrice: 900 },
+      tomato: { emoji: "🍅", seedPrice: 700, growMs: 60 * 60_000, sellPrice: 2450 },
+      corn: { emoji: "🌽", seedPrice: 1800, growMs: 120 * 60_000, sellPrice: 6300 }
     },
     NOTIFY: {
       DUE_BUCKET_MS: 5 * 60_000,

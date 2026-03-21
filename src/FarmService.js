@@ -665,7 +665,17 @@ export class FarmService {
 
     markUsefulActivity(u, nowTs);
     await this._markDue(u?.id, p.readyAt);
+    let qRes = null;
+    if (this.quests?.onEvent) {
+      qRes = await this.quests.onEvent(u, "farm_plant", { cropId: crop.id, cost: crop.seedPrice }, {
+        persist: false,
+        notify: false
+      }).catch(() => null);
+    }
     await this.users.save(u);
+    if (qRes?.events?.length && this.quests?.notifyEvents) {
+      await this.quests.notifyEvents(u, qRes.events).catch(() => {});
+    }
     return { ok: true, plotIndex: target.index, cropId: crop.id, growMs: crop.growMs };
   }
 
