@@ -40,7 +40,14 @@ export const farmHandler = {
     if (data === "farm:help") {
       await answer(cb.id);
       const view = await farm.buildHelpView(u);
-      await show(view);
+      await locations.media.show({
+        sourceMsg: locations._sourceMsg || cb?.message || null,
+        place: "FarmHelp",
+        caption: view.caption,
+        keyboard: view.keyboard,
+        policy: "auto"
+      });
+      locations.setSourceMessage(null);
       return;
     }
 
