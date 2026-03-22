@@ -975,6 +975,34 @@ export class AdminCommands {
     return false;
   }
 
+  _bizScore(u) {
+    const owned = Array.isArray(u?.biz?.owned) ? u.biz.owned : [];
+    let businesses = 0;
+    let slots = 0;
+    for (const b of owned) {
+      const id = String(typeof b === "string" ? b : b?.id || "").trim();
+      if (id) businesses += 1;
+      if (b && typeof b === "object" && Array.isArray(b.slots)) {
+        slots += b.slots.filter((s) => !!s?.purchased).length;
+      } else if (b && typeof b === "object" && b.slot && typeof b.slot === "object" && b.slot.purchased) {
+        // legacy single-slot shape
+        slots += 1;
+      }
+    }
+    return Math.max(0, businesses + slots);
+  }
+
+  _sortTopRows(rows, scoreKey = "score") {
+    const out = Array.isArray(rows) ? rows.slice() : [];
+    out.sort((a, b) => {
+      const bs = Math.max(0, Number(b?.[scoreKey]) || 0);
+      const as = Math.max(0, Number(a?.[scoreKey]) || 0);
+      if (bs !== as) return bs - as;
+      return String(a?.id || "").localeCompare(String(b?.id || ""));
+    });
+    return out;
+  }
+
   _petPurchaseStats(u) {
     const stats = (u?.stats && typeof u.stats === "object") ? u.stats : {};
     const petType = String(u?.pet?.type || "").trim();
@@ -1013,6 +1041,9 @@ export class AdminCommands {
     let farmHarvestTotal = 0;
     let farmIncomeTotal = 0;
     let farmIncome7dTotal = 0;
+    const topFarmAllRows = [];
+    const topFarm7dRows = [];
+    const topBizRows = [];
 
     // eslint-disable-next-line no-constant-condition
     while (true) {
@@ -1039,6 +1070,7 @@ export class AdminCommands {
           const didGym = this._toBool(stats.didGym) || Math.max(0, Number(u?.gym?.level || 0)) > 0;
           const didBar = this._toBool(stats.didBar);
           const didBusiness = this._toBool(stats.didBusiness) || this._hasAnyBusiness(u);
+          const bizScore = this._bizScore(u);
           const petStats = this._petPurchaseStats(u);
           const farmHarvestCount = Math.max(
             0,
@@ -1068,6 +1100,17 @@ export class AdminCommands {
           farmHarvestTotal += Math.max(0, Math.floor(farmHarvestCount));
           farmIncomeTotal += Math.max(0, Math.floor(farmMoneyTotal));
           farmIncome7dTotal += Math.max(0, Math.floor(farmIncome7d));
+
+          const displayName = String(u?.displayName || "").trim() || id;
+          if (farmMoneyTotal > 0) {
+            topFarmAllRows.push({ id, name: displayName, score: Math.floor(farmMoneyTotal) });
+          }
+          if (farmIncome7d > 0) {
+            topFarm7dRows.push({ id, name: displayName, score: Math.floor(farmIncome7d) });
+          }
+          if (bizScore > 0) {
+            topBizRows.push({ id, name: displayName, score: Math.floor(bizScore) });
+          }
         } catch {
           // skip bad rows
         }
@@ -1094,6 +1137,36 @@ export class AdminCommands {
       "",
       `Excluded admins: ${excludedAdmins}`
     ];
+
+    const topFarmAll = this._sortTopRows(topFarmAllRows, "score").slice(0, 10);
+    const topFarm7d = this._sortTopRows(topFarm7dRows, "score").slice(0, 10);
+    const topBiz = this._sortTopRows(topBizRows, "score").slice(0, 10);
+
+    if (topFarmAll.length) {
+      lines.push("", "<b>Top 10 farmers (all-time income)</b>");
+      for (let i = 0; i < topFarmAll.length; i += 1) {
+        const r = topFarmAll[i];
+        const place = i === 0 ? "🥇" : (i === 1 ? "🥈" : (i === 2 ? "🥉" : `${i + 1}.`));
+        lines.push(`${place} ${this._escapeHtml(r.name)} — $${Math.max(0, Number(r.score) || 0)}`);
+      }
+    }
+    if (topFarm7d.length) {
+      lines.push("", "<b>Top 10 farmers (last 7d income)</b>");
+      for (let i = 0; i < topFarm7d.length; i += 1) {
+        const r = topFarm7d[i];
+        const place = i === 0 ? "🥇" : (i === 1 ? "🥈" : (i === 2 ? "🥉" : `${i + 1}.`));
+        lines.push(`${place} ${this._escapeHtml(r.name)} — $${Math.max(0, Number(r.score) || 0)}`);
+      }
+    }
+    if (topBiz.length) {
+      lines.push("", "<b>Top 10 business (score)</b>");
+      for (let i = 0; i < topBiz.length; i += 1) {
+        const r = topBiz[i];
+        const place = i === 0 ? "🥇" : (i === 1 ? "🥈" : (i === 2 ? "🥉" : `${i + 1}.`));
+        lines.push(`${place} ${this._escapeHtml(r.name)} — ${Math.max(0, Number(r.score) || 0)} pts`);
+      }
+    }
+
     await this.send(lines.join("\n"));
   }
 
