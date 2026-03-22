@@ -89,6 +89,16 @@ export default {
       const bot = new TelegramClient(env.BOT_TOKEN);
       const users = new UserStore(env.DB);
       const economy = new EconomyService();
+      const __adminIdSet = new Set(
+        [
+          ...String(env.ADMIN_IDS || "")
+            .split(/[\s,]+/)
+            .map((s) => s && String(s))
+            .filter(Boolean),
+          ...[env.ADMIN_ID, env.ADMIN2].filter(Boolean).map(String)
+        ]
+      );
+      const isAdmin = (id) => __adminIdSet.has(String(id));
       const ratings = new RatingService({ db: env.DB, users, now: () => Date.now() });
       const achievements = new AchievementService({ users, db: env.DB, now: () => Date.now(), bot, ratings });
       const quests = new QuestService({ users, now: () => Date.now(), bot });
@@ -102,6 +112,7 @@ export default {
         social,
         ratings,
         thief,
+        isAdmin,
         now: () => Date.now(),
         channelId: env.CHANNEL_ID,
         playUrl: CONFIG?.CHANNEL?.PLAY_URL
@@ -169,6 +180,16 @@ export default {
     const casino = new CasinoEngine();
     const now = () => Date.now();
     const pct = (a, b) => Math.min(100, Math.floor((a / b) * 100));
+    const __adminIdSet = new Set(
+      [
+        ...String(env.ADMIN_IDS || "")
+          .split(/[\s,]+/)
+          .map((s) => s && String(s))
+          .filter(Boolean),
+        ...[env.ADMIN_ID, env.ADMIN2].filter(Boolean).map(String)
+      ]
+    );
+    const isAdmin = (id) => __adminIdSet.has(String(id));
 
     const ratings = new RatingService({ db: env.DB, users, now });
     const achievements = new AchievementService({ users, db: env.DB, now, bot, ratings });
@@ -186,6 +207,7 @@ export default {
       social,
       ratings,
       thief,
+      isAdmin,
       now,
       channelId: env.CHANNEL_ID,
       playUrl: CONFIG?.CHANNEL?.PLAY_URL
@@ -566,17 +588,7 @@ export default {
       return { rendered: true };
     }
 
-    // Support multiple admin IDs via env variables: ADMIN_ID, ADMIN2, ADMIN_IDS (comma/space-separated)
-    const __adminIdSet = new Set(
-      [
-        ...String(env.ADMIN_IDS || "")
-          .split(/[\s,]+/)
-          .map((s) => s && String(s))
-          .filter(Boolean),
-        ...[env.ADMIN_ID, env.ADMIN2].filter(Boolean).map(String)
-      ]
-    );
-    const isAdmin = (id) => __adminIdSet.has(String(id));
+    // isAdmin is initialized above and reused here.
 
     const admin = new AdminCommands({
       users,
@@ -1323,6 +1335,16 @@ export default {
     const bot = new TelegramClient(env.BOT_TOKEN);
     const users = new UserStore(env.DB);
     const economy = new EconomyService();
+    const __adminIdSet = new Set(
+      [
+        ...String(env.ADMIN_IDS || "")
+          .split(/[\s,]+/)
+          .map((s) => s && String(s))
+          .filter(Boolean),
+        ...[env.ADMIN_ID, env.ADMIN2].filter(Boolean).map(String)
+      ]
+    );
+    const isAdmin = (id) => __adminIdSet.has(String(id));
     const ratings = new RatingService({ db: env.DB, users, now: () => Date.now() });
     const achievements = new AchievementService({ users, db: env.DB, now: () => Date.now(), bot, ratings });
     const quests = new QuestService({ users, now: () => Date.now(), bot });
@@ -1336,6 +1358,7 @@ export default {
       social,
       ratings,
       thief,
+      isAdmin,
       now: () => Date.now(),
       channelId: env.CHANNEL_ID,
       playUrl: CONFIG?.CHANNEL?.PLAY_URL

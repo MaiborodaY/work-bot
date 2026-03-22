@@ -18,6 +18,7 @@ export class ChannelService {
     social = null,
     ratings = null,
     thief = null,
+    isAdmin = null,
     now = () => Date.now(),
     channelId = "",
     playUrl = ""
@@ -27,6 +28,7 @@ export class ChannelService {
     this.social = social;
     this.ratings = ratings;
     this.thief = thief;
+    this.isAdmin = (typeof isAdmin === "function") ? isAdmin : (() => false);
     this.now = now;
     this.channelId = String(channelId || "").trim();
     this.playUrl = String(playUrl || CONFIG?.CHANNEL?.PLAY_URL || "t.me/reallifesame_bot").trim();
@@ -62,6 +64,20 @@ export class ChannelService {
 
   _topThiefLimit() {
     return Math.max(1, toInt(this._cfg()?.TOP_THIEF_LIMIT, 3));
+  }
+
+  _topFarmLimit() {
+    return Math.max(1, toInt(this._cfg()?.TOP_FARM_LIMIT, 3));
+  }
+
+  _isAdminUserId(userId) {
+    const id = String(userId ?? "").trim();
+    if (!id) return false;
+    try {
+      return !!this.isAdmin(id);
+    } catch {
+      return false;
+    }
   }
 
   _scheduleDays() {
@@ -167,6 +183,7 @@ export class ChannelService {
       ? await this.social.getDailyWinnersSnapshot(day)
       : [];
     const topEarners = (Array.isArray(topEarnersRaw) ? topEarnersRaw : [])
+      .filter((row) => !this._isAdminUserId(row?.userId))
       .slice(0, this._topEarnersLimit())
       .map((row, idx) => {
         const place = Math.max(1, toInt(row?.place, idx + 1));
@@ -184,6 +201,7 @@ export class ChannelService {
 
     const topBizRaw = this.ratings?.getTop ? await this.ratings.getTop("biz") : [];
     const topBiz = (Array.isArray(topBizRaw) ? topBizRaw : [])
+      .filter((row) => !this._isAdminUserId(row?.userId))
       .slice(0, this._topBizLimit())
       .map((row, idx) => ({
         place: idx + 1,
@@ -194,6 +212,7 @@ export class ChannelService {
 
     const topThievesRaw = this.ratings?.getTop ? await this.ratings.getTop("thief") : [];
     const topThieves = (Array.isArray(topThievesRaw) ? topThievesRaw : [])
+      .filter((row) => !this._isAdminUserId(row?.userId))
       .slice(0, this._topThiefLimit())
       .map((row, idx) => ({
         place: idx + 1,
@@ -205,19 +224,32 @@ export class ChannelService {
     const bestThief = this.thief?.getDailyBestStolen
       ? await this.thief.getDailyBestStolen(day)
       : null;
+    const bestThiefFiltered = this._isAdminUserId(bestThief?.userId) ? null : bestThief;
+
+    const topFarmRaw = this.social?.getFarmAllTop ? await this.social.getFarmAllTop() : [];
+    const topFarm = (Array.isArray(topFarmRaw) ? topFarmRaw : [])
+      .filter((row) => !this._isAdminUserId(row?.userId))
+      .slice(0, this._topFarmLimit())
+      .map((row, idx) => ({
+        place: idx + 1,
+        userId: String(row?.userId || "").trim(),
+        name: this._name(row?.name, row?.userId),
+        total: Math.max(0, toInt(row?.total, 0))
+      }));
 
     const earnersPositive = topEarners.filter((x) => Math.max(0, toInt(x?.earned, 0)) > 0).length;
-    const bestThiefAmount = Math.max(0, toInt(bestThief?.stolen, 0));
+    const bestThiefAmount = Math.max(0, toInt(bestThiefFiltered?.stolen, 0));
     const shouldPost = earnersPositive >= this._minEarnersToPost() || bestThiefAmount > 0;
 
     return {
       date: day,
       topEarners,
       topBiz,
+      topFarm,
       topThieves,
       bestThief: bestThiefAmount > 0 ? {
-        userId: String(bestThief?.userId || "").trim(),
-        name: this._name(bestThief?.name, bestThief?.userId),
+        userId: String(bestThiefFiltered?.userId || "").trim(),
+        name: this._name(bestThiefFiltered?.name, bestThiefFiltered?.userId),
         stolen: bestThiefAmount
       } : null,
       shouldPost
@@ -235,6 +267,7 @@ export class ChannelService {
           typeof parsed === "object" &&
           Array.isArray(parsed.topEarners) &&
           Array.isArray(parsed.topBiz) &&
+          Array.isArray(parsed.topFarm) &&
           Array.isArray(parsed.topThieves);
         if (valid) return parsed;
       } catch {
@@ -250,6 +283,7 @@ export class ChannelService {
     const date = String(snapshot?.date || this._yesterday());
     const topEarners = Array.isArray(snapshot?.topEarners) ? snapshot.topEarners : [];
     const topBiz = Array.isArray(snapshot?.topBiz) ? snapshot.topBiz : [];
+    const topFarm = Array.isArray(snapshot?.topFarm) ? snapshot.topFarm : [];
     const topThieves = Array.isArray(snapshot?.topThieves) ? snapshot.topThieves : [];
     const bestThief = snapshot?.bestThief || null;
     const dateTs = Date.parse(`${date}T00:00:00Z`);
@@ -280,6 +314,17 @@ export class ChannelService {
         const name = this._escapeHtml(this._name(row?.name, row?.userId));
         const score = Math.max(0, toInt(row?.score, 0));
         lines.push(`${marker} ${name} — ${score} pts`);
+      }
+    }
+
+    if (topFarm.length) {
+      lines.push("");
+      lines.push("🌱 <b>Top farmers (all-time)</b>");
+      for (const row of topFarm) {
+        const marker = this._placePrefix(row?.place);
+        const name = this._escapeHtml(this._name(row?.name, row?.userId));
+        const total = this._formatMoney(row?.total);
+        lines.push(`${marker} ${name} — ${total}`);
       }
     }
 
