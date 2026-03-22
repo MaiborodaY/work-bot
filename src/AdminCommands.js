@@ -45,27 +45,31 @@ export class AdminCommands {
     // ===== New admin menu =====
     if (/^\/admin(?:@\w+)?\s*$/i.test(input)) {
       await this.send(
-        "<b>Admin commands</b>\n" +
-        "/admin\n" +
-        "/users\n" +
-        "/grant &lt;userId&gt; &lt;amount&gt;\n" +
-        "/setmoney &lt;userId&gt; &lt;amount&gt;\n" +
-        "/givegem &lt;userId&gt; &lt;amount&gt;\n" +
-        "/setgem &lt;userId&gt; &lt;amount&gt;\n" +
-        "/wipe &lt;userId&gt;\n" +
-        "/labour_reindex - rebuild free labour index once\n\n" +
+        "<b>Admin commands</b>\n\n" +
+        "<b>Economy &amp; Profiles</b>\n" +
+        "/users - list users\n" +
+        "/grant &lt;userId&gt; &lt;amount&gt; - add money\n" +
+        "/setmoney &lt;userId&gt; &lt;amount&gt; - set money\n" +
+        "/givegem &lt;userId&gt; &lt;amount&gt; - add gems\n" +
+        "/setgem &lt;userId&gt; &lt;amount&gt; - set gems\n" +
+        "/wipe &lt;userId&gt; - full reset user profile\n\n" +
+        "<b>Indexes &amp; Patches</b>\n" +
+        "/labour_reindex - rebuild labour free index\n" +
+        "/admin_rebuild_ratings - rebuild rating indexes\n" +
+        "/admin_backfill_activity_today - mark useful activity today\n" +
+        "/admin_backfill_activity_today weekly_farm_patch - add missing weekly farm quest for current week\n\n" +
+        "<b>Analytics</b>\n" +
         "/admin_referrals - referrals/ads stats\n" +
-        "/admin_referrals &lt;userId&gt; - referral info for user\n" +
-        "/admin_retention - retention by cohorts (last 30d)\n" +
+        "/admin_referrals &lt;userId&gt; - referral info by user\n" +
+        "/admin_retention - cohorts retention (30d)\n" +
         "/admin_funnel - onboarding funnel (all-time)\n" +
-        "/admin_new_users [limit] - new users list (last 30d)\n" +
-        "/admin_backfill_activity_today - backfill useful activity for today\n" +
-        "/admin_quiz - quiz stats\n" +
-        "/admin_channel_preview - preview yesterday channel post\n" +
-        "/admin_channel_publish - publish yesterday channel post\n" +
-        "/admin_channel_force - force publish yesterday channel post\n" +
-        "/admin_channel_check [chat] - validate channel id/rights\n" +
-        "/admin_rebuild_ratings - rebuild top rating indexes once\n\n" +
+        "/admin_new_users [limit] - newest users list\n" +
+        "/admin_quiz - quiz stats\n\n" +
+        "<b>Channel</b>\n" +
+        "/admin_channel_preview - preview yesterday post\n" +
+        "/admin_channel_publish - publish yesterday post\n" +
+        "/admin_channel_force - force publish now\n" +
+        "/admin_channel_check [chat] - check channel rights/id\n\n" +
         "<b>Broadcast</b>\n" +
         "/broadcast - start draft mode\n" +
         "/broadcast_test - send draft only to you\n" +
@@ -381,8 +385,23 @@ export class AdminCommands {
       await this._sendNewUsers(limit);
       return true;
     }
-    if (/^\/admin_backfill_activity_today(?:@\w+)?\s*$/i.test(input)) {
-      await this._backfillActivityToday();
+    const mBackfill = input.match(/^\/admin_backfill_activity_today(?:@\w+)?(?:\s+([a-z_]+))?\s*$/i);
+    if (mBackfill) {
+      const mode = String(mBackfill[1] || "").trim().toLowerCase();
+      if (!mode) {
+        await this._backfillActivityToday();
+        return true;
+      }
+      if (mode === "weekly_farm_patch") {
+        await this._patchWeeklyFarmQuestCurrentWeek();
+        return true;
+      }
+      await this.send(
+        "Unknown mode.\n" +
+        "Use:\n" +
+        "/admin_backfill_activity_today\n" +
+        "/admin_backfill_activity_today weekly_farm_patch"
+      );
       return true;
     }
     if (/^\/labour_reindex(?:@\w+)?\s*$/i.test(input)) {
@@ -1197,6 +1216,168 @@ export class AdminCommands {
     const m = String(d.getUTCMonth() + 1).padStart(2, "0");
     const day = String(d.getUTCDate()).padStart(2, "0");
     return `${y}${m}${day}`;
+  }
+
+  _isoWeekKeyUtc(ts = Date.now()) {
+    const DAY_MS = 24 * 60 * 60 * 1000;
+    const d = new Date(ts);
+    const tmp = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+    const dayNum = (tmp.getUTCDay() + 6) % 7;
+    tmp.setUTCDate(tmp.getUTCDate() - dayNum + 3);
+    const firstThu = new Date(Date.UTC(tmp.getUTCFullYear(), 0, 4));
+    const diff = Math.floor((tmp.getTime() - firstThu.getTime()) / DAY_MS);
+    const week = 1 + Math.floor(diff / 7);
+    return `${tmp.getUTCFullYear()}-W${String(week).padStart(2, "0")}`;
+  }
+
+  _toInt(raw, min = 0) {
+    const v = Number(raw);
+    return Number.isFinite(v) ? Math.max(min, Math.floor(v)) : min;
+  }
+
+  _farmProgressByQuestId(counters, id) {
+    const c = (counters && typeof counters === "object") ? counters : {};
+    switch (String(id || "")) {
+      case "w_farm_harvest_carrot":
+        return this._toInt(c.farmHarvestCarrot, 0);
+      case "w_farm_harvest_tomato":
+        return this._toInt(c.farmHarvestTomato, 0);
+      case "w_farm_harvest_corn":
+        return this._toInt(c.farmHarvestCorn, 0);
+      case "w_farm_plant_seeds":
+        return this._toInt(c.farmPlants, 0);
+      default:
+        return 0;
+    }
+  }
+
+  _pickFarmWeeklyQuestDef(userId, weekKey) {
+    const pool = Array.isArray(CONFIG?.QUESTS?.WEEKLY_POOL) ? CONFIG.QUESTS.WEEKLY_POOL : [];
+    const farmDefs = pool.filter((q) => String(q?.category || "") === "farm" && String(q?.id || ""));
+    if (!farmDefs.length) return null;
+    const seed = `${String(userId || "")}:${String(weekKey || "")}:farm_patch`;
+    let h = 0;
+    for (let i = 0; i < seed.length; i += 1) h = ((h * 31) + seed.charCodeAt(i)) | 0;
+    const idx = Math.abs(h) % farmDefs.length;
+    return farmDefs[idx] || farmDefs[0] || null;
+  }
+
+  _buildFarmWeeklyQuest(user, week) {
+    const def = this._pickFarmWeeklyQuestDef(user?.id, week);
+    if (!def) return null;
+    const target = this._toInt(def?.target, 1);
+    const rewardMoney = this._toInt(def?.rewardMoney, 0);
+    const counters = user?.quests?.weekly?.counters || {};
+    const progressRaw = this._farmProgressByQuestId(counters, def.id);
+    const progress = Math.min(progressRaw, target);
+    const done = progressRaw >= target;
+    return {
+      id: String(def.id),
+      type: "weekly",
+      category: "farm",
+      difficulty: String(def?.difficulty || "medium"),
+      rewardMoney,
+      target,
+      progress,
+      done,
+      paid: false
+    };
+  }
+
+  async _patchWeeklyFarmQuestCurrentWeek() {
+    await this.send("Weekly farm patch started...");
+    const prefix = "u:";
+    const currentWeek = this._isoWeekKeyUtc(Date.now());
+    const weeklyCount = this._toInt(CONFIG?.QUESTS?.WEEKLY_COUNT, 2);
+    let cursor = undefined;
+
+    let scanned = 0;
+    let excludedAdmins = 0;
+    let noWeeklyState = 0;
+    let weekMismatch = 0;
+    let alreadyHasFarm = 0;
+    let skippedFull = 0;
+    let patched = 0;
+    let completedOnPatch = 0;
+    let noFarmDefs = 0;
+
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const page = await this.db.list({ prefix, cursor });
+      const keys = Array.isArray(page?.keys) ? page.keys : [];
+      for (const k of keys) {
+        try {
+          const raw = await this.db.get(k.name);
+          if (!raw) continue;
+          const u = JSON.parse(raw);
+          const fallbackId = String(k.name || "").slice(prefix.length);
+          const id = String((u?.id ?? fallbackId) || "");
+          if (!id) continue;
+          if (this.isAdmin(id)) {
+            excludedAdmins += 1;
+            continue;
+          }
+          scanned += 1;
+
+          const weekly = (u?.quests?.weekly && typeof u.quests.weekly === "object") ? u.quests.weekly : null;
+          if (!weekly || !Array.isArray(weekly.list)) {
+            noWeeklyState += 1;
+            continue;
+          }
+          if (String(weekly.week || "") !== currentWeek) {
+            weekMismatch += 1;
+            continue;
+          }
+
+          const hasFarm = weekly.list.some((q) => String(q?.category || "") === "farm");
+          if (hasFarm) {
+            alreadyHasFarm += 1;
+            continue;
+          }
+
+          if (weekly.list.length >= weeklyCount) {
+            skippedFull += 1;
+            continue;
+          }
+
+          if (!weekly.counters || typeof weekly.counters !== "object") weekly.counters = {};
+          if (!Number.isFinite(Number(weekly.counters.farmPlants))) weekly.counters.farmPlants = 0;
+          if (!Number.isFinite(Number(weekly.counters.farmHarvestCarrot))) weekly.counters.farmHarvestCarrot = 0;
+          if (!Number.isFinite(Number(weekly.counters.farmHarvestTomato))) weekly.counters.farmHarvestTomato = 0;
+          if (!Number.isFinite(Number(weekly.counters.farmHarvestCorn))) weekly.counters.farmHarvestCorn = 0;
+
+          const q = this._buildFarmWeeklyQuest(u, currentWeek);
+          if (!q) {
+            noFarmDefs += 1;
+            continue;
+          }
+          if (q.done) completedOnPatch += 1;
+
+          weekly.list.push(q);
+          await this.users.save(u);
+          patched += 1;
+        } catch {
+          // skip invalid user rows
+        }
+      }
+      if (!page || page.list_complete || !page.cursor) break;
+      cursor = page.cursor;
+    }
+
+    await this.send(
+      "<b>Weekly farm patch done</b>\n" +
+      `Week: ${this._escapeHtml(currentWeek)}\n` +
+      `Scanned users (non-admin): ${scanned}\n` +
+      `Patched: ${patched}\n` +
+      `Already had farm quest: ${alreadyHasFarm}\n` +
+      `Skipped (weekly full): ${skippedFull}\n` +
+      `Skipped (no weekly state): ${noWeeklyState}\n` +
+      `Skipped (other week): ${weekMismatch}\n` +
+      `Patched and already complete by counters: ${completedOnPatch}\n` +
+      `No farm defs in config: ${noFarmDefs}\n` +
+      `Excluded admins: ${excludedAdmins}\n\n` +
+      "Note: completed-on-patch quests will be paid on next player action."
+    );
   }
 
   _hasUsefulActivityToday(u, todayDay, todayDayKey) {
