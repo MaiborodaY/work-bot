@@ -58,10 +58,6 @@ export class ChannelService {
     return Math.max(1, toInt(this._cfg()?.TOP_EARNERS_LIMIT, 10));
   }
 
-  _topBizLimit() {
-    return Math.max(1, toInt(this._cfg()?.TOP_BIZ_LIMIT, 3));
-  }
-
   _topThiefLimit() {
     return Math.max(1, toInt(this._cfg()?.TOP_THIEF_LIMIT, 3));
   }
@@ -199,17 +195,6 @@ export class ChannelService {
         return { place, userId, name, earned, reward };
       });
 
-    const topBizRaw = this.ratings?.getTop ? await this.ratings.getTop("biz") : [];
-    const topBiz = (Array.isArray(topBizRaw) ? topBizRaw : [])
-      .filter((row) => !this._isAdminUserId(row?.userId))
-      .slice(0, this._topBizLimit())
-      .map((row, idx) => ({
-        place: idx + 1,
-        userId: String(row?.userId || "").trim(),
-        name: this._name(row?.name, row?.userId),
-        score: Math.max(0, toInt(row?.score, 0))
-      }));
-
     const topThievesRaw = this.ratings?.getTop ? await this.ratings.getTop("thief") : [];
     const topThieves = (Array.isArray(topThievesRaw) ? topThievesRaw : [])
       .filter((row) => !this._isAdminUserId(row?.userId))
@@ -220,11 +205,6 @@ export class ChannelService {
         name: this._name(row?.name, row?.userId),
         stolen: Math.max(0, toInt(row?.score, 0))
       }));
-
-    const bestThief = this.thief?.getDailyBestStolen
-      ? await this.thief.getDailyBestStolen(day)
-      : null;
-    const bestThiefFiltered = this._isAdminUserId(bestThief?.userId) ? null : bestThief;
 
     const topFarmRaw = this.social?.getFarmAllTop ? await this.social.getFarmAllTop() : [];
     const topFarm = (Array.isArray(topFarmRaw) ? topFarmRaw : [])
@@ -238,20 +218,13 @@ export class ChannelService {
       }));
 
     const earnersPositive = topEarners.filter((x) => Math.max(0, toInt(x?.earned, 0)) > 0).length;
-    const bestThiefAmount = Math.max(0, toInt(bestThiefFiltered?.stolen, 0));
-    const shouldPost = earnersPositive >= this._minEarnersToPost() || bestThiefAmount > 0;
+    const shouldPost = earnersPositive >= this._minEarnersToPost();
 
     return {
       date: day,
       topEarners,
-      topBiz,
       topFarm,
       topThieves,
-      bestThief: bestThiefAmount > 0 ? {
-        userId: String(bestThiefFiltered?.userId || "").trim(),
-        name: this._name(bestThiefFiltered?.name, bestThiefFiltered?.userId),
-        stolen: bestThiefAmount
-      } : null,
       shouldPost
     };
   }
@@ -266,7 +239,6 @@ export class ChannelService {
           parsed &&
           typeof parsed === "object" &&
           Array.isArray(parsed.topEarners) &&
-          Array.isArray(parsed.topBiz) &&
           Array.isArray(parsed.topFarm) &&
           Array.isArray(parsed.topThieves);
         if (valid) return parsed;
@@ -282,10 +254,8 @@ export class ChannelService {
   _buildText(snapshot) {
     const date = String(snapshot?.date || this._yesterday());
     const topEarners = Array.isArray(snapshot?.topEarners) ? snapshot.topEarners : [];
-    const topBiz = Array.isArray(snapshot?.topBiz) ? snapshot.topBiz : [];
     const topFarm = Array.isArray(snapshot?.topFarm) ? snapshot.topFarm : [];
     const topThieves = Array.isArray(snapshot?.topThieves) ? snapshot.topThieves : [];
-    const bestThief = snapshot?.bestThief || null;
     const dateTs = Date.parse(`${date}T00:00:00Z`);
 
     const lines = [];
@@ -303,17 +273,6 @@ export class ChannelService {
         const earned = this._formatMoney(row?.earned);
         const rewardTxt = this._rewardText(place, row?.reward);
         lines.push(`${marker} ${name} — ${earned}${rewardTxt}`);
-      }
-    }
-
-    if (topBiz.length) {
-      lines.push("");
-      lines.push("🏢 <b>Top business leaders (all-time)</b>");
-      for (const row of topBiz) {
-        const marker = this._placePrefix(row?.place);
-        const name = this._escapeHtml(this._name(row?.name, row?.userId));
-        const score = Math.max(0, toInt(row?.score, 0));
-        lines.push(`${marker} ${name} — ${score} pts`);
       }
     }
 
@@ -339,12 +298,6 @@ export class ChannelService {
       }
     } else {
       lines.push("No thief records yet.");
-    }
-
-    if (bestThief && Math.max(0, toInt(bestThief?.stolen, 0)) > 0) {
-      lines.push("");
-      lines.push("🌑 <b>Best thief of the day</b>");
-      lines.push(`👤 ${this._escapeHtml(this._name(bestThief?.name, bestThief?.userId))} — ${this._formatMoney(bestThief.stolen)} stolen`);
     }
 
     lines.push("");
