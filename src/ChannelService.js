@@ -206,7 +206,7 @@ export class ChannelService {
         stolen: Math.max(0, toInt(row?.score, 0))
       }));
 
-    const topFarmRaw = this.social?.getFarmAllTop ? await this.social.getFarmAllTop() : [];
+    const topFarmRaw = this.social?.getFarmWeekTop ? await this.social.getFarmWeekTop() : [];
     const topFarm = (Array.isArray(topFarmRaw) ? topFarmRaw : [])
       .filter((row) => !this._isAdminUserId(row?.userId))
       .slice(0, this._topFarmLimit())
@@ -278,7 +278,7 @@ export class ChannelService {
 
     if (topFarm.length) {
       lines.push("");
-      lines.push("🌱 <b>Top farmers (all-time)</b>");
+      lines.push("🌱 <b>Top farmers (this week)</b>");
       for (const row of topFarm) {
         const marker = this._placePrefix(row?.place);
         const name = this._escapeHtml(this._name(row?.name, row?.userId));

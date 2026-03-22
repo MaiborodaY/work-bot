@@ -167,3 +167,64 @@ test("farm: buy next plot deducts money and unlocks new plot", async () => {
   const buyNext = (main.keyboard || []).flat().find((x) => x.callback_data === "farm:buy_plot:3");
   assert.ok(buyNext);
 });
+
+test("farm: main view shows harvest-all button when 2+ plots are ready", async () => {
+  const nowTs = Date.UTC(2026, 2, 21, 18, 0, 0);
+  const db = new MockDb();
+  const users = { db, async save() {} };
+  const svc = new FarmService({ db, users, now: () => nowTs });
+  const u = makeUser();
+  u.farm.plotCount = 2;
+  u.farm.plots = [
+    { id: 1, status: "growing", cropId: "carrot", plantedAt: nowTs - 60_000, readyAt: nowTs - 1_000, notifiedReady: false },
+    { id: 2, status: "growing", cropId: "tomato", plantedAt: nowTs - 60_000, readyAt: nowTs - 1_000, notifiedReady: false }
+  ];
+
+  const main = await svc.buildMainView(u);
+  const harvestAllBtn = (main.keyboard || []).flat().find((x) => x.callback_data === "farm:harvest_all");
+  assert.ok(harvestAllBtn);
+});
+
+test("farm: harvestAll collects all ready plots with single save", async () => {
+  const nowTs = Date.UTC(2026, 2, 21, 15, 0, 0);
+  const db = new MockDb();
+  let questEvents = 0;
+  let achEvents = 0;
+  let saved = 0;
+  const users = {
+    db,
+    async save() { saved += 1; }
+  };
+  const quests = {
+    async onEvent() {
+      questEvents += 1;
+      return { events: [] };
+    },
+    async notifyEvents() {}
+  };
+  const achievements = {
+    async onEvent() {
+      achEvents += 1;
+      return { newlyEarned: [] };
+    },
+    async notifyEarned() {}
+  };
+  const svc = new FarmService({ db, users, now: () => nowTs, quests, achievements });
+  const u = makeUser();
+  u.money = 0;
+  u.farm.plotCount = 2;
+  u.farm.plots = [
+    { id: 1, status: "growing", cropId: "carrot", plantedAt: nowTs - 3600_000, readyAt: nowTs - 1000, notifiedReady: false },
+    { id: 2, status: "growing", cropId: "tomato", plantedAt: nowTs - 3600_000, readyAt: nowTs - 1000, notifiedReady: false }
+  ];
+
+  const res = await svc.harvestAll(u);
+  assert.equal(res.ok, true);
+  assert.equal(res.count, 2);
+  assert.equal(u.money, 520 + 1300);
+  assert.equal(u.farm.plots[0].status, "empty");
+  assert.equal(u.farm.plots[1].status, "empty");
+  assert.equal(questEvents, 2);
+  assert.equal(achEvents, 2);
+  assert.equal(saved, 1);
+});

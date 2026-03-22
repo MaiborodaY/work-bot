@@ -427,6 +427,20 @@ export class FarmService {
     return this._durationLabel(source, Math.max(0, toInt(msLeft, 0)));
   }
 
+  _harvestAllButtonText(source, count, money) {
+    const lang = this._lang(source);
+    if (lang === "en") return `🧺 Harvest all ready (${toInt(count, 0)}) — $${toInt(money, 0)}`;
+    if (lang === "uk") return `🧺 Зібрати все готове (${toInt(count, 0)}) — $${toInt(money, 0)}`;
+    return `🧺 Собрать всё готовое (${toInt(count, 0)}) — $${toInt(money, 0)}`;
+  }
+
+  _harvestAllResultCaption(source, count, money) {
+    const lang = this._lang(source);
+    if (lang === "en") return `🧺 Harvested and sold ${toInt(count, 0)} plot(s).\n+$${toInt(money, 0)}`;
+    if (lang === "uk") return `🧺 Зібрано і продано ${toInt(count, 0)} грядок.\n+$${toInt(money, 0)}`;
+    return `🧺 Собрано и продано ${toInt(count, 0)} грядок.\n+$${toInt(money, 0)}`;
+  }
+
   _plotByIndex(u, plotIndex) {
     const idxRaw = Number(plotIndex);
     if (!Number.isFinite(idxRaw)) return { ok: false, index: -1, plot: null };
@@ -446,6 +460,8 @@ export class FarmService {
 
     const lines = [s.title, "", this._fmt(s.plotsLine, { opened: plotsCount, max: maxPlots }), ""];
     const kb = [];
+    let readyCount = 0;
+    let readyTotalMoney = 0;
 
     for (let i = 1; i <= maxPlots; i += 1) {
       if (i > plotsCount) {
@@ -467,6 +483,8 @@ export class FarmService {
           continue;
         }
         if (this._isReady(p, nowTs)) {
+          readyCount += 1;
+          readyTotalMoney += crop.sellPrice;
           lines.push(this._fmt(s.plotReady, { emoji: crop.emoji, num: i }), "");
           kb.push([{
             text: this._fmt(s.btnHarvest, { emoji: crop.emoji, name: crop.name.toLowerCase(), price: crop.sellPrice }),
@@ -480,6 +498,13 @@ export class FarmService {
         lines.push(this._fmt(s.plotEmpty, { num: i }), "");
         kb.push([{ text: this._fmt(s.btnPlant, { num: i }), callback_data: `farm:plant_menu:${i}` }]);
       }
+    }
+
+    if (readyCount >= 2) {
+      kb.push([{
+        text: this._harvestAllButtonText(u, readyCount, readyTotalMoney),
+        callback_data: "farm:harvest_all"
+      }]);
     }
 
     kb.push([{ text: s.btnRefresh, callback_data: "farm:refresh" }]);
@@ -624,6 +649,14 @@ export class FarmService {
     };
   }
 
+  buildHarvestAllResultView(u, data = {}) {
+    const s = this._s(u);
+    return {
+      caption: this._harvestAllResultCaption(u, data.count, data.totalMoney),
+      keyboard: [[{ text: s.btnBackCity, callback_data: "go:Farm" }]]
+    };
+  }
+
   buildBuyPlotResultView(u, data = {}) {
     const s = this._s(u);
     return {
@@ -751,6 +784,92 @@ export class FarmService {
     }
 
     return { ok: true, plotIndex: target.index, cropId: crop.id, sellPrice };
+  }
+
+  async harvestAll(u) {
+    this._normalizeModel(u);
+    this._ensureFarmStats(u);
+    const s = this._s(u);
+    const nowTs = this.now();
+    const limit = this._plotLimit(u);
+    const plots = Array.isArray(u?.farm?.plots) ? u.farm.plots : [];
+    const harvestable = [];
+
+    for (let i = 1; i <= limit; i += 1) {
+      const p = plots[i - 1];
+      if (!p || String(p.status || "") !== "growing") continue;
+      if (!this._isReady(p, nowTs)) continue;
+      const crop = this._cropInfo(u, p.cropId);
+      if (!crop) continue;
+      harvestable.push({ index: i, crop, plot: p });
+    }
+
+    if (!harvestable.length) {
+      return { ok: false, error: s.errEmpty };
+    }
+
+    const wk = this._weekKey(nowTs);
+    if (String(u.stats.farmWeekKey || "") !== wk) {
+      u.stats.farmWeekKey = wk;
+      u.stats.farmMoneyWeek = 0;
+    }
+
+    let totalMoney = 0;
+    let totalCount = 0;
+    const questEvents = [];
+    const newlyEarned = [];
+
+    for (const item of harvestable) {
+      const sellPrice = item.crop.sellPrice;
+      totalMoney += sellPrice;
+      totalCount += 1;
+      u.stats.farmHarvestCount = toInt(u?.stats?.farmHarvestCount, 0) + 1;
+      u.stats.farmMoneyTotal = toInt(u?.stats?.farmMoneyTotal, 0) + sellPrice;
+      u.stats.farmMoneyWeek = toInt(u?.stats?.farmMoneyWeek, 0) + sellPrice;
+      Object.assign(item.plot, this._defaultPlot(item.index));
+
+      if (this.quests?.onEvent) {
+        const qRes = await this.quests.onEvent(u, "farm_harvest", { cropId: item.crop.id, money: sellPrice }, {
+          persist: false,
+          notify: false
+        }).catch(() => null);
+        if (Array.isArray(qRes?.events) && qRes.events.length) {
+          questEvents.push(...qRes.events);
+        }
+      }
+
+      if (this.achievements?.onEvent) {
+        const aRes = await this.achievements.onEvent(u, "farm_harvest", { cropId: item.crop.id, money: sellPrice }, {
+          persist: false,
+          notify: false
+        }).catch(() => null);
+        if (Array.isArray(aRes?.newlyEarned) && aRes.newlyEarned.length) {
+          newlyEarned.push(...aRes.newlyEarned);
+        }
+      }
+    }
+
+    u.money = toInt(u?.money, 0) + totalMoney;
+    this._addFarmIncomeDay(u, totalMoney, nowTs);
+    markUsefulActivity(u, nowTs);
+
+    await this.users.save(u);
+    if (this.social?.maybeUpdateFarmTop) {
+      await this.social.maybeUpdateFarmTop({
+        userId: u.id,
+        displayName: String(u?.displayName || "").trim(),
+        weekTotal: toInt(u?.stats?.farmMoneyWeek, 0),
+        allTotal: toInt(u?.stats?.farmMoneyTotal, 0)
+      }).catch(() => {});
+    }
+    if (questEvents.length && this.quests?.notifyEvents) {
+      await this.quests.notifyEvents(u, questEvents).catch(() => {});
+    }
+    if (newlyEarned.length && this.achievements?.notifyEarned) {
+      await this.achievements.notifyEarned(u, newlyEarned).catch(() => {});
+    }
+
+    return { ok: true, count: totalCount, totalMoney };
   }
 
   _dueBucket(ts) {
