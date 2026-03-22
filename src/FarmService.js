@@ -43,7 +43,7 @@ export class FarmService {
     const lang = this._lang(source);
     if (lang === "en") {
       return {
-        title: "🌱 Uncle Zhenya's Farm",
+        title: "🌱 Uncle Vova's Farm",
         plotsLine: "Plots opened: {{opened}}/{{max}}",
         cropCarrot: "Carrot",
         cropTomato: "Tomato",
@@ -92,7 +92,7 @@ export class FarmService {
     }
     if (lang === "uk") {
       return {
-        title: "🌱 Ферма дядька Євгена",
+        title: "🌱 Uncle Vova's Farm",
         plotsLine: "Відкрито грядок: {{opened}}/{{max}}",
         cropCarrot: "Морква",
         cropTomato: "Помідор",
@@ -140,7 +140,7 @@ export class FarmService {
       };
     }
     return {
-      title: "🌱 Ферма дяди Жени",
+      title: "🌱 Ферма дяди Вовы",
       plotsLine: "Открыто грядок: {{opened}}/{{max}}",
       cropCarrot: "Морковь",
       cropTomato: "Помидор",

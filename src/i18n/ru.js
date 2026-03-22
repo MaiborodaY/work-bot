@@ -22,7 +22,7 @@ export const RU = {
   "ui.earn.work": "🛠️ Работы",
   "ui.earn.bar": "🍻 Бар",
   "ui.earn.business": "🏢 Бизнес",
-  "ui.earn.farm": "🌱 Ферма дяди Жени",
+  "ui.earn.farm": "🌱 Ферма дяди Вовы",
   "ui.earn.labour": "👔 Наёмники",
   "ui.earn.stocks": "📈 Биржа",
 
@@ -31,7 +31,7 @@ export const RU = {
   "ui.progress.upgrades": "🛠️ Улучшения",
 
   "ui.city.home": "🏠 Дом и отдых",
-  "ui.city.farm": "🌱 Ферма дяди Жени",
+  "ui.city.farm": "🌱 Ферма дяди Вовы",
   "ui.city.board": "🏆 Доска почёта",
   "ui.city.ratings": "🏆 Рейтинг",
   "ui.city.clans": "👥 Кланы",
@@ -154,7 +154,7 @@ export const RU = {
   "loc.labour.unavailable": "👔 Наёмники временно недоступны.",
   "loc.progress.caption": "📈 Прогресс: учеба, зал и улучшения.",
   "loc.city.caption": "🏙️ Город: дом, таблицы лидеров и кланы.",
-  "loc.farm.unavailable": "🌱 Ферма дяди Жени временно недоступна.",
+  "loc.farm.unavailable": "🌱 Ферма дяди Вовы временно недоступна.",
   "loc.clan.unavailable": "👥 Кланы временно недоступны.",
   "loc.referral.unavailable": "👥 Рефералы временно недоступны.",
   "loc.rating.unavailable": "🏆 Рейтинг временно недоступен.",
@@ -242,7 +242,7 @@ export const RU = {
 
   "handler.common.shop_energy_intro": "Пополнить энергию можно здесь:",
   "handler.common.unknown_command": "Неизвестная команда",
-  "handler.farm.unavailable": "Ферма дяди Жени временно недоступна.",
+  "handler.farm.unavailable": "Ферма дяди Вовы временно недоступна.",
   "energy.choice.caption": "⚡ Не хватает энергии.\n\nНужно: {{need}}⚡\nСейчас: {{have}}⚡\n\nВыбери, что сделать:\n• 🏠 Дом — бесплатно восстановить энергию\n• 🛒 Магазин — купить еду для энергии\n\nПосле пополнения нажми «Назад» — вернёшься в {{origin}}.",
   "energy.choice.btn.home": "🏠 Дом (бесплатно)",
   "energy.choice.btn.shop": "🛒 Магазин (еда)",
