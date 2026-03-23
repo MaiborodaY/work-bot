@@ -223,6 +223,7 @@ export class FarmService {
       id,
       status: "empty",
       cropId: "",
+      seedSpent: 0,
       plantedAt: 0,
       readyAt: 0,
       notifiedReady: false
@@ -310,6 +311,7 @@ export class FarmService {
         dirty = true;
       }
       if (typeof p.cropId !== "string") { p.cropId = ""; dirty = true; }
+      if (!Number.isFinite(Number(p.seedSpent))) { p.seedSpent = 0; dirty = true; }
       if (!Number.isFinite(Number(p.plantedAt))) { p.plantedAt = 0; dirty = true; }
       if (!Number.isFinite(Number(p.readyAt))) { p.readyAt = 0; dirty = true; }
       if (typeof p.notifiedReady !== "boolean") { p.notifiedReady = false; dirty = true; }
@@ -320,6 +322,10 @@ export class FarmService {
           Object.assign(p, this._defaultPlot(i + 1));
           dirty = true;
         } else {
+          if (toInt(p.seedSpent, 0) <= 0) {
+            p.seedSpent = Math.max(0, toInt(crop.seedPrice, 0));
+            dirty = true;
+          }
           if (toInt(p.readyAt, 0) <= 0) {
             const plantedAt = toInt(p.plantedAt, this.now());
             p.plantedAt = plantedAt;
@@ -328,7 +334,7 @@ export class FarmService {
           }
         }
       } else {
-        if (p.cropId || toInt(p.plantedAt, 0) || toInt(p.readyAt, 0) || p.notifiedReady) {
+        if (p.cropId || toInt(p.seedSpent, 0) || toInt(p.plantedAt, 0) || toInt(p.readyAt, 0) || p.notifiedReady) {
           Object.assign(p, this._defaultPlot(i + 1));
           dirty = true;
         }
@@ -425,6 +431,12 @@ export class FarmService {
 
   _leftLabel(source, msLeft) {
     return this._durationLabel(source, Math.max(0, toInt(msLeft, 0)));
+  }
+
+  _netProfit(sellPrice, seedSpent) {
+    const sell = Math.max(0, Math.floor(Number(sellPrice) || 0));
+    const seed = Math.max(0, Math.floor(Number(seedSpent) || 0));
+    return Math.max(0, sell - seed);
   }
 
   _harvestAllButtonText(source, count, money) {
@@ -692,6 +704,7 @@ export class FarmService {
     const nowTs = this.now();
     p.status = "growing";
     p.cropId = crop.id;
+    p.seedSpent = crop.seedPrice;
     p.plantedAt = nowTs;
     p.readyAt = nowTs + crop.growMs;
     p.notifiedReady = false;
@@ -737,6 +750,7 @@ export class FarmService {
     }
 
     const sellPrice = crop.sellPrice;
+    const netProfit = this._netProfit(sellPrice, toInt(p.seedSpent, crop.seedPrice));
     u.money = toInt(u?.money, 0) + sellPrice;
     const nowTs = this.now();
     const wk = this._weekKey(nowTs);
@@ -745,23 +759,23 @@ export class FarmService {
       u.stats.farmMoneyWeek = 0;
     }
     u.stats.farmHarvestCount = toInt(u?.stats?.farmHarvestCount, 0) + 1;
-    u.stats.farmMoneyTotal = toInt(u?.stats?.farmMoneyTotal, 0) + sellPrice;
-    u.stats.farmMoneyWeek = toInt(u?.stats?.farmMoneyWeek, 0) + sellPrice;
-    this._addFarmIncomeDay(u, sellPrice, nowTs);
+    u.stats.farmMoneyTotal = toInt(u?.stats?.farmMoneyTotal, 0) + netProfit;
+    u.stats.farmMoneyWeek = toInt(u?.stats?.farmMoneyWeek, 0) + netProfit;
+    this._addFarmIncomeDay(u, netProfit, nowTs);
 
     Object.assign(p, this._defaultPlot(target.index));
     markUsefulActivity(u, nowTs);
 
     let qRes = null;
     if (this.quests?.onEvent) {
-      qRes = await this.quests.onEvent(u, "farm_harvest", { cropId: crop.id, money: sellPrice }, {
+      qRes = await this.quests.onEvent(u, "farm_harvest", { cropId: crop.id, money: netProfit }, {
         persist: false,
         notify: false
       }).catch(() => null);
     }
     let aRes = null;
     if (this.achievements?.onEvent) {
-      aRes = await this.achievements.onEvent(u, "farm_harvest", { cropId: crop.id, money: sellPrice }, {
+      aRes = await this.achievements.onEvent(u, "farm_harvest", { cropId: crop.id, money: netProfit }, {
         persist: false,
         notify: false
       }).catch(() => null);
@@ -815,21 +829,24 @@ export class FarmService {
     }
 
     let totalMoney = 0;
+    let totalProfit = 0;
     let totalCount = 0;
     const questEvents = [];
     const newlyEarned = [];
 
     for (const item of harvestable) {
       const sellPrice = item.crop.sellPrice;
+      const netProfit = this._netProfit(sellPrice, toInt(item?.plot?.seedSpent, item.crop.seedPrice));
       totalMoney += sellPrice;
+      totalProfit += netProfit;
       totalCount += 1;
       u.stats.farmHarvestCount = toInt(u?.stats?.farmHarvestCount, 0) + 1;
-      u.stats.farmMoneyTotal = toInt(u?.stats?.farmMoneyTotal, 0) + sellPrice;
-      u.stats.farmMoneyWeek = toInt(u?.stats?.farmMoneyWeek, 0) + sellPrice;
+      u.stats.farmMoneyTotal = toInt(u?.stats?.farmMoneyTotal, 0) + netProfit;
+      u.stats.farmMoneyWeek = toInt(u?.stats?.farmMoneyWeek, 0) + netProfit;
       Object.assign(item.plot, this._defaultPlot(item.index));
 
       if (this.quests?.onEvent) {
-        const qRes = await this.quests.onEvent(u, "farm_harvest", { cropId: item.crop.id, money: sellPrice }, {
+        const qRes = await this.quests.onEvent(u, "farm_harvest", { cropId: item.crop.id, money: netProfit }, {
           persist: false,
           notify: false
         }).catch(() => null);
@@ -839,7 +856,7 @@ export class FarmService {
       }
 
       if (this.achievements?.onEvent) {
-        const aRes = await this.achievements.onEvent(u, "farm_harvest", { cropId: item.crop.id, money: sellPrice }, {
+        const aRes = await this.achievements.onEvent(u, "farm_harvest", { cropId: item.crop.id, money: netProfit }, {
           persist: false,
           notify: false
         }).catch(() => null);
@@ -850,7 +867,7 @@ export class FarmService {
     }
 
     u.money = toInt(u?.money, 0) + totalMoney;
-    this._addFarmIncomeDay(u, totalMoney, nowTs);
+    this._addFarmIncomeDay(u, totalProfit, nowTs);
     markUsefulActivity(u, nowTs);
 
     await this.users.save(u);

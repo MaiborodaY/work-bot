@@ -1132,8 +1132,8 @@ export class AdminCommands {
       `  cat: ${petCat}, dog: ${petDog}`,
       `Farm users (harvested >=1): ${farmUsers} (${this._pct(farmUsers, registered)}%)`,
       `Farm harvests total: ${farmHarvestTotal}`,
-      `Farm income total: $${farmIncomeTotal}`,
-      `Farm income last 7d: $${farmIncome7dTotal}`,
+      `Farm net profit total: $${farmIncomeTotal}`,
+      `Farm net profit last 7d: $${farmIncome7dTotal}`,
       "",
       `Excluded admins: ${excludedAdmins}`
     ];
@@ -1143,7 +1143,7 @@ export class AdminCommands {
     const topBiz = this._sortTopRows(topBizRows, "score").slice(0, 10);
 
     if (topFarmAll.length) {
-      lines.push("", "<b>Top 10 farmers (all-time income)</b>");
+      lines.push("", "<b>Top 10 farmers (all-time net profit)</b>");
       for (let i = 0; i < topFarmAll.length; i += 1) {
         const r = topFarmAll[i];
         const place = i === 0 ? "🥇" : (i === 1 ? "🥈" : (i === 2 ? "🥉" : `${i + 1}.`));
@@ -1151,7 +1151,7 @@ export class AdminCommands {
       }
     }
     if (topFarm7d.length) {
-      lines.push("", "<b>Top 10 farmers (last 7d income)</b>");
+      lines.push("", "<b>Top 10 farmers (last 7d net profit)</b>");
       for (let i = 0; i < topFarm7d.length; i += 1) {
         const r = topFarm7d[i];
         const place = i === 0 ? "🥇" : (i === 1 ? "🥈" : (i === 2 ? "🥉" : `${i + 1}.`));

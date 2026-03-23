@@ -278,7 +278,7 @@ export class ChannelService {
 
     if (topFarm.length) {
       lines.push("");
-      lines.push("🌱 <b>Top farmers (this week)</b>");
+      lines.push("🌱 <b>Top farmers (this week, net profit)</b>");
       for (const row of topFarm) {
         const marker = this._placePrefix(row?.place);
         const name = this._escapeHtml(this._name(row?.name, row?.userId));

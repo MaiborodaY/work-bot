@@ -126,9 +126,9 @@ export const RU = {
   "ui.cityboard.lucky.empty": "🍀 Самые везучие\n\nПока пусто. Попробуй удачу в Зале арканы.",
   "ui.cityboard.lucky.title": "🍀 Самые везучие:\n",
   "ui.cityboard.farmweek.empty": "🌱 Топ фермы (неделя)\n\nНа этой неделе ещё нет сборов.",
-  "ui.cityboard.farmweek.title": "🌱 Топ фермы (неделя)\n\nЛучшие фермеры по доходу за неделю:",
+  "ui.cityboard.farmweek.title": "🌱 Топ фермы (неделя)\n\nЛучшие фермеры по чистой прибыли за неделю:",
   "ui.cityboard.farmall.empty": "🌾 Топ фермы (всё время)\n\nПока нет сборов урожая.",
-  "ui.cityboard.farmall.title": "🌾 Топ фермы (всё время)\n\nЛучшие фермеры по общему доходу с фермы:",
+  "ui.cityboard.farmall.title": "🌾 Топ фермы (всё время)\n\nЛучшие фермеры по общей чистой прибыли с фермы:",
 
   "loc.onboarding.to_gym": "Перейти в зал",
   "loc.onboarding.start_first_shift": "Начать первую смену",

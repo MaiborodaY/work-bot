@@ -391,9 +391,9 @@ export const EN = {
   "ui.cityboard.lucky.empty": "🍀 Luckiest\n\nEmpty for now. Try Arcana Hall.",
   "ui.cityboard.lucky.title": "🍀 Luckiest:\n",
   "ui.cityboard.farmweek.empty": "🌱 Farm Top (week)\n\nNo farm harvests this week yet.",
-  "ui.cityboard.farmweek.title": "🌱 Farm Top (week)\n\nBest farmers by weekly farm income:",
+  "ui.cityboard.farmweek.title": "🌱 Farm Top (week)\n\nBest farmers by weekly net profit:",
   "ui.cityboard.farmall.empty": "🌾 Farm Top (all-time)\n\nNo farm harvests yet.",
-  "ui.cityboard.farmall.title": "🌾 Farm Top (all-time)\n\nBest farmers by total farm income:",
+  "ui.cityboard.farmall.title": "🌾 Farm Top (all-time)\n\nBest farmers by total net profit:",
 
   "loc.onboarding.to_gym": "Go to gym",
   "loc.onboarding.start_first_shift": "Start first shift",

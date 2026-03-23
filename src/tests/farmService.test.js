@@ -97,6 +97,8 @@ test("farm: harvest resets plot and pays money", async () => {
   assert.equal(u.money, 1300);
   assert.equal(u.farm.plots[0].status, "empty");
   assert.equal(u.farm.plots[0].cropId, "");
+  assert.equal(u.stats.farmMoneyTotal, 600);
+  assert.equal(u.stats.farmMoneyWeek, 600);
   assert.equal(questEvents, 1);
   assert.equal(achEvents, 1);
   assert.equal(saved, 1);
@@ -224,6 +226,8 @@ test("farm: harvestAll collects all ready plots with single save", async () => {
   assert.equal(u.money, 520 + 1300);
   assert.equal(u.farm.plots[0].status, "empty");
   assert.equal(u.farm.plots[1].status, "empty");
+  assert.equal(u.stats.farmMoneyTotal, 270 + 600);
+  assert.equal(u.stats.farmMoneyWeek, 270 + 600);
   assert.equal(questEvents, 2);
   assert.equal(achEvents, 2);
   assert.equal(saved, 1);
