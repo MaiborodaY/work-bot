@@ -432,8 +432,8 @@ export class UiFactory {
         { text: this._t(l, "ui.cityboard.topstrong"),    callback_data: "city:topstrong" }
       ],
       [
-        { text: this._t(l, "ui.cityboard.topfarmweek"), callback_data: "city:topfarmweek" },
-        { text: this._t(l, "ui.cityboard.topfarmday"), callback_data: "city:topfarmday" }
+        { text: this._t(l, "ui.cityboard.topfarmday"), callback_data: "city:topfarmday" },
+        { text: this._t(l, "ui.cityboard.topfarmweek"), callback_data: "city:topfarmweek" }
       ],
       [{ text: this._t(l, "ui.cityboard.rename"), callback_data: "social:name" }],
       [{ text: this._t(l, "ui.back.default"), callback_data: this._go(Routes.CITY) }],
