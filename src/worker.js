@@ -483,7 +483,8 @@ export default {
       if (s === "strong") return "city:topstrong";
       if (s === "lucky") return "city:toplucky";
       if (s === "farmweek") return "city:topfarmweek";
-      if (s === "farmall") return "city:topfarmall";
+      if (s === "farmday") return "city:topfarmday";
+      if (s === "farmall") return "city:topfarmday";
       if (s === "rating") return "go:Ratings";
       return "go:CityBoard";
     };

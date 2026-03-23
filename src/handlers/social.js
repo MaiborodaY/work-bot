@@ -11,6 +11,7 @@ export const socialHandler = {
   data === "city:topstrong" ||
   data === "city:toplucky" ||
   data === "city:topfarmweek" ||
+  data === "city:topfarmday" ||
   data === "city:topfarmall" ||
   data === "social:name",
 
@@ -130,9 +131,9 @@ export const socialHandler = {
       return;
     }
 
-    if (data === "city:topfarmall") {
+    if (data === "city:topfarmday" || data === "city:topfarmall") {
       await answer(cb.id);
-      const raw = await social.getFarmAllTop().catch(() => []);
+      const raw = await social.getFarmDayTop().catch(() => []);
       const norm = (item) => {
         const idStr = String(item.userId || "");
         const looksLikeId = typeof item.name === "string" && /^[0-9]+$/.test(item.name.trim());
@@ -144,8 +145,8 @@ export const socialHandler = {
       await locations.media.show({
         sourceMsg: locations._sourceMsg,
         place: "CityBoard",
-        caption: ui.cityTopFarmAllCaption(top, lang),
-        keyboard: topProfileKb(top, "farmall", ui.cityTopDay(lang)),
+        caption: ui.cityTopFarmDayCaption(top, lang),
+        keyboard: topProfileKb(top, "farmday", ui.cityTopDay(lang)),
         policy: "auto",
       });
       locations.setSourceMessage(null);

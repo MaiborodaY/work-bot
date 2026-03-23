@@ -97,6 +97,7 @@ export class SocialService {
         }
         await this.db.put("agg:day", "0");
         await this.db.put("lb:day", "[]");
+        await this.db.put("lb:farm_day", "[]");
         await this.db.put("state:dayKey", curDay);
       }
       if (storedWeek !== curWeek) {
@@ -287,12 +288,20 @@ export class SocialService {
     return trimmed;
   }
 
-  async maybeUpdateFarmTop({ userId, displayName, weekTotal, allTotal }) {
+  async maybeUpdateFarmTop({ userId, displayName, dayTotal, weekTotal, allTotal }) {
     await this.ensurePeriod();
+    const safeDay = Math.max(0, Number(dayTotal) || 0);
     const safeWeek = Math.max(0, Number(weekTotal) || 0);
     const safeAll = Math.max(0, Number(allTotal) || 0);
+    await this._updateFarmTopKey("lb:farm_day", { userId, displayName, total: safeDay });
     await this._updateFarmTopKey("lb:farm_week", { userId, displayName, total: safeWeek });
     await this._updateFarmTopKey("lb:farm_all", { userId, displayName, total: safeAll });
+  }
+
+  async getFarmDayTop() {
+    await this.ensurePeriod();
+    const raw = (await this.db.get("lb:farm_day")) || "[]";
+    return JSON.parse(raw);
   }
 
   async getFarmWeekTop() {

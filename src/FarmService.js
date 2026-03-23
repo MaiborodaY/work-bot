@@ -429,6 +429,17 @@ export class FarmService {
       .map(([day, amt]) => ({ day, amount: amt }));
   }
 
+  _farmIncomeToday(u, nowTs = this.now()) {
+    this._ensureFarmStats(u);
+    const day = this._todayUTC(nowTs);
+    const rows = Array.isArray(u?.stats?.farmIncomeDays) ? u.stats.farmIncomeDays : [];
+    for (const row of rows) {
+      if (String(row?.day || "") !== day) continue;
+      return Math.max(0, Math.floor(Number(row?.amount) || 0));
+    }
+    return 0;
+  }
+
   _leftLabel(source, msLeft) {
     return this._durationLabel(source, Math.max(0, toInt(msLeft, 0)));
   }
@@ -786,6 +797,7 @@ export class FarmService {
       await this.social.maybeUpdateFarmTop({
         userId: u.id,
         displayName: String(u?.displayName || "").trim(),
+        dayTotal: this._farmIncomeToday(u, nowTs),
         weekTotal: toInt(u?.stats?.farmMoneyWeek, 0),
         allTotal: toInt(u?.stats?.farmMoneyTotal, 0)
       }).catch(() => {});
@@ -875,6 +887,7 @@ export class FarmService {
       await this.social.maybeUpdateFarmTop({
         userId: u.id,
         displayName: String(u?.displayName || "").trim(),
+        dayTotal: this._farmIncomeToday(u, nowTs),
         weekTotal: toInt(u?.stats?.farmMoneyWeek, 0),
         allTotal: toInt(u?.stats?.farmMoneyTotal, 0)
       }).catch(() => {});
