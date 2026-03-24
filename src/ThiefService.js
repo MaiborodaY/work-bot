@@ -760,6 +760,51 @@ export class ThiefService {
     return next;
   }
 
+  async getOwnerActiveAttack(ownerId) {
+    const oid = String(ownerId || "").trim();
+    if (!oid) return null;
+
+    const nowTs = this.now();
+    const bizIds = Object.keys(this._cfg()?.BUSINESS || {});
+    let best = null;
+
+    for (const bizId of bizIds) {
+      const lockKey = this._activeTargetKey(oid, bizId);
+      const attackId = String(await this.db.get(lockKey).catch(() => "") || "").trim();
+      if (!attackId) continue;
+
+      const attack = await this._loadAttack(attackId);
+      const invalid =
+        !attack ||
+        String(attack.status || "") !== "active" ||
+        String(attack.ownerId || "") !== oid ||
+        String(attack.bizId || "") !== String(bizId);
+
+      if (invalid) {
+        await this.db.delete(lockKey).catch(() => {});
+        continue;
+      }
+
+      if (Number(attack.resolveAt || 0) <= nowTs) {
+        await this._resolveAttack(attack, { source: "lazy" }).catch(() => {});
+        continue;
+      }
+
+      const leftMs = Math.max(0, Number(attack.resolveAt || 0) - nowTs);
+      const row = {
+        attackId,
+        bizId: String(bizId),
+        resolveAt: Number(attack.resolveAt || 0),
+        minsLeft: this._formatMinutes(leftMs),
+        defendEnergy: Math.max(1, Math.floor(Number(attack.defendEnergy) || this._defendEnergy(bizId)))
+      };
+
+      if (!best || row.resolveAt < best.resolveAt) best = row;
+    }
+
+    return best;
+  }
+
   async _ensureAttackerState(attacker) {
     if (!attacker) return attacker;
     let dirty = false;

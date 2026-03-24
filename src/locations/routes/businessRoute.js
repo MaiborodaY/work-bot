@@ -10,6 +10,19 @@ import { getBusinessNote, getBusinessTitle } from "../../I18nCatalog.js";
 import { Routes, toGoCallback } from "../../Routes.js";
 
 export async function renderBusinessRoute(ctx, user, { header = "", lang = "ru", route = Routes.BUSINESS } = {}) {
+  let activeDefenseLoaded = false;
+  let activeDefense = null;
+  const getActiveDefense = async () => {
+    if (activeDefenseLoaded) return activeDefense;
+    activeDefenseLoaded = true;
+    if (!ctx?.thief || typeof ctx.thief.getOwnerActiveAttack !== "function") {
+      activeDefense = null;
+      return activeDefense;
+    }
+    activeDefense = await ctx.thief.getOwnerActiveAttack(user?.id).catch(() => null);
+    return activeDefense;
+  };
+
   const bizRouteMeta = {
     Biz_shawarma: {
       id: "shawarma",
@@ -68,6 +81,11 @@ export async function renderBusinessRoute(ctx, user, { header = "", lang = "ru",
     const immunityLeftHours = Math.max(1, Math.ceil((immunityUntil - nowTs) / (60 * 60 * 1000)));
     const bizTitle = getBusinessTitle(B.id, lang) || B.title;
     const bizNote = getBusinessNote(B.id, lang) || B.note;
+    const activeDef = await getActiveDefense();
+    const attackHere = !!activeDef && String(activeDef.bizId || "") === String(B.id || "");
+    const attackBizTitle = attackHere
+      ? (getBusinessTitle(activeDef.bizId, lang) || String(activeDef.bizId || ""))
+      : "";
 
     const statusLine = !isOwned
       ? ctx._t(user, "loc.business.status_unowned")
@@ -92,6 +110,12 @@ export async function renderBusinessRoute(ctx, user, { header = "", lang = "ru",
         ? ctx._t(user, "loc.business.protection_immunity_hint")
         : (guardActive ? ctx._t(user, "loc.business.protection_guard_hint") : ""))
       : "";
+    const activeAttackLine = attackHere
+      ? ctx._t(user, "loc.business.active_attack_line", {
+        bizTitle: attackBizTitle,
+        mins: Math.max(1, Number(activeDef?.minsLeft) || 1)
+      })
+      : "";
 
     const kb = [];
     if (!isOwned) {
@@ -104,6 +128,12 @@ export async function renderBusinessRoute(ctx, user, { header = "", lang = "ru",
     }
 
     if (isOwned) {
+      if (attackHere && String(activeDef?.attackId || "").trim()) {
+        kb.push([{
+          text: ctx._t(user, "loc.business.btn.defend_active"),
+          callback_data: `thief:defend:${String(activeDef.attackId)}`
+        }]);
+      }
       if (!immunityActive) {
         kb.push([{
           text: guardActive
@@ -141,6 +171,7 @@ export async function renderBusinessRoute(ctx, user, { header = "", lang = "ru",
         statusLine +
         (protectionLine ? `\n\n${protectionLine}` : "") +
         (protectionHintLine ? `\n${protectionHintLine}` : "") +
+        (activeAttackLine ? `\n\n${activeAttackLine}` : "") +
         (stolenLine ? `\n${stolenLine}` : "") +
         (bizNote ? `\n\nℹ️ ${bizNote}` : ""),
       keyboard: kb,
@@ -153,6 +184,10 @@ export async function renderBusinessRoute(ctx, user, { header = "", lang = "ru",
   if (route === Routes.BUSINESS) {
     const items = Object.values(CONFIG?.BUSINESS || {}).filter(Boolean);
     if (items.length > 1) {
+      const activeDef = await getActiveDefense();
+      const activeBizTitle = activeDef
+        ? (getBusinessTitle(activeDef.bizId, lang) || String(activeDef.bizId || ""))
+        : "";
       const ownedArr = Array.isArray(user?.biz?.owned) ? user.biz.owned : [];
       const ownedMap = new Map(
         ownedArr.map((it) => (typeof it === "string" ? [it, { id: it, lastClaimDayUTC: "" }] : [String(it?.id || ""), it]))
@@ -174,11 +209,21 @@ export async function renderBusinessRoute(ctx, user, { header = "", lang = "ru",
         (header || "") +
         ctx._t(user, "loc.business.caption_intro") +
         "\n\n" +
-        ctx._t(user, "loc.business.choose");
+        ctx._t(user, "loc.business.choose") +
+        (activeDef ? `\n\n${ctx._t(user, "loc.business.active_attack_line", {
+          bizTitle: activeBizTitle,
+          mins: Math.max(1, Number(activeDef?.minsLeft) || 1)
+        })}` : "");
       const kb = items.map((B) => [{
         text: `${B.emoji} ${getBusinessTitle(B.id, lang) || B.title}`,
         callback_data: `go:Biz_${B.id}`,
       }]);
+      if (activeDef && String(activeDef.attackId || "").trim()) {
+        kb.push([{
+          text: ctx._t(user, "loc.business.btn.defend_active"),
+          callback_data: `thief:defend:${String(activeDef.attackId)}`
+        }]);
+      }
       kb.push([{
         text: ctx._t(user, "loc.business.btn.claim_all", {
           amount: claimAllAmount,
