@@ -94,11 +94,11 @@ test("farm: harvest resets plot and pays money", async () => {
 
   const res = await svc.harvest(u, 1);
   assert.equal(res.ok, true);
-  assert.equal(u.money, 1300);
+  assert.equal(u.money, 1000);
   assert.equal(u.farm.plots[0].status, "empty");
   assert.equal(u.farm.plots[0].cropId, "");
-  assert.equal(u.stats.farmMoneyTotal, 600);
-  assert.equal(u.stats.farmMoneyWeek, 600);
+  assert.equal(u.stats.farmMoneyTotal, 300);
+  assert.equal(u.stats.farmMoneyWeek, 300);
   assert.equal(questEvents, 1);
   assert.equal(achEvents, 1);
   assert.equal(saved, 1);
@@ -149,7 +149,7 @@ test("farm: main view contains help button and help view shows crop economics", 
   const help = await svc.buildHelpView(u);
   assert.match(help.caption, /Морковь/);
   assert.match(help.caption, /\$250/);
-  assert.match(help.caption, /\$520/);
+  assert.match(help.caption, /\$400/);
 });
 
 test("farm: buy next plot deducts money and unlocks new plot", async () => {
@@ -223,11 +223,11 @@ test("farm: harvestAll collects all ready plots with single save", async () => {
   const res = await svc.harvestAll(u);
   assert.equal(res.ok, true);
   assert.equal(res.count, 2);
-  assert.equal(u.money, 520 + 1300);
+  assert.equal(u.money, 400 + 1000);
   assert.equal(u.farm.plots[0].status, "empty");
   assert.equal(u.farm.plots[1].status, "empty");
-  assert.equal(u.stats.farmMoneyTotal, 270 + 600);
-  assert.equal(u.stats.farmMoneyWeek, 270 + 600);
+  assert.equal(u.stats.farmMoneyTotal, 150 + 300);
+  assert.equal(u.stats.farmMoneyWeek, 150 + 300);
   assert.equal(questEvents, 2);
   assert.equal(achEvents, 2);
   assert.equal(saved, 1);

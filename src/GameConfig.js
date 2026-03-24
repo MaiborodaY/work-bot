@@ -432,9 +432,9 @@ export const CONFIG = {
     MAX_PLOTS: 6,
     PLOT_PRICES: [5000, 15000, 35000, 75000, 150000],
     CROPS: {
-      carrot: { emoji: "🥕", seedPrice: 250, growMs: 60 * 60_000, sellPrice: 520 },
-      tomato: { emoji: "🍅", seedPrice: 700, growMs: 180 * 60_000, sellPrice: 1300 },
-      corn: { emoji: "🌽", seedPrice: 1800, growMs: 480 * 60_000, sellPrice: 3200 }
+      carrot: { emoji: "🥕", seedPrice: 250, growMs: 60 * 60_000, sellPrice: 400 },
+      tomato: { emoji: "🍅", seedPrice: 700, growMs: 180 * 60_000, sellPrice: 1000 },
+      corn: { emoji: "🌽", seedPrice: 1800, growMs: 480 * 60_000, sellPrice: 2200 }
     },
     NOTIFY: {
       DUE_BUCKET_MS: 5 * 60_000,
