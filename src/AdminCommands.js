@@ -1024,7 +1024,6 @@ export class AdminCommands {
   async _sendOnboardingFunnel() {
     await this.send("Onboarding funnel started...");
     const prefix = "u:";
-    const today = dayStrUtc(Date.now());
     let cursor = undefined;
     let registered = 0;
     let excludedAdmins = 0;
@@ -1037,13 +1036,6 @@ export class AdminCommands {
     let petBought = 0;
     let petCat = 0;
     let petDog = 0;
-    let farmUsers = 0;
-    let farmHarvestTotal = 0;
-    let farmIncomeTotal = 0;
-    let farmIncome7dTotal = 0;
-    const topFarmAllRows = [];
-    const topFarm7dRows = [];
-    const topBizRows = [];
 
     // eslint-disable-next-line no-constant-condition
     while (true) {
@@ -1070,23 +1062,7 @@ export class AdminCommands {
           const didGym = this._toBool(stats.didGym) || Math.max(0, Number(u?.gym?.level || 0)) > 0;
           const didBar = this._toBool(stats.didBar);
           const didBusiness = this._toBool(stats.didBusiness) || this._hasAnyBusiness(u);
-          const bizScore = this._bizScore(u);
           const petStats = this._petPurchaseStats(u);
-          const farmHarvestCount = Math.max(
-            0,
-            Number(stats.farmHarvestCount || 0),
-            Number(u?.achievements?.progress?.farmHarvestTotal || 0)
-          );
-          const farmMoneyTotal = Math.max(0, Number(stats.farmMoneyTotal || 0));
-          const farmIncomeDays = Array.isArray(stats.farmIncomeDays) ? stats.farmIncomeDays : [];
-          let farmIncome7d = 0;
-          for (const row of farmIncomeDays) {
-            const day = String(row?.day || "");
-            if (!isDayStr(day)) continue;
-            const age = dayDiffUtc(day, today);
-            if (age < 0 || age > 6) continue;
-            farmIncome7d += Math.max(0, Math.floor(Number(row?.amount) || 0));
-          }
 
           if (didFirstShift) firstShift += 1;
           if (didFirstClaim) firstClaim += 1;
@@ -1096,21 +1072,6 @@ export class AdminCommands {
           if (petStats.bought) petBought += 1;
           if (petStats.cat) petCat += 1;
           if (petStats.dog) petDog += 1;
-          if (farmHarvestCount > 0) farmUsers += 1;
-          farmHarvestTotal += Math.max(0, Math.floor(farmHarvestCount));
-          farmIncomeTotal += Math.max(0, Math.floor(farmMoneyTotal));
-          farmIncome7dTotal += Math.max(0, Math.floor(farmIncome7d));
-
-          const displayName = String(u?.displayName || "").trim() || id;
-          if (farmMoneyTotal > 0) {
-            topFarmAllRows.push({ id, name: displayName, score: Math.floor(farmMoneyTotal) });
-          }
-          if (farmIncome7d > 0) {
-            topFarm7dRows.push({ id, name: displayName, score: Math.floor(farmIncome7d) });
-          }
-          if (bizScore > 0) {
-            topBizRows.push({ id, name: displayName, score: Math.floor(bizScore) });
-          }
         } catch {
           // skip bad rows
         }
@@ -1130,43 +1091,9 @@ export class AdminCommands {
       `Bought first business: ${firstBiz} (${this._pct(firstBiz, registered)}%)`,
       `Bought pet (ever): ${petBought} (${this._pct(petBought, registered)}%)`,
       `  cat: ${petCat}, dog: ${petDog}`,
-      `Farm users (harvested >=1): ${farmUsers} (${this._pct(farmUsers, registered)}%)`,
-      `Farm harvests total: ${farmHarvestTotal}`,
-      `Farm net profit total: $${farmIncomeTotal}`,
-      `Farm net profit last 7d: $${farmIncome7dTotal}`,
       "",
       `Excluded admins: ${excludedAdmins}`
     ];
-
-    const topFarmAll = this._sortTopRows(topFarmAllRows, "score").slice(0, 10);
-    const topFarm7d = this._sortTopRows(topFarm7dRows, "score").slice(0, 10);
-    const topBiz = this._sortTopRows(topBizRows, "score").slice(0, 10);
-
-    if (topFarmAll.length) {
-      lines.push("", "<b>Top 10 farmers (all-time net profit)</b>");
-      for (let i = 0; i < topFarmAll.length; i += 1) {
-        const r = topFarmAll[i];
-        const place = i === 0 ? "🥇" : (i === 1 ? "🥈" : (i === 2 ? "🥉" : `${i + 1}.`));
-        lines.push(`${place} ${this._escapeHtml(r.name)} — $${Math.max(0, Number(r.score) || 0)}`);
-      }
-    }
-    if (topFarm7d.length) {
-      lines.push("", "<b>Top 10 farmers (last 7d net profit)</b>");
-      for (let i = 0; i < topFarm7d.length; i += 1) {
-        const r = topFarm7d[i];
-        const place = i === 0 ? "🥇" : (i === 1 ? "🥈" : (i === 2 ? "🥉" : `${i + 1}.`));
-        lines.push(`${place} ${this._escapeHtml(r.name)} — $${Math.max(0, Number(r.score) || 0)}`);
-      }
-    }
-    if (topBiz.length) {
-      lines.push("", "<b>Top 10 business (score)</b>");
-      for (let i = 0; i < topBiz.length; i += 1) {
-        const r = topBiz[i];
-        const place = i === 0 ? "🥇" : (i === 1 ? "🥈" : (i === 2 ? "🥉" : `${i + 1}.`));
-        lines.push(`${place} ${this._escapeHtml(r.name)} — ${Math.max(0, Number(r.score) || 0)} pts`);
-      }
-    }
-
     await this.send(lines.join("\n"));
   }
 
