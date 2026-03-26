@@ -8,10 +8,11 @@ function n(v) {
 }
 
 export class RatingService {
-  constructor({ db, users, now }) {
+  constructor({ db, users, now, isAdmin = null }) {
     this.db = db || users?.db || null;
     this.users = users || null;
     this.now = now || (() => Date.now());
+    this.isAdmin = (typeof isAdmin === "function") ? isAdmin : (() => false);
   }
 
   _lang(source) {
@@ -21,6 +22,16 @@ export class RatingService {
 
   _key(cat) {
     return `rating:v1:${String(cat || "")}:top`;
+  }
+
+  _isAdminUserId(userId) {
+    const id = String(userId ?? "").trim();
+    if (!id) return false;
+    try {
+      return !!this.isAdmin(id);
+    } catch {
+      return false;
+    }
   }
 
   _limit() {
@@ -100,6 +111,7 @@ export class RatingService {
     for (const x of arr) {
       const userId = String(x?.userId || "").trim();
       if (!userId) continue;
+      if (this._isAdminUserId(userId)) continue;
       const score = Math.max(0, Math.floor(n(x?.score)));
       if (score <= 0) continue;
       out.push({
@@ -131,6 +143,7 @@ export class RatingService {
     if (!this.db || !u) return { updated: [] };
     const uid = String(u?.id || "").trim();
     if (!uid) return { updated: [] };
+    const isAdminUser = this._isAdminUserId(uid);
 
     const cats = (Array.isArray(categories) ? categories : CATS)
       .map((x) => String(x))
@@ -142,7 +155,7 @@ export class RatingService {
       const list = await this._load(cat);
       const next = [...list];
       const idx = next.findIndex((x) => String(x.userId) === uid);
-      const score = Math.max(0, Math.floor(this.scoreFor(u, cat)));
+      const score = isAdminUser ? 0 : Math.max(0, Math.floor(this.scoreFor(u, cat)));
       const name = this._name(u, u);
       let changed = false;
 
@@ -322,4 +335,3 @@ export class RatingService {
     return { caption: lines.join("\n"), keyboard: kb };
   }
 }
-

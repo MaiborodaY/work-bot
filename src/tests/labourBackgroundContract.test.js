@@ -98,7 +98,7 @@ test("labour bg: hire creates fixed snapshot and ignores work claim side effects
   assert.equal(res.plan.shiftPay, 37.5);
   assert.equal(res.plan.employeeTotal, 900);
   assert.equal(res.plan.ownerMoneyTotal, 54);
-  assert.equal(res.plan.ownerGemsTotal, 1);
+  assert.equal(res.plan.ownerGemsTotal, 2);
 
   const empAfterHire = await users.load(employee.id);
   assert.equal(empAfterHire.employment.active, true);
@@ -133,7 +133,7 @@ test("labour bg: pays employee+owner at contract end exactly once", async () => 
   const ownerAfter = await users.load(owner.id);
   assert.equal(empAfter.money, 500 + 900);
   assert.equal(ownerAfter.money, 100000 + 54);
-  assert.equal(ownerAfter.premium, 100 + 1);
+  assert.equal(ownerAfter.premium, 100 + 2);
   assert.equal(empAfter.employment.active, false);
   assert.equal(ownerAfter.biz.owned[0].slots[0].employeeId, "");
 

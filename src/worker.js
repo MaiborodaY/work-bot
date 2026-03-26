@@ -99,10 +99,10 @@ export default {
         ]
       );
       const isAdmin = (id) => __adminIdSet.has(String(id));
-      const ratings = new RatingService({ db: env.DB, users, now: () => Date.now() });
+      const ratings = new RatingService({ db: env.DB, users, now: () => Date.now(), isAdmin });
       const achievements = new AchievementService({ users, db: env.DB, now: () => Date.now(), bot, ratings });
       const quests = new QuestService({ users, now: () => Date.now(), bot });
-      const social = new SocialService({ db: env.DB, users, now: () => Date.now(), economy });
+      const social = new SocialService({ db: env.DB, users, now: () => Date.now(), economy, isAdmin });
       const stocks = new StockService({ db: env.DB, users, now: () => Date.now(), achievements, quests });
       const labour = new LabourService({ db: env.DB, users, now: () => Date.now(), bot, quests });
       const thief = new ThiefService({ db: env.DB, users, now: () => Date.now(), bot, achievements, ratings, quests });
@@ -191,12 +191,12 @@ export default {
     );
     const isAdmin = (id) => __adminIdSet.has(String(id));
 
-    const ratings = new RatingService({ db: env.DB, users, now });
+    const ratings = new RatingService({ db: env.DB, users, now, isAdmin });
     const achievements = new AchievementService({ users, db: env.DB, now, bot, ratings });
     const quests = new QuestService({ users, now, bot });
     const quiz = new QuizService({ users, now, bot, quests, achievements });
     const generalQuiz = new GeneralQuizService({ users, now, bot });
-    const social = new SocialService({ db: env.DB, users, now, economy });
+    const social = new SocialService({ db: env.DB, users, now, economy, isAdmin });
     const clans = new ClanService({ db: env.DB, users, now, economy, achievements });
     const stocks = new StockService({ db: env.DB, users, now, achievements, quests });
     const labour = new LabourService({ db: env.DB, users, now, bot, quests });
@@ -1346,10 +1346,10 @@ export default {
       ]
     );
     const isAdmin = (id) => __adminIdSet.has(String(id));
-    const ratings = new RatingService({ db: env.DB, users, now: () => Date.now() });
+    const ratings = new RatingService({ db: env.DB, users, now: () => Date.now(), isAdmin });
     const achievements = new AchievementService({ users, db: env.DB, now: () => Date.now(), bot, ratings });
     const quests = new QuestService({ users, now: () => Date.now(), bot });
-    const social = new SocialService({ db: env.DB, users, now: () => Date.now(), economy });
+    const social = new SocialService({ db: env.DB, users, now: () => Date.now(), economy, isAdmin });
     const stocks = new StockService({ db: env.DB, users, now: () => Date.now(), achievements, quests });
     const labour = new LabourService({ db: env.DB, users, now: () => Date.now(), bot, quests });
     const thief = new ThiefService({ db: env.DB, users, now: () => Date.now(), bot, achievements, ratings, quests });

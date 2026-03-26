@@ -330,11 +330,11 @@ export const CONFIG = {
         fitness_club: 240
       },
       OWNER_GEMS_BY_BIZ: {
-        shawarma: 1,
-        stomatology: 2,
-        restaurant: 3,
-        courier_service: 4,
-        fitness_club: 5
+        shawarma: 2,
+        stomatology: 4,
+        restaurant: 6,
+        courier_service: 8,
+        fitness_club: 10
       }
     },
     SLOTS: {
@@ -579,7 +579,7 @@ export const CONFIG = {
       title: "Стоматология",
       titleKey: "cfg.biz.stomatology.title",
       price: 50000,
-      daily: 1000,
+      daily: 2000,
       resetPolicy: "utc_daily_burn",
       note: "Приносит прием пациентов раз в день. Доход нужно забирать вовремя.",
       noteKey: "cfg.biz.stomatology.note"
@@ -590,7 +590,7 @@ export const CONFIG = {
       title: "Ресторан",
       titleKey: "cfg.biz.restaurant.title",
       price: 100000,
-      daily: 2000,
+      daily: 5000,
       resetPolicy: "utc_daily_burn",
       note: "Популярное заведение с высоким чеком. Забирайте прибыль раз в день.",
       noteKey: "cfg.biz.restaurant.note"

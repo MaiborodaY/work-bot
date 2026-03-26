@@ -5,13 +5,29 @@ import { CONFIG } from "./GameConfig.js";
 import { EconomyService } from "./EconomyService.js";
 
 export class SocialService {
-  constructor({ db, users, now, economy }) {
+  constructor({ db, users, now, economy, isAdmin = null }) {
     this.db = db;
     this.users = users;
     this.now = now || (() => Date.now());
     this.economy = economy || new EconomyService();
+    this.isAdmin = (typeof isAdmin === "function") ? isAdmin : (() => false);
     this._periodEnsured = false;
     this._periodEnsurePromise = null;
+  }
+
+  _isAdminUserId(userId) {
+    const id = String(userId ?? "").trim();
+    if (!id) return false;
+    try {
+      return !!this.isAdmin(id);
+    } catch {
+      return false;
+    }
+  }
+
+  _filterOutAdmins(rows) {
+    const arr = Array.isArray(rows) ? rows : [];
+    return arr.filter((row) => !this._isAdminUserId(row?.userId));
   }
 
   // ====== периодные ключи (UTC) ======
@@ -132,7 +148,7 @@ export class SocialService {
     }
 
     if (!Array.isArray(list)) list = [];
-    list = [...list];
+    list = this._filterOutAdmins([...list]);
     list.sort((a, b) => (Number(b?.total) || 0) - (Number(a?.total) || 0));
     const top = list.slice(0, 10);
 
@@ -203,7 +219,7 @@ export class SocialService {
     if (!raw) return [];
     try {
       const arr = JSON.parse(raw);
-      return Array.isArray(arr) ? arr : [];
+      return this._filterOutAdmins(Array.isArray(arr) ? arr : []);
     } catch {
       return [];
     }
@@ -225,14 +241,22 @@ export class SocialService {
     await this.ensurePeriod();
     const raw = (await this.db.get("lb:day")) || "[]";
     /** @type {{userId:string,name:string,total:number}[]} */
-    const list = JSON.parse(raw);
+    const list = this._filterOutAdmins(JSON.parse(raw));
+    const idStr = String(userId);
+    if (this._isAdminUserId(idStr)) {
+      const cleaned = list.filter((x) => String(x.userId) !== idStr);
+      cleaned.sort((a, b) => (Number(b.total) || 0) - (Number(a.total) || 0));
+      const trimmed = cleaned.slice(0, 10);
+      await this.db.put("lb:day", JSON.stringify(trimmed));
+      return trimmed;
+    }
 
-    const idx = list.findIndex(x => String(x.userId) === String(userId));
+    const idx = list.findIndex(x => String(x.userId) === idStr);
     if (idx >= 0) {
-      list[idx].name = displayName || String(userId);
+      list[idx].name = displayName || idStr;
       list[idx].total = total;
     } else {
-      list.push({ userId, name: displayName || String(userId), total });
+      list.push({ userId: idStr, name: displayName || idStr, total });
     }
 
     list.sort((a, b) => b.total - a.total);
@@ -245,14 +269,22 @@ export class SocialService {
     await this.ensurePeriod();
     const raw = (await this.db.get("lb:week")) || "[]";
     /** @type {{userId:string,name:string,total:number}[]} */
-    const list = JSON.parse(raw);
+    const list = this._filterOutAdmins(JSON.parse(raw));
+    const idStr = String(userId);
+    if (this._isAdminUserId(idStr)) {
+      const cleaned = list.filter((x) => String(x.userId) !== idStr);
+      cleaned.sort((a, b) => (Number(b.total) || 0) - (Number(a.total) || 0));
+      const trimmed = cleaned.slice(0, 10);
+      await this.db.put("lb:week", JSON.stringify(trimmed));
+      return trimmed;
+    }
 
-    const idx = list.findIndex(x => String(x.userId) === String(userId));
+    const idx = list.findIndex(x => String(x.userId) === idStr);
     if (idx >= 0) {
-      list[idx].name = displayName || String(userId);
+      list[idx].name = displayName || idStr;
       list[idx].total = total;
     } else {
-      list.push({ userId, name: displayName || String(userId), total });
+      list.push({ userId: idStr, name: displayName || idStr, total });
     }
 
     list.sort((a, b) => b.total - a.total);
@@ -264,22 +296,30 @@ export class SocialService {
   async getWeeklyTop() {
     await this.ensurePeriod();
     const raw = (await this.db.get("lb:week")) || "[]";
-    return JSON.parse(raw);
+    return this._filterOutAdmins(JSON.parse(raw));
   }
 
   // ====== Топ фермы: доход (неделя / all-time) ======
   async _updateFarmTopKey(key, { userId, displayName, total }) {
     const raw = (await this.db.get(key)) || "[]";
     /** @type {{userId:string,name:string,total:number}[]} */
-    const list = JSON.parse(raw);
+    const list = this._filterOutAdmins(JSON.parse(raw));
+    const idStr = String(userId);
+    if (this._isAdminUserId(idStr)) {
+      const cleaned = list.filter((x) => String(x.userId) !== idStr);
+      cleaned.sort((a, b) => (Number(b.total) || 0) - (Number(a.total) || 0));
+      const trimmed = cleaned.slice(0, 10);
+      await this.db.put(key, JSON.stringify(trimmed));
+      return trimmed;
+    }
 
     const safeTotal = Math.max(0, Number(total) || 0);
-    const idx = list.findIndex(x => String(x.userId) === String(userId));
+    const idx = list.findIndex(x => String(x.userId) === idStr);
     if (idx >= 0) {
-      list[idx].name = displayName || String(userId);
+      list[idx].name = displayName || idStr;
       list[idx].total = safeTotal;
     } else {
-      list.push({ userId, name: displayName || String(userId), total: safeTotal });
+      list.push({ userId: idStr, name: displayName || idStr, total: safeTotal });
     }
 
     list.sort((a, b) => (Number(b.total) || 0) - (Number(a.total) || 0));
@@ -301,19 +341,19 @@ export class SocialService {
   async getFarmDayTop() {
     await this.ensurePeriod();
     const raw = (await this.db.get("lb:farm_day")) || "[]";
-    return JSON.parse(raw);
+    return this._filterOutAdmins(JSON.parse(raw));
   }
 
   async getFarmWeekTop() {
     await this.ensurePeriod();
     const raw = (await this.db.get("lb:farm_week")) || "[]";
-    return JSON.parse(raw);
+    return this._filterOutAdmins(JSON.parse(raw));
   }
 
   async getFarmAllTop() {
     await this.ensurePeriod();
     const raw = (await this.db.get("lb:farm_all")) || "[]";
-    return JSON.parse(raw);
+    return this._filterOutAdmins(JSON.parse(raw));
   }
   // === Топ умников (уровень, all-time) ===
   async maybeUpdateSmartTop({ userId, displayName, level }) {
@@ -321,9 +361,16 @@ export class SocialService {
     await this.ensurePeriod();
     const raw = (await this.db.get("lb:smart")) || "[]";
     /** @type {{userId:string,name:string,level:number}[]} */
-    const list = JSON.parse(raw);
+    const list = this._filterOutAdmins(JSON.parse(raw));
 
     const idStr = String(userId);
+    if (this._isAdminUserId(idStr)) {
+      const cleaned = list.filter(x => String(x.userId) !== idStr);
+      cleaned.sort((a, b) => (Number(b.level) || 0) - (Number(a.level) || 0));
+      const trimmed = cleaned.slice(0, 10);
+      await this.db.put("lb:smart", JSON.stringify(trimmed));
+      return trimmed;
+    }
     const idx = list.findIndex(x => String(x.userId) === idStr);
     if (idx >= 0) {
       // апдейтим имя и уровень, если вырос
@@ -345,7 +392,7 @@ export class SocialService {
   async getSmartTop() {
     // all-time
     const raw = (await this.db.get("lb:smart")) || "[]";
-    return JSON.parse(raw);
+    return this._filterOutAdmins(JSON.parse(raw));
   }
 
 
@@ -360,7 +407,7 @@ export class SocialService {
   async getDailyTop() {
     await this.ensurePeriod();
     const raw = (await this.db.get("lb:day")) || "[]";
-    return JSON.parse(raw);
+    return this._filterOutAdmins(JSON.parse(raw));
   }
 
   // ДОБАВЬ в конец класса SocialService
@@ -370,9 +417,16 @@ export class SocialService {
     // читаем текущий список
     const raw = (await this.db.get("lb:gym_all")) || "[]";
     /** @type {{userId:string,name:string,energyMax:number,level?:number}[]} */
-    const list = JSON.parse(raw);
+    const list = this._filterOutAdmins(JSON.parse(raw));
 
     const idStr = String(userId);
+    if (this._isAdminUserId(idStr)) {
+      const cleaned = list.filter(x => String(x.userId) !== idStr);
+      cleaned.sort((a, b) => (Number(b.energyMax) || 0) - (Number(a.energyMax) || 0));
+      const trimmed = cleaned.slice(0, 10);
+      await this.db.put("lb:gym_all", JSON.stringify(trimmed));
+      return trimmed;
+    }
     const idx = list.findIndex(x => String(x.userId) === idStr);
 
     if (idx >= 0) {
@@ -399,7 +453,7 @@ export class SocialService {
 
   async getStrongTop() {
     const raw = (await this.db.get("lb:gym_all")) || "[]";
-    return JSON.parse(raw);
+    return this._filterOutAdmins(JSON.parse(raw));
   }
 
   // ------ Lucky (max single spin win) ------
@@ -408,7 +462,7 @@ export class SocialService {
   async getLuckyTop(limit = 10) {
     const raw = await this.db.get(this._luckyKey());
     const arr = raw ? JSON.parse(raw) : [];
-    return Array.isArray(arr) ? arr.slice(0, limit) : [];
+    return this._filterOutAdmins(Array.isArray(arr) ? arr : []).slice(0, limit);
   }
 
   /**
@@ -421,8 +475,16 @@ export class SocialService {
     /** @type {{userId:number|string,name:string,best:number,ts:number}[]} */
     let arr = raw ? JSON.parse(raw) : [];
     if (!Array.isArray(arr)) arr = [];
+    arr = this._filterOutAdmins(arr);
 
     const id = String(userId);
+    if (this._isAdminUserId(id)) {
+      const cleaned = arr.filter((x) => String(x.userId) !== id);
+      cleaned.sort((a, b) => (Number(b.best) || 0) - (Number(a.best) || 0));
+      const trimmed = cleaned.slice(0, 10);
+      await this.db.put(key, JSON.stringify(trimmed));
+      return trimmed;
+    }
     const safeName = (displayName && String(displayName).trim()) || `Игрок #${id.slice(-4)}`;
 
     const i = arr.findIndex(x => String(x.userId) === id);
