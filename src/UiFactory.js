@@ -433,7 +433,7 @@ export class UiFactory {
       ],
       [
         { text: this._t(l, "ui.cityboard.topfarmday"), callback_data: "city:topfarmday" },
-        { text: this._t(l, "ui.cityboard.topfarmweek"), callback_data: "city:topfarmweek" }
+        { text: this._t(l, "ui.cityboard.topbizday"), callback_data: "city:topbizday" }
       ],
       [{ text: this._t(l, "ui.cityboard.rename"), callback_data: "social:name" }],
       [{ text: this._t(l, "ui.back.default"), callback_data: this._go(Routes.CITY) }],
@@ -544,6 +544,21 @@ export class UiFactory {
       const m = medals[i] || `${i + 1}.`;
       const total = Math.max(0, Number(x?.total || x?.money || 0));
       lines.push(`${m} ${x.name} — $${total}`);
+    });
+    return lines.join("\n");
+  }
+
+  cityTopBizDayCaption(list, lang = "ru") {
+    const l = this._lang(lang);
+    if (!Array.isArray(list) || !list.length) {
+      return this._t(l, "ui.cityboard.bizday.empty");
+    }
+    const medals = ["рџҐ‡", "рџҐ€", "рџҐ‰"];
+    const lines = [this._t(l, "ui.cityboard.bizday.title")];
+    list.forEach((x, i) => {
+      const m = medals[i] || `${i + 1}.`;
+      const total = Math.max(0, Number(x?.total || 0));
+      lines.push(`${m} ${x.name} вЂ” $${total}`);
     });
     return lines.join("\n");
   }

@@ -9,7 +9,7 @@ export const businessHandler = {
   match: (data) => data.startsWith("biz:"),
 
   async handle(ctx) {
-    const { data, u, users, answer, goTo, now, send, clans, thief, achievements, ratings, quests, cb, locations } = ctx;
+    const { data, u, users, answer, goTo, now, send, clans, thief, achievements, ratings, quests, social, cb, locations } = ctx;
     const lang = normalizeLang(u?.lang || "ru");
     const tt = (key, vars = {}) => t(key, lang, vars);
     const parts = String(data || "").split(":");
@@ -272,6 +272,12 @@ export const businessHandler = {
       u.biz.owned = ownedArr;
       if (reward > 0) {
         markUsefulActivity(u, now());
+        u.stats = (u.stats && typeof u.stats === "object") ? u.stats : {};
+        if (String(u.stats.bizClaimDayKey || "") !== String(todayUTC)) {
+          u.stats.bizClaimDayKey = String(todayUTC);
+          u.stats.bizClaimDayTotal = 0;
+        }
+        u.stats.bizClaimDayTotal = Math.max(0, Number(u.stats.bizClaimDayTotal) || 0) + reward;
       }
       let questRes = null;
       if (quests?.onEvent) {
@@ -290,6 +296,15 @@ export const businessHandler = {
       try {
         if (clans?.recordBusinessMoney) {
           await clans.recordBusinessMoney(u, reward);
+        }
+      } catch {}
+      try {
+        if (reward > 0 && social?.maybeUpdateBizDayTop) {
+          await social.maybeUpdateBizDayTop({
+            userId: u.id,
+            displayName: u.displayName,
+            total: Math.max(0, Number(u?.stats?.bizClaimDayTotal) || 0)
+          });
         }
       } catch {}
 
@@ -345,6 +360,12 @@ export const businessHandler = {
       u.biz.owned = normalizedOwned;
       if (total > 0 && rewardedCount > 0) {
         markUsefulActivity(u, now());
+        u.stats = (u.stats && typeof u.stats === "object") ? u.stats : {};
+        if (String(u.stats.bizClaimDayKey || "") !== String(todayUTC)) {
+          u.stats.bizClaimDayKey = String(todayUTC);
+          u.stats.bizClaimDayTotal = 0;
+        }
+        u.stats.bizClaimDayTotal = Math.max(0, Number(u.stats.bizClaimDayTotal) || 0) + total;
       }
       let questRes = null;
       if (quests?.onEvent && total > 0 && rewardedCount > 0) {
@@ -366,6 +387,15 @@ export const businessHandler = {
       try {
         if (clans?.recordBusinessMoney && total > 0) {
           await clans.recordBusinessMoney(u, total);
+        }
+      } catch {}
+      try {
+        if (total > 0 && social?.maybeUpdateBizDayTop) {
+          await social.maybeUpdateBizDayTop({
+            userId: u.id,
+            displayName: u.displayName,
+            total: Math.max(0, Number(u?.stats?.bizClaimDayTotal) || 0)
+          });
         }
       } catch {}
 

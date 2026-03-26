@@ -378,6 +378,7 @@ export const UK = {
   "ui.cityboard.topstrong": "💪 Найвитриваліші",
   "ui.cityboard.topfarmweek": "🌱 Ферма за тиждень",
   "ui.cityboard.topfarmday": "🌾 Ферма за день",
+  "ui.cityboard.topbizday": "🏢 Бізнес за день",
   "ui.cityboard.rename": "✏️ Змінити ім'я",
   "ui.cityboard.day.empty": "🏅 Топ дня\n\nПоки порожньо. Зароби та потрап сюди.",
   "ui.cityboard.day.title": "🏅 Топ дня\n\nЛідери за заробітком:",
@@ -394,6 +395,8 @@ export const UK = {
   "ui.cityboard.farmweek.title": "🌱 Топ ферми (тиждень)\n\nНайкращі фермери за чистим прибутком за тиждень:",
   "ui.cityboard.farmday.empty": "🌾 Топ ферми (день)\n\nСьогодні ще немає зборів урожаю.",
   "ui.cityboard.farmday.title": "🌾 Топ ферми (день)\n\nНайкращі фермери за чистим прибутком за сьогодні:",
+  "ui.cityboard.bizday.empty": "🏢 Топ бізнесу (день)\n\nСьогодні ще ніхто не збирав прибуток з бізнесів.",
+  "ui.cityboard.bizday.title": "🏢 Топ бізнесу (день)\n\nХто найбільше зібрав з бізнесів за сьогодні:",
 
   "loc.onboarding.to_gym": "Перейти в зал",
   "loc.onboarding.start_first_shift": "Почати першу зміну",

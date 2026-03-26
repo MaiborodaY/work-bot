@@ -93,7 +93,7 @@ export function ensurePlayerStatsShape(u) {
     }
   }
 
-  const numFields = ["farmHarvestCount", "farmMoneyTotal", "farmMoneyWeek"];
+  const numFields = ["farmHarvestCount", "farmMoneyTotal", "farmMoneyWeek", "bizClaimDayTotal"];
   for (const f of numFields) {
     if (typeof s[f] !== "number" || !Number.isFinite(s[f])) {
       s[f] = 0;
@@ -103,6 +103,15 @@ export function ensurePlayerStatsShape(u) {
   if (typeof s.farmWeekKey !== "string") {
     s.farmWeekKey = "";
     changed = true;
+  }
+  if (!isDayStr(s.bizClaimDayKey)) {
+    if (s.bizClaimDayKey !== "") {
+      s.bizClaimDayKey = "";
+      changed = true;
+    } else if (typeof s.bizClaimDayKey !== "string") {
+      s.bizClaimDayKey = "";
+      changed = true;
+    }
   }
   const rawFarmIncomeDays = Array.isArray(s.farmIncomeDays) ? s.farmIncomeDays : [];
   const dayMap = new Map();

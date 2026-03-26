@@ -1142,7 +1142,6 @@ export class ThiefService {
         startNeed: this._attackEnergy(biz) * 2,
         defendEnergy: this._defendEnergy(biz)
       }),
-      this._t(attacker, "thief.targets.rule", { minAvailable: this._money(attacker, minAvailable) }),
       ""
     ];
     const kb = [];

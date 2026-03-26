@@ -66,6 +66,10 @@ export class ChannelService {
     return Math.max(1, toInt(this._cfg()?.TOP_FARM_LIMIT, 3));
   }
 
+  _topBizDayLimit() {
+    return Math.max(1, toInt(this._cfg()?.TOP_BIZ_DAY_LIMIT, this._cfg()?.TOP_BIZ_LIMIT ?? 3));
+  }
+
   _isAdminUserId(userId) {
     const id = String(userId ?? "").trim();
     if (!id) return false;
@@ -217,12 +221,26 @@ export class ChannelService {
         total: Math.max(0, toInt(row?.total, 0))
       }));
 
+    const topBizDayRaw = this.social?.getDailyBizTopSnapshot
+      ? await this.social.getDailyBizTopSnapshot(day)
+      : (this.social?.getBizDayTop ? await this.social.getBizDayTop() : []);
+    const topBizDay = (Array.isArray(topBizDayRaw) ? topBizDayRaw : [])
+      .filter((row) => !this._isAdminUserId(row?.userId))
+      .slice(0, this._topBizDayLimit())
+      .map((row, idx) => ({
+        place: idx + 1,
+        userId: String(row?.userId || "").trim(),
+        name: this._name(row?.name, row?.userId),
+        total: Math.max(0, toInt(row?.total, 0))
+      }));
+
     const earnersPositive = topEarners.filter((x) => Math.max(0, toInt(x?.earned, 0)) > 0).length;
     const shouldPost = earnersPositive >= this._minEarnersToPost();
 
     return {
       date: day,
       topEarners,
+      topBizDay,
       topFarm,
       topThieves,
       shouldPost
@@ -239,6 +257,7 @@ export class ChannelService {
           parsed &&
           typeof parsed === "object" &&
           Array.isArray(parsed.topEarners) &&
+          Array.isArray(parsed.topBizDay) &&
           Array.isArray(parsed.topFarm) &&
           Array.isArray(parsed.topThieves);
         if (valid) return parsed;
@@ -254,6 +273,7 @@ export class ChannelService {
   _buildText(snapshot) {
     const date = String(snapshot?.date || this._yesterday());
     const topEarners = Array.isArray(snapshot?.topEarners) ? snapshot.topEarners : [];
+    const topBizDay = Array.isArray(snapshot?.topBizDay) ? snapshot.topBizDay : [];
     const topFarm = Array.isArray(snapshot?.topFarm) ? snapshot.topFarm : [];
     const topThieves = Array.isArray(snapshot?.topThieves) ? snapshot.topThieves : [];
     const dateTs = Date.parse(`${date}T00:00:00Z`);
@@ -273,6 +293,17 @@ export class ChannelService {
         const earned = this._formatMoney(row?.earned);
         const rewardTxt = this._rewardText(place, row?.reward);
         lines.push(`${marker} ${name} — ${earned}${rewardTxt}`);
+      }
+    }
+
+    if (topBizDay.length) {
+      lines.push("");
+      lines.push("🏢 <b>Top business income (yesterday)</b>");
+      for (const row of topBizDay) {
+        const marker = this._placePrefix(row?.place);
+        const name = this._escapeHtml(this._name(row?.name, row?.userId));
+        const total = this._formatMoney(row?.total);
+        lines.push(`${marker} ${name} — ${total}`);
       }
     }
 

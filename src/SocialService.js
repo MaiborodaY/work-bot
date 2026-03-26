@@ -60,6 +60,10 @@ export class SocialService {
     return `DAILY_WINNERS:${dayStr}`;
   }
 
+  _dailyBizTopKey(dayStr) {
+    return `DAILY_BIZ_TOP:${dayStr}`;
+  }
+
   _rewardForPlace(place) {
     const table = CONFIG?.DAILY_TOP_REWARDS || {};
     const cfg = table?.[place] || table?.[String(place)] || {};
@@ -104,15 +108,27 @@ export class SocialService {
             const rawTop = await this.db.get("lb:day");
             prevTop = rawTop ? JSON.parse(rawTop) : [];
           } catch {}
+          let prevBizTop = [];
+          try {
+            const rawBizTop = await this.db.get("lb:biz_day");
+            prevBizTop = rawBizTop ? JSON.parse(rawBizTop) : [];
+          } catch {}
           try {
             await this.distributeDailyTopRewards({ rewardDayKey: storedDay, topList: prevTop });
           } catch (e) {
             console.error("daily_top_reward.error", e?.message || e);
             throw e;
           }
+          try {
+            const prevDay = this._dayKeyToDateStr(storedDay);
+            if (prevDay) {
+              await this.saveDailyBizTopSnapshot(prevDay, prevBizTop);
+            }
+          } catch {}
         }
         await this.db.put("agg:day", "0");
         await this.db.put("lb:day", "[]");
+        await this.db.put("lb:biz_day", "[]");
         await this.db.put("lb:farm_day", "[]");
         await this.db.put("state:dayKey", curDay);
       }
@@ -216,6 +232,35 @@ export class SocialService {
     const day = this._dayKeyToDateStr(dayStr || this._dateStr(-24 * 60 * 60 * 1000));
     if (!day || !this.db) return [];
     const raw = await this.db.get(this._dailyWinnersKey(day));
+    if (!raw) return [];
+    try {
+      const arr = JSON.parse(raw);
+      return this._filterOutAdmins(Array.isArray(arr) ? arr : []);
+    } catch {
+      return [];
+    }
+  }
+
+  async saveDailyBizTopSnapshot(dayStr, rows) {
+    const day = this._dayKeyToDateStr(dayStr);
+    if (!day || !this.db) return;
+    const arr = this._filterOutAdmins(Array.isArray(rows) ? rows : []);
+    const normalized = arr
+      .map((x) => ({
+        userId: String(x?.userId ?? x?.id ?? "").trim(),
+        name: String(x?.name || "").trim(),
+        total: Math.max(0, Number(x?.total || x?.money || 0))
+      }))
+      .filter((x) => !!x.userId)
+      .sort((a, b) => (Number(b.total) || 0) - (Number(a.total) || 0))
+      .slice(0, 10);
+    await this.db.put(this._dailyBizTopKey(day), JSON.stringify(normalized));
+  }
+
+  async getDailyBizTopSnapshot(dayStr = null) {
+    const day = this._dayKeyToDateStr(dayStr || this._dateStr(-24 * 60 * 60 * 1000));
+    if (!day || !this.db) return [];
+    const raw = await this.db.get(this._dailyBizTopKey(day));
     if (!raw) return [];
     try {
       const arr = JSON.parse(raw);
@@ -407,6 +452,42 @@ export class SocialService {
   async getDailyTop() {
     await this.ensurePeriod();
     const raw = (await this.db.get("lb:day")) || "[]";
+    return this._filterOutAdmins(JSON.parse(raw));
+  }
+
+  // ====== Топ по сбору с бизнесов (день) ======
+  async maybeUpdateBizDayTop({ userId, displayName, total }) {
+    await this.ensurePeriod();
+    const raw = (await this.db.get("lb:biz_day")) || "[]";
+    /** @type {{userId:string,name:string,total:number}[]} */
+    const list = this._filterOutAdmins(JSON.parse(raw));
+    const idStr = String(userId);
+    if (this._isAdminUserId(idStr)) {
+      const cleaned = list.filter((x) => String(x.userId) !== idStr);
+      cleaned.sort((a, b) => (Number(b.total) || 0) - (Number(a.total) || 0));
+      const trimmed = cleaned.slice(0, 10);
+      await this.db.put("lb:biz_day", JSON.stringify(trimmed));
+      return trimmed;
+    }
+
+    const safeTotal = Math.max(0, Number(total) || 0);
+    const idx = list.findIndex((x) => String(x.userId) === idStr);
+    if (idx >= 0) {
+      list[idx].name = displayName || idStr;
+      list[idx].total = safeTotal;
+    } else {
+      list.push({ userId: idStr, name: displayName || idStr, total: safeTotal });
+    }
+
+    list.sort((a, b) => (Number(b.total) || 0) - (Number(a.total) || 0));
+    const trimmed = list.slice(0, 10);
+    await this.db.put("lb:biz_day", JSON.stringify(trimmed));
+    return trimmed;
+  }
+
+  async getBizDayTop() {
+    await this.ensurePeriod();
+    const raw = (await this.db.get("lb:biz_day")) || "[]";
     return this._filterOutAdmins(JSON.parse(raw));
   }
 

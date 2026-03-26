@@ -445,7 +445,7 @@ export const CONFIG = {
 
   CHANNEL: {
     PLAY_URL: "t.me/reallifesame_bot",
-    POST_DAYS_UTC: [1, 3, 5], // Mon / Wed / Fri
+    POST_DAYS_UTC: [0, 1, 2, 3, 4, 5, 6], // daily
     POST_HOUR_UTC: 9,
     POST_MINUTE_UTC: 0,
     MIN_EARNERS: 3,

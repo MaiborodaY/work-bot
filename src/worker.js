@@ -482,6 +482,7 @@ export default {
       if (s === "smart") return "city:topsmart";
       if (s === "strong") return "city:topstrong";
       if (s === "lucky") return "city:toplucky";
+      if (s === "bizday") return "city:topbizday";
       if (s === "farmweek") return "city:topfarmweek";
       if (s === "farmday") return "city:topfarmday";
       if (s === "farmall") return "city:topfarmday";

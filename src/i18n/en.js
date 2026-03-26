@@ -378,6 +378,7 @@ export const EN = {
   "ui.cityboard.topstrong": "💪 Strongest",
   "ui.cityboard.topfarmweek": "🌱 Farm week",
   "ui.cityboard.topfarmday": "🌾 Farm day",
+  "ui.cityboard.topbizday": "🏢 Business day",
   "ui.cityboard.rename": "✏️ Change name",
   "ui.cityboard.day.empty": "🏅 Day Top\n\nEmpty for now. Earn and get here.",
   "ui.cityboard.day.title": "🏅 Day Top\n\nLeaders by earnings:",
@@ -394,6 +395,8 @@ export const EN = {
   "ui.cityboard.farmweek.title": "🌱 Farm Top (week)\n\nBest farmers by weekly net profit:",
   "ui.cityboard.farmday.empty": "🌾 Farm Top (day)\n\nNo farm harvests yet today.",
   "ui.cityboard.farmday.title": "🌾 Farm Top (day)\n\nBest farmers by today's net profit:",
+  "ui.cityboard.bizday.empty": "🏢 Business Top (day)\n\nNo business income claimed yet today.",
+  "ui.cityboard.bizday.title": "🏢 Business Top (day)\n\nMost collected from businesses today:",
 
   "loc.onboarding.to_gym": "Go to gym",
   "loc.onboarding.start_first_shift": "Start first shift",
