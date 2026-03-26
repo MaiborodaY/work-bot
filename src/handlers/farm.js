@@ -1,4 +1,6 @@
 import { normalizeLang, t } from "../i18n/index.js";
+import { Routes } from "../Routes.js";
+import { showEnergyChoicePanel } from "./energy.js";
 
 export const farmHandler = {
   match: (data) =>
@@ -93,6 +95,13 @@ export const farmHandler = {
       const cropId = String(parts[3] || "");
       const res = await farm.plant(u, plotIndex, cropId);
       if (!res.ok) {
+        if (res.code === "not_enough_energy") {
+          await showEnergyChoicePanel(ctx, {
+            origin: Routes.FARM,
+            need: Math.max(0, Number(res?.needEnergy) || 0)
+          });
+          return;
+        }
         await answer(cb.id, res.error || tt("handler.common.unknown_command"));
         const view = await farm.buildPlantMenuView(u, plotIndex);
         await show(view);

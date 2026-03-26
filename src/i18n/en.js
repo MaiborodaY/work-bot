@@ -27,6 +27,7 @@ export const EN = {
   "energy.origin.study": "Study",
   "energy.origin.thief": "Theft",
   "energy.origin.business": "Business",
+  "energy.origin.farm": "Farm",
   "handler.farm.unavailable": "Uncle Vova's Farm is temporarily unavailable.",
   "cfg.job.flyers.title": "Hand out flyers",
   "cfg.job.dishwasher.title": "Dishwasher",

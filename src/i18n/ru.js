@@ -260,6 +260,7 @@ export const RU = {
   "energy.origin.study": "раздел «Учёба»",
   "energy.origin.thief": "раздел «Воровство»",
   "energy.origin.business": "раздел «Бизнес»",
+  "energy.origin.farm": "\u0440\u0430\u0437\u0434\u0435\u043b \u00ab\u0424\u0435\u0440\u043c\u0430 \u0434\u044f\u0434\u0438 \u0412\u043e\u0432\u044b\u00bb",
 
   "handler.work.onboarding_first_only": "Для знакомства с игрой можно начать только с первого задания.",
   "handler.work.need_energy_cap_to_gym": "Сначала прокачай максимум энергии — загляни в зал.",

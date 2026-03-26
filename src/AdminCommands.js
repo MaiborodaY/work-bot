@@ -558,6 +558,7 @@ export class AdminCommands {
     let sourceAds = 0;
     let sourceRef = 0;
     const sourceCounts = new Map();
+    const sourceConversions = new Map();
     const topReferrers = [];
 
     // eslint-disable-next-line no-constant-condition
@@ -586,6 +587,14 @@ export class AdminCommands {
           if (s.startPayload) {
             sourceTracked += 1;
             sourceCounts.set(s.startPayload, Number(sourceCounts.get(s.startPayload) || 0) + 1);
+            const key = s.startPayload;
+            const prev = sourceConversions.get(key) || { started: 0, firstClaim: 0 };
+            prev.started += 1;
+            const stats = (u?.stats && typeof u.stats === "object") ? u.stats : {};
+            const shiftByHistory = Math.max(0, Number(u?.achievements?.progress?.totalShifts || 0)) > 0;
+            const didFirstClaim = this._toBool(stats.didFirstClaim) || shiftByHistory;
+            if (didFirstClaim) prev.firstClaim += 1;
+            sourceConversions.set(key, prev);
           }
           if (s.startSource === "ads") sourceAds += 1;
           if (s.startSource === "ref") sourceRef += 1;
@@ -617,6 +626,18 @@ export class AdminCommands {
     const topSources = Array.from(sourceCounts.entries())
       .sort((a, b) => Number(b[1] || 0) - Number(a[1] || 0))
       .slice(0, 10);
+    const topSourceConversions = Array.from(sourceConversions.entries())
+      .map(([payload, row]) => ({
+        payload,
+        started: Math.max(0, Number(row?.started || 0)),
+        firstClaim: Math.max(0, Number(row?.firstClaim || 0))
+      }))
+      .sort((a, b) => {
+        if (b.started !== a.started) return b.started - a.started;
+        if (b.firstClaim !== a.firstClaim) return b.firstClaim - a.firstClaim;
+        return String(a.payload).localeCompare(String(b.payload));
+      })
+      .slice(0, 10);
 
     const lines = [
       "<b>Referral stats</b>",
@@ -637,6 +658,17 @@ export class AdminCommands {
       lines.push("", "<b>Top start payloads</b>");
       for (const [payload, count] of topSources) {
         lines.push(`${this._escapeHtml(payload)} - ${Number(count || 0)}`);
+      }
+    }
+    if (topSourceConversions.length) {
+      lines.push("", "<b>Top payload conversions (start -&gt; first payout)</b>");
+      for (const row of topSourceConversions) {
+        const started = Math.max(0, Number(row.started || 0));
+        const firstClaim = Math.max(0, Number(row.firstClaim || 0));
+        const pct = started > 0 ? Math.round((firstClaim * 100) / started) : 0;
+        lines.push(
+          `${this._escapeHtml(row.payload)} - ${started} -&gt; ${firstClaim} (${pct}%)`
+        );
       }
     }
 

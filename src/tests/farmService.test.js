@@ -26,6 +26,8 @@ function makeUser() {
     chatId: 1001,
     lang: "ru",
     money: 10_000,
+    energy: 100,
+    energy_max: 100,
     biz: { owned: [] },
     farm: { plotCount: 1, plots: [{ id: 1, status: "empty", cropId: "", plantedAt: 0, readyAt: 0, notifiedReady: false }] }
   };
@@ -47,6 +49,7 @@ test("farm: plant deducts money, stores growing state and due key", async () => 
   const res = await svc.plant(u, 1, "carrot");
   assert.equal(res.ok, true);
   assert.equal(u.money, 9750);
+  assert.equal(u.energy, 90);
   assert.equal(u.farm.plots[0].status, "growing");
   assert.equal(u.farm.plots[0].cropId, "carrot");
   assert.ok(u.farm.plots[0].readyAt > nowTs);
@@ -102,6 +105,22 @@ test("farm: harvest resets plot and pays money", async () => {
   assert.equal(questEvents, 1);
   assert.equal(achEvents, 1);
   assert.equal(saved, 1);
+});
+
+test("farm: plant fails when not enough energy", async () => {
+  const nowTs = Date.UTC(2026, 2, 21, 12, 0, 0);
+  const db = new MockDb();
+  const users = { db, async save() {} };
+  const svc = new FarmService({ db, users, now: () => nowTs });
+  const u = makeUser();
+  u.energy = 9;
+
+  const res = await svc.plant(u, 1, "carrot");
+  assert.equal(res.ok, false);
+  assert.equal(res.code, "not_enough_energy");
+  assert.equal(res.needEnergy, 10);
+  assert.equal(u.money, 10_000);
+  assert.equal(u.farm.plots[0].status, "empty");
 });
 
 test("farm: dailyTick sends push for ready unnotified plots", async () => {

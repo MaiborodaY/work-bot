@@ -430,11 +430,12 @@ export const CONFIG = {
   FARM: {
     FREE_PLOTS: 1,
     MAX_PLOTS: 6,
+    PLANT_ENERGY_COST: 20,
     PLOT_PRICES: [5000, 15000, 35000, 75000, 150000],
     CROPS: {
-      carrot: { emoji: "🥕", seedPrice: 250, growMs: 60 * 60_000, sellPrice: 400 },
-      tomato: { emoji: "🍅", seedPrice: 700, growMs: 180 * 60_000, sellPrice: 1000 },
-      corn: { emoji: "🌽", seedPrice: 1800, growMs: 480 * 60_000, sellPrice: 2200 }
+      carrot: { emoji: "🥕", seedPrice: 250, growMs: 60 * 60_000, sellPrice: 400, plantEnergy: 10 },
+      tomato: { emoji: "🍅", seedPrice: 700, growMs: 180 * 60_000, sellPrice: 1000, plantEnergy: 20 },
+      corn: { emoji: "🌽", seedPrice: 1800, growMs: 480 * 60_000, sellPrice: 2200, plantEnergy: 30 }
     },
     NOTIFY: {
       DUE_BUCKET_MS: 5 * 60_000,

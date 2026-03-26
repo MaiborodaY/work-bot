@@ -27,6 +27,7 @@ export const UK = {
   "energy.origin.study": "розділ «Навчання»",
   "energy.origin.thief": "розділ «Крадіжка»",
   "energy.origin.business": "розділ «Бізнес»",
+  "energy.origin.farm": "\u0440\u043e\u0437\u0434\u0456\u043b \u00ab\u0424\u0435\u0440\u043c\u0430 \u0434\u044f\u0434\u044c\u043a\u0430 \u0412\u043e\u0432\u0438\u00bb",
   "handler.farm.unavailable": "Ферма дядька Вови тимчасово недоступна.",
   "cfg.job.flyers.title": "Роздавати листівки",
   "cfg.job.dishwasher.title": "Посудомийник",

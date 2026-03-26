@@ -6,7 +6,8 @@ const ENERGY_ORIGINS = new Set([
   Routes.GYM,
   Routes.STUDY,
   Routes.THIEF,
-  Routes.BUSINESS
+  Routes.BUSINESS,
+  Routes.FARM
 ]);
 
 function normalizeOrigin(raw) {
@@ -22,6 +23,7 @@ function originTitle(tt, origin) {
     case Routes.STUDY: return tt("energy.origin.study");
     case Routes.THIEF: return tt("energy.origin.thief");
     case Routes.BUSINESS: return tt("energy.origin.business");
+    case Routes.FARM: return tt("energy.origin.farm");
     default: return tt("ui.back.default");
   }
 }
