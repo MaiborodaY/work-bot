@@ -553,12 +553,12 @@ export class UiFactory {
     if (!Array.isArray(list) || !list.length) {
       return this._t(l, "ui.cityboard.bizday.empty");
     }
-    const medals = ["рџҐ‡", "рџҐ€", "рџҐ‰"];
+    const medals = ["\u{1F947}", "\u{1F948}", "\u{1F949}"];
     const lines = [this._t(l, "ui.cityboard.bizday.title")];
     list.forEach((x, i) => {
       const m = medals[i] || `${i + 1}.`;
       const total = Math.max(0, Number(x?.total || 0));
-      lines.push(`${m} ${x.name} вЂ” $${total}`);
+      lines.push(`${m} ${x.name} - $${total}`);
     });
     return lines.join("\n");
   }

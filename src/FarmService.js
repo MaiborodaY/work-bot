@@ -65,7 +65,7 @@ export class FarmService {
         harvestOk: "{{emoji}} {{name}} harvested and sold!\n+${{money}}",
         buyPlotOk: "💳 Plot {{num}} purchased for ${{price}}.",
         errNoMoney: "Not enough money.",
-        errNoEnergy: "Not enough energy. Need {{need}} energy.",
+        errNoEnergy: "Need {{need}}⚡.",
         errPlotBusy: "This plot is already occupied.",
         errPlotOrder: "You can buy only the next plot in order.",
         errPlotMax: "All plots are already purchased.",
@@ -83,7 +83,7 @@ export class FarmService {
         helpPlotPriceLine: "Plot {{num}} — ${{price}}",
         helpCropsHeader: "🌾 Crops:",
         helpPlotsHeader: "🧱 Plot prices:",
-        helpCropLine: "{{emoji}} {{name}}: seed ${{seed}}, grow {{time}}, sell ${{sell}} (profit +${{profit}}), plant cost {{energy}} energy",
+        helpCropLine: "{{emoji}} {{name}}: ${{seed}} | {{time}} | ${{sell}} (+${{profit}}) | {{energy}}⚡",
         helpPush: "Push: you'll get a notification when crop is ready.",
         helpRule: "Harvest does not disappear: it waits until you collect it.",
         timeMin: "min",
@@ -115,7 +115,7 @@ export class FarmService {
         harvestOk: "{{emoji}} {{name}} зібрано і продано!\n+${{money}}",
         buyPlotOk: "💳 Грядку {{num}} куплено за ${{price}}.",
         errNoMoney: "Недостатньо коштів.",
-        errNoEnergy: "Not enough energy. Need {{need}} energy.",
+        errNoEnergy: "Need {{need}}⚡.",
         errPlotBusy: "Ця грядка вже зайнята.",
         errPlotOrder: "Можна купити тільки наступну грядку по порядку.",
         errPlotMax: "Усі грядки вже куплені.",
@@ -133,7 +133,7 @@ export class FarmService {
         helpPlotPriceLine: "Грядка {{num}} — ${{price}}",
         helpCropsHeader: "🌾 Культури:",
         helpPlotsHeader: "🧱 Ціни грядок:",
-        helpCropLine: "{{emoji}} {{name}}: seed ${{seed}}, grow {{time}}, sell ${{sell}} (profit +${{profit}}), plant cost {{energy}} energy",
+        helpCropLine: "{{emoji}} {{name}}: ${{seed}} | {{time}} | ${{sell}} (+${{profit}}) | {{energy}}⚡",
         helpPush: "Пуш: коли врожай дозріє, прийде повідомлення.",
         helpRule: "Врожай не зникає — чекатиме, доки ти його не збереш.",
         timeMin: "хв",
@@ -164,7 +164,7 @@ export class FarmService {
       harvestOk: "{{emoji}} {{name}} собрана и продана!\n+${{money}}",
       buyPlotOk: "💳 Грядка {{num}} куплена за ${{price}}.",
       errNoMoney: "Недостаточно средств.",
-      errNoEnergy: "Not enough energy. Need {{need}} energy.",
+      errNoEnergy: "Need {{need}}⚡.",
       errPlotBusy: "Эта грядка уже занята.",
       errPlotOrder: "Можно купить только следующую грядку по порядку.",
       errPlotMax: "Все грядки уже куплены.",
@@ -182,7 +182,7 @@ export class FarmService {
       helpPlotPriceLine: "Грядка {{num}} — ${{price}}",
       helpCropsHeader: "🌾 Культуры:",
       helpPlotsHeader: "🧱 Цены грядок:",
-      helpCropLine: "{{emoji}} {{name}}: seed ${{seed}}, grow {{time}}, sell ${{sell}} (profit +${{profit}}), plant cost {{energy}} energy",
+      helpCropLine: "{{emoji}} {{name}}: ${{seed}} | {{time}} | ${{sell}} (+${{profit}}) | {{energy}}⚡",
       helpPush: "Пуш: когда урожай созреет, придёт уведомление.",
       helpRule: "Урожай не пропадает — ждёт, пока ты его соберёшь.",
       timeMin: "мин",
@@ -623,8 +623,6 @@ export class FarmService {
         energy: crop.plantEnergy
       }));
     }
-    lines.push("", s.helpPush, s.helpRule);
-
     return {
       caption: lines.join("\n").trim(),
       keyboard: [[{ text: s.btnBackCity, callback_data: "go:Farm" }]]
