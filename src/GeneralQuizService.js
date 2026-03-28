@@ -56,11 +56,12 @@ function shuffleDeterministic(list, rng) {
 }
 
 export class GeneralQuizService {
-  constructor({ users, now, bot = null, social = null }) {
+  constructor({ users, now, bot = null, social = null, achievements = null }) {
     this.users = users;
     this.now = now || (() => Date.now());
     this.bot = bot || null;
     this.social = social || null;
+    this.achievements = achievements || null;
   }
 
   _lang(source) {
@@ -700,6 +701,18 @@ export class GeneralQuizService {
         } catch {
           // leaderboard update should never break quiz rewards
         }
+      }
+    }
+
+    if (finished && this.achievements && typeof this.achievements.onEvent === "function") {
+      try {
+        await this.achievements.onEvent(u, "gquiz_play", {
+          perfect,
+          difficulty,
+          streak: perfect ? Math.max(1, Math.floor(Number(u?.achievements?.progress?.gquizPerfectStreak) || 1)) : 0
+        });
+      } catch {
+        // achievements update should not break quiz flow
       }
     }
 

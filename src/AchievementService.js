@@ -63,7 +63,11 @@ export class AchievementService {
       farmCornHarvest: 0,
       farmHarvestedTypesMask: 0,
       quizPerfectTotal: 0,
-      quizPerfectStreak: 0
+      quizPerfectStreak: 0,
+      gquizPlayedTotal: 0,
+      gquizPerfectTotal: 0,
+      gquizPerfectStreak: 0,
+      gquizHardPerfectTotal: 0
     };
     for (const [k, d] of Object.entries(defaultsNum)) {
       if (typeof p[k] !== "number" || !Number.isFinite(p[k])) {
@@ -209,6 +213,25 @@ export class AchievementService {
         }
         break;
       }
+      case "gquiz_play": {
+        const perfect = !!ctx?.perfect;
+        const difficulty = String(ctx?.difficulty || "").toLowerCase();
+        changed = this._inc(u, "gquizPlayedTotal", 1) || changed;
+        if (perfect) {
+          changed = this._inc(u, "gquizPerfectTotal", 1) || changed;
+          if (difficulty === "hard") {
+            changed = this._inc(u, "gquizHardPerfectTotal", 1) || changed;
+          }
+          const streakFromCtx = Math.max(0, Math.floor(n(ctx?.streak)));
+          const nextStreak = streakFromCtx > 0
+            ? streakFromCtx
+            : (Math.max(0, Math.floor(n(u?.achievements?.progress?.gquizPerfectStreak))) + 1);
+          changed = this._set(u, "gquizPerfectStreak", nextStreak) || changed;
+        } else {
+          changed = this._set(u, "gquizPerfectStreak", 0) || changed;
+        }
+        break;
+      }
       default:
         break;
     }
@@ -246,6 +269,7 @@ export class AchievementService {
     if (s.startsWith("pet_")) return "pet";
     if (s.startsWith("farm_")) return "farm";
     if (s.startsWith("quiz_")) return "quiz";
+    if (s.startsWith("gquiz_")) return "quiz";
     if (s.startsWith("stocks_")) return "stocks";
     if (s.startsWith("thief_")) return "thief";
     if (s.startsWith("clan_")) return "clan";
@@ -398,6 +422,9 @@ export class AchievementService {
       pet_streak_100: `${petFeedStreak}/100 дней`,
       quiz_first_perfect: `${Math.max(0, Math.floor(n(p.quizPerfectTotal)))}/1`,
       quiz_streak_7: `${Math.max(0, Math.floor(n(p.quizPerfectStreak)))}/7 подряд`,
+      gquiz_first_play: `${Math.max(0, Math.floor(n(p.gquizPlayedTotal)))}/1`,
+      gquiz_perfect_5: `${Math.max(0, Math.floor(n(p.gquizPerfectTotal)))}/5`,
+      gquiz_hard_perfect_3: `${Math.max(0, Math.floor(n(p.gquizHardPerfectTotal)))}/3`,
       stocks_first_buy: `${stockBuys}/1 покупок`,
       stocks_portfolio_5: `${heldCompanies}/5 компаний`,
       stocks_dividends_50k: `$${totalDividends}/$50000`,
@@ -429,6 +456,9 @@ export class AchievementService {
       pet_streak_100: `${petFeedStreak}/100 днів`,
       quiz_first_perfect: `${Math.max(0, Math.floor(n(p.quizPerfectTotal)))}/1`,
       quiz_streak_7: `${Math.max(0, Math.floor(n(p.quizPerfectStreak)))}/7 поспіль`,
+      gquiz_first_play: `${Math.max(0, Math.floor(n(p.gquizPlayedTotal)))}/1`,
+      gquiz_perfect_5: `${Math.max(0, Math.floor(n(p.gquizPerfectTotal)))}/5`,
+      gquiz_hard_perfect_3: `${Math.max(0, Math.floor(n(p.gquizHardPerfectTotal)))}/3`,
       stocks_first_buy: `${stockBuys}/1 покупок`,
       stocks_portfolio_5: `${heldCompanies}/5 компаній`,
       stocks_dividends_50k: `$${totalDividends}/$50000`,
@@ -460,6 +490,9 @@ export class AchievementService {
       pet_streak_100: `${petFeedStreak}/100 days`,
       quiz_first_perfect: `${Math.max(0, Math.floor(n(p.quizPerfectTotal)))}/1`,
       quiz_streak_7: `${Math.max(0, Math.floor(n(p.quizPerfectStreak)))}/7 streak`,
+      gquiz_first_play: `${Math.max(0, Math.floor(n(p.gquizPlayedTotal)))}/1`,
+      gquiz_perfect_5: `${Math.max(0, Math.floor(n(p.gquizPerfectTotal)))}/5`,
+      gquiz_hard_perfect_3: `${Math.max(0, Math.floor(n(p.gquizHardPerfectTotal)))}/3`,
       stocks_first_buy: `${stockBuys}/1 buys`,
       stocks_portfolio_5: `${heldCompanies}/5 companies`,
       stocks_dividends_50k: `$${totalDividends}/$50000`,

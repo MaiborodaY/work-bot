@@ -209,6 +209,27 @@ export const ACHIEVEMENTS = [
     title: { ru: "Серия знаний", uk: "Серія знань", en: "Knowledge streak" },
     done: (u) => p(u, "quizPerfectStreak") >= 7
   },
+  {
+    id: "gquiz_first_play",
+    reward: 1,
+    events: ["gquiz_play"],
+    title: { ru: "Общий старт", uk: "Загальний старт", en: "General starter" },
+    done: (u) => p(u, "gquizPlayedTotal") >= 1
+  },
+  {
+    id: "gquiz_perfect_5",
+    reward: 5,
+    events: ["gquiz_play"],
+    title: { ru: "Эрудит", uk: "Ерудит", en: "Erudite" },
+    done: (u) => p(u, "gquizPerfectTotal") >= 5
+  },
+  {
+    id: "gquiz_hard_perfect_3",
+    reward: 10,
+    events: ["gquiz_play"],
+    title: { ru: "Мозг на макс", uk: "Мозок на макс", en: "Full brainpower" },
+    done: (u) => p(u, "gquizHardPerfectTotal") >= 3
+  },
 
   {
     id: "stocks_first_buy",
