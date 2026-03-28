@@ -93,7 +93,7 @@ export function ensurePlayerStatsShape(u) {
     }
   }
 
-  const numFields = ["farmHarvestCount", "farmMoneyTotal", "farmMoneyWeek", "bizClaimDayTotal"];
+  const numFields = ["farmHarvestCount", "farmMoneyTotal", "farmMoneyWeek", "bizClaimDayTotal", "gquizDayEarned"];
   for (const f of numFields) {
     if (typeof s[f] !== "number" || !Number.isFinite(s[f])) {
       s[f] = 0;
@@ -110,6 +110,15 @@ export function ensurePlayerStatsShape(u) {
       changed = true;
     } else if (typeof s.bizClaimDayKey !== "string") {
       s.bizClaimDayKey = "";
+      changed = true;
+    }
+  }
+  if (!isDayStr(s.gquizDayKey)) {
+    if (s.gquizDayKey !== "") {
+      s.gquizDayKey = "";
+      changed = true;
+    } else if (typeof s.gquizDayKey !== "string") {
+      s.gquizDayKey = "";
       changed = true;
     }
   }

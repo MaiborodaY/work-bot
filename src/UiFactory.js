@@ -489,8 +489,8 @@ export class UiFactory {
     const lines = [this._t(l, "ui.cityboard.smart.title")];
     list.forEach((x, i) => {
       const m = medals[i] || `${i+1}.`;
-      const lvl = typeof x.level === "number" ? x.level : 0;
-      lines.push(`${m} ${x.name} — Lvl ${lvl}`);
+      const total = Math.max(0, Number(x?.total || 0));
+      lines.push(`${m} ${x.name} - $${total}`);
     });
     return lines.join("\n");
   }

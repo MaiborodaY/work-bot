@@ -56,10 +56,11 @@ function shuffleDeterministic(list, rng) {
 }
 
 export class GeneralQuizService {
-  constructor({ users, now, bot = null }) {
+  constructor({ users, now, bot = null, social = null }) {
     this.users = users;
     this.now = now || (() => Date.now());
     this.bot = bot || null;
+    this.social = social || null;
   }
 
   _lang(source) {
@@ -146,6 +147,23 @@ export class GeneralQuizService {
 
   _today() {
     return dayStr(this.now());
+  }
+
+  _addDailyEarnedMoney(u, amount) {
+    const add = Math.max(0, toInt(amount, 0));
+    if (!add) {
+      return Math.max(0, toInt(u?.stats?.gquizDayEarned, 0));
+    }
+    if (!u.stats || typeof u.stats !== "object") {
+      u.stats = {};
+    }
+    const today = this._today();
+    if (String(u.stats.gquizDayKey || "") !== today) {
+      u.stats.gquizDayKey = today;
+      u.stats.gquizDayEarned = 0;
+    }
+    u.stats.gquizDayEarned = Math.max(0, toInt(u.stats.gquizDayEarned, 0)) + add;
+    return u.stats.gquizDayEarned;
   }
 
   _ensureModel(u) {
@@ -624,8 +642,12 @@ export class GeneralQuizService {
     const pickedOrig = q.order[shown];
     const correct = pickedOrig === q.correctIndex;
     const rewardMoney = correct ? this._rewardMoneyPerCorrect(difficulty) : 0;
+    let earnedIncrement = 0;
+    let dayTotal = Math.max(0, toInt(u?.stats?.gquizDayEarned, 0));
     if (rewardMoney > 0) {
       u.money = Math.max(0, toInt(u.money, 0)) + rewardMoney;
+      earnedIncrement += rewardMoney;
+      dayTotal = this._addDailyEarnedMoney(u, rewardMoney);
     }
 
     u.quizGeneral.answers.push(correct);
@@ -653,6 +675,8 @@ export class GeneralQuizService {
         bonusMoney = this._perfectBonusMoney(difficulty);
         if (bonusMoney > 0) {
           u.money = Math.max(0, toInt(u.money, 0)) + bonusMoney;
+          earnedIncrement += bonusMoney;
+          dayTotal = this._addDailyEarnedMoney(u, bonusMoney);
         }
         u.quizGeneral.perfectTotal = Math.max(0, toInt(u.quizGeneral.perfectTotal, 0)) + 1;
         row.perfectTotal = Math.max(0, toInt(row.perfectTotal, 0)) + 1;
@@ -660,6 +684,24 @@ export class GeneralQuizService {
     }
 
     await this.users.save(u);
+
+    if (earnedIncrement > 0 && this.social && typeof this.social.maybeUpdateGeneralQuizDayTop === "function") {
+      const userId = String(u?.id || "").trim();
+      if (userId) {
+        const rawName = String(u?.displayName || "").trim();
+        const fallbackName = `u${userId.slice(-4).padStart(4, "0")}`;
+        const displayName = rawName || fallbackName;
+        try {
+          await this.social.maybeUpdateGeneralQuizDayTop({
+            userId,
+            displayName,
+            total: dayTotal
+          });
+        } catch {
+          // leaderboard update should never break quiz rewards
+        }
+      }
+    }
 
     return {
       ok: true,

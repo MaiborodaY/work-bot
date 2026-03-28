@@ -238,7 +238,7 @@ export const socialHandler = {
 
     if (data === "city:topsmart") {
       await answer(cb.id);
-      const raw = await social.getSmartTop(); // [{userId,name,level}]
+      const raw = await social.getGeneralQuizDayTop().catch(() => []); // [{userId,name,total}]
       const norm = (item) => {
         const idStr = String(item.userId || "");
         const looksLikeId = typeof item.name === "string" && /^[0-9]+$/.test(item.name.trim());

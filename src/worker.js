@@ -194,9 +194,9 @@ export default {
     const ratings = new RatingService({ db: env.DB, users, now, isAdmin });
     const achievements = new AchievementService({ users, db: env.DB, now, bot, ratings });
     const quests = new QuestService({ users, now, bot });
-    const quiz = new QuizService({ users, now, bot, quests, achievements });
-    const generalQuiz = new GeneralQuizService({ users, now, bot });
     const social = new SocialService({ db: env.DB, users, now, economy, isAdmin });
+    const quiz = new QuizService({ users, now, bot, quests, achievements });
+    const generalQuiz = new GeneralQuizService({ users, now, bot, social });
     const clans = new ClanService({ db: env.DB, users, now, economy, achievements });
     const stocks = new StockService({ db: env.DB, users, now, achievements, quests });
     const labour = new LabourService({ db: env.DB, users, now, bot, quests });

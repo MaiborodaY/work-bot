@@ -785,7 +785,9 @@ export class UserStore {
         farmMoneyWeek: 0,
         farmIncomeDays: [],
         bizClaimDayKey: "",
-        bizClaimDayTotal: 0
+        bizClaimDayTotal: 0,
+        gquizDayKey: "",
+        gquizDayEarned: 0
       },
       lastDailyRewardDay: "",
 

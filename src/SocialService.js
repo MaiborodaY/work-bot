@@ -130,6 +130,7 @@ export class SocialService {
         await this.db.put("lb:day", "[]");
         await this.db.put("lb:biz_day", "[]");
         await this.db.put("lb:farm_day", "[]");
+        await this.db.put("lb:gquiz_day", "[]");
         await this.db.put("state:dayKey", curDay);
       }
       if (storedWeek !== curWeek) {
@@ -398,6 +399,19 @@ export class SocialService {
   async getFarmAllTop() {
     await this.ensurePeriod();
     const raw = (await this.db.get("lb:farm_all")) || "[]";
+    return this._filterOutAdmins(JSON.parse(raw));
+  }
+
+  // ====== Топ общей викторины: заработок за день ======
+  async maybeUpdateGeneralQuizDayTop({ userId, displayName, total }) {
+    await this.ensurePeriod();
+    const safeTotal = Math.max(0, Number(total) || 0);
+    return this._updateFarmTopKey("lb:gquiz_day", { userId, displayName, total: safeTotal });
+  }
+
+  async getGeneralQuizDayTop() {
+    await this.ensurePeriod();
+    const raw = (await this.db.get("lb:gquiz_day")) || "[]";
     return this._filterOutAdmins(JSON.parse(raw));
   }
   // === Топ умников (уровень, all-time) ===
