@@ -104,7 +104,7 @@ export default {
       const quests = new QuestService({ users, now: () => Date.now(), bot });
       const social = new SocialService({ db: env.DB, users, now: () => Date.now(), economy, isAdmin });
       const stocks = new StockService({ db: env.DB, users, now: () => Date.now(), achievements, quests });
-      const labour = new LabourService({ db: env.DB, users, now: () => Date.now(), bot, quests });
+      const labour = new LabourService({ db: env.DB, users, now: () => Date.now(), bot, quests, social });
       const thief = new ThiefService({ db: env.DB, users, now: () => Date.now(), bot, achievements, ratings, quests });
       const channel = new ChannelService({
         db: env.DB,
@@ -199,7 +199,7 @@ export default {
     const generalQuiz = new GeneralQuizService({ users, now, bot, social, achievements });
     const clans = new ClanService({ db: env.DB, users, now, economy, achievements });
     const stocks = new StockService({ db: env.DB, users, now, achievements, quests });
-    const labour = new LabourService({ db: env.DB, users, now, bot, quests });
+    const labour = new LabourService({ db: env.DB, users, now, bot, quests, social });
     const thief = new ThiefService({ db: env.DB, users, now, bot, achievements, ratings, quests });
     const channel = new ChannelService({
       db: env.DB,
@@ -1353,7 +1353,7 @@ export default {
     const quests = new QuestService({ users, now: () => Date.now(), bot });
     const social = new SocialService({ db: env.DB, users, now: () => Date.now(), economy, isAdmin });
     const stocks = new StockService({ db: env.DB, users, now: () => Date.now(), achievements, quests });
-    const labour = new LabourService({ db: env.DB, users, now: () => Date.now(), bot, quests });
+    const labour = new LabourService({ db: env.DB, users, now: () => Date.now(), bot, quests, social });
     const thief = new ThiefService({ db: env.DB, users, now: () => Date.now(), bot, achievements, ratings, quests });
     const channel = new ChannelService({
       db: env.DB,

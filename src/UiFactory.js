@@ -503,10 +503,9 @@ export class UiFactory {
     const lines = [this._t(l, "ui.cityboard.strong.title")];
     list.forEach((x, i) => {
       const m = medals[i] || `${i+1}.`;
-      const cap = typeof x.energyMax === "number" ? x.energyMax : 0;
-      const lvl = typeof x.level === "number" ? x.level : null;
-      const levelPart = lvl != null ? this._t(l, "ui.cityboard.training_level", { lvl }) : "";
-      lines.push(`${m} ${x.name} — ${cap}⚡${levelPart}`);
+      const money = Math.max(0, Number(x?.money || 0));
+      const gems = Math.max(0, Number(x?.gems || 0));
+      lines.push(`${m} ${x.name} — $${money} + ${CONFIG?.PREMIUM?.emoji || "💎"}${gems}`);
     });
     return lines.join("\n");
   }

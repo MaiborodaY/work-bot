@@ -787,7 +787,10 @@ export class UserStore {
         bizClaimDayKey: "",
         bizClaimDayTotal: 0,
         gquizDayKey: "",
-        gquizDayEarned: 0
+        gquizDayEarned: 0,
+        labourDayKey: "",
+        labourDayMoney: 0,
+        labourDayGems: 0
       },
       lastDailyRewardDay: "",
 

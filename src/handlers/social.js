@@ -284,8 +284,8 @@ export const socialHandler = {
         return;
       }
     
-      // читаем топ силачей
-      const raw = await social.getStrongTop(); // [{userId,name,energyMax,level}]
+      // читаем дневной топ по наёмникам (доход владельца: деньги + кристаллы)
+      const raw = await social.getLabourDayTop().catch(() => []); // [{userId,name,money,gems}]
       const norm = (item) => {
         const idStr = String(item.userId || "");
         const looksLikeId = typeof item.name === "string" && /^[0-9]+$/.test(item.name.trim());

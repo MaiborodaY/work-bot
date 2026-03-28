@@ -130,6 +130,7 @@ export class SocialService {
         await this.db.put("lb:day", "[]");
         await this.db.put("lb:biz_day", "[]");
         await this.db.put("lb:farm_day", "[]");
+        await this.db.put("lb:labour_day", "[]");
         await this.db.put("lb:gquiz_day", "[]");
         await this.db.put("state:dayKey", curDay);
       }
@@ -399,6 +400,56 @@ export class SocialService {
   async getFarmAllTop() {
     await this.ensurePeriod();
     const raw = (await this.db.get("lb:farm_all")) || "[]";
+    return this._filterOutAdmins(JSON.parse(raw));
+  }
+
+  async _updateMoneyGemsTopKey(key, { userId, displayName, money, gems }) {
+    const raw = (await this.db.get(key)) || "[]";
+    /** @type {{userId:string,name:string,money:number,gems:number}[]} */
+    const list = this._filterOutAdmins(JSON.parse(raw));
+    const idStr = String(userId);
+    if (this._isAdminUserId(idStr)) {
+      const cleaned = list.filter((x) => String(x.userId) !== idStr);
+      cleaned.sort((a, b) => {
+        const moneyDiff = (Number(b.money) || 0) - (Number(a.money) || 0);
+        if (moneyDiff !== 0) return moneyDiff;
+        return (Number(b.gems) || 0) - (Number(a.gems) || 0);
+      });
+      const trimmed = cleaned.slice(0, 10);
+      await this.db.put(key, JSON.stringify(trimmed));
+      return trimmed;
+    }
+
+    const safeMoney = Math.max(0, Math.floor(Number(money) || 0));
+    const safeGems = Math.max(0, Math.floor(Number(gems) || 0));
+    const idx = list.findIndex((x) => String(x.userId) === idStr);
+    if (idx >= 0) {
+      list[idx].name = displayName || idStr;
+      list[idx].money = safeMoney;
+      list[idx].gems = safeGems;
+    } else {
+      list.push({ userId: idStr, name: displayName || idStr, money: safeMoney, gems: safeGems });
+    }
+
+    list.sort((a, b) => {
+      const moneyDiff = (Number(b.money) || 0) - (Number(a.money) || 0);
+      if (moneyDiff !== 0) return moneyDiff;
+      return (Number(b.gems) || 0) - (Number(a.gems) || 0);
+    });
+    const trimmed = list.slice(0, 10);
+    await this.db.put(key, JSON.stringify(trimmed));
+    return trimmed;
+  }
+
+  // ====== Топ по наёмникам: доход владельца за день (деньги + кристаллы) ======
+  async maybeUpdateLabourDayTop({ userId, displayName, money, gems }) {
+    await this.ensurePeriod();
+    return this._updateMoneyGemsTopKey("lb:labour_day", { userId, displayName, money, gems });
+  }
+
+  async getLabourDayTop() {
+    await this.ensurePeriod();
+    const raw = (await this.db.get("lb:labour_day")) || "[]";
     return this._filterOutAdmins(JSON.parse(raw));
   }
 

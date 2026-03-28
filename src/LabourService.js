@@ -11,12 +11,13 @@ const CONTRACT_MODEL_LEGACY = "legacy_claim_share";
 const CONTRACT_MODEL_BG_V1 = "bg_fixed_v1";
 
 export class LabourService {
-  constructor({ db, users, now, bot, quests = null }) {
+  constructor({ db, users, now, bot, quests = null, social = null }) {
     this.db = db;
     this.users = users;
     this.now = now || (() => Date.now());
     this.bot = bot || null;
     this.quests = quests || null;
+    this.social = social || null;
   }
 
   _lang(source) {
@@ -259,6 +260,48 @@ export class LabourService {
       ? String(abs)
       : String(abs.toFixed(2)).replace(/\.?0+$/, "");
     return `${sign}$${shown}`;
+  }
+
+  _dayStrUtc(ts = this.now()) {
+    const d = new Date(Number(ts) || this.now());
+    const y = d.getUTCFullYear();
+    const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+    const day = String(d.getUTCDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  }
+
+  _applyOwnerLabourDayIncome(owner, money, gems) {
+    if (!owner || typeof owner !== "object") return null;
+
+    const safeMoney = Math.max(0, Math.floor(Number(money) || 0));
+    const safeGems = Math.max(0, Math.floor(Number(gems) || 0));
+    if (safeMoney <= 0 && safeGems <= 0) return null;
+
+    if (!owner.stats || typeof owner.stats !== "object") owner.stats = {};
+    const s = owner.stats;
+    const today = this._dayStrUtc();
+    if (String(s.labourDayKey || "") !== today) {
+      s.labourDayKey = today;
+      s.labourDayMoney = 0;
+      s.labourDayGems = 0;
+    }
+
+    s.labourDayMoney = Math.max(0, Math.floor(Number(s.labourDayMoney) || 0)) + safeMoney;
+    s.labourDayGems = Math.max(0, Math.floor(Number(s.labourDayGems) || 0)) + safeGems;
+
+    return {
+      userId: owner.id,
+      displayName: this._formatName(owner, owner),
+      money: s.labourDayMoney,
+      gems: s.labourDayGems
+    };
+  }
+
+  async _maybeUpdateLabourDayTop(payload) {
+    if (!payload || !this.social || typeof this.social.maybeUpdateLabourDayTop !== "function") return;
+    try {
+      await this.social.maybeUpdateLabourDayTop(payload);
+    } catch {}
   }
 
   _formatTimeLeftDhM(source, endAt) {
@@ -761,6 +804,7 @@ export class LabourService {
     let ownerGemsTotal = 0;
     let legacyTotal = 0;
     let ownerQuestRes = null;
+    let labourTopPayload = null;
     if (ownerId) {
       owner = await this.users.load(ownerId).catch(() => null);
       if (owner) {
@@ -826,6 +870,11 @@ export class LabourService {
           }
         }
 
+        if (contractModel === CONTRACT_MODEL_BG_V1) {
+          labourTopPayload = this._applyOwnerLabourDayIncome(owner, ownerMoneyTotal, ownerGemsTotal);
+          if (labourTopPayload) ownerDirty = true;
+        }
+
         if (contractModel === CONTRACT_MODEL_BG_V1 && this.quests?.onEvent) {
           try {
             ownerQuestRes = await this.quests.onEvent(owner, "labour_owner_contract_finish", {
@@ -844,6 +893,9 @@ export class LabourService {
         }
         if (ownerQuestRes?.events?.length && this.quests?.notifyEvents) {
           await this.quests.notifyEvents(owner, ownerQuestRes.events);
+        }
+        if (labourTopPayload) {
+          await this._maybeUpdateLabourDayTop(labourTopPayload);
         }
       }
     }
@@ -1279,6 +1331,7 @@ export class LabourService {
 
     let applied = false;
     let bonus = 0;
+    let labourTopPayload = null;
     if (safePay > 0 && endedAt > 0 && endedAt <= contractEnd && ownerId && bizId) {
       const owner = await this.users.load(ownerId).catch(() => null);
       if (owner) {
@@ -1334,10 +1387,15 @@ export class LabourService {
             owner.money = Math.max(0, Number(owner.money) || 0) + bonus;
             ownerDirty = true;
             applied = true;
+            labourTopPayload = this._applyOwnerLabourDayIncome(owner, bonus, 0);
+            if (labourTopPayload) ownerDirty = true;
           }
 
           if (ownerDirty) {
             await this.users.save(owner);
+          }
+          if (labourTopPayload) {
+            await this._maybeUpdateLabourDayTop(labourTopPayload);
           }
         }
       }
