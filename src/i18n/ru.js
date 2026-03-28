@@ -154,6 +154,7 @@ export const RU = {
 
   "loc.earn.caption": "💼 Заработок: выберите, как хотите получить деньги.",
   "loc.stocks.unavailable": "📈 Биржа временно недоступна.",
+  "loc.stocks.clan_required": "📈 Биржа доступна после вступления в клан.\n\nСначала вступи в клан или создай свой в разделе Город → Кланы.",
   "loc.labour.unavailable": "👔 Наёмники временно недоступны.",
   "loc.progress.caption": "📈 Прогресс: учеба, зал и улучшения.",
   "loc.city.caption": "🏙️ Город: дом, таблицы лидеров и кланы.",
@@ -322,6 +323,8 @@ export const RU = {
   "handler.business.claim_all_ok": "💰 Собрано со всех бизнесов: ${{reward}}\n📦 Бизнесов обработано: {{count}}\nБаланс: ${{money}}",
 
   "handler.stocks.unavailable": "Биржа временно недоступна.",
+  "handler.stocks.clan_required": "📈 Биржа доступна после вступления в клан.\n\nСначала вступи в клан или создай свой в разделе Город → Кланы.",
+  "handler.stocks.clan_required_toast": "Сначала вступи в клан.",
   "handler.stocks.not_found": "Акция не найдена.",
   "handler.stocks.buy_toast_ok": "Покупка выполнена.",
   "handler.stocks.buy_toast_fail": "Не удалось купить.",

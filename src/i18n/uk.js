@@ -713,5 +713,8 @@ export const UK = {
   "thief.notify.guard_expired": "🛡️ Охорона бізнесу {{bizTitle}} завершилась — бізнес знову вразливий.",
   "thief.notify.immunity_expired": "🔒 Імунітет бізнесу {{bizTitle}} завершився — бізнес знову видно злодіям.",
   "ui.bar.quiz_general": "🧠 Загальна вікторина",
-  "loc.quiz_general.unavailable": "Загальна вікторина тимчасово недоступна."
+  "loc.quiz_general.unavailable": "Загальна вікторина тимчасово недоступна.",
+  "loc.stocks.clan_required": "📈 Біржа доступна після вступу до клану.\n\nСпочатку вступи до клану або створи свій у розділі Місто -> Клани.",
+  "handler.stocks.clan_required": "📈 Біржа доступна після вступу до клану.\n\nСпочатку вступи до клану або створи свій у розділі Місто -> Клани.",
+  "handler.stocks.clan_required_toast": "Спочатку вступи до клану."
 };

@@ -713,5 +713,8 @@ export const EN = {
   "thief.notify.guard_expired": "🛡️ Guard on {{bizTitle}} has expired — business is vulnerable again.",
   "thief.notify.immunity_expired": "🔒 Immunity on {{bizTitle}} has expired — business is visible to thieves again.",
   "ui.bar.quiz_general": "🧠 General Quiz",
-  "loc.quiz_general.unavailable": "General quiz is temporarily unavailable."
+  "loc.quiz_general.unavailable": "General quiz is temporarily unavailable.",
+  "loc.stocks.clan_required": "📈 Exchange unlocks after you join a clan.\n\nFirst join a clan or create your own in City -> Clans.",
+  "handler.stocks.clan_required": "📈 Exchange unlocks after you join a clan.\n\nFirst join a clan or create your own in City -> Clans.",
+  "handler.stocks.clan_required_toast": "Join a clan first."
 };

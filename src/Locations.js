@@ -83,6 +83,13 @@ export class Locations {
     return t(key, this._lang(user), vars);
   }
 
+  _hasStocksClanAccess(user) {
+    const clanId = String(user?.clan?.clanId || "").trim();
+    if (clanId) return true;
+    const joinPenalty = String(user?.clan?.joinAvailableFromWeek || "").trim();
+    return !!joinPenalty;
+  }
+
   async _renderServiceRoute({
     user,
     header = "",
@@ -148,6 +155,15 @@ export class Locations {
         place: Routes.STOCKS,
         policy: "auto",
         buildView: async () => {
+          if (!this._hasStocksClanAccess(user)) {
+            return {
+              caption: this._t(user, "loc.stocks.clan_required"),
+              keyboard: [
+                [{ text: this._t(user, "ui.city.clans"), callback_data: toGoCallback(Routes.CLAN) }],
+                [{ text: this._t(user, "ui.back.earn"), callback_data: toGoCallback(Routes.EARN) }]
+              ]
+            };
+          }
           if (this.stocks && typeof this.stocks.buildMarketView === "function") {
             return this.stocks.buildMarketView(user);
           }

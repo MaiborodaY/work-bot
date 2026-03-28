@@ -1,5 +1,12 @@
 import { normalizeLang, t } from "../i18n/index.js";
 
+function hasStocksClanAccess(u) {
+  const clanId = String(u?.clan?.clanId || "").trim();
+  if (clanId) return true;
+  const joinPenalty = String(u?.clan?.joinAvailableFromWeek || "").trim();
+  return !!joinPenalty;
+}
+
 export const stocksHandler = {
   match: (data) =>
     data === "stocks:refresh" ||
@@ -13,6 +20,13 @@ export const stocksHandler = {
     const { data, u, cb, answer, goTo, stocks, locations } = ctx;
     const l = normalizeLang(u?.lang || "ru");
     const tt = (key, vars = {}) => t(key, l, vars);
+
+    if (!hasStocksClanAccess(u)) {
+      await answer(cb.id, tt("handler.stocks.clan_required_toast"));
+      await goTo(u, "Clan", tt("handler.stocks.clan_required"));
+      return;
+    }
+
     if (!stocks) {
       await answer(cb.id, tt("handler.stocks.unavailable"));
       return;
