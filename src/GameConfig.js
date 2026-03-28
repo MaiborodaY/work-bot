@@ -166,8 +166,15 @@ export const CONFIG = {
 
   QUIZ_GENERAL: {
     QUESTIONS_PER_DAY: 3,
+    DEFAULT_DIFFICULTY: "easy",
+    HARD_MIN_STUDY_LEVEL: 15,
     REWARD_MONEY_PER_CORRECT: 100,
-    PERFECT_BONUS_MONEY: 200
+    PERFECT_BONUS_MONEY: 200,
+    DIFFICULTIES: {
+      easy: { rewardPerCorrect: 60, perfectBonusMoney: 120 },
+      medium: { rewardPerCorrect: 80, perfectBonusMoney: 160 },
+      hard: { rewardPerCorrect: 100, perfectBonusMoney: 200 }
+    }
   },
 
   DAILY_TOP_REWARDS: {

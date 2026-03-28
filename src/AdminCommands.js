@@ -13,7 +13,7 @@ export class AdminCommands {
    *  - isAdmin: (id: number|string) => boolean
    *  - botToken: Telegram bot token
    */
-  constructor({ users, send, isAdmin, botToken, ratings = null, quiz = null, channel = null }) {
+  constructor({ users, send, isAdmin, botToken, ratings = null, quiz = null, generalQuiz = null, channel = null }) {
     this.users = users;
     this.send = send;
     this.isAdmin = isAdmin;
@@ -21,6 +21,7 @@ export class AdminCommands {
     this.db = users?.db;
     this.ratings = ratings || null;
     this.quiz = quiz || null;
+    this.generalQuiz = generalQuiz || null;
     this.channel = channel || null;
 
     this.K = {
@@ -712,6 +713,30 @@ export class AdminCommands {
         lines.push(
           `<code>${this._escapeHtml(String(row?.id || "-"))}</code> ` +
           `${this._escapeHtml(String(row?.name || "(no name)"))} - ${Number(row?.streak || 0)}`
+        );
+      }
+    }
+
+    if (this.generalQuiz && typeof this.generalQuiz.collectAdminStats === "function") {
+      const g = await this.generalQuiz.collectAdminStats().catch(() => null);
+      if (g) {
+        const bd = (g.byDifficulty && typeof g.byDifficulty === "object") ? g.byDifficulty : {};
+        const row = (id) => (bd[id] && typeof bd[id] === "object")
+          ? bd[id]
+          : { selectedToday: 0, playedToday: 0, perfectToday: 0, playedTotal: 0, perfectTotal: 0 };
+        const easy = row("easy");
+        const medium = row("medium");
+        const hard = row("hard");
+        lines.push(
+          "",
+          "<b>General quiz stats</b>",
+          `Day (UTC): ${this._escapeHtml(String(g?.day || "-"))}`,
+          `Scanned users: ${Number(g?.scanned || 0)}`,
+          `Selected today: easy ${Number(easy.selectedToday || 0)}, medium ${Number(medium.selectedToday || 0)}, hard ${Number(hard.selectedToday || 0)}`,
+          `Played today: ${Number(g?.playedToday || 0)} (easy ${Number(easy.playedToday || 0)}, medium ${Number(medium.playedToday || 0)}, hard ${Number(hard.playedToday || 0)})`,
+          `Perfect today: ${Number(g?.perfectToday || 0)} (easy ${Number(easy.perfectToday || 0)}, medium ${Number(medium.perfectToday || 0)}, hard ${Number(hard.perfectToday || 0)})`,
+          `Total played: ${Number(g?.playedTotal || 0)} (easy ${Number(easy.playedTotal || 0)}, medium ${Number(medium.playedTotal || 0)}, hard ${Number(hard.playedTotal || 0)})`,
+          `Total perfect: ${Number(g?.perfectTotal || 0)} (easy ${Number(easy.perfectTotal || 0)}, medium ${Number(medium.perfectTotal || 0)}, hard ${Number(hard.perfectTotal || 0)})`
         );
       }
     }

@@ -599,6 +599,7 @@ export default {
       botToken: env.BOT_TOKEN,
       ratings,
       quiz,
+      generalQuiz,
       channel
     });
 

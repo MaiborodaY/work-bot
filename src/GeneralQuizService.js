@@ -1,6 +1,6 @@
 import { CONFIG } from "./GameConfig.js";
 import { normalizeLang, formatMoney } from "./i18n/index.js";
-import { buildGeneralQuizCatalog } from "./GeneralQuizCatalog.js";
+import { buildGeneralQuizCatalogByDifficulty } from "./GeneralQuizCatalog.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -75,20 +75,69 @@ export class GeneralQuizService {
     return Math.max(1, toInt(this._cfg().QUESTIONS_PER_DAY, 3));
   }
 
-  _rewardMoneyPerCorrect() {
-    return Math.max(0, toInt(this._cfg().REWARD_MONEY_PER_CORRECT, 100));
+  _difficultyIds() {
+    return ["easy", "medium", "hard"];
   }
 
-  _perfectBonusMoney() {
-    return Math.max(0, toInt(this._cfg().PERFECT_BONUS_MONEY, 200));
+  _defaultDifficulty() {
+    const raw = String(this._cfg().DEFAULT_DIFFICULTY || "easy").toLowerCase();
+    return this._difficultyIds().includes(raw) ? raw : "easy";
   }
 
-  _catalog() {
-    return buildGeneralQuizCatalog();
+  _normalizeDifficulty(value) {
+    const raw = String(value || "").toLowerCase().trim();
+    return this._difficultyIds().includes(raw) ? raw : "";
   }
 
-  _catalogMap() {
-    return new Map(this._catalog().map((q) => [q.id, q]));
+  _hardMinStudyLevel() {
+    return Math.max(0, toInt(this._cfg().HARD_MIN_STUDY_LEVEL, 15));
+  }
+
+  _difficultyCfg(difficulty) {
+    const d = this._normalizeDifficulty(difficulty) || this._defaultDifficulty();
+    const all = (this._cfg().DIFFICULTIES && typeof this._cfg().DIFFICULTIES === "object")
+      ? this._cfg().DIFFICULTIES
+      : {};
+    const row = (all[d] && typeof all[d] === "object") ? all[d] : {};
+    return {
+      id: d,
+      rewardPerCorrect: Math.max(0, toInt(row.rewardPerCorrect, this._cfg().REWARD_MONEY_PER_CORRECT ?? 100)),
+      perfectBonusMoney: Math.max(0, toInt(row.perfectBonusMoney, this._cfg().PERFECT_BONUS_MONEY ?? 200))
+    };
+  }
+
+  _rewardMoneyPerCorrect(difficulty) {
+    return this._difficultyCfg(difficulty).rewardPerCorrect;
+  }
+
+  _perfectBonusMoney(difficulty) {
+    return this._difficultyCfg(difficulty).perfectBonusMoney;
+  }
+
+  _difficultyLabel(lang, difficulty) {
+    const l = this._lang(lang);
+    const d = this._normalizeDifficulty(difficulty) || this._defaultDifficulty();
+    if (l === "ru") {
+      if (d === "easy") return "\u041b\u0451\u0433\u043a\u0430\u044f";
+      if (d === "medium") return "\u0421\u0440\u0435\u0434\u043d\u044f\u044f";
+      return "\u0421\u043b\u043e\u0436\u043d\u0430\u044f";
+    }
+    if (l === "uk") {
+      if (d === "easy") return "\u041b\u0435\u0433\u043a\u0430";
+      if (d === "medium") return "\u0421\u0435\u0440\u0435\u0434\u043d\u044f";
+      return "\u0421\u043a\u043b\u0430\u0434\u043d\u0430";
+    }
+    if (d === "easy") return "Easy";
+    if (d === "medium") return "Medium";
+    return "Hard";
+  }
+
+  _catalog(difficulty = this._defaultDifficulty()) {
+    return buildGeneralQuizCatalogByDifficulty(difficulty);
+  }
+
+  _catalogMap(difficulty = this._defaultDifficulty()) {
+    return new Map(this._catalog(difficulty).map((q) => [q.id, q]));
   }
 
   _today() {
@@ -114,20 +163,35 @@ export class GeneralQuizService {
     if (typeof q.correctTotal !== "number" || !Number.isFinite(q.correctTotal)) { q.correctTotal = 0; dirty = true; }
     if (typeof q.playedTotal !== "number" || !Number.isFinite(q.playedTotal)) { q.playedTotal = 0; dirty = true; }
     if (typeof q.perfectTotal !== "number" || !Number.isFinite(q.perfectTotal)) { q.perfectTotal = 0; dirty = true; }
+    if (typeof q.difficulty !== "string") { q.difficulty = ""; dirty = true; }
+    if (!q.byDifficulty || typeof q.byDifficulty !== "object") { q.byDifficulty = {}; dirty = true; }
 
     q.currentIndex = Math.max(0, toInt(q.currentIndex, 0));
     q.correctTotal = Math.max(0, toInt(q.correctTotal, 0));
     q.playedTotal = Math.max(0, toInt(q.playedTotal, 0));
     q.perfectTotal = Math.max(0, toInt(q.perfectTotal, 0));
     q.answers = q.answers.map((x) => !!x);
+    q.difficulty = this._normalizeDifficulty(q.difficulty);
+    for (const id of this._difficultyIds()) {
+      const row = (q.byDifficulty?.[id] && typeof q.byDifficulty[id] === "object") ? q.byDifficulty[id] : null;
+      if (!row) {
+        q.byDifficulty[id] = { playedTotal: 0, perfectTotal: 0 };
+        dirty = true;
+        continue;
+      }
+      const p = Math.max(0, toInt(row.playedTotal, 0));
+      const pf = Math.max(0, toInt(row.perfectTotal, 0));
+      if (p !== row.playedTotal || pf !== row.perfectTotal) dirty = true;
+      q.byDifficulty[id] = { playedTotal: p, perfectTotal: pf };
+    }
 
     return dirty;
   }
 
-  _pickQuestionIds(day) {
-    const ids = this._catalog().map((q) => q.id);
+  _pickQuestionIds(day, difficulty = this._defaultDifficulty()) {
+    const ids = this._catalog(difficulty).map((q) => q.id);
     const count = Math.min(this._questionsPerDay(), ids.length);
-    const rng = rngFromSeed(`gquiz:${day}:questions`);
+    const rng = rngFromSeed(`gquiz:${day}:${String(difficulty || "easy")}:questions`);
     return shuffleDeterministic(ids, rng).slice(0, count);
   }
 
@@ -140,10 +204,11 @@ export class GeneralQuizService {
   async ensureSession(u, { persist = false } = {}) {
     let dirty = this._ensureModel(u);
     const day = this._today();
-    const map = this._catalogMap();
+    const planDifficulty = this._normalizeDifficulty(u?.quizGeneral?.difficulty) || this._defaultDifficulty();
+    const map = this._catalogMap(planDifficulty);
 
-    const regen = () => {
-      const ids = this._pickQuestionIds(day);
+    const regen = ({ resetDifficulty = false } = {}) => {
+      const ids = this._pickQuestionIds(day, planDifficulty);
       u.quizGeneral.day = day;
       u.quizGeneral.questionIds = ids;
       u.quizGeneral.optionOrder = ids.map((id) => this._pickOptionOrder(day, id, 4));
@@ -151,15 +216,18 @@ export class GeneralQuizService {
       u.quizGeneral.answers = [];
       u.quizGeneral.done = false;
       u.quizGeneral.correctTotal = 0;
+      if (resetDifficulty) {
+        u.quizGeneral.difficulty = "";
+      }
       dirty = true;
     };
 
     if (u.quizGeneral.day !== day) {
-      regen();
+      regen({ resetDifficulty: true });
     } else {
       const validIds = u.quizGeneral.questionIds.filter((id) => map.has(String(id || "")));
       if (validIds.length !== u.quizGeneral.questionIds.length || !validIds.length) {
-        regen();
+        regen({ resetDifficulty: false });
       } else {
         u.quizGeneral.questionIds = validIds;
         if (!Array.isArray(u.quizGeneral.optionOrder) || u.quizGeneral.optionOrder.length !== u.quizGeneral.questionIds.length) {
@@ -187,15 +255,52 @@ export class GeneralQuizService {
     return { changed: dirty };
   }
 
+  async selectDifficulty(u, difficulty) {
+    await this.ensureSession(u, { persist: false });
+    const s = this._strings(u);
+    const lang = this._lang(u);
+    const picked = this._normalizeDifficulty(difficulty);
+    if (!picked) {
+      return { ok: false, error: s.invalidDifficulty };
+    }
+
+    const current = this._normalizeDifficulty(u?.quizGeneral?.difficulty);
+    if (current) {
+      if (current === picked) {
+        return { ok: true, view: await this.buildOpenView(u) };
+      }
+      return { ok: false, error: s.difficultyLocked };
+    }
+
+    if (picked === "hard") {
+      const studyLevel = Math.max(0, toInt(u?.study?.level, 0));
+      const minStudy = this._hardMinStudyLevel();
+      if (studyLevel < minStudy) {
+        return {
+          ok: false,
+          error: s.hardLocked
+            .replace("{{need}}", String(minStudy))
+            .replace("{{have}}", String(studyLevel))
+        };
+      }
+    }
+
+    u.quizGeneral.difficulty = picked;
+    await this.users.save(u);
+    const view = await this.buildOpenView(u);
+    return { ok: true, view, toast: s.difficultyPicked.replace("{{difficulty}}", this._difficultyLabel(lang, picked)) };
+  }
+
   _questionFor(u, index) {
-    const map = this._catalogMap();
+    const selectedDifficulty = this._normalizeDifficulty(u?.quizGeneral?.difficulty) || this._defaultDifficulty();
+    const map = this._catalogMap(selectedDifficulty);
     const qid = String(u?.quizGeneral?.questionIds?.[index] || "");
     const q = map.get(qid);
     if (!q) return null;
     const lang = this._lang(u);
-    const options = (q.options && q.options[lang]) || q.options?.ru || [];
-    const text = (q.text && q.text[lang]) || q.text?.ru || qid;
-    const explain = (q.explain && q.explain[lang]) || q.explain?.ru || "";
+    const options = (q.options && q.options[lang]) || q.options?.en || q.options?.ru || [];
+    const text = (q.text && q.text[lang]) || q.text?.en || q.text?.ru || qid;
+    const explain = (q.explain && q.explain[lang]) || q.explain?.en || q.explain?.ru || "";
     let order = Array.isArray(u?.quizGeneral?.optionOrder?.[index]) ? [...u.quizGeneral.optionOrder[index]] : [];
     if (order.length !== options.length) {
       order = Array.from({ length: options.length }, (_, i) => i);
@@ -212,72 +317,107 @@ export class GeneralQuizService {
 
   _strings(source) {
     const l = this._lang(source);
-    if (l === "en") {
+    if (l === "ru") {
       return {
-        title: "🧠 General Quiz",
-        intro: "3 daily questions on general topics.\n+$100 for each correct answer.\nAll 3 correct: +$200 bonus.",
-        done: "Today's general quiz is already completed.",
-        start: "▶️ Start quiz",
-        resume: "▶️ Continue quiz",
-        next: "➡️ Next question",
-        toBar: "⬅️ Back to bar",
-        qPrefix: "Question",
-        correct: "✅ Correct!",
-        wrong: "❌ Wrong answer.",
-        rightAnswer: "Correct answer",
-        explanation: "Explanation",
-        reward: "Reward",
-        perfectBonus: "Perfect bonus",
-        result: "Result",
-        stale: "Quiz session is outdated. Open the quiz again.",
-        invalid: "Invalid answer option.",
-        alreadyDoneToast: "General quiz is already completed for today."
+        title: "\ud83e\udde0 \u041e\u0431\u0449\u0430\u044f \u0432\u0438\u043a\u0442\u043e\u0440\u0438\u043d\u0430",
+        intro: "\u0412\u044b\u0431\u0435\u0440\u0438 \u0441\u043b\u043e\u0436\u043d\u043e\u0441\u0442\u044c \u043e\u0434\u0438\u043d \u0440\u0430\u0437 \u0432 \u0434\u0435\u043d\u044c.\n3 \u0432\u043e\u043f\u0440\u043e\u0441\u0430 \u043d\u0430 \u043e\u0431\u0449\u0438\u0435 \u0442\u0435\u043c\u044b.",
+        done: "\u0421\u0435\u0433\u043e\u0434\u043d\u044f \u043e\u0431\u0449\u0430\u044f \u0432\u0438\u043a\u0442\u043e\u0440\u0438\u043d\u0430 \u0443\u0436\u0435 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u0430.",
+        start: "\u041d\u0430\u0447\u0430\u0442\u044c \u0432\u0438\u043a\u0442\u043e\u0440\u0438\u043d\u0443",
+        resume: "\u041f\u0440\u043e\u0434\u043e\u043b\u0436\u0438\u0442\u044c \u0432\u0438\u043a\u0442\u043e\u0440\u0438\u043d\u0443",
+        next: "\u0421\u043b\u0435\u0434\u0443\u044e\u0449\u0438\u0439 \u0432\u043e\u043f\u0440\u043e\u0441",
+        toBar: "\u041d\u0430\u0437\u0430\u0434 \u0432 \u0431\u0430\u0440",
+        chooseDifficulty: "\u0421\u043b\u043e\u0436\u043d\u043e\u0441\u0442\u044c \u043d\u0430 \u0441\u0435\u0433\u043e\u0434\u043d\u044f:",
+        onePerDay: "\u0421\u043b\u043e\u0436\u043d\u043e\u0441\u0442\u044c \u043c\u043e\u0436\u043d\u043e \u0432\u044b\u0431\u0440\u0430\u0442\u044c \u0442\u043e\u043b\u044c\u043a\u043e \u043e\u0434\u0438\u043d \u0440\u0430\u0437 \u0432 \u0434\u0435\u043d\u044c.",
+        pickEasy: "\u041b\u0451\u0433\u043a\u0430\u044f",
+        pickMedium: "\u0421\u0440\u0435\u0434\u043d\u044f\u044f",
+        pickHard: "\u0421\u043b\u043e\u0436\u043d\u0430\u044f",
+        hardNeedStudy: "\u0421\u043b\u043e\u0436\u043d\u0430\u044f \u043e\u0442\u043a\u0440\u043e\u0435\u0442\u0441\u044f \u0441 {{need}} \u0443\u0440\u043e\u0432\u043d\u044f \u0443\u0447\u0451\u0431\u044b (\u0441\u0435\u0439\u0447\u0430\u0441 {{have}}).",
+        qPrefix: "\u0412\u043e\u043f\u0440\u043e\u0441",
+        correct: "\u0412\u0435\u0440\u043d\u043e!",
+        wrong: "\u041d\u0435\u0432\u0435\u0440\u043d\u043e.",
+        rightAnswer: "\u041f\u0440\u0430\u0432\u0438\u043b\u044c\u043d\u044b\u0439 \u043e\u0442\u0432\u0435\u0442",
+        explanation: "\u041f\u043e\u044f\u0441\u043d\u0435\u043d\u0438\u0435",
+        reward: "\u041d\u0430\u0433\u0440\u0430\u0434\u0430",
+        perfectBonus: "\u0411\u043e\u043d\u0443\u0441 \u0437\u0430 3/3",
+        result: "\u0420\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442",
+        stale: "\u0421\u0435\u0441\u0441\u0438\u044f \u0443\u0441\u0442\u0430\u0440\u0435\u043b\u0430. \u041e\u0442\u043a\u0440\u043e\u0439 \u0432\u0438\u043a\u0442\u043e\u0440\u0438\u043d\u0443 \u0437\u0430\u043d\u043e\u0432\u043e.",
+        invalid: "\u041d\u0435\u0432\u0435\u0440\u043d\u044b\u0439 \u0432\u0430\u0440\u0438\u0430\u043d\u0442 \u043e\u0442\u0432\u0435\u0442\u0430.",
+        invalidDifficulty: "\u041d\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u043d\u0430\u044f \u0441\u043b\u043e\u0436\u043d\u043e\u0441\u0442\u044c.",
+        difficultyLocked: "\u0421\u043b\u043e\u0436\u043d\u043e\u0441\u0442\u044c \u0443\u0436\u0435 \u0432\u044b\u0431\u0440\u0430\u043d\u0430 \u043d\u0430 \u0441\u0435\u0433\u043e\u0434\u043d\u044f.",
+        hardLocked: "\u0421\u043b\u043e\u0436\u043d\u0430\u044f \u0437\u0430\u0431\u043b\u043e\u043a\u0438\u0440\u043e\u0432\u0430\u043d\u0430. \u041d\u0443\u0436\u0435\u043d {{need}} \u0443\u0440\u043e\u0432\u0435\u043d\u044c \u0443\u0447\u0451\u0431\u044b (\u0441\u0435\u0439\u0447\u0430\u0441 {{have}}).",
+        difficultyPicked: "\u0421\u043b\u043e\u0436\u043d\u043e\u0441\u0442\u044c \u0432\u044b\u0431\u0440\u0430\u043d\u0430: {{difficulty}}.",
+        needPickDifficulty: "\u0421\u043d\u0430\u0447\u0430\u043b\u0430 \u0432\u044b\u0431\u0435\u0440\u0438 \u0441\u043b\u043e\u0436\u043d\u043e\u0441\u0442\u044c.",
+        alreadyDoneToast: "\u0421\u0435\u0433\u043e\u0434\u043d\u044f \u043e\u0431\u0449\u0430\u044f \u0432\u0438\u043a\u0442\u043e\u0440\u0438\u043d\u0430 \u0443\u0436\u0435 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u0430.",
+        nextQuizIn: "\u0421\u043b\u0435\u0434\u0443\u044e\u0449\u0430\u044f \u0432\u0438\u043a\u0442\u043e\u0440\u0438\u043d\u0430 \u0447\u0435\u0440\u0435\u0437"
       };
     }
     if (l === "uk") {
       return {
-        title: "🧠 Загальна вікторина",
-        intro: "3 щоденні питання на загальні теми.\n+$100 за кожну правильну відповідь.\nУсі 3 правильно: +$200 бонус.",
-        done: "Сьогоднішню загальну вікторину вже завершено.",
-        start: "▶️ Почати вікторину",
-        resume: "▶️ Продовжити вікторину",
-        next: "➡️ Наступне питання",
-        toBar: "⬅️ Назад у бар",
-        qPrefix: "Питання",
-        correct: "✅ Правильно!",
-        wrong: "❌ Неправильна відповідь.",
-        rightAnswer: "Правильна відповідь",
-        explanation: "Пояснення",
-        reward: "Нагорода",
-        perfectBonus: "Бонус за ідеал",
-        result: "Результат",
-        stale: "Сесію застаріло. Відкрий вікторину знову.",
-        invalid: "Некоректний варіант відповіді.",
-        alreadyDoneToast: "Загальну вікторину на сьогодні вже завершено."
+        title: "\ud83e\udde0 \u0417\u0430\u0433\u0430\u043b\u044c\u043d\u0430 \u0432\u0456\u043a\u0442\u043e\u0440\u0438\u043d\u0430",
+        intro: "\u041e\u0431\u0435\u0440\u0438 \u0441\u043a\u043b\u0430\u0434\u043d\u0456\u0441\u0442\u044c \u043e\u0434\u0438\u043d \u0440\u0430\u0437 \u043d\u0430 \u0434\u0435\u043d\u044c.\n3 \u043f\u0438\u0442\u0430\u043d\u043d\u044f \u043d\u0430 \u0437\u0430\u0433\u0430\u043b\u044c\u043d\u0456 \u0442\u0435\u043c\u0438.",
+        done: "\u0421\u044c\u043e\u0433\u043e\u0434\u043d\u0456 \u0437\u0430\u0433\u0430\u043b\u044c\u043d\u0443 \u0432\u0456\u043a\u0442\u043e\u0440\u0438\u043d\u0443 \u0432\u0436\u0435 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u043e.",
+        start: "\u041f\u043e\u0447\u0430\u0442\u0438 \u0432\u0456\u043a\u0442\u043e\u0440\u0438\u043d\u0443",
+        resume: "\u041f\u0440\u043e\u0434\u043e\u0432\u0436\u0438\u0442\u0438 \u0432\u0456\u043a\u0442\u043e\u0440\u0438\u043d\u0443",
+        next: "\u041d\u0430\u0441\u0442\u0443\u043f\u043d\u0435 \u043f\u0438\u0442\u0430\u043d\u043d\u044f",
+        toBar: "\u041d\u0430\u0437\u0430\u0434 \u0443 \u0431\u0430\u0440",
+        chooseDifficulty: "\u0421\u043a\u043b\u0430\u0434\u043d\u0456\u0441\u0442\u044c \u043d\u0430 \u0441\u044c\u043e\u0433\u043e\u0434\u043d\u0456:",
+        onePerDay: "\u0421\u043a\u043b\u0430\u0434\u043d\u0456\u0441\u0442\u044c \u043c\u043e\u0436\u043d\u0430 \u043e\u0431\u0440\u0430\u0442\u0438 \u043b\u0438\u0448\u0435 \u043e\u0434\u0438\u043d \u0440\u0430\u0437 \u043d\u0430 \u0434\u0435\u043d\u044c.",
+        pickEasy: "\u041b\u0435\u0433\u043a\u0430",
+        pickMedium: "\u0421\u0435\u0440\u0435\u0434\u043d\u044f",
+        pickHard: "\u0421\u043a\u043b\u0430\u0434\u043d\u0430",
+        hardNeedStudy: "\u0421\u043a\u043b\u0430\u0434\u043d\u0430 \u0432\u0456\u0434\u043a\u0440\u0438\u0454\u0442\u044c\u0441\u044f \u0437 {{need}} \u0440\u0456\u0432\u043d\u044f \u043d\u0430\u0432\u0447\u0430\u043d\u043d\u044f (\u0437\u0430\u0440\u0430\u0437 {{have}}).",
+        qPrefix: "\u041f\u0438\u0442\u0430\u043d\u043d\u044f",
+        correct: "\u041f\u0440\u0430\u0432\u0438\u043b\u044c\u043d\u043e!",
+        wrong: "\u041d\u0435\u043f\u0440\u0430\u0432\u0438\u043b\u044c\u043d\u043e.",
+        rightAnswer: "\u041f\u0440\u0430\u0432\u0438\u043b\u044c\u043d\u0430 \u0432\u0456\u0434\u043f\u043e\u0432\u0456\u0434\u044c",
+        explanation: "\u041f\u043e\u044f\u0441\u043d\u0435\u043d\u043d\u044f",
+        reward: "\u041d\u0430\u0433\u043e\u0440\u043e\u0434\u0430",
+        perfectBonus: "\u0411\u043e\u043d\u0443\u0441 \u0437\u0430 3/3",
+        result: "\u0420\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442",
+        stale: "\u0421\u0435\u0441\u0456\u044f \u0437\u0430\u0441\u0442\u0430\u0440\u0456\u043b\u0430. \u0412\u0456\u0434\u043a\u0440\u0438\u0439 \u0432\u0456\u043a\u0442\u043e\u0440\u0438\u043d\u0443 \u0437\u043d\u043e\u0432\u0443.",
+        invalid: "\u041d\u0435\u0432\u0456\u0440\u043d\u0438\u0439 \u0432\u0430\u0440\u0456\u0430\u043d\u0442 \u0432\u0456\u0434\u043f\u043e\u0432\u0456\u0434\u0456.",
+        invalidDifficulty: "\u041d\u0435\u0432\u0456\u0434\u043e\u043c\u0430 \u0441\u043a\u043b\u0430\u0434\u043d\u0456\u0441\u0442\u044c.",
+        difficultyLocked: "\u0421\u043a\u043b\u0430\u0434\u043d\u0456\u0441\u0442\u044c \u0432\u0436\u0435 \u043e\u0431\u0440\u0430\u043d\u0430 \u043d\u0430 \u0441\u044c\u043e\u0433\u043e\u0434\u043d\u0456.",
+        hardLocked: "\u0421\u043a\u043b\u0430\u0434\u043d\u0430 \u0437\u0430\u0431\u043b\u043e\u043a\u043e\u0432\u0430\u043d\u0430. \u041f\u043e\u0442\u0440\u0456\u0431\u0435\u043d {{need}} \u0440\u0456\u0432\u0435\u043d\u044c \u043d\u0430\u0432\u0447\u0430\u043d\u043d\u044f (\u0437\u0430\u0440\u0430\u0437 {{have}}).",
+        difficultyPicked: "\u0421\u043a\u043b\u0430\u0434\u043d\u0456\u0441\u0442\u044c \u043e\u0431\u0440\u0430\u043d\u043e: {{difficulty}}.",
+        needPickDifficulty: "\u0421\u043f\u043e\u0447\u0430\u0442\u043a\u0443 \u043e\u0431\u0435\u0440\u0438 \u0441\u043a\u043b\u0430\u0434\u043d\u0456\u0441\u0442\u044c.",
+        alreadyDoneToast: "\u0421\u044c\u043e\u0433\u043e\u0434\u043d\u0456 \u0437\u0430\u0433\u0430\u043b\u044c\u043d\u0443 \u0432\u0456\u043a\u0442\u043e\u0440\u0438\u043d\u0443 \u0432\u0436\u0435 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u043e.",
+        nextQuizIn: "\u041d\u0430\u0441\u0442\u0443\u043f\u043d\u0430 \u0432\u0456\u043a\u0442\u043e\u0440\u0438\u043d\u0430 \u0447\u0435\u0440\u0435\u0437"
       };
     }
     return {
-      title: "🧠 Общая викторина",
-      intro: "3 ежедневных вопроса на общие темы.\n+$100 за каждый правильный ответ.\nВсе 3 правильно: +$200 бонус.",
-      done: "Сегодняшняя общая викторина уже завершена.",
-      start: "▶️ Начать викторину",
-      resume: "▶️ Продолжить викторину",
-      next: "➡️ Следующий вопрос",
-      toBar: "⬅️ Назад в бар",
-      qPrefix: "Вопрос",
-      correct: "✅ Верно!",
-      wrong: "❌ Неверно.",
-      rightAnswer: "Правильный ответ",
-      explanation: "Пояснение",
-      reward: "Награда",
-      perfectBonus: "Бонус за идеал",
-      result: "Результат",
-      stale: "Сессия устарела. Открой викторину снова.",
-      invalid: "Некорректный вариант ответа.",
-      alreadyDoneToast: "Общая викторина на сегодня уже завершена."
+      title: "General Quiz",
+      intro: "Choose difficulty once per day.\n3 questions on general topics.",
+      done: "Today's general quiz is already completed.",
+      start: "Start quiz",
+      resume: "Continue quiz",
+      next: "Next question",
+      toBar: "Back to bar",
+      chooseDifficulty: "Difficulty for today:",
+      onePerDay: "You can select difficulty only once per day.",
+      pickEasy: "Easy",
+      pickMedium: "Medium",
+      pickHard: "Hard",
+      hardNeedStudy: "Hard unlocks at Study level {{need}} (now {{have}}).",
+      qPrefix: "Question",
+      correct: "Correct!",
+      wrong: "Wrong answer.",
+      rightAnswer: "Correct answer",
+      explanation: "Explanation",
+      reward: "Reward",
+      perfectBonus: "Perfect 3/3 bonus",
+      result: "Result",
+      stale: "Quiz session is outdated. Open the quiz again.",
+      invalid: "Invalid answer option.",
+      invalidDifficulty: "Unknown difficulty.",
+      difficultyLocked: "Difficulty is already selected for today.",
+      hardLocked: "Hard is locked. Need Study level {{need}} (now {{have}}).",
+      difficultyPicked: "Difficulty selected: {{difficulty}}.",
+      needPickDifficulty: "Pick difficulty first.",
+      alreadyDoneToast: "General quiz is already completed for today.",
+      nextQuizIn: "Next quiz in"
     };
   }
-
   _timeToNextDayText(lang) {
     const nowTs = this.now();
     const d = new Date(nowTs);
@@ -285,9 +425,10 @@ export class GeneralQuizService {
     const left = Math.max(0, next - nowTs);
     const hours = Math.floor(left / (60 * 60 * 1000));
     const mins = Math.floor((left % (60 * 60 * 1000)) / (60 * 1000));
-    if (lang === "en") return `${hours}h ${mins}m`;
-    if (lang === "uk") return `${hours}г ${mins}хв`;
-    return `${hours}ч ${mins}м`;
+    const l = this._lang(lang);
+    if (l === "ru") return `${hours}ч ${mins}м`;
+    if (l === "uk") return `${hours}г ${mins}хв`;
+    return `${hours}h ${mins}m`;
   }
 
   async buildOpenView(u) {
@@ -297,9 +438,12 @@ export class GeneralQuizService {
     const total = Math.max(1, u?.quizGeneral?.questionIds?.length || this._questionsPerDay());
     const answered = Math.max(0, toInt(u?.quizGeneral?.answers?.length, 0));
     const correct = Math.max(0, toInt(u?.quizGeneral?.correctTotal, 0));
+    const selectedDifficulty = this._normalizeDifficulty(u?.quizGeneral?.difficulty);
+    const difficulty = selectedDifficulty || this._defaultDifficulty();
     const left = this._timeToNextDayText(lang);
-    const rewardMoney = formatMoney(this._rewardMoneyPerCorrect(), lang);
-    const bonusMoney = this._perfectBonusMoney();
+    const rewardPerCorrect = this._rewardMoneyPerCorrect(difficulty);
+    const bonusMoney = this._perfectBonusMoney(difficulty);
+    const rewardMoney = formatMoney(rewardPerCorrect, lang);
 
     if (u.quizGeneral.done) {
       const lines = [
@@ -307,13 +451,12 @@ export class GeneralQuizService {
         "",
         s.done,
         "",
+        `${s.chooseDifficulty} ${this._difficultyLabel(lang, difficulty)}`,
         `${s.result}: ${correct}/${total}`,
-        `${s.reward}: ${rewardMoney} × ${correct}`,
+        `${s.reward}: ${rewardMoney} x ${correct}`,
         `${s.perfectBonus}: ${correct === total && bonusMoney > 0 ? `+${formatMoney(bonusMoney, lang)}` : "+$0"}`,
         "",
-        (lang === "en"
-          ? `Next quiz in: ${left}`
-          : (lang === "uk" ? `Нова вікторина через: ${left}` : `Новая викторина через: ${left}`))
+        `${s.nextQuizIn}: ${left}`
       ];
       return {
         caption: lines.join("\n"),
@@ -322,19 +465,41 @@ export class GeneralQuizService {
     }
 
     const cta = answered > 0 ? s.resume : s.start;
+    const minStudy = this._hardMinStudyLevel();
+    const studyLevel = Math.max(0, toInt(u?.study?.level, 0));
+    const hardLocked = studyLevel < minStudy;
+    const easyTotal = (this._rewardMoneyPerCorrect("easy") * total) + this._perfectBonusMoney("easy");
+    const mediumTotal = (this._rewardMoneyPerCorrect("medium") * total) + this._perfectBonusMoney("medium");
+    const hardTotal = (this._rewardMoneyPerCorrect("hard") * total) + this._perfectBonusMoney("hard");
+
     const lines = [
       s.title,
       "",
       s.intro,
       "",
+      selectedDifficulty
+        ? `${s.chooseDifficulty} ${this._difficultyLabel(lang, selectedDifficulty)}`
+        : s.chooseDifficulty,
+      selectedDifficulty
+        ? `${s.reward}: ${formatMoney(this._rewardMoneyPerCorrect(selectedDifficulty), lang)} x ${total} | ${s.perfectBonus}: +${formatMoney(this._perfectBonusMoney(selectedDifficulty), lang)}`
+        : s.onePerDay,
+      hardLocked ? s.hardNeedStudy.replace("{{need}}", String(minStudy)).replace("{{have}}", String(studyLevel)) : "",
+      "",
       `${s.result}: ${correct}/${total}`
     ];
+
+    const keyboard = selectedDifficulty
+      ? [[{ text: cta, callback_data: answered > 0 ? "gquiz:next" : "gquiz:start" }]]
+      : [
+        [{ text: `${s.pickEasy} - ${formatMoney(easyTotal, lang)}`, callback_data: "gquiz:pick:easy" }],
+        [{ text: `${s.pickMedium} - ${formatMoney(mediumTotal, lang)}`, callback_data: "gquiz:pick:medium" }],
+        [{ text: `${hardLocked ? "[LOCK] " : ""}${s.pickHard} - ${formatMoney(hardTotal, lang)}`, callback_data: "gquiz:pick:hard" }]
+      ];
+    keyboard.push([{ text: s.toBar, callback_data: "go:Bar" }]);
+
     return {
-      caption: lines.join("\n"),
-      keyboard: [
-        [{ text: cta, callback_data: answered > 0 ? "gquiz:next" : "gquiz:start" }],
-        [{ text: s.toBar, callback_data: "go:Bar" }]
-      ]
+      caption: lines.filter((x) => String(x || "").trim().length > 0).join("\n"),
+      keyboard
     };
   }
 
@@ -342,6 +507,9 @@ export class GeneralQuizService {
     await this.ensureSession(u, { persist: true });
     const s = this._strings(u);
     if (u.quizGeneral.done) {
+      return this.buildOpenView(u);
+    }
+    if (!this._normalizeDifficulty(u?.quizGeneral?.difficulty)) {
       return this.buildOpenView(u);
     }
 
@@ -365,7 +533,6 @@ export class GeneralQuizService {
     keyboard.push([{ text: s.toBar, callback_data: "go:Bar" }]);
     return { caption: lines.join("\n"), keyboard };
   }
-
   _buildAnswerView(u, payload) {
     const s = this._strings(u);
     const lang = this._lang(u);
@@ -415,6 +582,10 @@ export class GeneralQuizService {
     if (u.quizGeneral.done) {
       return { ok: false, error: s.alreadyDoneToast };
     }
+    const difficulty = this._normalizeDifficulty(u?.quizGeneral?.difficulty);
+    if (!difficulty) {
+      return { ok: false, error: s.needPickDifficulty };
+    }
     if (u.quizGeneral.answers.length !== u.quizGeneral.currentIndex) {
       return { ok: false, error: s.stale };
     }
@@ -430,7 +601,7 @@ export class GeneralQuizService {
 
     const pickedOrig = q.order[shown];
     const correct = pickedOrig === q.correctIndex;
-    const rewardMoney = correct ? this._rewardMoneyPerCorrect() : 0;
+    const rewardMoney = correct ? this._rewardMoneyPerCorrect(difficulty) : 0;
     if (rewardMoney > 0) {
       u.money = Math.max(0, toInt(u.money, 0)) + rewardMoney;
     }
@@ -448,13 +619,21 @@ export class GeneralQuizService {
       u.quizGeneral.done = true;
       u.quizGeneral.currentIndex = u.quizGeneral.questionIds.length;
       u.quizGeneral.playedTotal = Math.max(0, toInt(u.quizGeneral.playedTotal, 0)) + 1;
+      const diffStats = (u.quizGeneral.byDifficulty && typeof u.quizGeneral.byDifficulty === "object")
+        ? u.quizGeneral.byDifficulty
+        : (u.quizGeneral.byDifficulty = {});
+      const row = (diffStats[difficulty] && typeof diffStats[difficulty] === "object")
+        ? diffStats[difficulty]
+        : (diffStats[difficulty] = { playedTotal: 0, perfectTotal: 0 });
+      row.playedTotal = Math.max(0, toInt(row.playedTotal, 0)) + 1;
       perfect = u.quizGeneral.correctTotal === u.quizGeneral.questionIds.length;
       if (perfect) {
-        bonusMoney = this._perfectBonusMoney();
+        bonusMoney = this._perfectBonusMoney(difficulty);
         if (bonusMoney > 0) {
           u.money = Math.max(0, toInt(u.money, 0)) + bonusMoney;
         }
         u.quizGeneral.perfectTotal = Math.max(0, toInt(u.quizGeneral.perfectTotal, 0)) + 1;
+        row.perfectTotal = Math.max(0, toInt(row.perfectTotal, 0)) + 1;
       }
     }
 
@@ -466,5 +645,76 @@ export class GeneralQuizService {
       view: this._buildAnswerView(u, { q, correct, rewardMoney, finished, perfect, bonusMoney })
     };
   }
-}
 
+  async collectAdminStats() {
+    const prefix = "u:";
+    const today = this._today();
+    let cursor;
+    let scanned = 0;
+    let playedToday = 0;
+    let perfectToday = 0;
+    let playedTotal = 0;
+    let perfectTotal = 0;
+    const byDifficulty = {
+      easy: { playedToday: 0, perfectToday: 0, playedTotal: 0, perfectTotal: 0, selectedToday: 0 },
+      medium: { playedToday: 0, perfectToday: 0, playedTotal: 0, perfectTotal: 0, selectedToday: 0 },
+      hard: { playedToday: 0, perfectToday: 0, playedTotal: 0, perfectTotal: 0, selectedToday: 0 }
+    };
+
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const page = await this.users.db.list({ prefix, cursor });
+      const keys = Array.isArray(page?.keys) ? page.keys : [];
+      for (const k of keys) {
+        scanned += 1;
+        try {
+          const raw = await this.users.db.get(k.name);
+          if (!raw) continue;
+          const u = JSON.parse(raw);
+          const q = (u?.quizGeneral && typeof u.quizGeneral === "object") ? u.quizGeneral : null;
+          if (!q) continue;
+
+          playedTotal += Math.max(0, toInt(q.playedTotal, 0));
+          perfectTotal += Math.max(0, toInt(q.perfectTotal, 0));
+
+          const doneToday = String(q.day || "") === today && !!q.done;
+          const d = this._normalizeDifficulty(q.difficulty) || this._defaultDifficulty();
+          if (String(q.day || "") === today && this._normalizeDifficulty(q.difficulty)) {
+            byDifficulty[d].selectedToday += 1;
+          }
+          if (doneToday) {
+            playedToday += 1;
+            byDifficulty[d].playedToday += 1;
+            const isPerfect = Math.max(0, toInt(q.correctTotal, 0)) >= Math.max(1, this._questionsPerDay());
+            if (isPerfect) {
+              perfectToday += 1;
+              byDifficulty[d].perfectToday += 1;
+            }
+          }
+
+          const bd = (q.byDifficulty && typeof q.byDifficulty === "object") ? q.byDifficulty : {};
+          for (const id of this._difficultyIds()) {
+            const row = (bd[id] && typeof bd[id] === "object") ? bd[id] : null;
+            if (!row) continue;
+            byDifficulty[id].playedTotal += Math.max(0, toInt(row.playedTotal, 0));
+            byDifficulty[id].perfectTotal += Math.max(0, toInt(row.perfectTotal, 0));
+          }
+        } catch {
+          // ignore bad rows
+        }
+      }
+      if (!page || page.list_complete || !page.cursor) break;
+      cursor = page.cursor;
+    }
+
+    return {
+      day: today,
+      scanned,
+      playedToday,
+      perfectToday,
+      playedTotal,
+      perfectTotal,
+      byDifficulty
+    };
+  }
+}

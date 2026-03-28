@@ -6,6 +6,7 @@ export const generalQuizHandler = {
     data === "gquiz:open" ||
     data === "gquiz:start" ||
     data === "gquiz:next" ||
+    data.startsWith("gquiz:pick:") ||
     data.startsWith("gquiz:answer:"),
 
   async handle(ctx) {
@@ -23,7 +24,7 @@ export const generalQuizHandler = {
         sourceMsg: locations._sourceMsg || cb?.message || null,
         place: Routes.BAR,
         caption: String(view?.caption || ""),
-        keyboard: Array.isArray(view?.keyboard) ? view.keyboard : [[{ text: "⬅️", callback_data: "go:Bar" }]],
+        keyboard: Array.isArray(view?.keyboard) ? view.keyboard : [[{ text: tt("ui.back.default"), callback_data: "go:Bar" }]],
         policy: "auto"
       });
       locations.setSourceMessage(null);
@@ -43,6 +44,18 @@ export const generalQuizHandler = {
       return;
     }
 
+    if (data.startsWith("gquiz:pick:")) {
+      const difficulty = String(data.split(":")[2] || "");
+      const res = await generalQuiz.selectDifficulty(u, difficulty);
+      if (!res?.ok) {
+        await answer(cb.id, res?.error || tt("loc.quiz_general.unavailable"));
+        return;
+      }
+      await answer(cb.id, res?.toast || "");
+      await show(res.view);
+      return;
+    }
+
     if (data.startsWith("gquiz:answer:")) {
       const shownIndex = Number(data.split(":")[2] || -1);
       const res = await generalQuiz.answer(u, shownIndex);
@@ -55,4 +68,3 @@ export const generalQuizHandler = {
     }
   }
 };
-
