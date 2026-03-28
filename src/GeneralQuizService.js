@@ -93,6 +93,10 @@ export class GeneralQuizService {
     return Math.max(0, toInt(this._cfg().HARD_MIN_STUDY_LEVEL, 15));
   }
 
+  _mediumMinStudyLevel() {
+    return Math.max(0, toInt(this._cfg().MEDIUM_MIN_STUDY_LEVEL, 10));
+  }
+
   _difficultyCfg(difficulty) {
     const d = this._normalizeDifficulty(difficulty) || this._defaultDifficulty();
     const all = (this._cfg().DIFFICULTIES && typeof this._cfg().DIFFICULTIES === "object")
@@ -272,6 +276,19 @@ export class GeneralQuizService {
       return { ok: false, error: s.difficultyLocked };
     }
 
+    if (picked === "medium") {
+      const studyLevel = Math.max(0, toInt(u?.study?.level, 0));
+      const minStudy = this._mediumMinStudyLevel();
+      if (studyLevel < minStudy) {
+        return {
+          ok: false,
+          error: s.mediumLocked
+            .replace("{{need}}", String(minStudy))
+            .replace("{{have}}", String(studyLevel))
+        };
+      }
+    }
+
     if (picked === "hard") {
       const studyLevel = Math.max(0, toInt(u?.study?.level, 0));
       const minStudy = this._hardMinStudyLevel();
@@ -300,7 +317,6 @@ export class GeneralQuizService {
     const lang = this._lang(u);
     const options = (q.options && q.options[lang]) || q.options?.en || q.options?.ru || [];
     const text = (q.text && q.text[lang]) || q.text?.en || q.text?.ru || qid;
-    const explain = (q.explain && q.explain[lang]) || q.explain?.en || q.explain?.ru || "";
     let order = Array.isArray(u?.quizGeneral?.optionOrder?.[index]) ? [...u.quizGeneral.optionOrder[index]] : [];
     if (order.length !== options.length) {
       order = Array.from({ length: options.length }, (_, i) => i);
@@ -310,7 +326,6 @@ export class GeneralQuizService {
       text,
       options,
       correctIndex: Math.max(0, toInt(q.correct, 0)),
-      explain,
       order
     };
   }
@@ -331,6 +346,7 @@ export class GeneralQuizService {
         pickEasy: "\u041b\u0451\u0433\u043a\u0430\u044f",
         pickMedium: "\u0421\u0440\u0435\u0434\u043d\u044f\u044f",
         pickHard: "\u0421\u043b\u043e\u0436\u043d\u0430\u044f",
+        mediumNeedStudy: "\u0421\u0440\u0435\u0434\u043d\u044f\u044f \u043e\u0442\u043a\u0440\u043e\u0435\u0442\u0441\u044f \u0441 {{need}} \u0443\u0440\u043e\u0432\u043d\u044f \u0443\u0447\u0451\u0431\u044b (\u0441\u0435\u0439\u0447\u0430\u0441 {{have}}).",
         hardNeedStudy: "\u0421\u043b\u043e\u0436\u043d\u0430\u044f \u043e\u0442\u043a\u0440\u043e\u0435\u0442\u0441\u044f \u0441 {{need}} \u0443\u0440\u043e\u0432\u043d\u044f \u0443\u0447\u0451\u0431\u044b (\u0441\u0435\u0439\u0447\u0430\u0441 {{have}}).",
         qPrefix: "\u0412\u043e\u043f\u0440\u043e\u0441",
         correct: "\u0412\u0435\u0440\u043d\u043e!",
@@ -344,6 +360,7 @@ export class GeneralQuizService {
         invalid: "\u041d\u0435\u0432\u0435\u0440\u043d\u044b\u0439 \u0432\u0430\u0440\u0438\u0430\u043d\u0442 \u043e\u0442\u0432\u0435\u0442\u0430.",
         invalidDifficulty: "\u041d\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u043d\u0430\u044f \u0441\u043b\u043e\u0436\u043d\u043e\u0441\u0442\u044c.",
         difficultyLocked: "\u0421\u043b\u043e\u0436\u043d\u043e\u0441\u0442\u044c \u0443\u0436\u0435 \u0432\u044b\u0431\u0440\u0430\u043d\u0430 \u043d\u0430 \u0441\u0435\u0433\u043e\u0434\u043d\u044f.",
+        mediumLocked: "\u0421\u0440\u0435\u0434\u043d\u044f\u044f \u0437\u0430\u0431\u043b\u043e\u043a\u0438\u0440\u043e\u0432\u0430\u043d\u0430. \u041d\u0443\u0436\u0435\u043d {{need}} \u0443\u0440\u043e\u0432\u0435\u043d\u044c \u0443\u0447\u0451\u0431\u044b (\u0441\u0435\u0439\u0447\u0430\u0441 {{have}}).",
         hardLocked: "\u0421\u043b\u043e\u0436\u043d\u0430\u044f \u0437\u0430\u0431\u043b\u043e\u043a\u0438\u0440\u043e\u0432\u0430\u043d\u0430. \u041d\u0443\u0436\u0435\u043d {{need}} \u0443\u0440\u043e\u0432\u0435\u043d\u044c \u0443\u0447\u0451\u0431\u044b (\u0441\u0435\u0439\u0447\u0430\u0441 {{have}}).",
         difficultyPicked: "\u0421\u043b\u043e\u0436\u043d\u043e\u0441\u0442\u044c \u0432\u044b\u0431\u0440\u0430\u043d\u0430: {{difficulty}}.",
         needPickDifficulty: "\u0421\u043d\u0430\u0447\u0430\u043b\u0430 \u0432\u044b\u0431\u0435\u0440\u0438 \u0441\u043b\u043e\u0436\u043d\u043e\u0441\u0442\u044c.",
@@ -365,6 +382,7 @@ export class GeneralQuizService {
         pickEasy: "\u041b\u0435\u0433\u043a\u0430",
         pickMedium: "\u0421\u0435\u0440\u0435\u0434\u043d\u044f",
         pickHard: "\u0421\u043a\u043b\u0430\u0434\u043d\u0430",
+        mediumNeedStudy: "\u0421\u0435\u0440\u0435\u0434\u043d\u044f \u0432\u0456\u0434\u043a\u0440\u0438\u0454\u0442\u044c\u0441\u044f \u0437 {{need}} \u0440\u0456\u0432\u043d\u044f \u043d\u0430\u0432\u0447\u0430\u043d\u043d\u044f (\u0437\u0430\u0440\u0430\u0437 {{have}}).",
         hardNeedStudy: "\u0421\u043a\u043b\u0430\u0434\u043d\u0430 \u0432\u0456\u0434\u043a\u0440\u0438\u0454\u0442\u044c\u0441\u044f \u0437 {{need}} \u0440\u0456\u0432\u043d\u044f \u043d\u0430\u0432\u0447\u0430\u043d\u043d\u044f (\u0437\u0430\u0440\u0430\u0437 {{have}}).",
         qPrefix: "\u041f\u0438\u0442\u0430\u043d\u043d\u044f",
         correct: "\u041f\u0440\u0430\u0432\u0438\u043b\u044c\u043d\u043e!",
@@ -378,6 +396,7 @@ export class GeneralQuizService {
         invalid: "\u041d\u0435\u0432\u0456\u0440\u043d\u0438\u0439 \u0432\u0430\u0440\u0456\u0430\u043d\u0442 \u0432\u0456\u0434\u043f\u043e\u0432\u0456\u0434\u0456.",
         invalidDifficulty: "\u041d\u0435\u0432\u0456\u0434\u043e\u043c\u0430 \u0441\u043a\u043b\u0430\u0434\u043d\u0456\u0441\u0442\u044c.",
         difficultyLocked: "\u0421\u043a\u043b\u0430\u0434\u043d\u0456\u0441\u0442\u044c \u0432\u0436\u0435 \u043e\u0431\u0440\u0430\u043d\u0430 \u043d\u0430 \u0441\u044c\u043e\u0433\u043e\u0434\u043d\u0456.",
+        mediumLocked: "\u0421\u0435\u0440\u0435\u0434\u043d\u044f \u0437\u0430\u0431\u043b\u043e\u043a\u043e\u0432\u0430\u043d\u0430. \u041f\u043e\u0442\u0440\u0456\u0431\u0435\u043d {{need}} \u0440\u0456\u0432\u0435\u043d\u044c \u043d\u0430\u0432\u0447\u0430\u043d\u043d\u044f (\u0437\u0430\u0440\u0430\u0437 {{have}}).",
         hardLocked: "\u0421\u043a\u043b\u0430\u0434\u043d\u0430 \u0437\u0430\u0431\u043b\u043e\u043a\u043e\u0432\u0430\u043d\u0430. \u041f\u043e\u0442\u0440\u0456\u0431\u0435\u043d {{need}} \u0440\u0456\u0432\u0435\u043d\u044c \u043d\u0430\u0432\u0447\u0430\u043d\u043d\u044f (\u0437\u0430\u0440\u0430\u0437 {{have}}).",
         difficultyPicked: "\u0421\u043a\u043b\u0430\u0434\u043d\u0456\u0441\u0442\u044c \u043e\u0431\u0440\u0430\u043d\u043e: {{difficulty}}.",
         needPickDifficulty: "\u0421\u043f\u043e\u0447\u0430\u0442\u043a\u0443 \u043e\u0431\u0435\u0440\u0438 \u0441\u043a\u043b\u0430\u0434\u043d\u0456\u0441\u0442\u044c.",
@@ -398,6 +417,7 @@ export class GeneralQuizService {
       pickEasy: "Easy",
       pickMedium: "Medium",
       pickHard: "Hard",
+      mediumNeedStudy: "Medium unlocks at Study level {{need}} (now {{have}}).",
       hardNeedStudy: "Hard unlocks at Study level {{need}} (now {{have}}).",
       qPrefix: "Question",
       correct: "Correct!",
@@ -411,6 +431,7 @@ export class GeneralQuizService {
       invalid: "Invalid answer option.",
       invalidDifficulty: "Unknown difficulty.",
       difficultyLocked: "Difficulty is already selected for today.",
+      mediumLocked: "Medium is locked. Need Study level {{need}} (now {{have}}).",
       hardLocked: "Hard is locked. Need Study level {{need}} (now {{have}}).",
       difficultyPicked: "Difficulty selected: {{difficulty}}.",
       needPickDifficulty: "Pick difficulty first.",
@@ -465,9 +486,11 @@ export class GeneralQuizService {
     }
 
     const cta = answered > 0 ? s.resume : s.start;
-    const minStudy = this._hardMinStudyLevel();
+    const minStudyMedium = this._mediumMinStudyLevel();
+    const minStudyHard = this._hardMinStudyLevel();
     const studyLevel = Math.max(0, toInt(u?.study?.level, 0));
-    const hardLocked = studyLevel < minStudy;
+    const mediumLocked = studyLevel < minStudyMedium;
+    const hardLocked = studyLevel < minStudyHard;
     const easyTotal = (this._rewardMoneyPerCorrect("easy") * total) + this._perfectBonusMoney("easy");
     const mediumTotal = (this._rewardMoneyPerCorrect("medium") * total) + this._perfectBonusMoney("medium");
     const hardTotal = (this._rewardMoneyPerCorrect("hard") * total) + this._perfectBonusMoney("hard");
@@ -483,7 +506,8 @@ export class GeneralQuizService {
       selectedDifficulty
         ? `${s.reward}: ${formatMoney(this._rewardMoneyPerCorrect(selectedDifficulty), lang)} x ${total} | ${s.perfectBonus}: +${formatMoney(this._perfectBonusMoney(selectedDifficulty), lang)}`
         : s.onePerDay,
-      hardLocked ? s.hardNeedStudy.replace("{{need}}", String(minStudy)).replace("{{have}}", String(studyLevel)) : "",
+      mediumLocked ? s.mediumNeedStudy.replace("{{need}}", String(minStudyMedium)).replace("{{have}}", String(studyLevel)) : "",
+      hardLocked ? s.hardNeedStudy.replace("{{need}}", String(minStudyHard)).replace("{{have}}", String(studyLevel)) : "",
       "",
       `${s.result}: ${correct}/${total}`
     ];
@@ -492,7 +516,7 @@ export class GeneralQuizService {
       ? [[{ text: cta, callback_data: answered > 0 ? "gquiz:next" : "gquiz:start" }]]
       : [
         [{ text: `${s.pickEasy} - ${formatMoney(easyTotal, lang)}`, callback_data: "gquiz:pick:easy" }],
-        [{ text: `${s.pickMedium} - ${formatMoney(mediumTotal, lang)}`, callback_data: "gquiz:pick:medium" }],
+        [{ text: `${mediumLocked ? "[LOCK] " : ""}${s.pickMedium} - ${formatMoney(mediumTotal, lang)}`, callback_data: "gquiz:pick:medium" }],
         [{ text: `${hardLocked ? "[LOCK] " : ""}${s.pickHard} - ${formatMoney(hardTotal, lang)}`, callback_data: "gquiz:pick:hard" }]
       ];
     keyboard.push([{ text: s.toBar, callback_data: "go:Bar" }]);
@@ -554,8 +578,6 @@ export class GeneralQuizService {
       lines.push(s.wrong);
       lines.push(`${s.rightAnswer}: ${q.options[q.correctIndex]}`);
     }
-    lines.push("");
-    lines.push(`${s.explanation}: ${q.explain}`);
     lines.push("");
 
     if (finished) {
@@ -707,6 +729,17 @@ export class GeneralQuizService {
       cursor = page.cursor;
     }
 
+    const byDifficultyPlayedTotal = this._difficultyIds().reduce(
+      (sum, id) => sum + Math.max(0, toInt(byDifficulty?.[id]?.playedTotal, 0)),
+      0
+    );
+    const byDifficultyPerfectTotal = this._difficultyIds().reduce(
+      (sum, id) => sum + Math.max(0, toInt(byDifficulty?.[id]?.perfectTotal, 0)),
+      0
+    );
+    const legacyPlayedTotal = Math.max(0, playedTotal - byDifficultyPlayedTotal);
+    const legacyPerfectTotal = Math.max(0, perfectTotal - byDifficultyPerfectTotal);
+
     return {
       day: today,
       scanned,
@@ -714,7 +747,9 @@ export class GeneralQuizService {
       perfectToday,
       playedTotal,
       perfectTotal,
-      byDifficulty
+      byDifficulty,
+      legacyPlayedTotal,
+      legacyPerfectTotal
     };
   }
 }

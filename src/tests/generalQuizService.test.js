@@ -124,6 +124,7 @@ test("general quiz: medium difficulty uses medium pool ids", async () => {
     now: () => Date.UTC(2026, 2, 16, 12, 0, 0)
   });
   const u = makeUser("u-medium");
+  u.study.level = 10;
   await svc.ensureSession(u, { persist: false });
   const picked = await svc.selectDifficulty(u, "medium");
   assert.equal(picked.ok, true);
@@ -133,4 +134,41 @@ test("general quiz: medium difficulty uses medium pool ids", async () => {
   assert.ok(Array.isArray(u.quizGeneral.questionIds));
   assert.ok(u.quizGeneral.questionIds.length > 0);
   assert.ok(u.quizGeneral.questionIds.every((id) => String(id).startsWith("gqm_")));
+});
+
+test("general quiz: medium difficulty requires study level 10", async () => {
+  const svc = new GeneralQuizService({
+    users: new FakeUsers(),
+    now: () => Date.UTC(2026, 2, 16, 12, 0, 0)
+  });
+
+  const low = makeUser("u-medium-low");
+  low.study.level = 9;
+  await svc.ensureSession(low, { persist: false });
+  const fail = await svc.selectDifficulty(low, "medium");
+  assert.equal(fail.ok, false);
+
+  const okUser = makeUser("u-medium-ok");
+  okUser.study.level = 10;
+  await svc.ensureSession(okUser, { persist: false });
+  const ok = await svc.selectDifficulty(okUser, "medium");
+  assert.equal(ok.ok, true);
+});
+
+test("general quiz: hard difficulty uses hard pool ids", async () => {
+  const svc = new GeneralQuizService({
+    users: new FakeUsers(),
+    now: () => Date.UTC(2026, 2, 16, 12, 0, 0)
+  });
+  const u = makeUser("u-hard-pool");
+  u.study.level = 25;
+  await svc.ensureSession(u, { persist: false });
+  const picked = await svc.selectDifficulty(u, "hard");
+  assert.equal(picked.ok, true);
+
+  const view = await svc.buildOpenView(u);
+  assert.ok(view && typeof view.caption === "string");
+  assert.ok(Array.isArray(u.quizGeneral.questionIds));
+  assert.ok(u.quizGeneral.questionIds.length > 0);
+  assert.ok(u.quizGeneral.questionIds.every((id) => String(id).startsWith("gqh_")));
 });

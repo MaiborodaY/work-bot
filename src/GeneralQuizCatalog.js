@@ -665,11 +665,295 @@ function mediumRowsToCatalog(rows) {
   }));
 }
 
+const GENERAL_QUIZ_HARD_EN = [
+  { id: "gqh_001", q: "Which SI base unit measures amount of substance?", options: ["Mole", "Candela", "Kelvin", "Tesla"], correct: 0, explain: "Amount of substance is measured in moles." },
+  { id: "gqh_002", q: "What is the atomic number of tungsten (W)?", options: ["72", "73", "74", "75"], correct: 2, explain: "Tungsten has atomic number 74." },
+  { id: "gqh_003", q: "Which cell organelle is primarily responsible for ATP production?", options: ["Ribosome", "Mitochondrion", "Golgi apparatus", "Lysosome"], correct: 1, explain: "Mitochondria are the main ATP producers." },
+  { id: "gqh_004", q: "In genetics, which base pairs with guanine in DNA?", options: ["Adenine", "Thymine", "Uracil", "Cytosine"], correct: 3, explain: "Guanine pairs with cytosine in DNA." },
+  { id: "gqh_005", q: "Which law states that pressure and volume of a gas are inversely proportional at constant temperature?", options: ["Boyle's law", "Charles's law", "Avogadro's law", "Gay-Lussac's law"], correct: 0, explain: "Boyle's law describes inverse P-V behavior." },
+  { id: "gqh_006", q: "What is the SI unit of electric capacitance?", options: ["Henry", "Farad", "Weber", "Siemens"], correct: 1, explain: "Capacitance is measured in farads." },
+  { id: "gqh_007", q: "Which planet has the largest moon in the Solar System?", options: ["Saturn", "Jupiter", "Neptune", "Uranus"], correct: 1, explain: "Jupiter's moon Ganymede is the largest." },
+  { id: "gqh_008", q: "What is the term for a star's explosive death that can briefly outshine a galaxy?", options: ["Nebula", "Quasar", "Supernova", "Pulsar"], correct: 2, explain: "A supernova is a stellar explosion." },
+  { id: "gqh_009", q: "Which atmospheric layer contains most weather phenomena?", options: ["Troposphere", "Stratosphere", "Mesosphere", "Thermosphere"], correct: 0, explain: "Most weather occurs in the troposphere." },
+  { id: "gqh_010", q: "The Coriolis effect is caused by:", options: ["Earth's magnetic field", "Earth's rotation", "Ocean salinity", "Solar wind"], correct: 1, explain: "The Coriolis effect comes from Earth's rotation." },
+  { id: "gqh_011", q: "Which ocean current strongly influences Western Europe's climate?", options: ["California Current", "Benguela Current", "Gulf Stream", "Peru Current"], correct: 2, explain: "The Gulf Stream transports warm water northward." },
+  { id: "gqh_012", q: "Which country has the largest land area entirely in the Southern Hemisphere?", options: ["Australia", "Argentina", "South Africa", "Indonesia"], correct: 0, explain: "Australia is the largest fully Southern Hemisphere country." },
+  { id: "gqh_013", q: "What is the longest mountain range on land?", options: ["Himalayas", "Rockies", "Andes", "Alps"], correct: 2, explain: "The Andes are the longest continental mountain range." },
+  { id: "gqh_014", q: "Which strait separates Asia and North America?", options: ["Strait of Gibraltar", "Bering Strait", "Strait of Malacca", "Bosporus"], correct: 1, explain: "The Bering Strait divides Asia and North America." },
+  { id: "gqh_015", q: "What is the approximate bit length of an IPv6 address?", options: ["32 bits", "64 bits", "128 bits", "256 bits"], correct: 2, explain: "IPv6 addresses are 128 bits." },
+  { id: "gqh_016", q: "Which data structure typically supports O(1) average-time key lookup?", options: ["Array", "Linked list", "Hash table", "Binary tree"], correct: 2, explain: "Hash tables provide average O(1) lookup." },
+  { id: "gqh_017", q: "Binary search requires the input data to be:", options: ["Unique", "Sorted", "Numeric", "Balanced"], correct: 1, explain: "Binary search works correctly on sorted data." },
+  { id: "gqh_018", q: "Which sorting algorithm has O(n log n) average complexity and is stable in its common implementation?", options: ["Merge sort", "Selection sort", "Bubble sort", "Insertion sort"], correct: 0, explain: "Merge sort is stable and O(n log n) on average." },
+  { id: "gqh_019", q: "In relational databases, a FOREIGN KEY is used to:", options: ["Encrypt a column", "Index text search", "Enforce referential integrity", "Increase RAM usage"], correct: 2, explain: "Foreign keys enforce relationships between tables." },
+  { id: "gqh_020", q: "What does TLS primarily provide for network communication?", options: ["Compression only", "Encryption and integrity", "Physical routing", "Database replication"], correct: 1, explain: "TLS secures data with encryption and integrity checks." },
+  { id: "gqh_021", q: "Who composed The Four Seasons?", options: ["Bach", "Mozart", "Vivaldi", "Beethoven"], correct: 2, explain: "The Four Seasons was composed by Antonio Vivaldi." },
+  { id: "gqh_022", q: "Which art movement is Salvador Dali most associated with?", options: ["Cubism", "Surrealism", "Impressionism", "Baroque"], correct: 1, explain: "Dali is a major figure of Surrealism." },
+  { id: "gqh_023", q: "The novel One Hundred Years of Solitude was written by:", options: ["Pablo Neruda", "Gabriel Garcia Marquez", "Mario Vargas Llosa", "Jorge Luis Borges"], correct: 1, explain: "The novel is by Gabriel Garcia Marquez." },
+  { id: "gqh_024", q: "Which language family does Hungarian belong to?", options: ["Slavic", "Romance", "Uralic", "Germanic"], correct: 2, explain: "Hungarian is part of the Uralic family." },
+  { id: "gqh_025", q: "In economics, inflation means:", options: ["A fall in overall prices", "A rise in overall price levels", "A rise in unemployment only", "A stronger currency by definition"], correct: 1, explain: "Inflation is a sustained increase in general prices." },
+  { id: "gqh_026", q: "GDP at market prices measures:", options: ["Only exports", "Total value of final goods and services produced domestically", "Only government spending", "Only household income"], correct: 1, explain: "GDP sums domestic final output value." },
+  { id: "gqh_027", q: "Compound interest differs from simple interest because it is calculated on:", options: ["Principal only", "Principal plus accumulated interest", "Inflation only", "Tax-adjusted principal only"], correct: 1, explain: "Compound interest includes prior interest in the base." },
+  { id: "gqh_028", q: "Which instrument is typically used by central banks for short-term policy signaling?", options: ["Policy interest rate", "Corporate tax rate", "Import tariff", "Sales tax"], correct: 0, explain: "Central banks usually signal through policy rates." },
+  { id: "gqh_029", q: "Which blood vessel carries oxygenated blood from lungs to the heart?", options: ["Pulmonary artery", "Pulmonary vein", "Aorta", "Vena cava"], correct: 1, explain: "Pulmonary veins return oxygenated blood to the heart." },
+  { id: "gqh_030", q: "What is the normal diploid number of chromosomes in humans?", options: ["23", "44", "46", "48"], correct: 2, explain: "Humans have 46 chromosomes in diploid cells." },
+  { id: "gqh_031", q: "Insulin is primarily produced by which organ?", options: ["Liver", "Pancreas", "Kidney", "Spleen"], correct: 1, explain: "Insulin is produced by pancreatic beta cells." },
+  { id: "gqh_032", q: "Which pathogen class includes organisms like Plasmodium?", options: ["Virus", "Bacterium", "Protozoan", "Prion"], correct: 2, explain: "Plasmodium is a protozoan parasite." },
+  { id: "gqh_033", q: "What is the main purpose of a control group in an experiment?", options: ["To increase sample bias", "To provide a baseline for comparison", "To randomize questions", "To maximize variance"], correct: 1, explain: "A control group provides a baseline condition." },
+  { id: "gqh_034", q: "A p-value in hypothesis testing is best interpreted as:", options: ["Probability that the null is true", "Probability of obtaining data at least as extreme under the null", "Chance the experiment was random", "Error rate after publication"], correct: 1, explain: "It quantifies extremeness assuming the null hypothesis." },
+  { id: "gqh_035", q: "Which graph type is most appropriate for showing distribution shape of a continuous variable?", options: ["Pie chart", "Histogram", "Radar chart", "Sankey diagram"], correct: 1, explain: "Histograms show distribution of continuous data." },
+  { id: "gqh_036", q: "In project management, a critical path is:", options: ["The cheapest task sequence", "The longest-duration path determining project completion time", "A backup plan", "The path with most team members"], correct: 1, explain: "Critical path sets the minimum project duration." },
+  { id: "gqh_037", q: "Which protocol is primarily used for version control collaboration platforms like GitHub?", options: ["IMAP", "Git", "SNMP", "LDAP"], correct: 1, explain: "Git is the version control system used by such platforms." },
+  { id: "gqh_038", q: "What does CI/CD stand for?", options: ["Code Inspection / Code Delivery", "Continuous Integration / Continuous Delivery", "Centralized Infrastructure / Centralized Deployment", "Controlled Iteration / Controlled Debugging"], correct: 1, explain: "CI/CD means Continuous Integration and Continuous Delivery." },
+  { id: "gqh_039", q: "Which cyberattack attempts to overwhelm a service with massive traffic from many sources?", options: ["Phishing", "Ransomware", "DDoS", "SQL injection"], correct: 2, explain: "DDoS floods a target from distributed sources." },
+  { id: "gqh_040", q: "Public key cryptography typically uses:", options: ["One shared secret key for both directions", "A key pair: public and private", "No keys", "Only biometric data"], correct: 1, explain: "Asymmetric crypto uses public/private key pairs." },
+  { id: "gqh_041", q: "Which theorem links sides of a right triangle?", options: ["Fermat's Last Theorem", "Pythagorean theorem", "Bayes theorem", "Noether theorem"], correct: 1, explain: "The Pythagorean theorem links triangle side lengths." },
+  { id: "gqh_042", q: "The derivative of sin(x) with respect to x is:", options: ["-sin(x)", "cos(x)", "-cos(x)", "tan(x)"], correct: 1, explain: "d/dx sin(x) = cos(x)." },
+  { id: "gqh_043", q: "What is the value of pi rounded to 3 decimal places?", options: ["3.124", "3.142", "3.214", "3.412"], correct: 1, explain: "Pi rounded to three decimals is 3.142." },
+  { id: "gqh_044", q: "If two events are independent, then P(A and B) equals:", options: ["P(A) + P(B)", "P(A) - P(B)", "P(A) * P(B)", "P(A) / P(B)"], correct: 2, explain: "For independent events, probabilities multiply." },
+  { id: "gqh_045", q: "Which city hosts the headquarters of the United Nations?", options: ["Geneva", "Vienna", "New York", "Paris"], correct: 2, explain: "UN headquarters is in New York City." },
+  { id: "gqh_046", q: "The international agreement focused on limiting global warming to well below 2 deg C is:", options: ["Kyoto Protocol", "Montreal Protocol", "Paris Agreement", "Geneva Convention"], correct: 2, explain: "The Paris Agreement sets this global climate goal." },
+  { id: "gqh_047", q: "Which sea is shrinking rapidly due to river diversion projects in Central Asia?", options: ["Caspian Sea", "Aral Sea", "Black Sea", "Dead Sea"], correct: 1, explain: "The Aral Sea famously shrank due to water diversion." },
+  { id: "gqh_048", q: "Which country has the most official time zones when overseas territories are included?", options: ["United States", "Russia", "France", "United Kingdom"], correct: 2, explain: "France spans the most time zones with overseas territories." },
+  { id: "gqh_049", q: "The default branch name in many modern Git repositories is often:", options: ["master", "main", "trunk", "root"], correct: 1, explain: "Many repositories now use main as default." },
+  { id: "gqh_050", q: "In machine learning, overfitting means a model:", options: ["Generalizes well to unseen data", "Learns noise and performs poorly on new data", "Uses too little training data by definition", "Always has high bias and low variance"], correct: 1, explain: "Overfitting captures noise and hurts generalization." }
+];
+
+const GENERAL_QUIZ_HARD_I18N = {
+  gqh_001: {
+    ru: { q: "Какая базовая единица СИ измеряет количество вещества?", options: ["Моль", "Кандела", "Кельвин", "Тесла"] },
+    uk: { q: "Яка базова одиниця SI вимірює кількість речовини?", options: ["Моль", "Кандела", "Кельвін", "Тесла"] }
+  },
+  gqh_002: {
+    ru: { q: "Какой атомный номер у вольфрама (W)?", options: ["72", "73", "74", "75"] },
+    uk: { q: "Який атомний номер у вольфраму (W)?", options: ["72", "73", "74", "75"] }
+  },
+  gqh_003: {
+    ru: { q: "Какая органелла клетки в первую очередь отвечает за выработку АТФ?", options: ["Рибосома", "Митохондрия", "Аппарат Гольджи", "Лизосома"] },
+    uk: { q: "Яка органела клітини насамперед відповідає за вироблення АТФ?", options: ["Рибосома", "Мітохондрія", "Апарат Гольджі", "Лізосома"] }
+  },
+  gqh_004: {
+    ru: { q: "В генетике какая азотистая база в ДНК спаривается с гуанином?", options: ["Аденин", "Тимин", "Урацил", "Цитозин"] },
+    uk: { q: "У генетиці яка азотиста основа в ДНК спаровується з гуаніном?", options: ["Аденін", "Тимін", "Урацил", "Цитозин"] }
+  },
+  gqh_005: {
+    ru: { q: "Какой закон говорит, что давление и объём газа обратно пропорциональны при постоянной температуре?", options: ["Закон Бойля", "Закон Шарля", "Закон Авогадро", "Закон Гей-Люссака"] },
+    uk: { q: "Який закон стверджує, що тиск і об’єм газу обернено пропорційні за сталої температури?", options: ["Закон Бойля", "Закон Шарля", "Закон Авогадро", "Закон Гей-Люссака"] }
+  },
+  gqh_006: {
+    ru: { q: "Какая единица СИ используется для измерения электрической ёмкости?", options: ["Генри", "Фарад", "Вебер", "Сименс"] },
+    uk: { q: "Яка одиниця SI використовується для вимірювання електричної ємності?", options: ["Генрі", "Фарад", "Вебер", "Сіменс"] }
+  },
+  gqh_007: {
+    ru: { q: "У какой планеты находится крупнейший спутник Солнечной системы?", options: ["Сатурн", "Юпитер", "Нептун", "Уран"] },
+    uk: { q: "У якої планети є найбільший супутник Сонячної системи?", options: ["Сатурн", "Юпітер", "Нептун", "Уран"] }
+  },
+  gqh_008: {
+    ru: { q: "Как называется взрывная гибель звезды, которая может ненадолго затмить целую галактику?", options: ["Туманность", "Квазар", "Сверхновая", "Пульсар"] },
+    uk: { q: "Як називається вибухова загибель зорі, що може ненадовго затьмарити цілу галактику?", options: ["Туманність", "Квазар", "Наднова", "Пульсар"] }
+  },
+  gqh_009: {
+    ru: { q: "В каком слое атмосферы происходит большинство погодных явлений?", options: ["Тропосфера", "Стратосфера", "Мезосфера", "Термосфера"] },
+    uk: { q: "У якому шарі атмосфери відбувається більшість погодних явищ?", options: ["Тропосфера", "Стратосфера", "Мезосфера", "Термосфера"] }
+  },
+  gqh_010: {
+    ru: { q: "Эффект Кориолиса вызван:", options: ["Магнитным полем Земли", "Вращением Земли", "Солёностью океана", "Солнечным ветром"] },
+    uk: { q: "Ефект Коріоліса спричинений:", options: ["Магнітним полем Землі", "Обертанням Землі", "Солоністю океану", "Сонячним вітром"] }
+  },
+  gqh_011: {
+    ru: { q: "Какое океаническое течение сильно влияет на климат Западной Европы?", options: ["Калифорнийское течение", "Бенгельское течение", "Гольфстрим", "Перуанское течение"] },
+    uk: { q: "Яка океанічна течія сильно впливає на клімат Західної Європи?", options: ["Каліфорнійська течія", "Бенгельська течія", "Гольфстрім", "Перуанська течія"] }
+  },
+  gqh_012: {
+    ru: { q: "Какая страна имеет наибольшую площадь и целиком находится в Южном полушарии?", options: ["Австралия", "Аргентина", "ЮАР", "Индонезия"] },
+    uk: { q: "Яка країна має найбільшу площу і повністю розташована в Південній півкулі?", options: ["Австралія", "Аргентина", "ПАР", "Індонезія"] }
+  },
+  gqh_013: {
+    ru: { q: "Какой горный хребет является самым длинным на суше?", options: ["Гималаи", "Скалистые горы", "Анды", "Альпы"] },
+    uk: { q: "Який гірський хребет є найдовшим на суходолі?", options: ["Гімалаї", "Скелясті гори", "Анди", "Альпи"] }
+  },
+  gqh_014: {
+    ru: { q: "Какой пролив разделяет Азию и Северную Америку?", options: ["Гибралтарский пролив", "Берингов пролив", "Малаккский пролив", "Босфор"] },
+    uk: { q: "Яка протока розділяє Азію та Північну Америку?", options: ["Гібралтарська протока", "Берингова протока", "Малаккська протока", "Босфор"] }
+  },
+  gqh_015: {
+    ru: { q: "Какова длина IPv6-адреса в битах?", options: ["32 бита", "64 бита", "128 бит", "256 бит"] },
+    uk: { q: "Яка довжина IPv6-адреси в бітах?", options: ["32 біти", "64 біти", "128 біт", "256 біт"] }
+  },
+  gqh_016: {
+    ru: { q: "Какая структура данных обычно поддерживает поиск по ключу со средней сложностью O(1)?", options: ["Массив", "Связный список", "Хеш-таблица", "Бинарное дерево"] },
+    uk: { q: "Яка структура даних зазвичай підтримує пошук за ключем із середньою складністю O(1)?", options: ["Масив", "Зв’язний список", "Хеш-таблиця", "Бінарне дерево"] }
+  },
+  gqh_017: {
+    ru: { q: "Для работы бинарного поиска входные данные должны быть:", options: ["Уникальными", "Отсортированными", "Числовыми", "Сбалансированными"] },
+    uk: { q: "Щоб бінарний пошук працював коректно, вхідні дані мають бути:", options: ["Унікальними", "Відсортованими", "Числовими", "Збалансованими"] }
+  },
+  gqh_018: {
+    ru: { q: "Какой алгоритм сортировки имеет среднюю сложность O(n log n) и стабилен в распространённой реализации?", options: ["Сортировка слиянием", "Сортировка выбором", "Пузырьковая сортировка", "Сортировка вставками"] },
+    uk: { q: "Який алгоритм сортування має середню складність O(n log n) і є стабільним у типовій реалізації?", options: ["Сортування злиттям", "Сортування вибором", "Бульбашкове сортування", "Сортування вставками"] }
+  },
+  gqh_019: {
+    ru: { q: "В реляционных базах данных FOREIGN KEY используется для:", options: ["Шифрования столбца", "Индексирования текстового поиска", "Поддержки ссылочной целостности", "Увеличения использования RAM"] },
+    uk: { q: "У реляційних базах даних FOREIGN KEY використовується для:", options: ["Шифрування стовпця", "Індексування текстового пошуку", "Підтримки посилальної цілісності", "Збільшення використання RAM"] }
+  },
+  gqh_020: {
+    ru: { q: "Что в первую очередь обеспечивает TLS в сетевом обмене?", options: ["Только сжатие", "Шифрование и целостность", "Физическую маршрутизацию", "Репликацию базы данных"] },
+    uk: { q: "Що насамперед забезпечує TLS у мережевому обміні?", options: ["Лише стиснення", "Шифрування та цілісність", "Фізичну маршрутизацію", "Реплікацію бази даних"] }
+  },
+  gqh_021: {
+    ru: { q: "Кто написал цикл Времена года?", options: ["Бах", "Моцарт", "Вивальди", "Бетховен"] },
+    uk: { q: "Хто написав цикл Пори року?", options: ["Бах", "Моцарт", "Вівальді", "Бетховен"] }
+  },
+  gqh_022: {
+    ru: { q: "С каким художественным направлением чаще всего связывают Сальвадора Дали?", options: ["Кубизм", "Сюрреализм", "Импрессионизм", "Барокко"] },
+    uk: { q: "З яким мистецьким напрямом найчастіше пов’язують Сальвадора Далі?", options: ["Кубізм", "Сюрреалізм", "Імпресіонізм", "Бароко"] }
+  },
+  gqh_023: {
+    ru: { q: "Роман Сто лет одиночества написал:", options: ["Пабло Неруда", "Габриэль Гарсиа Маркес", "Марио Варгас Льоса", "Хорхе Луис Борхес"] },
+    uk: { q: "Роман Сто років самотності написав:", options: ["Пабло Неруда", "Габріель Гарсія Маркес", "Маріо Варгас Льоса", "Хорхе Луїс Борхес"] }
+  },
+  gqh_024: {
+    ru: { q: "К какой языковой семье относится венгерский язык?", options: ["Славянская", "Романская", "Уральская", "Германская"] },
+    uk: { q: "До якої мовної сім’ї належить угорська мова?", options: ["Слов’янська", "Романська", "Уральська", "Германська"] }
+  },
+  gqh_025: {
+    ru: { q: "В экономике инфляция — это:", options: ["Падение общего уровня цен", "Рост общего уровня цен", "Только рост безработицы", "По определению усиление валюты"] },
+    uk: { q: "В економіці інфляція — це:", options: ["Падіння загального рівня цін", "Зростання загального рівня цін", "Лише зростання безробіття", "За визначенням зміцнення валюти"] }
+  },
+  gqh_026: {
+    ru: { q: "ВВП по рыночным ценам измеряет:", options: ["Только экспорт", "Общую стоимость конечных товаров и услуг, произведённых внутри страны", "Только госрасходы", "Только доход домохозяйств"] },
+    uk: { q: "ВВП за ринковими цінами вимірює:", options: ["Лише експорт", "Загальну вартість кінцевих товарів і послуг, вироблених у межах країни", "Лише державні витрати", "Лише доходи домогосподарств"] }
+  },
+  gqh_027: {
+    ru: { q: "Сложный процент отличается от простого тем, что начисляется на:", options: ["Только первоначальную сумму", "Первоначальную сумму плюс накопленные проценты", "Только инфляцию", "Только сумму после налогов"] },
+    uk: { q: "Складний відсоток відрізняється від простого тим, що нараховується на:", options: ["Лише початкову суму", "Початкову суму плюс накопичені відсотки", "Лише інфляцію", "Лише суму після податків"] }
+  },
+  gqh_028: {
+    ru: { q: "Какой инструмент обычно используют центральные банки для краткосрочных сигналов по политике?", options: ["Ключевая процентная ставка", "Ставка налога на прибыль", "Импортный тариф", "Налог с продаж"] },
+    uk: { q: "Який інструмент зазвичай використовують центральні банки для короткострокових сигналів монетарної політики?", options: ["Ключова процентна ставка", "Ставка податку на прибуток", "Імпортний тариф", "Податок із продажів"] }
+  },
+  gqh_029: {
+    ru: { q: "Какой сосуд несёт насыщенную кислородом кровь из лёгких к сердцу?", options: ["Лёгочная артерия", "Лёгочная вена", "Аорта", "Полая вена"] },
+    uk: { q: "Яка судина несе насичену киснем кров із легень до серця?", options: ["Легенева артерія", "Легенева вена", "Аорта", "Порожниста вена"] }
+  },
+  gqh_030: {
+    ru: { q: "Какое нормальное диплоидное число хромосом у человека?", options: ["23", "44", "46", "48"] },
+    uk: { q: "Яке нормальне диплоїдне число хромосом у людини?", options: ["23", "44", "46", "48"] }
+  },
+  gqh_031: {
+    ru: { q: "Инсулин в основном вырабатывается каким органом?", options: ["Печень", "Поджелудочная железа", "Почка", "Селезёнка"] },
+    uk: { q: "Інсулін переважно виробляється яким органом?", options: ["Печінка", "Підшлункова залоза", "Нирка", "Селезінка"] }
+  },
+  gqh_032: {
+    ru: { q: "К какому классу возбудителей относятся организмы вроде Plasmodium?", options: ["Вирус", "Бактерия", "Простейшие", "Прион"] },
+    uk: { q: "До якого класу збудників належать організми на кшталт Plasmodium?", options: ["Вірус", "Бактерія", "Найпростіші", "Пріон"] }
+  },
+  gqh_033: {
+    ru: { q: "Основная цель контрольной группы в эксперименте:", options: ["Увеличить смещение выборки", "Дать базовый уровень для сравнения", "Рандомизировать вопросы", "Максимизировать дисперсию"] },
+    uk: { q: "Основна мета контрольної групи в експерименті:", options: ["Збільшити зміщення вибірки", "Дати базовий рівень для порівняння", "Рандомізувати запитання", "Максимізувати дисперсію"] }
+  },
+  gqh_034: {
+    ru: { q: "P-value в проверке гипотез лучше всего интерпретируется как:", options: ["Вероятность, что нулевая гипотеза верна", "Вероятность получить такие же или более экстремальные данные при верной нулевой гипотезе", "Вероятность, что эксперимент случайный", "Уровень ошибки после публикации"] },
+    uk: { q: "P-value у перевірці гіпотез найкраще інтерпретується як:", options: ["Ймовірність, що нульова гіпотеза правильна", "Ймовірність отримати такі ж або більш екстремальні дані за умови правильної нульової гіпотези", "Ймовірність, що експеримент випадковий", "Рівень помилки після публікації"] }
+  },
+  gqh_035: {
+    ru: { q: "Какой график лучше всего подходит для показа формы распределения непрерывной переменной?", options: ["Круговая диаграмма", "Гистограмма", "Радар-график", "Диаграмма Санки"] },
+    uk: { q: "Який графік найкраще підходить для показу форми розподілу неперервної змінної?", options: ["Кругова діаграма", "Гістограма", "Радар-діаграма", "Діаграма Санкі"] }
+  },
+  gqh_036: {
+    ru: { q: "В управлении проектами критический путь — это:", options: ["Самая дешёвая последовательность задач", "Путь максимальной длительности, который определяет срок завершения проекта", "Резервный план", "Путь с максимальным числом участников"] },
+    uk: { q: "В управлінні проєктами критичний шлях — це:", options: ["Найдешевша послідовність задач", "Шлях максимальної тривалості, що визначає строк завершення проєкту", "Резервний план", "Шлях із найбільшою кількістю учасників"] }
+  },
+  gqh_037: {
+    ru: { q: "Какой протокол в первую очередь используется платформами совместной разработки версий, например GitHub?", options: ["IMAP", "Git", "SNMP", "LDAP"] },
+    uk: { q: "Який протокол насамперед використовується платформами спільної розробки версій, як-от GitHub?", options: ["IMAP", "Git", "SNMP", "LDAP"] }
+  },
+  gqh_038: {
+    ru: { q: "Что означает CI/CD?", options: ["Code Inspection / Code Delivery", "Continuous Integration / Continuous Delivery", "Centralized Infrastructure / Centralized Deployment", "Controlled Iteration / Controlled Debugging"] },
+    uk: { q: "Що означає CI/CD?", options: ["Code Inspection / Code Delivery", "Continuous Integration / Continuous Delivery", "Centralized Infrastructure / Centralized Deployment", "Controlled Iteration / Controlled Debugging"] }
+  },
+  gqh_039: {
+    ru: { q: "Какая кибератака пытается перегрузить сервис огромным трафиком из множества источников?", options: ["Фишинг", "Программа-вымогатель", "DDoS", "SQL-инъекция"] },
+    uk: { q: "Яка кібератака намагається перевантажити сервіс величезним трафіком із багатьох джерел?", options: ["Фішинг", "Програма-вимагач", "DDoS", "SQL-ін’єкція"] }
+  },
+  gqh_040: {
+    ru: { q: "Криптография с открытым ключом обычно использует:", options: ["Один общий секретный ключ в обе стороны", "Пару ключей: открытый и закрытый", "Вообще без ключей", "Только биометрические данные"] },
+    uk: { q: "Криптографія з відкритим ключем зазвичай використовує:", options: ["Один спільний секретний ключ в обидва боки", "Пару ключів: відкритий і закритий", "Взагалі без ключів", "Лише біометричні дані"] }
+  },
+  gqh_041: {
+    ru: { q: "Какая теорема связывает стороны прямоугольного треугольника?", options: ["Великая теорема Ферма", "Теорема Пифагора", "Теорема Байеса", "Теорема Нётер"] },
+    uk: { q: "Яка теорема пов’язує сторони прямокутного трикутника?", options: ["Велика теорема Ферма", "Теорема Піфагора", "Теорема Байєса", "Теорема Нетер"] }
+  },
+  gqh_042: {
+    ru: { q: "Производная sin(x) по x равна:", options: ["-sin(x)", "cos(x)", "-cos(x)", "tan(x)"] },
+    uk: { q: "Похідна sin(x) за x дорівнює:", options: ["-sin(x)", "cos(x)", "-cos(x)", "tan(x)"] }
+  },
+  gqh_043: {
+    ru: { q: "Чему равно число pi, округлённое до 3 знаков после запятой?", options: ["3.124", "3.142", "3.214", "3.412"] },
+    uk: { q: "Чому дорівнює число pi, округлене до 3 знаків після коми?", options: ["3.124", "3.142", "3.214", "3.412"] }
+  },
+  gqh_044: {
+    ru: { q: "Если два события независимы, то P(A и B) равно:", options: ["P(A) + P(B)", "P(A) - P(B)", "P(A) * P(B)", "P(A) / P(B)"] },
+    uk: { q: "Якщо дві події незалежні, то P(A і B) дорівнює:", options: ["P(A) + P(B)", "P(A) - P(B)", "P(A) * P(B)", "P(A) / P(B)"] }
+  },
+  gqh_045: {
+    ru: { q: "В каком городе находится штаб-квартира ООН?", options: ["Женева", "Вена", "Нью-Йорк", "Париж"] },
+    uk: { q: "У якому місті розташована штаб-квартира ООН?", options: ["Женева", "Відень", "Нью-Йорк", "Париж"] }
+  },
+  gqh_046: {
+    ru: { q: "Какое международное соглашение направлено на ограничение глобального потепления значительно ниже 2 deg C?", options: ["Киотский протокол", "Монреальский протокол", "Парижское соглашение", "Женевская конвенция"] },
+    uk: { q: "Яка міжнародна угода спрямована на обмеження глобального потепління значно нижче 2 deg C?", options: ["Кіотський протокол", "Монреальський протокол", "Паризька угода", "Женевська конвенція"] }
+  },
+  gqh_047: {
+    ru: { q: "Какое море быстро сокращается из-за проектов отвода рек в Центральной Азии?", options: ["Каспийское море", "Аральское море", "Чёрное море", "Мёртвое море"] },
+    uk: { q: "Яке море швидко скорочується через проєкти відведення річок у Центральній Азії?", options: ["Каспійське море", "Аральське море", "Чорне море", "Мертве море"] }
+  },
+  gqh_048: {
+    ru: { q: "Какая страна имеет больше всего официальных часовых поясов с учётом заморских территорий?", options: ["США", "Россия", "Франция", "Великобритания"] },
+    uk: { q: "Яка країна має найбільше офіційних часових поясів з урахуванням заморських територій?", options: ["США", "Росія", "Франція", "Велика Британія"] }
+  },
+  gqh_049: {
+    ru: { q: "Название основной ветки по умолчанию во многих современных Git-репозиториях чаще всего:", options: ["master", "main", "trunk", "root"] },
+    uk: { q: "Назва основної гілки за замовчуванням у багатьох сучасних Git-репозиторіях найчастіше:", options: ["master", "main", "trunk", "root"] }
+  },
+  gqh_050: {
+    ru: { q: "В машинном обучении переобучение (overfitting) означает, что модель:", options: ["Хорошо обобщает на новых данных", "Запоминает шум и плохо работает на новых данных", "По определению использует слишком мало обучающих данных", "Всегда имеет высокий bias и низкую variance"] },
+    uk: { q: "У машинному навчанні перенавчання (overfitting) означає, що модель:", options: ["Добре узагальнює на нових даних", "Запам’ятовує шум і погано працює на нових даних", "За визначенням використовує занадто мало тренувальних даних", "Завжди має високий bias і низьку variance"] }
+  }
+};
+
+function hardRowsToCatalog(rows) {
+  return rows.map((x) => ({
+    id: String(x.id),
+    text: {
+      en: String(x.q),
+      ru: String(GENERAL_QUIZ_HARD_I18N?.[x.id]?.ru?.q || x.q),
+      uk: String(GENERAL_QUIZ_HARD_I18N?.[x.id]?.uk?.q || x.q)
+    },
+    options: {
+      en: Array.isArray(x.options) ? x.options.map((o) => String(o)) : [],
+      ru: Array.isArray(GENERAL_QUIZ_HARD_I18N?.[x.id]?.ru?.options)
+        ? GENERAL_QUIZ_HARD_I18N[x.id].ru.options.map((o) => String(o))
+        : (Array.isArray(x.options) ? x.options.map((o) => String(o)) : []),
+      uk: Array.isArray(GENERAL_QUIZ_HARD_I18N?.[x.id]?.uk?.options)
+        ? GENERAL_QUIZ_HARD_I18N[x.id].uk.options.map((o) => String(o))
+        : (Array.isArray(x.options) ? x.options.map((o) => String(o)) : [])
+    },
+    correct: Number(x.correct) || 0,
+    explain: {
+      en: String(x.explain || ""),
+      ru: String(GENERAL_QUIZ_HARD_I18N?.[x.id]?.ru?.explain || x.explain || ""),
+      uk: String(GENERAL_QUIZ_HARD_I18N?.[x.id]?.uk?.explain || x.explain || "")
+    }
+  }));
+}
+
 export function buildGeneralQuizCatalogByDifficulty(difficulty = "easy") {
   const d = String(difficulty || "").toLowerCase();
   if (d === "medium") {
     return mediumRowsToCatalog(GENERAL_QUIZ_MEDIUM_EN);
   }
-  // For now: easy and hard use existing catalog.
+  if (d === "hard") {
+    return hardRowsToCatalog(GENERAL_QUIZ_HARD_EN);
+  }
   return buildGeneralQuizCatalog();
 }

@@ -727,6 +727,8 @@ export class AdminCommands {
         const easy = row("easy");
         const medium = row("medium");
         const hard = row("hard");
+        const legacyPlayed = Math.max(0, Number(g?.legacyPlayedTotal || 0));
+        const legacyPerfect = Math.max(0, Number(g?.legacyPerfectTotal || 0));
         lines.push(
           "",
           "<b>General quiz stats</b>",
@@ -738,6 +740,11 @@ export class AdminCommands {
           `Total played: ${Number(g?.playedTotal || 0)} (easy ${Number(easy.playedTotal || 0)}, medium ${Number(medium.playedTotal || 0)}, hard ${Number(hard.playedTotal || 0)})`,
           `Total perfect: ${Number(g?.perfectTotal || 0)} (easy ${Number(easy.perfectTotal || 0)}, medium ${Number(medium.perfectTotal || 0)}, hard ${Number(hard.perfectTotal || 0)})`
         );
+        if (legacyPlayed > 0 || legacyPerfect > 0) {
+          lines.push(
+            `Legacy totals (before difficulty split): played ${legacyPlayed}, perfect ${legacyPerfect}`
+          );
+        }
       }
     }
     await this.send(lines.join("\n"));

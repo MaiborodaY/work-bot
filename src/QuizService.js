@@ -213,7 +213,6 @@ export class QuizService {
     const lang = this._lang(u);
     const options = (q.options && q.options[lang]) || q.options?.ru || [];
     const text = (q.text && q.text[lang]) || q.text?.ru || qid;
-    const explain = (q.explain && q.explain[lang]) || q.explain?.ru || "";
     let order = Array.isArray(u?.quiz?.optionOrder?.[index]) ? [...u.quiz.optionOrder[index]] : [];
     if (order.length !== options.length) {
       order = Array.from({ length: options.length }, (_, i) => i);
@@ -223,7 +222,6 @@ export class QuizService {
       text,
       options,
       correctIndex: Math.max(0, toInt(q.correct, 0)),
-      explain,
       order
     };
   }
@@ -405,8 +403,6 @@ export class QuizService {
       lines.push(s.wrong);
       lines.push(`${s.rightAnswer}: ${q.options[q.correctIndex]}`);
     }
-    lines.push("");
-    lines.push(`${s.explanation}: ${q.explain}`);
     lines.push("");
 
     if (finished) {
@@ -601,4 +597,3 @@ export class QuizService {
     };
   }
 }
-
