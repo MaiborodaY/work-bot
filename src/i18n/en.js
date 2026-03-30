@@ -327,6 +327,7 @@ export const EN = {
   "ui.back.work_shifts": "⬅️ Back to shifts",
   "ui.back.default": "⬅️ Back",
   "ui.bar.tasks": "📋 Bar tasks",
+  "ui.bar.newbie_tasks": "🧭 Newbie quests",
   "ui.bar.quiz": "🎯 Quiz",
   "ui.bar.arcana": "🌀 Arcana Hall",
   "ui.bar.free": "🎁 Free attempt",

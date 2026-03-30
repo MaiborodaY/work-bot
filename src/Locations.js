@@ -8,6 +8,7 @@ import { clearBackToIfNeeded, renderFallbackSquareRoute, renderSquareRoute } fro
 import { renderStudyRoute } from "./locations/routes/studyRoute.js";
 import {
   renderBarRoute,
+  renderBarNewbieTasksRoute,
   renderBarTasksRoute,
   renderCasinoRoute,
   renderCityBoardRoute,
@@ -463,6 +464,7 @@ export class Locations {
       [Routes.GYM]: async () => this._renderGymRoute(user, { introText, lang, onboardingStage }),
       [Routes.UPGRADES]: async () => this._renderUpgradesRoute(user, { lang }),
       [Routes.BAR_TASKS]: async () => this._renderBarTasksRoute(user, { lang }),
+      [Routes.BAR_NEWBIE_TASKS]: async () => this._renderBarNewbieTasksRoute(user, { lang }),
       [Routes.BUSINESS]: async () => this._renderBusinessRoute(user, { header, lang, route: Routes.BUSINESS }),
     };
   }
@@ -509,6 +511,10 @@ export class Locations {
 
   async _renderBarTasksRoute(user, opts = {}) {
     return renderBarTasksRoute(this, user, opts);
+  }
+
+  async _renderBarNewbieTasksRoute(user, opts = {}) {
+    return renderBarNewbieTasksRoute(this, user, opts);
   }
 
   async _renderBusinessRoute(user, opts = {}) {

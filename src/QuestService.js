@@ -1298,38 +1298,22 @@ export class QuestService {
     return `${s.todoPrefix} ${title} — ${rewardText}\n   ${progress}`;
   }
 
-  async buildBarTasksView(u) {
-    await this.ensureCycles(u, { persist: false });
+  _newbieTitle(source) {
+    const l = this._lang(source);
+    if (l === "en") return "🧭 Newbie quests";
+    if (l === "uk") return "🧭 Завдання для новачків";
+    return "🧭 Задания для новичков";
+  }
+
+  _newbieDoneLine(source) {
+    const l = this._lang(source);
+    if (l === "en") return "All newbie quests are completed.";
+    if (l === "uk") return "Усі завдання для новачків виконано.";
+    return "Все задания для новичков выполнены.";
+  }
+
+  _buildSpecialQuestLines(u) {
     const s = this._strings(u);
-    const nowTs = this.now();
-    const dailyLeft = this._formatLeft(u, this._dailyToNextMs(nowTs));
-    const weeklyLeft = this._formatLeft(u, this._weeklyToNextMs(nowTs));
-
-    const daily = Array.isArray(u?.quests?.daily?.list) ? u.quests.daily.list : [];
-    const weekly = Array.isArray(u?.quests?.weekly?.list) ? u.quests.weekly.list : [];
-
-    const lines = [
-      s.barTitle,
-      "",
-      s.dailyTitle,
-      `${s.updateIn} ${dailyLeft}`,
-      ""
-    ];
-    if (daily.length) {
-      for (const q of daily) lines.push(this._questLine(u, q), "");
-    } else {
-      lines.push(s.none, "");
-    }
-    lines.push(s.bonusDaily, "");
-    lines.push("━━━━━━━━━━━━━━━━", "");
-    lines.push(s.weeklyTitle, `${s.updateIn} ${weeklyLeft}`, "");
-    if (weekly.length) {
-      for (const q of weekly) lines.push(this._questLine(u, q), "");
-    } else {
-      lines.push(s.none, "");
-    }
-    lines.push(s.bonusWeekly);
-
     const specialLines = [];
     if (!u?.flags?.subBonusClaimed) {
       specialLines.push(`⬜ ${s.subText} — ${formatMoney(this._subBonusRewardMoney(), this._lang(u))}`);
@@ -1366,11 +1350,61 @@ export class QuestService {
       specialLines.push(`⬜ ${specialTitle} — ${formatMoney(rewardMoney, this._lang(u))}`);
       specialLines.push(`   ${s.clanGuideHint}`);
     }
-    if (specialLines.length) {
-      lines.push("", "━━━━━━━━━━━━━━━━", "", s.subTitle);
-      lines.push(...specialLines);
-    }
+    return specialLines;
+  }
 
+  hasPendingNewbieQuests(u) {
+    return this._buildSpecialQuestLines(u).length > 0;
+  }
+
+  async buildBarTasksView(u) {
+    await this.ensureCycles(u, { persist: false });
+    const s = this._strings(u);
+    const nowTs = this.now();
+    const dailyLeft = this._formatLeft(u, this._dailyToNextMs(nowTs));
+    const weeklyLeft = this._formatLeft(u, this._weeklyToNextMs(nowTs));
+
+    const daily = Array.isArray(u?.quests?.daily?.list) ? u.quests.daily.list : [];
+    const weekly = Array.isArray(u?.quests?.weekly?.list) ? u.quests.weekly.list : [];
+
+    const lines = [
+      s.barTitle,
+      "",
+      s.dailyTitle,
+      `${s.updateIn} ${dailyLeft}`,
+      ""
+    ];
+    if (daily.length) {
+      for (const q of daily) lines.push(this._questLine(u, q), "");
+    } else {
+      lines.push(s.none, "");
+    }
+    lines.push(s.bonusDaily, "");
+    lines.push("━━━━━━━━━━━━━━━━", "");
+    lines.push(s.weeklyTitle, `${s.updateIn} ${weeklyLeft}`, "");
+    if (weekly.length) {
+      for (const q of weekly) lines.push(this._questLine(u, q), "");
+    } else {
+      lines.push(s.none, "");
+    }
+    lines.push(s.bonusWeekly);
+
+    const keyboard = [
+      [{ text: s.back, callback_data: "go:Bar" }]
+    ];
+    return { caption: lines.join("\n").trim(), keyboard };
+  }
+
+  async buildBarNewbieTasksView(u) {
+    await this.ensureCycles(u, { persist: false });
+    const s = this._strings(u);
+    const specialLines = this._buildSpecialQuestLines(u);
+    const lines = [s.barTitle, "", this._newbieTitle(u), ""];
+    if (specialLines.length) {
+      lines.push(...specialLines);
+    } else {
+      lines.push(this._newbieDoneLine(u));
+    }
     const keyboard = [
       [{ text: s.back, callback_data: "go:Bar" }]
     ];

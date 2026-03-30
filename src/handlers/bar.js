@@ -8,6 +8,7 @@ export const barHandler = {
   match: (data) =>
     data === "go:Bar" ||
     data === "bar:tasks" ||
+    data === "bar:newbie" ||
     data === "bar:sub" ||
     data === "bar:sub:check",
 
@@ -35,6 +36,9 @@ export const barHandler = {
 
     const showBarTasks = async () => {
       await locations.show(u, null, "BarTasks");
+    };
+    const showBarNewbieTasks = async () => {
+      await locations.show(u, null, "BarNewbieTasks");
     };
 
     const showSubScreen = async () => {
@@ -100,6 +104,18 @@ export const barHandler = {
       }
       if (needSave) await users.save(u);
       await showBarTasks();
+      return;
+    }
+
+    if (data === "bar:newbie") {
+      await answer(cb.id);
+      let needSave = markFunnelStep(u, "didBar");
+      if (quests?.ensureCycles) {
+        const qRes = await quests.ensureCycles(u, { persist: false });
+        needSave = needSave || !!qRes?.changed;
+      }
+      if (needSave) await users.save(u);
+      await showBarNewbieTasks();
       return;
     }
 

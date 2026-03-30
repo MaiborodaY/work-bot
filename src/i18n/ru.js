@@ -50,6 +50,7 @@ export const RU = {
   "ui.back.default": "⬅️ Назад",
 
   "ui.bar.tasks": "📋 Задания бара",
+  "ui.bar.newbie_tasks": "🧭 Задания для новичков",
   "ui.bar.quiz": "🎯 Викторина",
   "ui.bar.quiz_general": "🧠 Общая викторина",
   "ui.bar.arcana": "🌀 Зал арканы",

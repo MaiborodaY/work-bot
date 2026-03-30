@@ -208,3 +208,25 @@ export async function renderBarTasksRoute(ctx, user, { lang = "ru" } = {}) {
   ctx._sourceMsg = null;
   ctx._route = Routes.BAR_TASKS;
 }
+
+export async function renderBarNewbieTasksRoute(ctx, user, { lang = "ru" } = {}) {
+  let caption = "🧭 Newbie quests";
+  let keyboard = ctx.ui.barTasks(user, lang);
+  if (ctx.quests?.buildBarNewbieTasksView) {
+    const view = await ctx.quests.buildBarNewbieTasksView(user);
+    if (view && typeof view === "object") {
+      caption = String(view.caption || caption);
+      if (Array.isArray(view.keyboard)) keyboard = view.keyboard;
+    }
+  }
+
+  await ctx.media.show({
+    sourceMsg: ctx._sourceMsg,
+    place: Routes.BAR,
+    caption,
+    keyboard,
+    policy: "auto",
+  });
+  ctx._sourceMsg = null;
+  ctx._route = Routes.BAR_NEWBIE_TASKS;
+}

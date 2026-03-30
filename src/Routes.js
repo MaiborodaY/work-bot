@@ -14,6 +14,7 @@ export const Routes = Object.freeze({
   PET: "Pet",
   BAR: "Bar",
   BAR_TASKS: "BarTasks",
+  BAR_NEWBIE_TASKS: "BarNewbieTasks",
   CASINO: "Casino",
   BUSINESS: "Business",
   LABOUR: "Labour",

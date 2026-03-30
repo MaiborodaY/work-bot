@@ -327,6 +327,7 @@ export const UK = {
   "ui.back.work_shifts": "⬅️ Назад до змін",
   "ui.back.default": "⬅️ Назад",
   "ui.bar.tasks": "📋 Завдання бару",
+  "ui.bar.newbie_tasks": "🧭 Завдання для новачків",
   "ui.bar.quiz": "🎯 Вікторина",
   "ui.bar.arcana": "🌀 Зал аркани",
   "ui.bar.free": "🎁 Безкоштовна спроба",

@@ -18,6 +18,27 @@ export class UiFactory {
     return toGoCallback(route);
   }
 
+  _hasAnyBusiness(user) {
+    const owned = Array.isArray(user?.biz?.owned) ? user.biz.owned : [];
+    return owned.some((x) => {
+      if (!x) return false;
+      if (typeof x === "string") return x.trim().length > 0;
+      return String(x?.id || "").trim().length > 0;
+    });
+  }
+
+  _hasPendingNewbieTasks(user) {
+    const flags = user?.flags || {};
+    if (!flags.subBonusClaimed) return true;
+    if (!flags.petBuyGuideClaimed && user?.pet == null) return true;
+    if (!flags.firstBizGuideClaimed && !this._hasAnyBusiness(user)) return true;
+    const studyLevel = Math.max(0, Number(user?.study?.level) || 0);
+    if (!flags.studyLevel5GuideClaimed && studyLevel < 5) return true;
+    const hasClan = !!String(user?.clan?.clanId || "").trim();
+    if (!flags.clanJoinGuideClaimed && !hasClan) return true;
+    return false;
+  }
+
   mainReply(lang = "en") {
     const l = this._lang(lang);
     return {
@@ -100,6 +121,9 @@ export class UiFactory {
     const canOpenArcana = studyLevel >= minStudy;
   
     kb.push([{ text: this._t(l, "ui.bar.tasks"), callback_data: "bar:tasks" }]);
+    if (this._hasPendingNewbieTasks(user)) {
+      kb.push([{ text: this._t(l, "ui.bar.newbie_tasks"), callback_data: "bar:newbie" }]);
+    }
     kb.push([{ text: this._t(l, "ui.bar.quiz"), callback_data: "quiz:open" }]);
     kb.push([{ text: this._t(l, "ui.bar.quiz_general"), callback_data: "gquiz:open" }]);
     if (canOpenArcana) {

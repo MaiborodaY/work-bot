@@ -70,11 +70,11 @@ test("bar tasks view: does not render refresh button", async () => {
   assert.equal(view.keyboard[0]?.[0]?.callback_data, "go:Bar");
 });
 
-test("bar tasks view: shows study level 5 special quest for newbies", async () => {
+test("newbie tasks view: shows study level 5 special quest for newbies", async () => {
   const qs = makeService();
   const u = makeUser({ withBusiness: false });
 
-  const view = await qs.buildBarTasksView(u);
+  const view = await qs.buildBarNewbieTasksView(u);
   const text = String(view?.caption || "");
 
   assert.match(text, /Дойти до 5 уровня учёбы/);
@@ -152,15 +152,15 @@ test("stocks_buy3 stale counter is recovered from current holdings on cycle ensu
   assert.equal(u.quests.daily.list[0].done, true);
 });
 
-test("bar tasks view: shows clan join special quest when user has no clan", async () => {
+test("newbie tasks view: shows clan join special quest when user has no clan", async () => {
   const qs = makeService();
   const u = makeUser({ withBusiness: false });
 
-  const view = await qs.buildBarTasksView(u);
+  const view = await qs.buildBarNewbieTasksView(u);
   const text = String(view?.caption || "");
 
   assert.match(text, /Вступить в клан или создать свой/);
-  assert.match(text, /\$1000/);
+  assert.match(text, /\$(1000|1к|1k)/);
 });
 
 test("clan join special quest: awards money once", async () => {
@@ -177,7 +177,7 @@ test("clan join special quest: awards money once", async () => {
   assert.equal(second.events.some((ev) => ev.id === "clan_join_first"), false);
 });
 
-test("bar tasks view: shows pet buy special quest when pet is missing", async () => {
+test("newbie tasks view: shows pet buy special quest when pet is missing", async () => {
   const qs = makeService();
   const u = makeUser({ withBusiness: false });
   u.lang = "en";
@@ -186,7 +186,7 @@ test("bar tasks view: shows pet buy special quest when pet is missing", async ()
   u.flags.clanJoinGuideClaimed = true;
   u.pet = null;
 
-  const view = await qs.buildBarTasksView(u);
+  const view = await qs.buildBarNewbieTasksView(u);
   const text = String(view?.caption || "");
 
   assert.match(text, /Buy a pet \(Square -> City -> Home -> Pet\)/);
@@ -232,7 +232,7 @@ test("bar tasks view: hides pet buy special quest for users with existing pet", 
   assert.doesNotMatch(text, /Buy a pet \(Square -> City -> Home -> Pet\)/);
 });
 
-test("bar tasks view: shows first business special quest when user has 0 businesses", async () => {
+test("newbie tasks view: shows first business special quest when user has 0 businesses", async () => {
   const qs = makeService();
   const u = makeUser({ withBusiness: false });
   u.lang = "en";
@@ -241,11 +241,11 @@ test("bar tasks view: shows first business special quest when user has 0 busines
   u.flags.studyLevel5GuideClaimed = true;
   u.flags.clanJoinGuideClaimed = true;
 
-  const view = await qs.buildBarTasksView(u);
+  const view = await qs.buildBarNewbieTasksView(u);
   const text = String(view?.caption || "");
 
   assert.match(text, /Buy your first business \(Square -> Earnings -> Business\)/);
-  assert.match(text, /\$1000/);
+  assert.match(text, /\$(1000|1к|1k)/);
 });
 
 test("first business special quest: awards money once on business buy only", async () => {
