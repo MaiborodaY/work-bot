@@ -30,6 +30,7 @@ export const colosseumHandler = {
         place,
         caption: String(view?.caption || ""),
         keyboard: Array.isArray(view?.keyboard) ? view.keyboard : [[{ text: "⬅️", callback_data: "go:City" }]],
+        asset: view?.asset || undefined,
         policy: "auto"
       });
       locations.setSourceMessage(null);
@@ -131,4 +132,3 @@ export const colosseumHandler = {
     }
   }
 };
-

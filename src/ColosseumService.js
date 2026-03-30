@@ -1,4 +1,5 @@
 import { CONFIG } from "./GameConfig.js";
+import { ASSETS } from "./Assets.js";
 import {
   applyWeeklyKeyReset,
   canQueueByDailyLimit,
@@ -8,7 +9,7 @@ import {
   nextDefenseZones,
   shouldResetQueueAtMidnight
 } from "./ColosseumRules.js";
-import { normalizeLang } from "./i18n/index.js";
+import { normalizeLang, STRINGS } from "./i18n/index.js";
 import { markUsefulActivity } from "./PlayerStats.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -83,87 +84,99 @@ export class ColosseumService {
     return normalizeLang(source?.lang || "en");
   }
 
-  _s() {
+  _tr(lang, key) {
+    const l = this._lang(lang);
+    const table = STRINGS[l] || {};
+    const ru = STRINGS.ru || {};
+    if (Object.prototype.hasOwnProperty.call(table, key)) return table[key];
+    if (Object.prototype.hasOwnProperty.call(ru, key)) return ru[key];
+    return key;
+  }
+
+  _s(lang = "en") {
     return {
-      title: "Colosseum",
-      locked: "Colosseum unlocks at {{need}} max energy.\nNow: {{have}}.",
-      statusIdle: "Status: ready for battle",
-      statusQueue: "Status: in matchmaking queue",
-      statusBattle: "Status: active battle",
-      weeklyWins: "Weekly wins: {{wins}}",
-      battlesLeft: "Daily battles: {{used}}/{{limit}}",
-      topTitle: "Weekly top (wins):",
-      topEmpty: "No winners yet.",
-      topLine: "{{place}} {{name}} - {{wins}}",
-      meTop: "You are in top: place {{place}}",
-      meOut: "You are outside top-10",
-      btnFind: "Find opponent",
-      btnLeaveQueue: "Leave queue",
-      btnOpenBattle: "Open battle",
-      btnStatus: "My status",
-      btnHelp: "How Colosseum works",
-      btnBack: "Back to city",
-      toastQueued: "You joined the queue.",
-      toastMatched: "Opponent found!",
-      toastQueueLeft: "You left the queue.",
-      toastNeedEnergy: "Need {{need}} max energy.",
-      toastDailyLimit: "Daily battle limit reached.",
-      toastAlreadyBattle: "Finish your current battle first.",
-      toastNoBattle: "No active battle found.",
-      pendingTitle: "Opponent found",
-      pendingLine: "Opponent: {{name}}",
-      pendingAcceptIn: "Accept window: {{secs}} sec",
-      pendingAccepted: "You accepted. Waiting for opponent.",
-      pendingWait: "Waiting for opponent decision...",
-      btnAccept: "Accept",
-      btnDecline: "Decline",
-      activeTitle: "Battle {{round}}/{{rounds}}",
-      activeVs: "{{left}} vs {{right}}",
-      activeScore: "Score: {{my}} - {{enemy}}",
-      activeDeadline: "Turn ends in: {{secs}} sec",
-      activePickAttack: "Pick your attack:",
-      activePickDefense: "Attack: {{attack}}. Now pick defense:",
-      activeDone: "Turn submitted. Waiting for opponent.",
-      btnAtkHead: "Attack head +3",
-      btnAtkBody: "Attack body +2",
-      btnAtkLegs: "Attack legs +1",
-      btnDefHead: "Defend head",
-      btnDefBody: "Defend body",
-      btnDefLegs: "Defend legs",
-      btnRefresh: "Refresh",
-      btnSurrender: "Surrender",
-      toastAccepted: "Battle accepted.",
-      toastDeclined: "You declined the battle.",
-      toastCannotAct: "This round is already resolved.",
-      toastPickAttackFirst: "Pick attack first.",
-      toastInvalidDefense: "Defense cannot match your attack zone.",
-      finishedWin: "Victory!",
-      finishedLose: "Defeat.",
-      finishedDraw: "Draw.",
-      finishedScore: "Final score: {{my}} - {{enemy}}",
-      finishedRound: "Round {{round}}: you {{myAttack}}/{{myDef}} | opponent {{enemyAttack}}/{{enemyDef}} | damage {{myDmg}}-{{enemyDmg}}",
-      finishReasonTimeout: "Battle ended by timeout.",
-      finishReasonSurrender: "Battle ended: surrender.",
-      btnBackColosseum: "Back to Colosseum",
-      helpTitle: "How Colosseum works",
-      helpLine1: "- Entry: from 50 max energy.",
-      helpLine2: "- Up to 10 battles per UTC day.",
-      helpLine3: "- Queue lives until UTC 00:00.",
-      helpLine4: "- Accept window is 1 minute.",
-      helpLine5: "- 3 rounds: choose attack + defense.",
-      helpLine6: "- You cannot attack and defend same zone in a round.",
-      helpLine7: "- Damage: head 3, body 2, legs 1.",
-      helpLine8: "- Winner is higher total damage.",
-      notifyFound: "Opponent found in Colosseum: {{name}}. Accept within 1 minute.",
-      notifyFoundBtn: "Open battle",
-      notifyStart: "Battle started. Round 1 of 3.",
-      notifyRound: "Round {{round}} started. Pick attack and defense.",
-      notifyTimeoutAccepted: "Opponent did not accept. You were requeued.",
-      notifyTimeoutDeclined: "Battle cancelled: opponent declined.",
-      notifyFinishWin: "You won in Colosseum!",
-      notifyFinishLose: "You lost in Colosseum.",
-      notifyFinishDraw: "Draw in Colosseum.",
-      errBattleNotFound: "Battle is no longer available."
+      title: this._tr(lang, "colosseum.title"),
+      locked: this._tr(lang, "colosseum.locked"),
+      statusIdle: this._tr(lang, "colosseum.status_idle"),
+      statusQueue: this._tr(lang, "colosseum.status_queue"),
+      statusBattle: this._tr(lang, "colosseum.status_battle"),
+      weeklyWins: this._tr(lang, "colosseum.weekly_wins"),
+      battlesLeft: this._tr(lang, "colosseum.battles_left"),
+      topTitle: this._tr(lang, "colosseum.top_title"),
+      topEmpty: this._tr(lang, "colosseum.top_empty"),
+      topLine: this._tr(lang, "colosseum.top_line"),
+      meTop: this._tr(lang, "colosseum.me_top"),
+      meOut: this._tr(lang, "colosseum.me_out"),
+      btnFind: this._tr(lang, "colosseum.btn_find"),
+      btnLeaveQueue: this._tr(lang, "colosseum.btn_leave_queue"),
+      btnOpenBattle: this._tr(lang, "colosseum.btn_open_battle"),
+      btnStatus: this._tr(lang, "colosseum.btn_status"),
+      btnHelp: this._tr(lang, "colosseum.btn_help"),
+      btnBack: this._tr(lang, "colosseum.btn_back_city"),
+      toastQueued: this._tr(lang, "colosseum.toast_queued"),
+      toastMatched: this._tr(lang, "colosseum.toast_matched"),
+      toastQueueLeft: this._tr(lang, "colosseum.toast_queue_left"),
+      toastNeedEnergy: this._tr(lang, "colosseum.toast_need_energy"),
+      toastDailyLimit: this._tr(lang, "colosseum.toast_daily_limit"),
+      toastAlreadyBattle: this._tr(lang, "colosseum.toast_already_battle"),
+      toastNoBattle: this._tr(lang, "colosseum.toast_no_battle"),
+      pendingTitle: this._tr(lang, "colosseum.pending_title"),
+      pendingLine: this._tr(lang, "colosseum.pending_line"),
+      pendingAcceptIn: this._tr(lang, "colosseum.pending_accept_in"),
+      pendingAccepted: this._tr(lang, "colosseum.pending_accepted"),
+      pendingWait: this._tr(lang, "colosseum.pending_wait"),
+      btnAccept: this._tr(lang, "colosseum.btn_accept"),
+      btnDecline: this._tr(lang, "colosseum.btn_decline"),
+      activeTitle: this._tr(lang, "colosseum.active_title"),
+      activeVs: this._tr(lang, "colosseum.active_vs"),
+      activeScore: this._tr(lang, "colosseum.active_score"),
+      activeDeadline: this._tr(lang, "colosseum.active_deadline"),
+      activePickAttack: this._tr(lang, "colosseum.active_pick_attack"),
+      activePickDefense: this._tr(lang, "colosseum.active_pick_defense"),
+      activeDone: this._tr(lang, "colosseum.active_done"),
+      btnAtkHead: this._tr(lang, "colosseum.btn_atk_head"),
+      btnAtkBody: this._tr(lang, "colosseum.btn_atk_body"),
+      btnAtkLegs: this._tr(lang, "colosseum.btn_atk_legs"),
+      btnDefHead: this._tr(lang, "colosseum.btn_def_head"),
+      btnDefBody: this._tr(lang, "colosseum.btn_def_body"),
+      btnDefLegs: this._tr(lang, "colosseum.btn_def_legs"),
+      btnRefresh: this._tr(lang, "colosseum.btn_refresh"),
+      btnSurrender: this._tr(lang, "colosseum.btn_surrender"),
+      toastAccepted: this._tr(lang, "colosseum.toast_accepted"),
+      toastDeclined: this._tr(lang, "colosseum.toast_declined"),
+      toastCannotAct: this._tr(lang, "colosseum.toast_cannot_act"),
+      toastPickAttackFirst: this._tr(lang, "colosseum.toast_pick_attack_first"),
+      toastInvalidDefense: this._tr(lang, "colosseum.toast_invalid_defense"),
+      finishedWin: this._tr(lang, "colosseum.finished_win"),
+      finishedLose: this._tr(lang, "colosseum.finished_lose"),
+      finishedDraw: this._tr(lang, "colosseum.finished_draw"),
+      finishedScore: this._tr(lang, "colosseum.finished_score"),
+      finishedRound: this._tr(lang, "colosseum.finished_round"),
+      finishReasonTimeout: this._tr(lang, "colosseum.finish_reason_timeout"),
+      finishReasonSurrender: this._tr(lang, "colosseum.finish_reason_surrender"),
+      btnBackColosseum: this._tr(lang, "colosseum.btn_back_colosseum"),
+      helpTitle: this._tr(lang, "colosseum.help_title"),
+      helpLine1: this._tr(lang, "colosseum.help_line1"),
+      helpLine2: this._tr(lang, "colosseum.help_line2"),
+      helpLine3: this._tr(lang, "colosseum.help_line3"),
+      helpLine4: this._tr(lang, "colosseum.help_line4"),
+      helpLine5: this._tr(lang, "colosseum.help_line5"),
+      helpLine6: this._tr(lang, "colosseum.help_line6"),
+      helpLine7: this._tr(lang, "colosseum.help_line7"),
+      helpLine8: this._tr(lang, "colosseum.help_line8"),
+      notifyFound: this._tr(lang, "colosseum.notify_found"),
+      notifyFoundBtn: this._tr(lang, "colosseum.notify_found_btn"),
+      notifyStart: this._tr(lang, "colosseum.notify_start"),
+      notifyRound: this._tr(lang, "colosseum.notify_round"),
+      notifyTimeoutAccepted: this._tr(lang, "colosseum.notify_timeout_accepted"),
+      notifyTimeoutDeclined: this._tr(lang, "colosseum.notify_timeout_declined"),
+      notifyFinishWin: this._tr(lang, "colosseum.notify_finish_win"),
+      notifyFinishLose: this._tr(lang, "colosseum.notify_finish_lose"),
+      notifyFinishDraw: this._tr(lang, "colosseum.notify_finish_draw"),
+      errBattleNotFound: this._tr(lang, "colosseum.err_battle_not_found"),
+      zoneHead: this._tr(lang, "colosseum.zone_head"),
+      zoneBody: this._tr(lang, "colosseum.zone_body"),
+      zoneLegs: this._tr(lang, "colosseum.zone_legs")
     };
   }
 
@@ -186,13 +199,18 @@ export class ColosseumService {
   _ratingTtlSec() { return Math.max(24 * 3600, toInt(this._cfg().RATING_TTL_SEC, 21 * 24 * 3600)); }
   _nowDayKey() { return dayKeyUtc(this.now()); }
   _nowWeekKey() { return isoWeekKey(this.now()); }
+  _asset() {
+    const fileId = String(ASSETS?.Colosseum || "").trim();
+    return fileId || undefined;
+  }
   _isAccessUnlocked(u) { return Math.max(0, toInt(u?.energy_max, 0)) >= this._minEnergyMax(); }
   _secondsLeft(deadlineTs) { return Math.max(0, toInt((Number(deadlineTs) - this.now()) / 1000, 0)); }
 
-  _zoneLabel(zone) {
-    if (zone === "head") return "head";
-    if (zone === "body") return "body";
-    if (zone === "legs") return "legs";
+  _zoneLabel(zone, lang = "en") {
+    const s = this._s(lang);
+    if (zone === "head") return s.zoneHead;
+    if (zone === "body") return s.zoneBody;
+    if (zone === "legs") return s.zoneLegs;
     return "-";
   }
 
@@ -536,7 +554,7 @@ export class ColosseumService {
   }
 
   _mainKeyboard(user, hasActiveBattle) {
-    const s = this._s();
+    const s = this._s(this._lang(user));
     const kb = [];
     if (hasActiveBattle) {
       kb.push([{ text: s.btnOpenBattle, callback_data: "col:battle:open" }]);
@@ -551,8 +569,8 @@ export class ColosseumService {
     return kb;
   }
 
-  _buildTopLines(top, myUserId) {
-    const s = this._s();
+  _buildTopLines(top, myUserId, lang = "en") {
+    const s = this._s(lang);
     const lines = [s.topTitle];
     if (!Array.isArray(top) || !top.length) {
       lines.push(s.topEmpty);
@@ -614,9 +632,11 @@ export class ColosseumService {
       const chatId = String(u?.chatId || "").trim();
       if (!chatId) continue;
       if (acceptedIds.includes(String(u.id || ""))) {
-        await this._sendInline(chatId, this._s().notifyTimeoutAccepted, [[{ text: this._s().notifyFoundBtn, callback_data: "go:Colosseum" }]]);
+        const su = this._s(this._lang(u));
+        await this._sendInline(chatId, su.notifyTimeoutAccepted, [[{ text: su.notifyFoundBtn, callback_data: "go:Colosseum" }]]);
       } else {
-        await this._sendInline(chatId, this._s().notifyTimeoutDeclined, [[{ text: this._s().notifyFoundBtn, callback_data: "go:Colosseum" }]]);
+        const su = this._s(this._lang(u));
+        await this._sendInline(chatId, su.notifyTimeoutDeclined, [[{ text: su.notifyFoundBtn, callback_data: "go:Colosseum" }]]);
       }
     }
     return true;
@@ -695,11 +715,14 @@ export class ColosseumService {
       const chatId = String(u?.chatId || "").trim();
       if (!chatId) continue;
       if (draw) {
-        await this._sendInline(chatId, this._s().notifyFinishDraw, [[{ text: this._s().notifyFoundBtn, callback_data: "go:Colosseum" }]]);
+        const su = this._s(this._lang(u));
+        await this._sendInline(chatId, su.notifyFinishDraw, [[{ text: su.notifyFoundBtn, callback_data: "go:Colosseum" }]]);
       } else if (String(pid) === String(winnerId)) {
-        await this._sendInline(chatId, this._s().notifyFinishWin, [[{ text: this._s().notifyFoundBtn, callback_data: "go:Colosseum" }]]);
+        const su = this._s(this._lang(u));
+        await this._sendInline(chatId, su.notifyFinishWin, [[{ text: su.notifyFoundBtn, callback_data: "go:Colosseum" }]]);
       } else {
-        await this._sendInline(chatId, this._s().notifyFinishLose, [[{ text: this._s().notifyFoundBtn, callback_data: "go:Colosseum" }]]);
+        const su = this._s(this._lang(u));
+        await this._sendInline(chatId, su.notifyFinishLose, [[{ text: su.notifyFoundBtn, callback_data: "go:Colosseum" }]]);
       }
     }
     return true;
@@ -765,7 +788,7 @@ export class ColosseumService {
   }
 
   async buildMainView(user) {
-    const s = this._s();
+    const s = this._s(this._lang(user));
     if (!user || typeof user !== "object") {
       return { caption: s.errBattleNotFound, keyboard: [[{ text: s.btnBack, callback_data: "go:City" }]] };
     }
@@ -774,6 +797,7 @@ export class ColosseumService {
       await this._saveUserIfDirty(user, dirty);
       return {
         caption: `${s.title}\n\n${this._fmt(s.locked, { need: this._minEnergyMax(), have: Math.max(0, toInt(user?.energy_max, 0)) })}`,
+        asset: this._asset(),
         keyboard: [[{ text: s.btnBack, callback_data: "go:City" }]]
       };
     }
@@ -786,7 +810,7 @@ export class ColosseumService {
       return this.buildBattleView(user);
     }
     const top = await this._loadWeeklyRating(this._nowWeekKey());
-    const topBlock = this._buildTopLines(top, user.id);
+    const topBlock = this._buildTopLines(top, user.id, this._lang(user));
     const lines = [
       s.title,
       "",
@@ -805,12 +829,13 @@ export class ColosseumService {
     await this._saveUserIfDirty(user, dirty);
     return {
       caption: lines.join("\n"),
+      asset: this._asset(),
       keyboard: this._mainKeyboard(user, false)
     };
   }
 
-  async buildHelpView() {
-    const s = this._s();
+  async buildHelpView(user = null) {
+    const s = this._s(this._lang(user));
     const lines = [
       s.helpTitle,
       "",
@@ -825,15 +850,16 @@ export class ColosseumService {
     ];
     return {
       caption: lines.join("\n"),
+      asset: this._asset(),
       keyboard: [[{ text: s.btnBackColosseum, callback_data: "go:Colosseum" }]]
     };
   }
 
   async buildStatusView(user) {
-    const s = this._s();
+    const s = this._s(this._lang(user));
     let dirty = this._ensureUserState(user);
     const top = await this._loadWeeklyRating(this._nowWeekKey());
-    const topBlock = this._buildTopLines(top, user?.id);
+    const topBlock = this._buildTopLines(top, user?.id, this._lang(user));
     const lines = [
       s.title,
       "",
@@ -851,12 +877,13 @@ export class ColosseumService {
     await this._saveUserIfDirty(user, dirty);
     return {
       caption: lines.join("\n"),
+      asset: this._asset(),
       keyboard: [[{ text: s.btnBackColosseum, callback_data: "go:Colosseum" }]]
     };
   }
 
   async _renderFinishedForUser(user, battle) {
-    const s = this._s();
+    const s = this._s(this._lang(user));
     const uid = String(user?.id || "");
     const other = this._otherPlayerId(battle, uid);
     const myScore = Math.max(0, toInt(battle?.score?.[uid], 0));
@@ -879,7 +906,7 @@ export class ColosseumService {
   }
 
   async buildBattleView(user) {
-    const s = this._s();
+    const s = this._s(this._lang(user));
     if (!user || typeof user !== "object") {
       return { caption: s.errBattleNotFound, keyboard: [[{ text: s.btnBackColosseum, callback_data: "go:Colosseum" }]] };
     }
@@ -948,7 +975,7 @@ export class ColosseumService {
       ]);
       keyboard.push([{ text: s.btnAtkLegs, callback_data: "col:pick:attack:legs" }]);
     } else if (!isZone(mySel.defense)) {
-      lines.push(this._fmt(s.activePickDefense, { attack: this._zoneLabel(mySel.attack) }));
+      lines.push(this._fmt(s.activePickDefense, { attack: this._zoneLabel(mySel.attack, this._lang(user)) }));
       const options = nextDefenseZones(mySel.attack);
       const row = [];
       for (const zone of options) {
@@ -967,7 +994,7 @@ export class ColosseumService {
   }
 
   async joinQueue(user) {
-    const s = this._s();
+    const s = this._s(this._lang(user));
     if (!user || typeof user !== "object") return { ok: false, error: s.errBattleNotFound };
     let dirty = this._ensureUserState(user);
     if (!this._isAccessUnlocked(user)) {
@@ -1050,7 +1077,7 @@ export class ColosseumService {
   }
 
   async leaveQueue(user) {
-    const s = this._s();
+    const s = this._s(this._lang(user));
     if (!user || typeof user !== "object") return { ok: false, error: s.errBattleNotFound };
     let dirty = this._ensureUserState(user);
     const queue = await this._loadQueue();
@@ -1066,7 +1093,7 @@ export class ColosseumService {
   }
 
   async accept(user) {
-    const s = this._s();
+    const s = this._s(this._lang(user));
     if (!user || typeof user !== "object") return { ok: false, error: s.errBattleNotFound };
     let dirty = this._ensureUserState(user);
     const bid = String(user?.colosseum?.activeBattleId || "");
@@ -1141,14 +1168,16 @@ export class ColosseumService {
     await this._saveUserIfDirty(enemyFresh, enemyDirty);
     await this._saveBattle(battle, this._battleTtlSec());
 
-    await this._sendInline(String(meFresh?.chatId || "").trim(), this._s().notifyStart, [[{ text: this._s().notifyFoundBtn, callback_data: "col:battle:open" }]]);
-    await this._sendInline(String(enemyFresh?.chatId || "").trim(), this._s().notifyStart, [[{ text: this._s().notifyFoundBtn, callback_data: "col:battle:open" }]]);
+    const sMe = this._s(this._lang(meFresh));
+    const sEnemy = this._s(this._lang(enemyFresh));
+    await this._sendInline(String(meFresh?.chatId || "").trim(), sMe.notifyStart, [[{ text: sMe.notifyFoundBtn, callback_data: "col:battle:open" }]]);
+    await this._sendInline(String(enemyFresh?.chatId || "").trim(), sEnemy.notifyStart, [[{ text: sEnemy.notifyFoundBtn, callback_data: "col:battle:open" }]]);
 
     return { ok: true, toast: s.toastAccepted, view: await this.buildBattleView(meFresh) };
   }
 
   async decline(user) {
-    const s = this._s();
+    const s = this._s(this._lang(user));
     if (!user || typeof user !== "object") return { ok: false, error: s.errBattleNotFound };
     let dirty = this._ensureUserState(user);
     const bid = String(user?.colosseum?.activeBattleId || "");
@@ -1208,7 +1237,7 @@ export class ColosseumService {
   }
 
   async pickAttack(user, attackZone) {
-    const s = this._s();
+    const s = this._s(this._lang(user));
     const zone = String(attackZone || "").trim();
     if (!isZone(zone)) return { ok: false, error: s.toastCannotAct };
     const bid = String(user?.colosseum?.activeBattleId || "");
@@ -1233,7 +1262,7 @@ export class ColosseumService {
   }
 
   async pickDefense(user, defenseZone) {
-    const s = this._s();
+    const s = this._s(this._lang(user));
     const zone = String(defenseZone || "").trim();
     if (!isZone(zone)) return { ok: false, error: s.toastCannotAct };
     const bid = String(user?.colosseum?.activeBattleId || "");
@@ -1277,7 +1306,8 @@ export class ColosseumService {
       battle.selections[pid] = { attack: "", defense: "", submittedAt: 0 };
       const player = await this._loadUser(pid);
       if (player) {
-        await this._sendInline(String(player?.chatId || "").trim(), this._fmt(s.notifyRound, { round: battle.currentRound }), [[{ text: s.notifyFoundBtn, callback_data: "col:battle:open" }]]);
+          const sPlayer = this._s(this._lang(player));
+          await this._sendInline(String(player?.chatId || "").trim(), this._fmt(sPlayer.notifyRound, { round: battle.currentRound }), [[{ text: sPlayer.notifyFoundBtn, callback_data: "col:battle:open" }]]);
       }
     }
     await this._saveBattle(battle, this._battleTtlSec());
@@ -1285,7 +1315,7 @@ export class ColosseumService {
   }
 
   async surrender(user) {
-    const s = this._s();
+    const s = this._s(this._lang(user));
     const bid = String(user?.colosseum?.activeBattleId || "");
     if (!bid) return { ok: false, error: s.toastNoBattle, view: await this.buildMainView(user) };
     const battle = await this._loadBattle(bid);

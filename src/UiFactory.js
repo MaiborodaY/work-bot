@@ -74,7 +74,7 @@ export class UiFactory {
       [{ text: this._t(l, "ui.city.board"), callback_data: this._go(Routes.CITY_BOARD) }],
       [{ text: this._t(l, "ui.city.ratings"), callback_data: this._go(Routes.RATINGS) }],
       [{ text: this._t(l, "ui.city.clans"), callback_data: this._go(Routes.CLAN) }],
-      [{ text: "⚔️ Colosseum", callback_data: this._go(Routes.COLOSSEUM) }],
+      [{ text: this._t(l, "ui.city.colosseum"), callback_data: this._go(Routes.COLOSSEUM) }],
       [{ text: this._t(l, "ui.city.thief"), callback_data: this._go(Routes.THIEF) }],
       [{ text: this._t(l, "ui.city.referral"), callback_data: this._go(Routes.REFERRAL) }],
       [{ text: this._t(l, "ui.back.city"), callback_data: this._go(Routes.SQUARE) }],
