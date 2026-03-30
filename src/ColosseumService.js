@@ -134,6 +134,11 @@ export class ColosseumService {
       activeVs: this._tr(lang, "colosseum.active_vs"),
       activeScore: this._tr(lang, "colosseum.active_score"),
       activeDeadline: this._tr(lang, "colosseum.active_deadline"),
+      activeHistoryTitle: this._tr(lang, "colosseum.active_history_title"),
+      activeHistoryLine: this._tr(lang, "colosseum.active_history_line"),
+      activeHistoryRoundWin: this._tr(lang, "colosseum.active_history_round_win"),
+      activeHistoryRoundDraw: this._tr(lang, "colosseum.active_history_round_draw"),
+      activeHistoryRoundLose: this._tr(lang, "colosseum.active_history_round_lose"),
       activePickAttack: this._tr(lang, "colosseum.active_pick_attack"),
       activePickDefense: this._tr(lang, "colosseum.active_pick_defense"),
       activeDone: this._tr(lang, "colosseum.active_done"),
@@ -726,6 +731,38 @@ export class ColosseumService {
     return { changed: true, wins: synced };
   }
 
+  _roundSummaryText(myDmg, enemyDmg, s) {
+    const me = Math.max(0, toInt(myDmg, 0));
+    const enemy = Math.max(0, toInt(enemyDmg, 0));
+    if (me > enemy) return s.activeHistoryRoundWin;
+    if (enemy > me) return s.activeHistoryRoundLose;
+    return s.activeHistoryRoundDraw;
+  }
+
+  _buildActiveRoundHistoryLines(battle, myId, enemyId, lang = "en") {
+    const rounds = Array.isArray(battle?.rounds) ? battle.rounds : [];
+    if (!rounds.length) return [];
+    const s = this._s(lang);
+    const lines = [s.activeHistoryTitle];
+    for (const row of rounds) {
+      const me = row?.[myId] || {};
+      const enemy = row?.[enemyId] || {};
+      const myDmg = Math.max(0, toInt(me?.dealt, 0));
+      const enemyDmg = Math.max(0, toInt(enemy?.dealt, 0));
+      lines.push(this._fmt(s.activeHistoryLine, {
+        round: Math.max(1, toInt(row?.round, 1)),
+        myAttack: this._zoneLabel(String(me?.attack || ""), lang),
+        myDef: this._zoneLabel(String(me?.defense || ""), lang),
+        enemyAttack: this._zoneLabel(String(enemy?.attack || ""), lang),
+        enemyDef: this._zoneLabel(String(enemy?.defense || ""), lang),
+        myDmg,
+        enemyDmg
+      }));
+      lines.push(this._roundSummaryText(myDmg, enemyDmg, s));
+    }
+    return lines;
+  }
+
   async _resolvePendingTimeout(battle) {
     if (!battle || battle.status !== "pending_accept") return false;
     const nowTs = this.now();
@@ -1121,6 +1158,11 @@ export class ColosseumService {
       this._fmt(s.activeDeadline, { secs: left }),
       ""
     ];
+    const historyLines = this._buildActiveRoundHistoryLines(battle, uid, enemyId, this._lang(user));
+    if (historyLines.length) {
+      lines.push(...historyLines);
+      lines.push("");
+    }
     const keyboard = [];
     if (!isZone(mySel.attack)) {
       lines.push(s.activePickAttack);
