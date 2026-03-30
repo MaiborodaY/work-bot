@@ -1,6 +1,9 @@
 // Assets.js
 export const ASSETS = {
     Square:   "AgACAgIAAxkBAAJ1ZWm0jZA1LtpDxWffJ1Bqg1Kc71P1AAKwGGsbbd2gSYziRFdNgw-7AQADAgADeQADOgQ",
+    // Optional GIF/animation for main square (Telegram animation file_id).
+    // If set, only Square will be rendered as animation instead of photo.
+    SquareAnimation: "",
     Upgrades: "AgACAgIAAxkBAAIIDGjwMdJjJ2Og78oSdb9MsCFaxXCkAAL6AAEyGx5mgUv6kKUmZlhInwEAAwIAA3gAAzYE",
     Work:     "AgACAgIAAxkBAAIbgmj21GcZZcgUS43IzsiIY7lUZlw5AAJO_TEb8mK4S_3djUxBAAFoQgEAAwIAA3kAAzYE",
     Study:    "AgACAgIAAxkBAAIIMmjwPPTRdlMbg94FLrINNY80phWeAAIEATIbHmaBSzcpvAMR60LjAQADAgADeAADNgQ",

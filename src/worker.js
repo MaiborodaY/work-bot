@@ -245,6 +245,7 @@ export default {
 
     // медиахелперы
     const sendPhoto = bot.sendPhoto?.bind(bot);
+    const sendAnimation = bot.sendAnimation?.bind(bot);
     const editPhotoMedia = bot.editMessageMedia?.bind(bot);
     const editPhotoCaption = bot.editMessageCaption?.bind(bot);
     const deleteMsg = bot.deleteMessage?.bind(bot);
@@ -263,18 +264,51 @@ export default {
        */
       show: async (p) => {
         const { sourceMsg, place, caption, keyboard, policy } = p;
-        const fileCandidates = [];
         const preferredAsset = (p && p.asset) ? String(p.asset) : "";
         const placeAsset = String(CONFIG.ASSETS?.[place] || "");
-        if (preferredAsset) fileCandidates.push(preferredAsset);
-        if (placeAsset && placeAsset !== preferredAsset) fileCandidates.push(placeAsset);
+        const squareAnimationAsset = place === "Square"
+          ? String(CONFIG.ASSETS?.SquareAnimation || CONFIG.ASSETS?.SQUARE_ANIMATION || "")
+          : "";
+        const useAnimation = Boolean(squareAnimationAsset);
+        const fileCandidates = useAnimation
+          ? [squareAnimationAsset]
+          : [preferredAsset, placeAsset].filter(Boolean);
         const fileId = fileCandidates[0] || "";
-        const canUsePhoto = !!(sendPhoto && fileCandidates.length);
+        const canUsePhoto = !!(!useAnimation && sendPhoto && fileCandidates.length);
+        const canUseAnimation = !!(useAnimation && sendAnimation && fileCandidates.length);
         const safePhotoCaption = (fullCaption) => {
           const text = String(fullCaption || "");
           if (!text) return " ";
           const firstLine = String(text.split("\n")[0] || "").trim() || " ";
           return firstLine.slice(0, 1024);
+        };
+        const sendAnimationOrFallback = async () => {
+          if (!canUseAnimation) {
+            await sendWithInline(caption, keyboard);
+            return;
+          }
+          const tooLongCaption = String(caption || "").length > 1024;
+          if (tooLongCaption) {
+            for (const candidate of fileCandidates) {
+              try {
+                await sendAnimation(chatId, candidate, safePhotoCaption(caption), undefined);
+                break;
+              } catch {}
+            }
+            await sendWithInline(caption, keyboard);
+            return;
+          }
+          try {
+            for (const candidate of fileCandidates) {
+              try {
+                await sendAnimation(chatId, candidate, caption, keyboard);
+                return;
+              } catch {}
+            }
+            await sendWithInline(caption, keyboard);
+          } catch {
+            await sendWithInline(caption, keyboard);
+          }
         };
         const sendPhotoOrFallback = async () => {
           if (!canUsePhoto) {
@@ -308,12 +342,21 @@ export default {
         const wantPhoto =
           policy === "photo" ||
           (policy === "auto" &&
-            canUsePhoto &&
+            (canUsePhoto || canUseAnimation) &&
             (editPhotoMedia || deleteMsg));
         const isPhotoMsg =
           !!(sourceMsg && sourceMsg.photo && sourceMsg.photo.length);
 
         if (wantPhoto) {
+          if (canUseAnimation) {
+            if (sourceMsg && deleteMsg) {
+              try {
+                await deleteMsg(sourceMsg.chat.id, sourceMsg.message_id).catch(() => {});
+              } catch {}
+            }
+            await sendAnimationOrFallback();
+            return;
+          }
           if (sourceMsg) {
             try {
               if (isPhotoMsg && editPhotoMedia) {

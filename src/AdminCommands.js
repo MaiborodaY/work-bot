@@ -84,12 +84,15 @@ export class AdminCommands {
 
     // Manual file_id helper (instead of auto-trigger on every photo)
     if (/^\/fileid(?:@\w+)?\s*$/i.test(input)) {
-      const fileId = this._extractPhotoFileId(msg);
-      if (!fileId) {
-        await this.send("Send a photo with caption /fileid.");
+      const media = this._extractAnyFileId(msg);
+      if (!media?.fileId) {
+        await this.send("Send a photo or GIF(animation) with caption /fileid.");
         return true;
       }
-      await this.send(`file_id:\n<code>${this._escapeHtml(fileId)}</code>`);
+      await this.send(
+        `type: <code>${this._escapeHtml(media.type)}</code>\n` +
+        `file_id:\n<code>${this._escapeHtml(media.fileId)}</code>`
+      );
       return true;
     }
 
@@ -1859,6 +1862,18 @@ export class AdminCommands {
     if (!msg?.photo || !Array.isArray(msg.photo) || !msg.photo.length) return "";
     const p = msg.photo[msg.photo.length - 1];
     return String(p?.file_id || "");
+  }
+
+  _extractAnyFileId(msg) {
+    const photo = this._extractPhotoFileId(msg);
+    if (photo) return { type: "photo", fileId: photo };
+    const animation = String(msg?.animation?.file_id || "").trim();
+    if (animation) return { type: "animation", fileId: animation };
+    const video = String(msg?.video?.file_id || "").trim();
+    if (video) return { type: "video", fileId: video };
+    const document = String(msg?.document?.file_id || "").trim();
+    if (document) return { type: "document", fileId: document };
+    return { type: "", fileId: "" };
   }
 
   _sanitizeOutgoingText(s) {

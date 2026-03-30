@@ -66,6 +66,17 @@ export class TelegramClient {
     await this._call("sendPhoto", body);
   }
 
+  async sendAnimation(chatId, file_id, caption, inline_keyboard = null) {
+    const body = {
+      chat_id: chatId,
+      animation: file_id,
+      caption,
+      parse_mode: "HTML",
+      reply_markup: inline_keyboard ? { inline_keyboard } : undefined,
+    };
+    await this._call("sendAnimation", body);
+  }
+
   async editMessageCaption(chatId, messageId, caption, inline_keyboard = null) {
     const body = {
       chat_id: chatId,
