@@ -21,7 +21,8 @@ function ensureColosseumShape(u) {
       weekKey: "",
       weekWins: 0,
       activeBattleId: "",
-      inQueue: false
+      inQueue: false,
+      battleMessageId: 0
     };
     return true;
   }
@@ -53,6 +54,11 @@ function ensureColosseumShape(u) {
   }
   if (typeof c.inQueue !== "boolean") {
     c.inQueue = false;
+    changed = true;
+  }
+  const battleMessageId = Math.max(0, toInt(c.battleMessageId, 0));
+  if (battleMessageId !== c.battleMessageId) {
+    c.battleMessageId = battleMessageId;
     changed = true;
   }
   return changed;
@@ -114,5 +120,5 @@ export function clearBattleStateOnFinish(u) {
   ensureColosseumShape(u);
   u.colosseum.activeBattleId = "";
   u.colosseum.inQueue = false;
+  u.colosseum.battleMessageId = 0;
 }
-

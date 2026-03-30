@@ -42,7 +42,8 @@ export class TelegramClient {
       reply_markup: this.defaultReplyMarkup || undefined,
       ...extra,
     };
-    await this._call("sendMessage", body);
+    const payload = await this._call("sendMessage", body);
+    return payload?.result || null;
   }
 
   async sendWithInline(chatId, text, inline_keyboard) {
@@ -52,7 +53,8 @@ export class TelegramClient {
       parse_mode: "HTML",
       reply_markup: { inline_keyboard },
     };
-    await this._call("sendMessage", body);
+    const payload = await this._call("sendMessage", body);
+    return payload?.result || null;
   }
 
   async sendPhoto(chatId, file_id, caption, inline_keyboard = null) {
@@ -63,7 +65,8 @@ export class TelegramClient {
       parse_mode: "HTML",
       reply_markup: inline_keyboard ? { inline_keyboard } : undefined,
     };
-    await this._call("sendPhoto", body);
+    const payload = await this._call("sendPhoto", body);
+    return payload?.result || null;
   }
 
   async sendAnimation(chatId, file_id, caption, inline_keyboard = null) {
@@ -74,7 +77,8 @@ export class TelegramClient {
       parse_mode: "HTML",
       reply_markup: inline_keyboard ? { inline_keyboard } : undefined,
     };
-    await this._call("sendAnimation", body);
+    const payload = await this._call("sendAnimation", body);
+    return payload?.result || null;
   }
 
   async editMessageCaption(chatId, messageId, caption, inline_keyboard = null) {
@@ -85,7 +89,8 @@ export class TelegramClient {
       parse_mode: "HTML",
       reply_markup: inline_keyboard ? { inline_keyboard } : undefined,
     };
-    await this._call("editMessageCaption", body);
+    const payload = await this._call("editMessageCaption", body);
+    return payload?.result || null;
   }
 
   async editMessageMedia(chatId, messageId, file_id, caption = null, inline_keyboard = null) {
@@ -100,7 +105,8 @@ export class TelegramClient {
       },
       reply_markup: inline_keyboard ? { inline_keyboard } : undefined,
     };
-    await this._call("editMessageMedia", body);
+    const payload = await this._call("editMessageMedia", body);
+    return payload?.result || null;
   }
 
   async deleteMessage(chatId, messageId) {
@@ -141,7 +147,8 @@ export class TelegramClient {
       parse_mode: "HTML",
       reply_markup: inline_keyboard ? { inline_keyboard } : undefined,
     };
-    await this._call("editMessageText", body);
+    const payload = await this._call("editMessageText", body);
+    return payload?.result || null;
   }
 
   async sendDice(chatId, emoji = "🎰") {

@@ -241,7 +241,8 @@ export class ColosseumService {
         weekKey: "",
         weekWins: 0,
         activeBattleId: "",
-        inQueue: false
+        inQueue: false,
+        battleMessageId: 0
       };
       dirty = true;
     }
@@ -260,6 +261,8 @@ export class ColosseumService {
     if (applyWeeklyKeyReset(u, this._nowWeekKey())) dirty = true;
     if (typeof u.colosseum.activeBattleId !== "string") { u.colosseum.activeBattleId = ""; dirty = true; }
     if (typeof u.colosseum.inQueue !== "boolean") { u.colosseum.inQueue = false; dirty = true; }
+    const battleMessageId = Math.max(0, toInt(u.colosseum.battleMessageId, 0));
+    if (battleMessageId !== u.colosseum.battleMessageId) { u.colosseum.battleMessageId = battleMessageId; dirty = true; }
     return dirty;
   }
 
@@ -282,22 +285,89 @@ export class ColosseumService {
     } catch {}
   }
 
-  async _sendBattleSnapshot(user) {
-    if (!this.bot || !user) return;
+  _messageId(value) {
+    return Math.max(0, toInt(value, 0));
+  }
+
+  _isNotModifiedError(err) {
+    const msg = String(err?.message || "").toLowerCase();
+    return msg.includes("message is not modified");
+  }
+
+  _extractMessageId(result) {
+    const id = Math.max(0, toInt(result?.message_id, 0));
+    return id;
+  }
+
+  async _sendBattleCardMessage(user, view) {
+    if (!this.bot || !user) return 0;
     const chatId = String(user?.chatId || "").trim();
-    if (!chatId) return;
-    const view = await this.buildBattleView(user).catch(() => null);
-    if (!view) return;
+    if (!chatId) return 0;
     const caption = String(view?.caption || "");
     const keyboard = Array.isArray(view?.keyboard) ? view.keyboard : [];
     const asset = String(view?.asset || "").trim();
-    if (asset && typeof this.bot.sendPhoto === "function") {
-      try {
-        await this.bot.sendPhoto(chatId, asset, caption, keyboard);
-        return;
-      } catch {}
+    try {
+      if (asset && typeof this.bot.sendPhoto === "function") {
+        const result = await this.bot.sendPhoto(chatId, asset, caption, keyboard);
+        return this._extractMessageId(result);
+      }
+      if (typeof this.bot.sendWithInline === "function") {
+        const result = await this.bot.sendWithInline(chatId, caption, keyboard);
+        return this._extractMessageId(result);
+      }
+      return 0;
+    } catch {
+      return 0;
     }
-    await this._sendInline(chatId, caption, keyboard);
+  }
+
+  async _tryEditBattleCardMessage(user, messageId, view) {
+    if (!this.bot || !user) return false;
+    const chatId = String(user?.chatId || "").trim();
+    const mid = this._messageId(messageId);
+    if (!chatId || !mid) return false;
+    const caption = String(view?.caption || "");
+    const keyboard = Array.isArray(view?.keyboard) ? view.keyboard : [];
+    const asset = String(view?.asset || "").trim();
+
+    try {
+      if (asset && typeof this.bot.editMessageMedia === "function") {
+        await this.bot.editMessageMedia(chatId, mid, asset, caption, keyboard);
+        return true;
+      }
+      if (asset && typeof this.bot.editMessageCaption === "function") {
+        await this.bot.editMessageCaption(chatId, mid, caption, keyboard);
+        return true;
+      }
+      if (!asset && typeof this.bot.editMessage === "function") {
+        await this.bot.editMessage(chatId, mid, caption, keyboard);
+        return true;
+      }
+      return false;
+    } catch (err) {
+      if (this._isNotModifiedError(err)) return true;
+      return false;
+    }
+  }
+
+  async _upsertBattleCard(user, forceSend = false) {
+    if (!user) return false;
+    this._ensureUserState(user);
+    const view = await this.buildBattleView(user).catch(() => null);
+    if (!view) return false;
+
+    const currentId = this._messageId(user?.colosseum?.battleMessageId);
+    if (!forceSend && currentId > 0) {
+      const edited = await this._tryEditBattleCardMessage(user, currentId, view);
+      if (edited) return true;
+    }
+
+    const newId = await this._sendBattleCardMessage(user, view);
+    if (newId > 0 && newId !== currentId) {
+      user.colosseum.battleMessageId = newId;
+      await this._saveUser(user);
+    }
+    return newId > 0;
   }
 
   _safeJson(raw, fallback) {
@@ -617,18 +687,6 @@ export class ColosseumService {
     return kb;
   }
 
-  _roundPushKeyboard(s) {
-    return [
-      [
-        { text: s.btnAtkHead, callback_data: "col:pick:attack:head" },
-        { text: s.btnAtkBody, callback_data: "col:pick:attack:body" }
-      ],
-      [
-        { text: s.btnAtkLegs, callback_data: "col:pick:attack:legs" }
-      ]
-    ];
-  }
-
   _buildTopLines(top, myUserId, lang = "en") {
     const s = this._s(lang);
     const lines = [s.topTitle];
@@ -770,6 +828,11 @@ export class ColosseumService {
       if (!u) continue;
       let dirty = false;
       dirty = this._ensureUserState(u) || dirty;
+      const previousBattleMessageId = this._messageId(u?.colosseum?.battleMessageId);
+      if (previousBattleMessageId > 0) {
+        const finalView = await this._renderFinishedForUser(u, battle);
+        await this._tryEditBattleCardMessage(u, previousBattleMessageId, finalView);
+      }
       clearBattleStateOnFinish(u);
       dirty = true;
       if (winnerId && String(u.id || "") === winnerId) {
@@ -1259,8 +1322,8 @@ export class ColosseumService {
     await this._saveUserIfDirty(enemyFresh, enemyDirty);
     await this._saveBattle(battle, this._battleTtlSec());
 
-    await this._sendBattleSnapshot(meFresh);
-    await this._sendBattleSnapshot(enemyFresh);
+    await this._upsertBattleCard(meFresh, true);
+    await this._upsertBattleCard(enemyFresh, true);
 
     return { ok: true, toast: s.toastAccepted, noRender: true };
   }
@@ -1347,7 +1410,8 @@ export class ColosseumService {
     battle.selections[uid].defense = "";
     battle.selections[uid].submittedAt = 0;
     await this._saveBattle(battle, this._battleTtlSec());
-    return { ok: true, view: await this.buildBattleView(user) };
+    await this._upsertBattleCard(user, false);
+    return { ok: true, noRender: true };
   }
 
   async pickDefense(user, defenseZone) {
@@ -1380,7 +1444,8 @@ export class ColosseumService {
 
     if (!this._bothSubmitted(battle)) {
       await this._saveBattle(battle, this._battleTtlSec());
-      return { ok: true, view: await this.buildBattleView(user) };
+      await this._upsertBattleCard(user, false);
+      return { ok: true, noRender: true };
     }
 
     this._resolveRoundOnce(battle);
@@ -1391,15 +1456,15 @@ export class ColosseumService {
 
     battle.currentRound += 1;
     battle.roundDeadline = this.now() + this._roundWindowSec() * 1000;
-    const playersToNotify = [];
     for (const pid of battle.players) {
       battle.selections[pid] = { attack: "", defense: "", submittedAt: 0 };
-      const player = await this._loadUser(pid);
-      if (player) playersToNotify.push(player);
     }
     await this._saveBattle(battle, this._battleTtlSec());
-    for (const player of playersToNotify) {
-      await this._sendBattleSnapshot(player);
+    await this._upsertBattleCard(user, false);
+    const otherId = this._otherPlayerId(battle, uid);
+    if (otherId) {
+      const other = await this._loadUser(otherId);
+      if (other) await this._upsertBattleCard(other, false);
     }
     return { ok: true, noRender: true };
   }
