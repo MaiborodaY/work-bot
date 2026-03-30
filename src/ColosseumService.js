@@ -1241,18 +1241,12 @@ export class ColosseumService {
     await this._saveUserIfDirty(enemyFresh, enemyDirty);
     await this._saveBattle(battle, this._battleTtlSec());
 
-    const meId = String(meFresh?.id || "");
-    const enemyId = String(enemyFresh?.id || "");
-    const actorId = String(uid || "");
-    if (enemyId && actorId === meId) {
-      const sEnemy = this._s(this._lang(enemyFresh));
-      await this._sendInline(String(enemyFresh?.chatId || "").trim(), sEnemy.notifyStart, this._roundPushKeyboard(sEnemy));
-    } else if (meId) {
-      const sMe = this._s(this._lang(meFresh));
-      await this._sendInline(String(meFresh?.chatId || "").trim(), sMe.notifyStart, this._roundPushKeyboard(sMe));
-    }
+    const sMe = this._s(this._lang(meFresh));
+    const sEnemy = this._s(this._lang(enemyFresh));
+    await this._sendInline(String(meFresh?.chatId || "").trim(), sMe.notifyStart, this._roundPushKeyboard(sMe));
+    await this._sendInline(String(enemyFresh?.chatId || "").trim(), sEnemy.notifyStart, this._roundPushKeyboard(sEnemy));
 
-    return { ok: true, toast: s.toastAccepted, view: await this.buildBattleView(meFresh) };
+    return { ok: true, toast: s.toastAccepted, noRender: true };
   }
 
   async decline(user) {
@@ -1383,7 +1377,6 @@ export class ColosseumService {
     battle.roundDeadline = this.now() + this._roundWindowSec() * 1000;
     for (const pid of battle.players) {
       battle.selections[pid] = { attack: "", defense: "", submittedAt: 0 };
-      if (String(pid) === uid) continue;
       const player = await this._loadUser(pid);
       if (!player) continue;
       const sPlayer = this._s(this._lang(player));
@@ -1394,7 +1387,7 @@ export class ColosseumService {
       );
     }
     await this._saveBattle(battle, this._battleTtlSec());
-    return { ok: true, view: await this.buildBattleView(user) };
+    return { ok: true, noRender: true };
   }
 
   async surrender(user) {

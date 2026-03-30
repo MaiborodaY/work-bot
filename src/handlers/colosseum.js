@@ -83,6 +83,10 @@ export const colosseumHandler = {
       } else {
         await answer(cb.id, String(res?.toast || ""));
       }
+      if (res?.noRender) {
+        locations.setSourceMessage(null);
+        return;
+      }
       await show(res?.view || (await colosseum.buildBattleView(u)));
       return;
     }
@@ -128,6 +132,10 @@ export const colosseumHandler = {
         await answer(cb.id, String(res?.error || "Error"));
       } else {
         await answer(cb.id);
+      }
+      if (res?.noRender) {
+        locations.setSourceMessage(null);
+        return;
       }
       await show(res?.view || (await colosseum.buildBattleView(u)));
     }
