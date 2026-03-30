@@ -1138,14 +1138,13 @@ export class ColosseumService {
     await this._saveBattle(battle, this._battleTtlSec());
     await this._setOpenBattle(battle.id, true);
 
-    const myChat = String(user?.chatId || "").trim();
     const oppChat = String(opponent?.chatId || "").trim();
-    const keyboard = [[
-      { text: s.btnAccept, callback_data: "col:accept" },
-      { text: s.btnDecline, callback_data: "col:decline" }
+    const sOpp = this._s(this._lang(opponent));
+    const oppKeyboard = [[
+      { text: sOpp.btnAccept, callback_data: "col:accept" },
+      { text: sOpp.btnDecline, callback_data: "col:decline" }
     ]];
-    await this._sendInline(myChat, this._fmt(s.notifyFound, { name: shortName(opponent.id, opponent.displayName) }), keyboard);
-    await this._sendInline(oppChat, this._fmt(s.notifyFound, { name: shortName(user.id, user.displayName) }), keyboard);
+    await this._sendInline(oppChat, this._fmt(sOpp.notifyFound, { name: shortName(user.id, user.displayName) }), oppKeyboard);
 
     return { ok: true, matched: true, toast: s.toastMatched, view: await this.buildBattleView(user) };
   }
