@@ -859,6 +859,8 @@ export const RU = {
   "colosseum.active_vs": "{{left}} против {{right}}",
   "colosseum.active_score": "Счёт: {{my}} - {{enemy}}",
   "colosseum.active_deadline": "До окончания текущего раунда осталось: {{secs}} сек",
+  "colosseum.active_history_title": "История раундов:",
+  "colosseum.active_history_line": "Р{{round}}: ты {{myAttack}}/{{myDef}} · соперник {{enemyAttack}}/{{enemyDef}} · урон {{myDmg}}-{{enemyDmg}}",
   "colosseum.active_pick_attack": "Выбери атаку:",
   "colosseum.active_pick_defense": "Атака: {{attack}}. Теперь выбери защиту:",
   "colosseum.active_done": "Ход отправлен. Ждём соперника.",

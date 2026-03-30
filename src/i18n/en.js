@@ -756,6 +756,8 @@ export const EN = {
   "colosseum.active_vs": "{{left}} vs {{right}}",
   "colosseum.active_score": "Score: {{my}} - {{enemy}}",
   "colosseum.active_deadline": "Time left in current round: {{secs}} sec",
+  "colosseum.active_history_title": "Round history:",
+  "colosseum.active_history_line": "R{{round}}: you {{myAttack}}/{{myDef}} · opponent {{enemyAttack}}/{{enemyDef}} · damage {{myDmg}}-{{enemyDmg}}",
   "colosseum.active_pick_attack": "Pick your attack:",
   "colosseum.active_pick_defense": "Attack: {{attack}}. Now pick defense:",
   "colosseum.active_done": "Turn submitted. Waiting for opponent.",

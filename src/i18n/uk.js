@@ -756,6 +756,8 @@ export const UK = {
   "colosseum.active_vs": "{{left}} проти {{right}}",
   "colosseum.active_score": "Рахунок: {{my}} - {{enemy}}",
   "colosseum.active_deadline": "До завершення поточного раунду залишилося: {{secs}} сек",
+  "colosseum.active_history_title": "Історія раундів:",
+  "colosseum.active_history_line": "Р{{round}}: ти {{myAttack}}/{{myDef}} · суперник {{enemyAttack}}/{{enemyDef}} · шкода {{myDmg}}-{{enemyDmg}}",
   "colosseum.active_pick_attack": "Обери атаку:",
   "colosseum.active_pick_defense": "Атака: {{attack}}. Тепер обери захист:",
   "colosseum.active_done": "Хід відправлено. Чекаємо суперника.",
