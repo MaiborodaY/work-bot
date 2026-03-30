@@ -13,6 +13,7 @@ import { normalizeLang, STRINGS } from "./i18n/index.js";
 import { markUsefulActivity } from "./PlayerStats.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const CLAN_KEY_PREFIX = "clan:item:";
 
 function toInt(value, fallback = 0) {
   const n = Number(value);
@@ -97,6 +98,7 @@ export class ColosseumService {
     return {
       title: this._tr(lang, "colosseum.title"),
       subtitle: this._tr(lang, "colosseum.subtitle"),
+      weeklyReward: this._tr(lang, "colosseum.weekly_reward_note"),
       locked: this._tr(lang, "colosseum.locked"),
       statusIdle: this._tr(lang, "colosseum.status_idle"),
       statusQueue: this._tr(lang, "colosseum.status_queue"),
@@ -190,6 +192,7 @@ export class ColosseumService {
   _openBattlesKey() { return "colosseum:open:v1"; }
   _battleKey(battleIdRaw) { return `colosseum:battle:${String(battleIdRaw || "").trim()}`; }
   _ratingKey(weekKey) { return `colosseum:rating:${String(weekKey || "").trim()}`; }
+  _clanKey(clanId) { return `${CLAN_KEY_PREFIX}${String(clanId || "").trim()}`; }
   _minEnergyMax() { return Math.max(1, toInt(this._cfg().MIN_ENERGY_MAX, 50)); }
   _dailyLimit() { return Math.max(1, toInt(this._cfg().DAILY_LIMIT, 10)); }
   _acceptWindowSec() { return Math.max(10, toInt(this._cfg().ACCEPT_WINDOW_SEC, 60)); }
@@ -461,6 +464,15 @@ export class ColosseumService {
     return Array.isArray(battle?.players) && battle.players.includes(uid);
   }
 
+  async _readClanNameForUser(user) {
+    const clanId = String(user?.clan?.clanId || "").trim();
+    if (!clanId || !this.db) return "";
+    const raw = await this.db.get(this._clanKey(clanId)).catch(() => null);
+    const clan = this._safeJson(raw, null);
+    const name = String(clan?.name || "").replace(/\s+/g, " ").trim();
+    return name;
+  }
+
   _newBattleForUsers(a, b) {
     const p1 = String(a?.id || "").trim();
     const p2 = String(b?.id || "").trim();
@@ -511,6 +523,7 @@ export class ColosseumService {
       out.push({
         userId,
         name: shortName(userId, row?.name),
+        clanName: String(row?.clanName || "").replace(/\s+/g, " ").trim(),
         wins: Math.max(0, toInt(row?.wins, 0)),
         reachedAt: Math.max(0, toInt(row?.reachedAt, 0))
       });
@@ -539,6 +552,7 @@ export class ColosseumService {
     const userId = String(user.id || "").trim();
     if (!userId) return;
     const wins = Math.max(0, toInt(user?.colosseum?.weekWins, 0));
+    const clanNameFresh = await this._readClanNameForUser(user);
     const idx = list.findIndex((x) => String(x.userId) === userId);
     if (wins <= 0) {
       if (idx >= 0) list.splice(idx, 1);
@@ -547,6 +561,7 @@ export class ColosseumService {
       list[idx] = {
         userId,
         name: shortName(user.id, user.displayName),
+        clanName: clanNameFresh || String(prev?.clanName || ""),
         wins,
         reachedAt: wins !== prev.wins ? this.now() : prev.reachedAt
       };
@@ -554,6 +569,7 @@ export class ColosseumService {
       list.push({
         userId,
         name: shortName(user.id, user.displayName),
+        clanName: clanNameFresh,
         wins,
         reachedAt: this.now()
       });
@@ -594,9 +610,11 @@ export class ColosseumService {
     for (let i = 0; i < top.length; i += 1) {
       const row = top[i];
       const place = medals[i] || `${i + 1}.`;
+      const clanName = String(row?.clanName || "").trim();
+      const shownName = clanName ? `${row.name} (${clanName})` : row.name;
       lines.push(this._fmt(s.topLine, {
         place,
-        name: row.name,
+        name: shownName,
         wins: row.wins
       }));
     }
@@ -842,6 +860,7 @@ export class ColosseumService {
     const lines = [
       s.title,
       s.subtitle,
+      s.weeklyReward,
       "",
       user?.colosseum?.inQueue ? s.statusQueue : s.statusIdle,
       this._fmt(s.weeklyWins, { wins: sync.wins }),
