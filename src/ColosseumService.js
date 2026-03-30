@@ -209,6 +209,14 @@ export class ColosseumService {
     const fileId = String(ASSETS?.ColosseumBattle || "").trim();
     return fileId || this._asset();
   }
+  _winAsset() {
+    const fileId = String(ASSETS?.ColosseumWin || "").trim();
+    return fileId || this._asset();
+  }
+  _loseAsset() {
+    const fileId = String(ASSETS?.ColosseumLose || "").trim();
+    return fileId || this._asset();
+  }
   _isAccessUnlocked(u) { return Math.max(0, toInt(u?.energy_max, 0)) >= this._minEnergyMax(); }
   _secondsLeft(deadlineTs) { return Math.max(0, toInt((Number(deadlineTs) - this.now()) / 1000, 0)); }
 
@@ -904,9 +912,12 @@ export class ColosseumService {
         keyboard: [[{ text: s.btnBackColosseum, callback_data: "go:Colosseum" }]]
       };
     }
-    if (battle?.result?.draw) {
+    const isWin = String(battle?.result?.winnerId || "") === uid;
+    const isDraw = !!battle?.result?.draw;
+    const resultAsset = isWin ? this._winAsset() : (isDraw ? this._asset() : this._loseAsset());
+    if (isDraw) {
       lines.push(s.finishedDraw);
-    } else if (String(battle?.result?.winnerId || "") === uid) {
+    } else if (isWin) {
       lines.push(s.finishedWin);
     } else {
       lines.push(s.finishedLose);
@@ -916,6 +927,7 @@ export class ColosseumService {
     if (reason === "surrender") lines.push(s.finishReasonSurrender);
     return {
       caption: lines.join("\n"),
+      asset: resultAsset,
       keyboard: [[{ text: s.btnBackColosseum, callback_data: "go:Colosseum" }]]
     };
   }
