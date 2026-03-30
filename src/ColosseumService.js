@@ -599,6 +599,18 @@ export class ColosseumService {
     return kb;
   }
 
+  _roundPushKeyboard(s) {
+    return [
+      [
+        { text: s.btnAtkHead, callback_data: "col:battle:atk:head" },
+        { text: s.btnAtkBody, callback_data: "col:battle:atk:body" }
+      ],
+      [
+        { text: s.btnAtkLegs, callback_data: "col:battle:atk:legs" }
+      ]
+    ];
+  }
+
   _buildTopLines(top, myUserId, lang = "en") {
     const s = this._s(lang);
     const lines = [s.topTitle];
@@ -1232,8 +1244,8 @@ export class ColosseumService {
 
     const sMe = this._s(this._lang(meFresh));
     const sEnemy = this._s(this._lang(enemyFresh));
-    await this._sendInline(String(meFresh?.chatId || "").trim(), sMe.notifyStart, [[{ text: sMe.notifyFoundBtn, callback_data: "col:battle:open" }]]);
-    await this._sendInline(String(enemyFresh?.chatId || "").trim(), sEnemy.notifyStart, [[{ text: sEnemy.notifyFoundBtn, callback_data: "col:battle:open" }]]);
+    await this._sendInline(String(meFresh?.chatId || "").trim(), sMe.notifyStart, this._roundPushKeyboard(sMe));
+    await this._sendInline(String(enemyFresh?.chatId || "").trim(), sEnemy.notifyStart, this._roundPushKeyboard(sEnemy));
 
     return { ok: true, toast: s.toastAccepted, view: await this.buildBattleView(meFresh) };
   }
@@ -1369,7 +1381,11 @@ export class ColosseumService {
       const player = await this._loadUser(pid);
       if (player) {
           const sPlayer = this._s(this._lang(player));
-          await this._sendInline(String(player?.chatId || "").trim(), this._fmt(sPlayer.notifyRound, { round: battle.currentRound }), [[{ text: sPlayer.notifyFoundBtn, callback_data: "col:battle:open" }]]);
+          await this._sendInline(
+            String(player?.chatId || "").trim(),
+            this._fmt(sPlayer.notifyRound, { round: battle.currentRound }),
+            this._roundPushKeyboard(sPlayer)
+          );
       }
     }
     await this._saveBattle(battle, this._battleTtlSec());
