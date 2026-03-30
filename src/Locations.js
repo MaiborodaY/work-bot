@@ -34,12 +34,13 @@ export class Locations {
    *  farm?:any,
    *  pet?:any,
    *  ratings?:any,
+   *  colosseum?:any,
    *  thief?:any,
    *  referrals?:any,
    *  quests?:any
    * }} deps
    */
-  constructor({ media, ui, economy, formatters, pct, now, maybeFinishStudy, daily, fastForward, users, social, clans, stocks, labour, farm, pet, ratings, thief, referrals, quests }) {
+  constructor({ media, ui, economy, formatters, pct, now, maybeFinishStudy, daily, fastForward, users, social, clans, stocks, labour, farm, pet, ratings, colosseum, thief, referrals, quests }) {
     this.media = media;
     this.ui = ui;
     this.economy = economy;
@@ -57,6 +58,7 @@ export class Locations {
     this.farm = farm || null;
     this.pet = pet || null;
     this.ratings = ratings || null;
+    this.colosseum = colosseum || null;
     this.thief = thief || null;
     this.referrals = referrals || null;
     this.quests = quests || null;
@@ -252,6 +254,23 @@ export class Locations {
           return null;
         },
         fallbackCaptionKey: "loc.rating.unavailable",
+        fallbackBackTextKey: "ui.back.default",
+        fallbackBackCb: toGoCallback(Routes.CITY)
+      }),
+
+      [Routes.COLOSSEUM]: async () => this._renderServiceRoute({
+        user,
+        header,
+        routeName: Routes.COLOSSEUM,
+        place: Routes.COLOSSEUM,
+        policy: "auto",
+        buildView: async () => {
+          if (this.colosseum && typeof this.colosseum.buildMainView === "function") {
+            return this.colosseum.buildMainView(user);
+          }
+          return null;
+        },
+        fallbackCaptionKey: "loc.city.caption",
         fallbackBackTextKey: "ui.back.default",
         fallbackBackCb: toGoCallback(Routes.CITY)
       }),

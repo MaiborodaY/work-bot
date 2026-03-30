@@ -6,6 +6,7 @@ export const Routes = Object.freeze({
   PROGRESS: "Progress",
   MINI_GAMES: "MiniGames",
   CITY: "City",
+  COLOSSEUM: "Colosseum",
   SHOP_HUB: "ShopHub",
   SHOP: "Shop",
   HOME: "Home",

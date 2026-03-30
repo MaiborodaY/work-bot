@@ -90,3 +90,22 @@ test("locations service route: Ratings uses rating service view", async () => {
   assert.equal(calls[0].caption, "Rating view");
   assert.deepEqual(calls[0].keyboard, [[{ text: "back", callback_data: "go:City" }]]);
 });
+
+test("locations service route: Colosseum uses colosseum service view", async () => {
+  const colosseum = {
+    async buildMainView() {
+      return {
+        caption: "Colosseum view",
+        keyboard: [[{ text: "find", callback_data: "col:queue:join" }]]
+      };
+    }
+  };
+  const { locations, calls } = makeLocations({ colosseum });
+  await locations.show(makeUser(), null, Routes.COLOSSEUM);
+
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].place, Routes.COLOSSEUM);
+  assert.equal(calls[0].policy, "auto");
+  assert.equal(calls[0].caption, "Colosseum view");
+  assert.deepEqual(calls[0].keyboard, [[{ text: "find", callback_data: "col:queue:join" }]]);
+});

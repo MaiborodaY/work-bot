@@ -557,6 +557,18 @@ export const CONFIG = {
     }
   },
 
+  COLOSSEUM: {
+    MIN_ENERGY_MAX: 50,
+    DAILY_LIMIT: 10,
+    ACCEPT_WINDOW_SEC: 60,
+    ROUND_WINDOW_SEC: 60,
+    ROUNDS: 3,
+    RATING_LIMIT: 10,
+    BATTLE_TTL_SEC: 24 * 60 * 60,
+    QUEUE_TTL_SEC: 10 * 24 * 60 * 60,
+    RATING_TTL_SEC: 21 * 24 * 60 * 60
+  },
+
   ASSETS: ASSETS,
 
   NOTIFY: {

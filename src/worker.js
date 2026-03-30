@@ -24,6 +24,7 @@ import { PetService } from "./PetService.js";
 import { FarmService } from "./FarmService.js";
 import { QuizService } from "./QuizService.js";
 import { GeneralQuizService } from "./GeneralQuizService.js";
+import { ColosseumService } from "./ColosseumService.js";
 import { ASSETS, JOB_ASSETS } from "./Assets.js";
 import { normalizeLang, t } from "./i18n/index.js";
 import { safeCall } from "./SafeCall.js";
@@ -52,6 +53,7 @@ import { petHandler } from "./handlers/pet.js";
 import { farmHandler } from "./handlers/farm.js";
 import { quizHandler } from "./handlers/quiz.js";
 import { generalQuizHandler } from "./handlers/generalQuiz.js";
+import { colosseumHandler } from "./handlers/colosseum.js";
 import { energyHandler } from "./handlers/energy.js";
 
 // платежи Stars
@@ -119,6 +121,7 @@ export default {
       });
       const pet = new PetService({ db: env.DB, users, now: () => Date.now(), bot, quests, achievements });
       const farm = new FarmService({ db: env.DB, users, now: () => Date.now(), bot, quests, achievements, social });
+      const colosseum = new ColosseumService({ db: env.DB, users, now: () => Date.now(), bot });
       const notifier = new NotificationService({
         users,
         bot,
@@ -145,6 +148,9 @@ export default {
       });
       await safeCall("worker.cron.farm.daily_tick", async () => {
         await farm.dailyTick();
+      });
+      await safeCall("worker.cron.colosseum.tick", async () => {
+        await colosseum.runTick();
       });
       await safeCall("worker.cron.social.ensure_period", async () => {
         await social.ensurePeriod();
@@ -214,6 +220,7 @@ export default {
     });
     const pet = new PetService({ db: env.DB, users, now, bot, quests, achievements });
     const farm = new FarmService({ db: env.DB, users, now, bot, quests, achievements, social });
+    const colosseum = new ColosseumService({ db: env.DB, users, now, bot });
     const referrals = new ReferralService({
       users,
       now,
@@ -391,6 +398,7 @@ export default {
       farm,
       pet,
       ratings,
+      colosseum,
       thief,
       referrals,
       quests
@@ -1264,6 +1272,7 @@ export default {
         farm,
         pet,
         ratings,
+        colosseum,
         thief,
         referrals,
         achievements,
@@ -1283,6 +1292,7 @@ export default {
         navigationHandler,
         energyHandler,
         clanHandler,
+        colosseumHandler,
         thiefHandler,
         ratingsHandler,
         premiumShopHandler,
@@ -1368,6 +1378,7 @@ export default {
     });
     const pet = new PetService({ db: env.DB, users, now: () => Date.now(), bot, quests, achievements });
     const farm = new FarmService({ db: env.DB, users, now: () => Date.now(), bot, quests, achievements, social });
+    const colosseum = new ColosseumService({ db: env.DB, users, now: () => Date.now(), bot });
 
     const notifier = new NotificationService({
       users,
@@ -1387,6 +1398,7 @@ export default {
       thief.resolveProtectionExpirations(),
       pet.dailyTick(),
       farm.dailyTick(),
+      colosseum.runTick(),
       channel.runScheduled()
     ]));
   }

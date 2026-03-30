@@ -521,6 +521,41 @@ export class UserStore {
     }
 
     // Рефералы
+    if (!u.colosseum || typeof u.colosseum !== "object") {
+      u.colosseum = {
+        dayKey: "",
+        battlesToday: 0,
+        weekKey: "",
+        weekWins: 0,
+        activeBattleId: "",
+        inQueue: false
+      };
+      dirty = true;
+    } else {
+      if (typeof u.colosseum.dayKey !== "string") { u.colosseum.dayKey = ""; dirty = true; }
+      if (typeof u.colosseum.weekKey !== "string") { u.colosseum.weekKey = ""; dirty = true; }
+      if (typeof u.colosseum.battlesToday !== "number" || !Number.isFinite(u.colosseum.battlesToday)) {
+        u.colosseum.battlesToday = 0;
+        dirty = true;
+      }
+      if (typeof u.colosseum.weekWins !== "number" || !Number.isFinite(u.colosseum.weekWins)) {
+        u.colosseum.weekWins = 0;
+        dirty = true;
+      }
+      if (typeof u.colosseum.activeBattleId !== "string") { u.colosseum.activeBattleId = ""; dirty = true; }
+      if (typeof u.colosseum.inQueue !== "boolean") { u.colosseum.inQueue = false; dirty = true; }
+      const battlesToday = Math.max(0, Math.floor(Number(u.colosseum.battlesToday) || 0));
+      if (battlesToday !== u.colosseum.battlesToday) {
+        u.colosseum.battlesToday = battlesToday;
+        dirty = true;
+      }
+      const weekWins = Math.max(0, Math.floor(Number(u.colosseum.weekWins) || 0));
+      if (weekWins !== u.colosseum.weekWins) {
+        u.colosseum.weekWins = weekWins;
+        dirty = true;
+      }
+    }
+
     if (!u.referral || typeof u.referral !== "object") {
       u.referral = {
         referredBy: "",
@@ -818,6 +853,7 @@ export class UserStore {
       clan: { clanId: "", joinedAt: 0, joinAvailableFromWeek: "", lastPresenceDay: "" },
       clanCosmetic: null,
       employment: { active: false, ownerId: "", bizId: "", ownerPct: 0, contractEnd: 0, slotIndex: -1 },
+      colosseum: { dayKey: "", battlesToday: 0, weekKey: "", weekWins: 0, activeBattleId: "", inQueue: false },
       referral: {
         referredBy: "",
         rewarded: false,
