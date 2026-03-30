@@ -823,7 +823,7 @@ export const RU = {
   "thief.notify.immunity_expired": "🔒 Иммунитет бизнеса {{bizTitle}} истёк — бизнес снова виден ворам.",
   "colosseum.title": "⚔️ Колизей",
   "colosseum.subtitle": "Пыль арены, звон стали: найди соперника и докажи, кто здесь чемпион.",
-  "colosseum.weekly_reward_note": "🏆 В конце недели победитель (1 место) получает: 💎30.",
+  "colosseum.weekly_reward_note": "🏆 Награды недели (топ-5): 1 место — 💎30, 2 — 💎25, 3 — 💎20, 4 — 💎15, 5 — 💎10.",
   "colosseum.locked": "Колизей открывается при {{need}} макс. энергии.\nСейчас: {{have}}.",
   "colosseum.status_idle": "Статус: готов к бою",
   "colosseum.status_queue": "Статус: в очереди на матч",

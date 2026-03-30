@@ -720,7 +720,7 @@ export const UK = {
   "handler.stocks.clan_required_toast": "Спочатку вступи до клану.",
   "colosseum.title": "⚔️ Колізей",
   "colosseum.subtitle": "Пил арени, дзвін сталі: знайди суперника і доведи, хто тут чемпіон.",
-  "colosseum.weekly_reward_note": "🏆 Наприкінці тижня переможець (1 місце) отримує: 💎30.",
+  "colosseum.weekly_reward_note": "🏆 Нагороди тижня (топ-5): 1 місце — 💎30, 2 — 💎25, 3 — 💎20, 4 — 💎15, 5 — 💎10.",
   "colosseum.locked": "Колізей відкривається при {{need}} макс. енергії.\nЗараз: {{have}}.",
   "colosseum.status_idle": "Статус: готовий до бою",
   "colosseum.status_queue": "Статус: у черзі на матч",

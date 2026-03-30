@@ -720,7 +720,7 @@ export const EN = {
   "handler.stocks.clan_required_toast": "Join a clan first.",
   "colosseum.title": "⚔️ Colosseum",
   "colosseum.subtitle": "Arena dust, steel ringing: find an opponent and prove who the champion is.",
-  "colosseum.weekly_reward_note": "🏆 At the end of the week, the winner (1st place) gets: 💎30.",
+  "colosseum.weekly_reward_note": "🏆 Weekly rewards (top 5): 1st — 💎30, 2nd — 💎25, 3rd — 💎20, 4th — 💎15, 5th — 💎10.",
   "colosseum.locked": "Colosseum unlocks at {{need}} max energy.\nNow: {{have}}.",
   "colosseum.status_idle": "Status: ready for battle",
   "colosseum.status_queue": "Status: in matchmaking queue",
