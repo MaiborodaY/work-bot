@@ -155,6 +155,7 @@ export class ColosseumService {
       finishedRound: this._tr(lang, "colosseum.finished_round"),
       finishReasonTimeout: this._tr(lang, "colosseum.finish_reason_timeout"),
       finishReasonSurrender: this._tr(lang, "colosseum.finish_reason_surrender"),
+      finishReasonCancelled: this._tr(lang, "colosseum.finish_reason_cancelled"),
       btnBackColosseum: this._tr(lang, "colosseum.btn_back_colosseum"),
       helpTitle: this._tr(lang, "colosseum.help_title"),
       helpLine1: this._tr(lang, "colosseum.help_line1"),
@@ -203,6 +204,10 @@ export class ColosseumService {
   _asset() {
     const fileId = String(ASSETS?.Colosseum || "").trim();
     return fileId || undefined;
+  }
+  _battleAsset() {
+    const fileId = String(ASSETS?.ColosseumBattle || "").trim();
+    return fileId || this._asset();
   }
   _isAccessUnlocked(u) { return Math.max(0, toInt(u?.energy_max, 0)) >= this._minEnergyMax(); }
   _secondsLeft(deadlineTs) { return Math.max(0, toInt((Number(deadlineTs) - this.now()) / 1000, 0)); }
@@ -890,7 +895,15 @@ export class ColosseumService {
     const other = this._otherPlayerId(battle, uid);
     const myScore = Math.max(0, toInt(battle?.score?.[uid], 0));
     const enemyScore = Math.max(0, toInt(battle?.score?.[other], 0));
+    const reason = String(battle?.result?.reason || "");
     const lines = [s.title, ""];
+    if (reason === "accept_timeout" || reason === "declined") {
+      lines.push(s.finishReasonCancelled);
+      return {
+        caption: lines.join("\n"),
+        keyboard: [[{ text: s.btnBackColosseum, callback_data: "go:Colosseum" }]]
+      };
+    }
     if (battle?.result?.draw) {
       lines.push(s.finishedDraw);
     } else if (String(battle?.result?.winnerId || "") === uid) {
@@ -899,8 +912,8 @@ export class ColosseumService {
       lines.push(s.finishedLose);
     }
     lines.push(this._fmt(s.finishedScore, { my: myScore, enemy: enemyScore }));
-    if (battle?.result?.reason === "timeout") lines.push(s.finishReasonTimeout);
-    if (battle?.result?.reason === "surrender") lines.push(s.finishReasonSurrender);
+    if (reason === "timeout") lines.push(s.finishReasonTimeout);
+    if (reason === "surrender") lines.push(s.finishReasonSurrender);
     return {
       caption: lines.join("\n"),
       keyboard: [[{ text: s.btnBackColosseum, callback_data: "go:Colosseum" }]]
@@ -956,7 +969,7 @@ export class ColosseumService {
           { text: s.btnAccept, callback_data: "col:accept" },
           { text: s.btnDecline, callback_data: "col:decline" }
         ], [{ text: s.btnBackColosseum, callback_data: "go:Colosseum" }]];
-      return { caption: lines.join("\n"), keyboard };
+      return { caption: lines.join("\n"), asset: this._asset(), keyboard };
     }
 
     const left = this._secondsLeft(battle.roundDeadline);
@@ -992,7 +1005,7 @@ export class ColosseumService {
     keyboard.push([{ text: s.btnRefresh, callback_data: "col:battle:open" }]);
     keyboard.push([{ text: s.btnSurrender, callback_data: "col:surrender" }]);
     keyboard.push([{ text: s.btnBackColosseum, callback_data: "go:Colosseum" }]);
-    return { caption: lines.join("\n"), keyboard };
+    return { caption: lines.join("\n"), asset: this._battleAsset(), keyboard };
   }
 
   async joinQueue(user) {
@@ -1071,7 +1084,7 @@ export class ColosseumService {
     const keyboard = [[
       { text: s.btnAccept, callback_data: "col:accept" },
       { text: s.btnDecline, callback_data: "col:decline" }
-    ], [{ text: s.notifyFoundBtn, callback_data: "col:battle:open" }]];
+    ]];
     await this._sendInline(myChat, this._fmt(s.notifyFound, { name: shortName(opponent.id, opponent.displayName) }), keyboard);
     await this._sendInline(oppChat, this._fmt(s.notifyFound, { name: shortName(user.id, user.displayName) }), keyboard);
 
