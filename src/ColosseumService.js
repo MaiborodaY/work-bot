@@ -608,6 +608,18 @@ export class ColosseumService {
     };
   }
 
+  _syncWeeklyWinsFromTop(user, top) {
+    if (!user || !Array.isArray(top)) return { changed: false, wins: Math.max(0, toInt(user?.colosseum?.weekWins, 0)) };
+    const uid = String(user?.id || "");
+    const row = top.find((x) => String(x?.userId || "") === uid);
+    const current = Math.max(0, toInt(user?.colosseum?.weekWins, 0));
+    if (!row) return { changed: false, wins: current };
+    const synced = Math.max(0, toInt(row?.wins, 0));
+    if (synced === current) return { changed: false, wins: current };
+    user.colosseum.weekWins = synced;
+    return { changed: true, wins: synced };
+  }
+
   async _resolvePendingTimeout(battle) {
     if (!battle || battle.status !== "pending_accept") return false;
     const nowTs = this.now();
@@ -825,12 +837,14 @@ export class ColosseumService {
     }
     const top = await this._loadWeeklyRating(this._nowWeekKey());
     const topBlock = this._buildTopLines(top, user.id, this._lang(user));
+    const sync = this._syncWeeklyWinsFromTop(user, top);
+    if (sync.changed) dirty = true;
     const lines = [
       s.title,
       s.subtitle,
       "",
       user?.colosseum?.inQueue ? s.statusQueue : s.statusIdle,
-      this._fmt(s.weeklyWins, { wins: Math.max(0, toInt(user?.colosseum?.weekWins, 0)) }),
+      this._fmt(s.weeklyWins, { wins: sync.wins }),
       this._fmt(s.battlesLeft, {
         used: Math.max(0, toInt(user?.colosseum?.battlesToday, 0)),
         limit: this._dailyLimit()
@@ -875,10 +889,12 @@ export class ColosseumService {
     let dirty = this._ensureUserState(user);
     const top = await this._loadWeeklyRating(this._nowWeekKey());
     const topBlock = this._buildTopLines(top, user?.id, this._lang(user));
+    const sync = this._syncWeeklyWinsFromTop(user, top);
+    if (sync.changed) dirty = true;
     const lines = [
       s.title,
       "",
-      this._fmt(s.weeklyWins, { wins: Math.max(0, toInt(user?.colosseum?.weekWins, 0)) }),
+      this._fmt(s.weeklyWins, { wins: sync.wins }),
       this._fmt(s.battlesLeft, {
         used: Math.max(0, toInt(user?.colosseum?.battlesToday, 0)),
         limit: this._dailyLimit()

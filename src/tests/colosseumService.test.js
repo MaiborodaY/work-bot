@@ -245,3 +245,38 @@ test("colosseum service: surrender finalizes battle, clears state and updates we
   const open = await loadOpenBattles(db);
   assert.equal(open.includes(battleId), false);
 });
+
+test("colosseum service: main view syncs weekly wins with rating row for current user", async () => {
+  const db = new FakeDb();
+  const users = new FakeUsers({
+    u1: makeUser("u1", "Alpha"),
+    u2: makeUser("u2", "Bravo")
+  });
+
+  const service = new ColosseumService({
+    db,
+    users,
+    now: () => Date.UTC(2026, 2, 30, 14, 0, 0),
+    bot: { async sendWithInline() {} }
+  });
+
+  const weekKey = service._nowWeekKey();
+  await db.put(
+    service._ratingKey(weekKey),
+    JSON.stringify([
+      { userId: "u1", name: "Alpha", wins: 2, reachedAt: Date.UTC(2026, 2, 30, 13, 0, 0) },
+      { userId: "u2", name: "Bravo", wins: 1, reachedAt: Date.UTC(2026, 2, 30, 13, 5, 0) }
+    ])
+  );
+
+  const me = await users.load("u1");
+  me.colosseum.weekKey = weekKey;
+  me.colosseum.weekWins = 1;
+  await users.save(me);
+
+  const view = await service.buildMainView(await users.load("u1"));
+  assert.match(String(view.caption || ""), /Weekly wins: 2/);
+
+  const saved = await users.load("u1");
+  assert.equal(saved.colosseum.weekWins, 2);
+});
