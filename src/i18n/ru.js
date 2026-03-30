@@ -822,6 +822,7 @@ export const RU = {
   "thief.notify.guard_expired": "🛡️ Охрана бизнеса {{bizTitle}} истекла — бизнес снова уязвим.",
   "thief.notify.immunity_expired": "🔒 Иммунитет бизнеса {{bizTitle}} истёк — бизнес снова виден ворам.",
   "colosseum.title": "⚔️ Колизей",
+  "colosseum.subtitle": "Пыль арены, звон стали: найди соперника и докажи, кто здесь чемпион.",
   "colosseum.locked": "Колизей открывается при {{need}} макс. энергии.\nСейчас: {{have}}.",
   "colosseum.status_idle": "Статус: готов к бою",
   "colosseum.status_queue": "Статус: в очереди на матч",

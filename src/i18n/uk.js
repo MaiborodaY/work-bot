@@ -719,6 +719,7 @@ export const UK = {
   "handler.stocks.clan_required": "📈 Біржа доступна після вступу до клану.\n\nСпочатку вступи до клану або створи свій у розділі Місто -> Клани.",
   "handler.stocks.clan_required_toast": "Спочатку вступи до клану.",
   "colosseum.title": "⚔️ Колізей",
+  "colosseum.subtitle": "Пил арени, дзвін сталі: знайди суперника і доведи, хто тут чемпіон.",
   "colosseum.locked": "Колізей відкривається при {{need}} макс. енергії.\nЗараз: {{have}}.",
   "colosseum.status_idle": "Статус: готовий до бою",
   "colosseum.status_queue": "Статус: у черзі на матч",

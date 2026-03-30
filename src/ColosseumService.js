@@ -96,6 +96,7 @@ export class ColosseumService {
   _s(lang = "en") {
     return {
       title: this._tr(lang, "colosseum.title"),
+      subtitle: this._tr(lang, "colosseum.subtitle"),
       locked: this._tr(lang, "colosseum.locked"),
       statusIdle: this._tr(lang, "colosseum.status_idle"),
       statusQueue: this._tr(lang, "colosseum.status_queue"),
@@ -796,7 +797,7 @@ export class ColosseumService {
     if (!this._isAccessUnlocked(user)) {
       await this._saveUserIfDirty(user, dirty);
       return {
-        caption: `${s.title}\n\n${this._fmt(s.locked, { need: this._minEnergyMax(), have: Math.max(0, toInt(user?.energy_max, 0)) })}`,
+        caption: `${s.title}\n${s.subtitle}\n\n${this._fmt(s.locked, { need: this._minEnergyMax(), have: Math.max(0, toInt(user?.energy_max, 0)) })}`,
         asset: this._asset(),
         keyboard: [[{ text: s.btnBack, callback_data: "go:City" }]]
       };
@@ -813,6 +814,7 @@ export class ColosseumService {
     const topBlock = this._buildTopLines(top, user.id, this._lang(user));
     const lines = [
       s.title,
+      s.subtitle,
       "",
       user?.colosseum?.inQueue ? s.statusQueue : s.statusIdle,
       this._fmt(s.weeklyWins, { wins: Math.max(0, toInt(user?.colosseum?.weekWins, 0)) }),

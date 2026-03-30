@@ -719,6 +719,7 @@ export const EN = {
   "handler.stocks.clan_required": "📈 Exchange unlocks after you join a clan.\n\nFirst join a clan or create your own in City -> Clans.",
   "handler.stocks.clan_required_toast": "Join a clan first.",
   "colosseum.title": "⚔️ Colosseum",
+  "colosseum.subtitle": "Arena dust, steel ringing: find an opponent and prove who the champion is.",
   "colosseum.locked": "Colosseum unlocks at {{need}} max energy.\nNow: {{have}}.",
   "colosseum.status_idle": "Status: ready for battle",
   "colosseum.status_queue": "Status: in matchmaking queue",
