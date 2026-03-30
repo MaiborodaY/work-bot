@@ -704,7 +704,7 @@ export class ColosseumService {
       const row = top[i];
       const place = medals[i] || `${i + 1}.`;
       const clanName = String(row?.clanName || "").trim();
-      const shownName = clanName ? `${row.name} (${clanName})` : row.name;
+      const shownName = clanName ? `${row.name} [${clanName}]` : row.name;
       lines.push(this._fmt(s.topLine, {
         place,
         name: shownName,
@@ -866,9 +866,14 @@ export class ColosseumService {
       let dirty = false;
       dirty = this._ensureUserState(u) || dirty;
       const previousBattleMessageId = this._messageId(u?.colosseum?.battleMessageId);
+      const finalView = await this._renderFinishedForUser(u, battle);
+      let delivered = false;
       if (previousBattleMessageId > 0) {
-        const finalView = await this._renderFinishedForUser(u, battle);
-        await this._tryEditBattleCardMessage(u, previousBattleMessageId, finalView);
+        delivered = await this._tryEditBattleCardMessage(u, previousBattleMessageId, finalView);
+      }
+      if (!delivered) {
+        const newId = await this._sendBattleCardMessage(u, finalView);
+        delivered = newId > 0;
       }
       clearBattleStateOnFinish(u);
       dirty = true;
@@ -881,23 +886,6 @@ export class ColosseumService {
     }
     if (winnerId && users[winnerId]) {
       await this._updateWeeklyRating(users[winnerId]);
-    }
-
-    for (const pid of [a, b]) {
-      const u = users[pid];
-      if (!u) continue;
-      const chatId = String(u?.chatId || "").trim();
-      if (!chatId) continue;
-      if (draw) {
-        const su = this._s(this._lang(u));
-        await this._sendInline(chatId, su.notifyFinishDraw, [[{ text: su.notifyFoundBtn, callback_data: "go:Colosseum" }]]);
-      } else if (String(pid) === String(winnerId)) {
-        const su = this._s(this._lang(u));
-        await this._sendInline(chatId, su.notifyFinishWin, [[{ text: su.notifyFoundBtn, callback_data: "go:Colosseum" }]]);
-      } else {
-        const su = this._s(this._lang(u));
-        await this._sendInline(chatId, su.notifyFinishLose, [[{ text: su.notifyFoundBtn, callback_data: "go:Colosseum" }]]);
-      }
     }
     return true;
   }
@@ -1063,7 +1051,8 @@ export class ColosseumService {
   }
 
   async _renderFinishedForUser(user, battle) {
-    const s = this._s(this._lang(user));
+    const lang = this._lang(user);
+    const s = this._s(lang);
     const uid = String(user?.id || "");
     const other = this._otherPlayerId(battle, uid);
     const myScore = Math.max(0, toInt(battle?.score?.[uid], 0));
@@ -1090,6 +1079,11 @@ export class ColosseumService {
     lines.push(this._fmt(s.finishedScore, { my: myScore, enemy: enemyScore }));
     if (reason === "timeout") lines.push(s.finishReasonTimeout);
     if (reason === "surrender") lines.push(s.finishReasonSurrender);
+    const historyLines = this._buildActiveRoundHistoryLines(battle, uid, other, lang);
+    if (historyLines.length) {
+      lines.push("");
+      lines.push(...historyLines);
+    }
     return {
       caption: lines.join("\n"),
       asset: resultAsset,
@@ -1141,11 +1135,11 @@ export class ColosseumService {
       const accepted = !!battle?.accepted?.[uid];
       if (accepted) lines.push(s.pendingAccepted);
       const keyboard = accepted
-        ? [[{ text: s.btnRefresh, callback_data: "col:battle:open" }], [{ text: s.btnBackColosseum, callback_data: "go:Colosseum" }]]
+        ? [[{ text: s.btnRefresh, callback_data: "col:battle:open" }]]
         : [[
           { text: s.btnAccept, callback_data: "col:accept" },
           { text: s.btnDecline, callback_data: "col:decline" }
-        ], [{ text: s.btnBackColosseum, callback_data: "go:Colosseum" }]];
+        ]];
       return { caption: lines.join("\n"), asset: this._asset(), keyboard };
     }
 
