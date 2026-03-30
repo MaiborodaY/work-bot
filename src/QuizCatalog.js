@@ -39,7 +39,40 @@ function quizFacts(cfg = CONFIG) {
   const companies = companyCount(cfg);
   const healCost = toInt(cfg?.PET?.SICK_HEAL_GEMS, 3);
   const sickAfterDays = toInt(cfg?.PET?.SICK_AFTER_DAYS, 3);
-  return { maxSlots, sellFee, dividend, companies, healCost, sickAfterDays };
+  const studyMaxLevel = toInt(cfg?.STUDY?.MAX_LEVEL, 30);
+  const referralRewardGems = toInt(cfg?.REFERRAL?.REWARD_GEMS, 10);
+  const businessCount = Math.max(1, Object.keys(cfg?.BUSINESS || {}).length || 5);
+  const shawarmaSlots = Math.max(1, toInt(cfg?.LABOUR_MARKET?.SLOTS?.shawarma?.levels?.length, 5));
+  const shawarmaContractDays = Math.max(1, toInt(cfg?.LABOUR_MARKET?.SLOTS?.shawarma?.contractDays, 1));
+  const shawarmaPrice = Math.max(0, toInt(cfg?.BUSINESS?.shawarma?.price, 10000));
+  const packs = Array.isArray(cfg?.PREMIUM?.PACKS) ? cfg.PREMIUM.PACKS : [];
+  const packGems = packs
+    .map((x) => {
+      const base = toInt(x?.gems, 0);
+      const pct = toInt(x?.bonusPct, 0);
+      const bonus = Math.ceil((base * pct) / 100);
+      return base + bonus;
+    })
+    .filter((x) => x > 0)
+    .sort((a, b) => a - b);
+  const premiumMinPack = packGems.length ? packGems[0] : 10;
+  const premiumMaxPack = packGems.length ? packGems[packGems.length - 1] : 140;
+  return {
+    maxSlots,
+    sellFee,
+    dividend,
+    companies,
+    healCost,
+    sickAfterDays,
+    studyMaxLevel,
+    referralRewardGems,
+    businessCount,
+    shawarmaSlots,
+    shawarmaContractDays,
+    shawarmaPrice,
+    premiumMinPack,
+    premiumMaxPack
+  };
 }
 
 export function buildQuizCatalog(cfg = CONFIG) {
@@ -393,23 +426,366 @@ export function buildQuizCatalog(cfg = CONFIG) {
         en: "Crystals are premium currency for skips and key protection actions."
       }
     },
+    
     {
-      id: "q25_referrals_5",
+      id: "q26_study_levels_total",
       text: {
-        ru: "Сколько активированных рефералов нужно для ачивки «Вербовщик»?",
-        uk: "Скільки активованих рефералів потрібно для ачивки «Вербувальник»?",
-        en: "How many activated referrals are needed for the “Recruiter” achievement?"
+        ru: "Сколько уровней образования доступно в игре?",
+        uk: "Скільки рівнів навчання доступно в грі?",
+        en: "How many Study levels are available in the game?"
       },
       options: {
-        ru: ["3", "5", "10", "20"],
-        uk: ["3", "5", "10", "20"],
-        en: ["3", "5", "10", "20"]
+        ru: ["10", "20", String(f.studyMaxLevel), "50"],
+        uk: ["10", "20", String(f.studyMaxLevel), "50"],
+        en: ["10", "20", String(f.studyMaxLevel), "50"]
+      },
+      correct: 2,
+      explain: {
+        ru: "Максимальный уровень учёбы задаётся текущей конфигурацией игры.",
+        uk: "Максимальний рівень навчання задається поточною конфігурацією гри.",
+        en: "The max Study level is defined by the current game configuration."
+      }
+    },
+    {
+      id: "q27_first_business_name",
+      text: {
+        ru: "Как называется первый бизнес, который можно купить?",
+        uk: "Як називається перший бізнес, який можна купити?",
+        en: "What is the first business you can buy?"
+      },
+      options: {
+        ru: ["Стоматология", "Курьерская служба", "Ларёк с шавермой", "Ресторан"],
+        uk: ["Стоматологія", "Курʼєрська служба", "Ларьок із шавермою", "Ресторан"],
+        en: ["Dental clinic", "Courier service", "Shawarma stand", "Restaurant"]
+      },
+      correct: 2,
+      explain: {
+        ru: "Первый бизнес по цене входа — ларёк с шавермой.",
+        uk: "Перший бізнес за ціною входу — ларьок із шавермою.",
+        en: "The first business by entry price is the shawarma stand."
+      }
+    },
+    {
+      id: "q28_shawarma_slots_count",
+      text: {
+        ru: "Сколько слотов для наёмников можно купить в ларьке с шавермой?",
+        uk: "Скільки слотів для працівників можна купити в ларьку з шавермою?",
+        en: "How many worker slots can be bought in the shawarma stand?"
+      },
+      options: {
+        ru: ["3", "4", String(f.shawarmaSlots), "7"],
+        uk: ["3", "4", String(f.shawarmaSlots), "7"],
+        en: ["3", "4", String(f.shawarmaSlots), "7"]
+      },
+      correct: 2,
+      explain: {
+        ru: "Число слотов для ларька определяется конфигом рынка наёмников.",
+        uk: "Кількість слотів для ларька визначається конфігом ринку найманців.",
+        en: "The slot count for this business is defined by labour market config."
+      }
+    },
+    {
+      id: "q29_referral_reward_gems",
+      text: {
+        ru: "Сколько кристаллов получаешь за приглашённого друга?",
+        uk: "Скільки кристалів ти отримуєш за запрошеного друга?",
+        en: "How many crystals do you get for an invited friend?"
+      },
+      options: {
+        ru: ["5", String(f.referralRewardGems), "25", "50"],
+        uk: ["5", String(f.referralRewardGems), "25", "50"],
+        en: ["5", String(f.referralRewardGems), "25", "50"]
       },
       correct: 1,
       explain: {
-        ru: "Реферал считается только после первой выплаты со смены.",
-        uk: "Реферал рахується лише після першої виплати зі зміни.",
-        en: "A referral counts only after the first shift payout."
+        ru: "Награда за реферала задаётся в конфигурации реферальной системы.",
+        uk: "Нагорода за реферала задається в конфігурації реферальної системи.",
+        en: "Referral reward is configured in the referral settings."
+      }
+    },
+    {
+      id: "q30_business_count_total",
+      text: {
+        ru: "Сколько бизнесов доступно в игре?",
+        uk: "Скільки бізнесів доступно в грі?",
+        en: "How many businesses are available in the game?"
+      },
+      options: {
+        ru: ["3", "4", String(f.businessCount), "8"],
+        uk: ["3", "4", String(f.businessCount), "8"],
+        en: ["3", "4", String(f.businessCount), "8"]
+      },
+      correct: 2,
+      explain: {
+        ru: "Количество бизнесов берётся из текущего списка бизнесов в игре.",
+        uk: "Кількість бізнесів береться з поточного списку бізнесів у грі.",
+        en: "The number comes from the current in-game business list."
+      }
+    },
+    {
+      id: "q31_premium_currency_name",
+      text: {
+        ru: "Как называется премиум-валюта игры?",
+        uk: "Як називається преміум-валюта гри?",
+        en: "What is the premium currency called?"
+      },
+      options: {
+        ru: ["Монеты", "Золото", "Кристаллы", "Жетоны"],
+        uk: ["Монети", "Золото", "Кристали", "Жетони"],
+        en: ["Coins", "Gold", "Crystals", "Tokens"]
+      },
+      correct: 2,
+      explain: {
+        ru: "Премиум-валюта в игре — кристаллы.",
+        uk: "Преміум-валюта в грі — кристали.",
+        en: "Crystals are the premium currency in the game."
+      }
+    },
+    {
+      id: "q32_where_top_players",
+      text: {
+        ru: "Где можно посмотреть лучших игроков?",
+        uk: "Де можна подивитися найкращих гравців?",
+        en: "Where can you see the best players?"
+      },
+      options: {
+        ru: ["В зале арканы", "В кланах", "В рейтинге", "В магазине"],
+        uk: ["У залі аркани", "У кланах", "У рейтингу", "У магазині"],
+        en: ["In Arcana Hall", "In Clans", "In Rating", "In Shop"]
+      },
+      correct: 2,
+      explain: {
+        ru: "Топы игроков отображаются в рейтингах и на доске почёта.",
+        uk: "Топи гравців відображаються у рейтингах і на дошці пошани.",
+        en: "Player tops are shown in ratings and the hall of fame."
+      }
+    },
+    {
+      id: "q33_player_group_name",
+      text: {
+        ru: "Как называется объединение игроков в WoL?",
+        uk: "Як називається обʼєднання гравців у WoL?",
+        en: "What is the player group called in WoL?"
+      },
+      options: {
+        ru: ["Команда", "Альянс", "Клан", "Гильдия"],
+        uk: ["Команда", "Альянс", "Клан", "Гільдія"],
+        en: ["Team", "Alliance", "Clan", "Guild"]
+      },
+      correct: 2,
+      explain: {
+        ru: "Игроки объединяются в кланы.",
+        uk: "Гравці обʼєднуються в клани.",
+        en: "Players are organized into clans."
+      }
+    },
+    {
+      id: "q34_languages_count",
+      text: {
+        ru: "Сколько языков поддерживает игра?",
+        uk: "Скільки мов підтримує гра?",
+        en: "How many languages does the game support?"
+      },
+      options: {
+        ru: ["1", "2", "3", "5"],
+        uk: ["1", "2", "3", "5"],
+        en: ["1", "2", "3", "5"]
+      },
+      correct: 2,
+      explain: {
+        ru: "Игра поддерживает русский, украинский и английский.",
+        uk: "Гра підтримує російську, українську та англійську.",
+        en: "The game supports Russian, Ukrainian, and English."
+      }
+    },
+    {
+      id: "q35_start_work_requirement",
+      text: {
+        ru: "Что нужно, чтобы начать работать?",
+        uk: "Що потрібно, щоб почати працювати?",
+        en: "What do you need to start working?"
+      },
+      options: {
+        ru: ["Деньги", "Кристаллы", "Энергию", "Уровень образования"],
+        uk: ["Гроші", "Кристали", "Енергію", "Рівень навчання"],
+        en: ["Money", "Crystals", "Energy", "Study level"]
+      },
+      correct: 2,
+      explain: {
+        ru: "Каждая смена требует расход энергии.",
+        uk: "Кожна зміна потребує витрати енергії.",
+        en: "Every shift consumes energy."
+      }
+    },
+    {
+      id: "q36_shawarma_contract_days",
+      text: {
+        ru: "На сколько дней действует контракт наёмника в ларьке с шавермой?",
+        uk: "На скільки днів діє контракт працівника в ларьку з шавермою?",
+        en: "How many days does a worker contract last in the shawarma stand?"
+      },
+      options: {
+        ru: [String(f.shawarmaContractDays), "2", "3", "7"],
+        uk: [String(f.shawarmaContractDays), "2", "3", "7"],
+        en: [String(f.shawarmaContractDays), "2", "3", "7"]
+      },
+      correct: 0,
+      explain: {
+        ru: "Длительность контракта в ларьке берётся из конфига слотов.",
+        uk: "Тривалість контракту в ларьку береться з конфіга слотів.",
+        en: "Contract duration in this business comes from slot config."
+      }
+    },
+    {
+      id: "q37_shop_energy_item",
+      text: {
+        ru: "Что можно купить в магазине для восстановления энергии?",
+        uk: "Що можна купити в магазині для відновлення енергії?",
+        en: "What can you buy in the shop to restore energy?"
+      },
+      options: {
+        ru: ["Кристаллы", "Еду", "Акции", "Питомца"],
+        uk: ["Кристали", "Їжу", "Акції", "Улюбленця"],
+        en: ["Crystals", "Food", "Stocks", "Pet"]
+      },
+      correct: 1,
+      explain: {
+        ru: "Еда из магазина восстанавливает энергию.",
+        uk: "Їжа з магазину відновлює енергію.",
+        en: "Food items from the shop restore energy."
+      }
+    },
+    {
+      id: "q38_stocks_place",
+      text: {
+        ru: "Где торгуют ценными бумагами в игре?",
+        uk: "Де торгують цінними паперами в грі?",
+        en: "Where do you trade securities in the game?"
+      },
+      options: {
+        ru: ["В магазине", "В зале арканы", "На бирже", "В клане"],
+        uk: ["У магазині", "У залі аркани", "На біржі", "У клані"],
+        en: ["In shop", "In Arcana Hall", "On the exchange", "In clan"]
+      },
+      correct: 2,
+      explain: {
+        ru: "Покупка и продажа акций происходят в разделе Биржа.",
+        uk: "Купівля та продаж акцій відбуваються в розділі Біржа.",
+        en: "Buying and selling shares happens in the Exchange section."
+      }
+    },
+    {
+      id: "q39_theft_mechanic_name",
+      text: {
+        ru: "Как называется механика кражи у других игроков?",
+        uk: "Як називається механіка крадіжки в інших гравців?",
+        en: "What is the theft mechanic called?"
+      },
+      options: {
+        ru: ["Налёт", "Ограбление", "Воровство", "Мародёрство"],
+        uk: ["Наліт", "Пограбування", "Злодійство", "Мародерство"],
+        en: ["Raid", "Robbery", "Theft", "Looting"]
+      },
+      correct: 2,
+      explain: {
+        ru: "В игре эта механика называется «Воровство».",
+        uk: "У грі ця механіка називається «Злодійство».",
+        en: "In the game this mechanic is called “Theft”."
+      }
+    },
+    {
+      id: "q40_min_crystal_pack",
+      text: {
+        ru: "Какой самый маленький пак кристаллов можно купить?",
+        uk: "Який найменший пак кристалів можна купити?",
+        en: "What is the smallest crystal pack you can buy?"
+      },
+      options: {
+        ru: [String(f.premiumMinPack), "25", "50", "100"],
+        uk: [String(f.premiumMinPack), "25", "50", "100"],
+        en: [String(f.premiumMinPack), "25", "50", "100"]
+      },
+      correct: 0,
+      explain: {
+        ru: "Минимальный пак определяется текущей витриной кристаллов.",
+        uk: "Мінімальний пак визначається поточною вітриною кристалів.",
+        en: "The smallest pack depends on current premium pack configuration."
+      }
+    },
+    {
+      id: "q41_max_crystal_pack",
+      text: {
+        ru: "Какой самый большой пак кристаллов можно купить?",
+        uk: "Який найбільший пак кристалів можна купити?",
+        en: "What is the largest crystal pack you can buy?"
+      },
+      options: {
+        ru: ["60", "100", "120", String(f.premiumMaxPack)],
+        uk: ["60", "100", "120", String(f.premiumMaxPack)],
+        en: ["60", "100", "120", String(f.premiumMaxPack)]
+      },
+      correct: 3,
+      explain: {
+        ru: "Максимальный пак определяется текущей витриной кристаллов.",
+        uk: "Максимальний пак визначається поточною вітриною кристалів.",
+        en: "The largest pack depends on current premium pack configuration."
+      }
+    },
+    {
+      id: "q42_shawarma_price",
+      text: {
+        ru: "Сколько стоит ларёк с шавермой?",
+        uk: "Скільки коштує ларьок із шавермою?",
+        en: "How much does the shawarma stand cost?"
+      },
+      options: {
+        ru: ["5000", String(f.shawarmaPrice), "25000", "50000"],
+        uk: ["5000", String(f.shawarmaPrice), "25000", "50000"],
+        en: ["5000", String(f.shawarmaPrice), "25000", "50000"]
+      },
+      correct: 1,
+      explain: {
+        ru: "Стоимость первого бизнеса задаётся в конфиге бизнеса.",
+        uk: "Вартість першого бізнесу задається в конфігу бізнесу.",
+        en: "The first business price is defined in business config."
+      }
+    },
+    {
+      id: "q43_pet_no_feed_effect",
+      text: {
+        ru: "Что происходит с питомцем если его не кормить?",
+        uk: "Що відбувається з улюбленцем, якщо його не годувати?",
+        en: "What happens to your pet if you don't feed it?"
+      },
+      options: {
+        ru: ["Убегает", "Грустит но живёт", "Его состояние ухудшается", "Ничего"],
+        uk: ["Тікає", "Сумує але живе", "Його стан погіршується", "Нічого"],
+        en: ["Runs away", "Gets sad but stays fine", "Its condition worsens", "Nothing"]
+      },
+      correct: 2,
+      explain: {
+        ru: "Без кормления питомец переходит от голода к болезни и дальше.",
+        uk: "Без годування улюбленець переходить від голоду до хвороби й далі.",
+        en: "Without feeding, the pet state degrades over time."
+      }
+    },
+    {
+      id: "q44_coffee_restores",
+      text: {
+        ru: "Что восстанавливает кофе из магазина?",
+        uk: "Що відновлює кава з магазину?",
+        en: "What does coffee from the shop restore?"
+      },
+      options: {
+        ru: ["Деньги", "Энергию", "Настроение", "Кристаллы"],
+        uk: ["Гроші", "Енергію", "Настрій", "Кристали"],
+        en: ["Money", "Energy", "Mood", "Crystals"]
+      },
+      correct: 1,
+      explain: {
+        ru: "Кофе — это еда на +энергию из магазина.",
+        uk: "Кава — це їжа на +енергію з магазину.",
+        en: "Coffee is an energy-restoring food item from the shop."
       }
     }
   ];

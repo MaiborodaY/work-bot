@@ -1081,7 +1081,7 @@ export class QuestService {
         refresh: "🔄 Оновити",
         donePrefix: "✅",
         todoPrefix: "⬜",
-        questDoneTitle: "🏆 Нове завдання виконано!",
+        questDoneTitle: "🏆 Завдання виконано!",
         bonusDoneTitle: "🎉 Увесь блок завдань виконано!"
       };
     }
@@ -1104,7 +1104,7 @@ export class QuestService {
       refresh: "🔄 Обновить",
       donePrefix: "✅",
       todoPrefix: "⬜",
-      questDoneTitle: "🏆 Новое задание!",
+      questDoneTitle: "🏆 Задание выполнено!",
       bonusDoneTitle: "🎉 Весь набор заданий закрыт!"
     };
   }

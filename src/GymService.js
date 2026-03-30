@@ -147,7 +147,7 @@ export class GymService {
       }
     } catch {}
 
-    const intro = `💪 Тренировка завершена! Энергокап: ${u.energy_max}. (Уровень зала: ${u.gym.level})`;
+    const intro = `💪 Тренировка завершена! Энергокап: ${u.energy_max}.`;
 
     if (typeof goTo === "function") {
       await goTo(u, "Gym", intro);

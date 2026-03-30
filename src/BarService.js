@@ -137,7 +137,6 @@ export class BarService {
   static getBarmanQuote(u, nowTs = Date.now()) {
     const lang = BarService._lang(u);
     const studyLevel = Math.max(0, Number(u?.study?.level) || 0);
-    const gymLevel = Math.max(0, Number(u?.gym?.level) || 0);
 
     if (!BarService._hasAnyBusiness(u)) {
       return BarService._pickVariant(BarService._quoteSet(lang, "bar.quote.no_business"), nowTs);
@@ -145,10 +144,6 @@ export class BarService {
 
     if (studyLevel < 5) {
       return BarService._pickVariant(BarService._quoteSet(lang, "bar.quote.low_study"), nowTs);
-    }
-
-    if (gymLevel < 5) {
-      return BarService._pickVariant(BarService._quoteSet(lang, "bar.quote.low_gym"), nowTs);
     }
 
     if (!BarService._hasEmployerSlot(u)) {
