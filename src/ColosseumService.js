@@ -134,8 +134,6 @@ export class ColosseumService {
       activeVs: this._tr(lang, "colosseum.active_vs"),
       activeScore: this._tr(lang, "colosseum.active_score"),
       activeDeadline: this._tr(lang, "colosseum.active_deadline"),
-      activeHistoryTitle: this._tr(lang, "colosseum.active_history_title"),
-      activeHistoryLine: this._tr(lang, "colosseum.active_history_line"),
       activePickAttack: this._tr(lang, "colosseum.active_pick_attack"),
       activePickDefense: this._tr(lang, "colosseum.active_pick_defense"),
       activeDone: this._tr(lang, "colosseum.active_done"),
@@ -282,6 +280,24 @@ export class ColosseumService {
     try {
       await this.bot.sendWithInline(chatId, String(text || ""), keyboard);
     } catch {}
+  }
+
+  async _sendBattleSnapshot(user) {
+    if (!this.bot || !user) return;
+    const chatId = String(user?.chatId || "").trim();
+    if (!chatId) return;
+    const view = await this.buildBattleView(user).catch(() => null);
+    if (!view) return;
+    const caption = String(view?.caption || "");
+    const keyboard = Array.isArray(view?.keyboard) ? view.keyboard : [];
+    const asset = String(view?.asset || "").trim();
+    if (asset && typeof this.bot.sendPhoto === "function") {
+      try {
+        await this.bot.sendPhoto(chatId, asset, caption, keyboard);
+        return;
+      } catch {}
+    }
+    await this._sendInline(chatId, caption, keyboard);
   }
 
   _safeJson(raw, fallback) {
@@ -601,6 +617,18 @@ export class ColosseumService {
     return kb;
   }
 
+  _roundPushKeyboard(s) {
+    return [
+      [
+        { text: s.btnAtkHead, callback_data: "col:pick:attack:head" },
+        { text: s.btnAtkBody, callback_data: "col:pick:attack:body" }
+      ],
+      [
+        { text: s.btnAtkLegs, callback_data: "col:pick:attack:legs" }
+      ]
+    ];
+  }
+
   _buildTopLines(top, myUserId, lang = "en") {
     const s = this._s(lang);
     const lines = [s.topTitle];
@@ -638,27 +666,6 @@ export class ColosseumService {
     if (synced === current) return { changed: false, wins: current };
     user.colosseum.weekWins = synced;
     return { changed: true, wins: synced };
-  }
-
-  _roundHistoryLines(battle, myId, enemyId, lang = "en") {
-    const s = this._s(lang);
-    const rounds = Array.isArray(battle?.rounds) ? battle.rounds : [];
-    if (!rounds.length) return [];
-    const lines = [s.activeHistoryTitle];
-    for (const r of rounds) {
-      const me = r?.[myId] || {};
-      const enemy = r?.[enemyId] || {};
-      lines.push(this._fmt(s.activeHistoryLine, {
-        round: Math.max(1, toInt(r?.round, 1)),
-        myAttack: this._zoneLabel(String(me?.attack || ""), lang),
-        myDef: this._zoneLabel(String(me?.defense || ""), lang),
-        enemyAttack: this._zoneLabel(String(enemy?.attack || ""), lang),
-        enemyDef: this._zoneLabel(String(enemy?.defense || ""), lang),
-        myDmg: Math.max(0, toInt(me?.dealt, 0)),
-        enemyDmg: Math.max(0, toInt(enemy?.dealt, 0))
-      }));
-    }
-    return lines;
   }
 
   async _resolvePendingTimeout(battle) {
@@ -1051,11 +1058,6 @@ export class ColosseumService {
       this._fmt(s.activeDeadline, { secs: left }),
       ""
     ];
-    const historyLines = this._roundHistoryLines(battle, uid, enemyId, this._lang(user));
-    if (historyLines.length) {
-      lines.push(...historyLines);
-      lines.push("");
-    }
     const keyboard = [];
     if (!isZone(mySel.attack)) {
       lines.push(s.activePickAttack);
@@ -1257,25 +1259,10 @@ export class ColosseumService {
     await this._saveUserIfDirty(enemyFresh, enemyDirty);
     await this._saveBattle(battle, this._battleTtlSec());
 
-    const actorId = String(uid || "");
-    const meId = String(meFresh?.id || "");
-    if (actorId === meId) {
-      const sEnemy = this._s(this._lang(enemyFresh));
-      await this._sendInline(
-        String(enemyFresh?.chatId || "").trim(),
-        sEnemy.notifyStart,
-        [[{ text: sEnemy.notifyFoundBtn, callback_data: "col:battle:open" }]]
-      );
-    } else {
-      const sMe = this._s(this._lang(meFresh));
-      await this._sendInline(
-        String(meFresh?.chatId || "").trim(),
-        sMe.notifyStart,
-        [[{ text: sMe.notifyFoundBtn, callback_data: "col:battle:open" }]]
-      );
-    }
+    await this._sendBattleSnapshot(meFresh);
+    await this._sendBattleSnapshot(enemyFresh);
 
-    return { ok: true, toast: s.toastAccepted, view: await this.buildBattleView(meFresh) };
+    return { ok: true, toast: s.toastAccepted, noRender: true };
   }
 
   async decline(user) {
@@ -1404,23 +1391,17 @@ export class ColosseumService {
 
     battle.currentRound += 1;
     battle.roundDeadline = this.now() + this._roundWindowSec() * 1000;
+    const playersToNotify = [];
     for (const pid of battle.players) {
       battle.selections[pid] = { attack: "", defense: "", submittedAt: 0 };
+      const player = await this._loadUser(pid);
+      if (player) playersToNotify.push(player);
     }
     await this._saveBattle(battle, this._battleTtlSec());
-    const otherId = this._otherPlayerId(battle, uid);
-    if (otherId) {
-      const other = await this._loadUser(otherId);
-      if (other) {
-        const sOther = this._s(this._lang(other));
-        await this._sendInline(
-          String(other?.chatId || "").trim(),
-          this._fmt(sOther.notifyRound, { round: battle.currentRound }),
-          [[{ text: sOther.notifyFoundBtn, callback_data: "col:battle:open" }]]
-        );
-      }
+    for (const player of playersToNotify) {
+      await this._sendBattleSnapshot(player);
     }
-    return { ok: true, view: await this.buildBattleView(user) };
+    return { ok: true, noRender: true };
   }
 
   async surrender(user) {
