@@ -38,7 +38,7 @@ export class GymService {
       MAX_COST_ENERGY:  CONFIG.GYM?.MAX_COST_ENERGY  ?? 20,
 
       // награда
-      REWARD_ENERGY_MAX: CONFIG.GYM?.REWARD_ENERGY_MAX ?? 1,
+      REWARD_ENERGY_MAX: CONFIG.GYM?.REWARD_ENERGY_MAX ?? 5,
       MAX_ENERGY_CAP:    CONFIG.GYM?.MAX_ENERGY_CAP    ?? 150,
     };
   }
@@ -122,7 +122,7 @@ export class GymService {
 
     u.energy_max = Math.min(
       C.MAX_ENERGY_CAP,
-      (u.energy_max || CONFIG.ENERGY_MAX || 100) + (C.REWARD_ENERGY_MAX || 1)
+      (u.energy_max || CONFIG.ENERGY_MAX || 100) + (C.REWARD_ENERGY_MAX || 5)
     );
     markFunnelStep(u, "didGym");
     markUsefulActivity(u, now);

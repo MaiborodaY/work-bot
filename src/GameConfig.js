@@ -74,7 +74,7 @@ export const CONFIG = {
     MAX_COST_MONEY:   120,
     MAX_COST_ENERGY:  20,
 
-    REWARD_ENERGY_MAX: 1,
+    REWARD_ENERGY_MAX: 5,
     MAX_ENERGY_CAP:    160
   },
 
