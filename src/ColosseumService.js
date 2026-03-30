@@ -282,6 +282,24 @@ export class ColosseumService {
     } catch {}
   }
 
+  async _sendBattleSnapshot(user) {
+    if (!this.bot || !user) return;
+    const chatId = String(user?.chatId || "").trim();
+    if (!chatId) return;
+    const view = await this.buildBattleView(user).catch(() => null);
+    if (!view) return;
+    const caption = String(view?.caption || "");
+    const keyboard = Array.isArray(view?.keyboard) ? view.keyboard : [];
+    const asset = String(view?.asset || "").trim();
+    if (asset && typeof this.bot.sendPhoto === "function") {
+      try {
+        await this.bot.sendPhoto(chatId, asset, caption, keyboard);
+        return;
+      } catch {}
+    }
+    await this._sendInline(chatId, caption, keyboard);
+  }
+
   _safeJson(raw, fallback) {
     if (!raw) return fallback;
     try {
@@ -1241,10 +1259,8 @@ export class ColosseumService {
     await this._saveUserIfDirty(enemyFresh, enemyDirty);
     await this._saveBattle(battle, this._battleTtlSec());
 
-    const sMe = this._s(this._lang(meFresh));
-    const sEnemy = this._s(this._lang(enemyFresh));
-    await this._sendInline(String(meFresh?.chatId || "").trim(), sMe.notifyStart, this._roundPushKeyboard(sMe));
-    await this._sendInline(String(enemyFresh?.chatId || "").trim(), sEnemy.notifyStart, this._roundPushKeyboard(sEnemy));
+    await this._sendBattleSnapshot(meFresh);
+    await this._sendBattleSnapshot(enemyFresh);
 
     return { ok: true, toast: s.toastAccepted, noRender: true };
   }
@@ -1375,18 +1391,16 @@ export class ColosseumService {
 
     battle.currentRound += 1;
     battle.roundDeadline = this.now() + this._roundWindowSec() * 1000;
+    const playersToNotify = [];
     for (const pid of battle.players) {
       battle.selections[pid] = { attack: "", defense: "", submittedAt: 0 };
       const player = await this._loadUser(pid);
-      if (!player) continue;
-      const sPlayer = this._s(this._lang(player));
-      await this._sendInline(
-        String(player?.chatId || "").trim(),
-        this._fmt(sPlayer.notifyRound, { round: battle.currentRound }),
-        this._roundPushKeyboard(sPlayer)
-      );
+      if (player) playersToNotify.push(player);
     }
     await this._saveBattle(battle, this._battleTtlSec());
+    for (const player of playersToNotify) {
+      await this._sendBattleSnapshot(player);
+    }
     return { ok: true, noRender: true };
   }
 
