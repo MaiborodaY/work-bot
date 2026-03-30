@@ -11,6 +11,7 @@ export const colosseumHandler = {
     data === "col:accept" ||
     data === "col:decline" ||
     data === "col:surrender" ||
+    data.startsWith("col:battle:atk:") ||
     data.startsWith("col:pick:attack:") ||
     data.startsWith("col:pick:defense:"),
 
@@ -108,7 +109,7 @@ export const colosseumHandler = {
       return;
     }
 
-    if (data.startsWith("col:pick:attack:")) {
+    if (data.startsWith("col:pick:attack:") || data.startsWith("col:battle:atk:")) {
       const zone = String(data.split(":")[3] || "");
       const res = await colosseum.pickAttack(u, zone);
       if (!res?.ok) {

@@ -602,11 +602,11 @@ export class ColosseumService {
   _roundPushKeyboard(s) {
     return [
       [
-        { text: s.btnAtkHead, callback_data: "col:battle:atk:head" },
-        { text: s.btnAtkBody, callback_data: "col:battle:atk:body" }
+        { text: s.btnAtkHead, callback_data: "col:pick:attack:head" },
+        { text: s.btnAtkBody, callback_data: "col:pick:attack:body" }
       ],
       [
-        { text: s.btnAtkLegs, callback_data: "col:battle:atk:legs" }
+        { text: s.btnAtkLegs, callback_data: "col:pick:attack:legs" }
       ]
     ];
   }
