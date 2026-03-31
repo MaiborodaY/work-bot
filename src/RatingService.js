@@ -25,13 +25,8 @@ export class RatingService {
   }
 
   _isAdminUserId(userId) {
-    const id = String(userId ?? "").trim();
-    if (!id) return false;
-    try {
-      return !!this.isAdmin(id);
-    } catch {
-      return false;
-    }
+    void userId;
+    return false;
   }
 
   _limit() {
