@@ -720,7 +720,7 @@ export const EN = {
   "handler.stocks.clan_required": "📈 Exchange unlocks after you join a clan.\n\nFirst join a clan or create your own in City -> Clans.",
   "handler.stocks.clan_required_toast": "Join a clan first.",
   "colosseum.title": "⚔️ Colosseum",
-  "colosseum.subtitle": "Arena dust, steel ringing: find an opponent and prove who the champion is.",
+  "colosseum.subtitle": "Arena dust, steel ringing: find an opponent and prove who the champion is.\nJust tap \"Find opponent\" and go about your business — when an opponent is found, you'll get a notification.",
   "colosseum.weekly_reward_note": "🏆 Weekly rewards (top 5):\n1st place — 💎30 + $100000\n2nd place — 💎25 + $80000\n3rd place — 💎20 + $60000\n4th place — 💎15 + $40000\n5th place — 💎10 + $20000",
   "colosseum.locked": "Colosseum unlocks at {{need}} max energy.\nNow: {{have}}.",
   "colosseum.status_idle": "Status: ready for battle",
