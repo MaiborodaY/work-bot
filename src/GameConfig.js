@@ -135,7 +135,8 @@ export const CONFIG = {
       { id: "stocks_sell", type: "daily", category: "stocks", difficulty: "medium", rewardMoney: 500, target: 1 },
       { id: "stocks_invest_daily", type: "daily", category: "stocks", difficulty: "hard", rewardMoney: 600, target: 5000 },
       { id: "thief_attempt", type: "daily", category: "thief", difficulty: "medium", rewardMoney: 700, target: 1 },
-      { id: "thief_success", type: "daily", category: "thief", difficulty: "hard", rewardMoney: 1200, target: 1 }
+      { id: "thief_success", type: "daily", category: "thief", difficulty: "hard", rewardMoney: 1200, target: 1 },
+      { id: "colosseum_battles_5", type: "daily", category: "colosseum", difficulty: "hard", rewardMoney: 500, target: 5 }
     ],
 
     WEEKLY_POOL: [

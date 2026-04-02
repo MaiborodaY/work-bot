@@ -306,3 +306,53 @@ test("weekly farm planting quest progresses on farm_plant events", async () => {
   assert.equal(u.quests.weekly.list[0].done, true);
   assert.equal(u.money, 500);
 });
+
+test("daily generation: colosseum quest is forced when arena is unlocked", async () => {
+  const qs = makeService();
+  const u = makeUser({ withBusiness: false });
+  u.energy_max = 50;
+
+  await qs.ensureCycles(u, { persist: false });
+
+  const daily = Array.isArray(u?.quests?.daily?.list) ? u.quests.daily.list : [];
+  assert.equal(daily.length, 3);
+  assert.ok(daily.some((q) => String(q?.id || "") === "colosseum_battles_5"));
+});
+
+test("daily generation: colosseum quest is hidden when arena is locked", async () => {
+  const qs = makeService();
+  const u = makeUser({ withBusiness: false });
+  u.energy_max = 49;
+
+  await qs.ensureCycles(u, { persist: false });
+
+  const daily = Array.isArray(u?.quests?.daily?.list) ? u.quests.daily.list : [];
+  assert.equal(daily.some((q) => String(q?.id || "") === "colosseum_battles_5"), false);
+});
+
+test("daily colosseum quest: completes from battlesToday for current UTC day", async () => {
+  const qs = makeService();
+  const u = makeUser({ withBusiness: false });
+  u.quests.daily.day = "2026-03-13";
+  u.quests.daily.list = [
+    {
+      id: "colosseum_battles_5",
+      type: "daily",
+      category: "colosseum",
+      difficulty: "hard",
+      rewardMoney: 500,
+      target: 5,
+      progress: 0,
+      done: false,
+      paid: false
+    }
+  ];
+  u.colosseum = { dayKey: "2026-03-13", battlesToday: 5 };
+
+  const res = await qs.onEvent(u, "sub_bonus_claim", {}, { persist: false, notify: false });
+
+  assert.equal(u.quests.daily.list[0].progress, 5);
+  assert.equal(u.quests.daily.list[0].done, true);
+  assert.equal(u.money, 500);
+  assert.ok(Array.isArray(res.events));
+});

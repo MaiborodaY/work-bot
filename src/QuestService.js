@@ -366,6 +366,17 @@ export class QuestService {
     return studyLevel >= minStudy;
   }
 
+  _canAccessColosseum(u) {
+    const minEnergyMax = Math.max(0, toInt(CONFIG?.COLOSSEUM?.MIN_ENERGY_MAX, 50));
+    return Math.max(0, toInt(u?.energy_max, 0)) >= minEnergyMax;
+  }
+
+  _forcedDailyQuestIds(u) {
+    const forced = [];
+    if (this._canAccessColosseum(u)) forced.push("colosseum_battles_5");
+    return forced;
+  }
+
   _dailyQuestAvailable(u, id) {
     switch (id) {
       case "fortune_spin":
@@ -386,6 +397,8 @@ export class QuestService {
       case "thief_attempt":
       case "thief_success":
         return toInt(u?.thief?.level, 0) >= 1;
+      case "colosseum_battles_5":
+        return this._canAccessColosseum(u);
       default:
         return true;
     }
@@ -543,15 +556,33 @@ export class QuestService {
   }
 
   _generateDaily(u, day) {
-    const pool = this._dailyPool().filter((q) => this._dailyQuestAvailable(u, q?.id));
-    const picked = this._pickDailyQuests(u, pool, `${u?.id || ""}:${day}:daily`);
-    if (picked.length >= this._dailyCount()) return picked;
+    const count = this._dailyCount();
+    const allDaily = this._dailyPool();
+    const forcedIds = new Set(this._forcedDailyQuestIds(u));
+    const forced = allDaily
+      .filter((q) => forcedIds.has(String(q?.id || "")) && this._dailyQuestAvailable(u, q?.id))
+      .map((q) => this._toQuest(u, q));
+    if (forced.length >= count) return forced.slice(0, count);
 
-    const fallbackWork = this._dailyPool().filter((q) => String(q?.category || "") === "work");
-    const add = this._pickDailyQuests(u, fallbackWork, `${u?.id || ""}:${day}:daily:fallback`);
+    const pool = allDaily.filter((q) => !forcedIds.has(String(q?.id || "")) && this._dailyQuestAvailable(u, q?.id));
+    const picked = this._pickDailyQuests(u, pool, `${u?.id || ""}:${day}:daily`);
+
     const byId = new Map();
-    for (const q of [...picked, ...add]) byId.set(q.id, q);
-    return [...byId.values()].slice(0, this._dailyCount());
+    for (const q of [...forced, ...picked]) byId.set(q.id, q);
+    if (byId.size < count) {
+      const fallbackWork = allDaily.filter((q) => String(q?.category || "") === "work");
+      const add = this._pickDailyQuests(u, fallbackWork, `${u?.id || ""}:${day}:daily:fallback`);
+      for (const q of add) byId.set(q.id, q);
+    }
+
+    return [...byId.values()]
+      .sort((a, b) => {
+        const da = DIFF_SCORE[String(a?.difficulty || "easy")] || 1;
+        const db = DIFF_SCORE[String(b?.difficulty || "easy")] || 1;
+        if (da !== db) return da - db;
+        return String(a?.id || "").localeCompare(String(b?.id || ""));
+      })
+      .slice(0, count);
   }
 
   _generateWeekly(u, week) {
@@ -607,6 +638,11 @@ export class QuestService {
     const d = daily.counters || {};
     const w = weekly.counters || {};
     if (scope === "daily") {
+      const colosseumDay = String(u?.colosseum?.dayKey || "");
+      const colosseumToday = dayStr(this.now());
+      const colosseumBattlesToday = colosseumDay === colosseumToday
+        ? toInt(u?.colosseum?.battlesToday, 0)
+        : 0;
       switch (id) {
         case "work_1shift":
         case "work_2shifts":
@@ -646,6 +682,8 @@ export class QuestService {
           return toInt(d.thiefAttempts, 0);
         case "thief_success":
           return toInt(d.thiefSuccesses, 0);
+        case "colosseum_battles_5":
+          return colosseumBattlesToday;
         default:
           return 0;
       }
@@ -897,6 +935,11 @@ export class QuestService {
   _questTitle(source, id, target) {
     const lang = this._lang(source);
     const l = lang === "en" ? "en" : (lang === "uk" ? "uk" : "ru");
+    if (id === "colosseum_battles_5") {
+      if (l === "en") return `Play ${target} arena battles`;
+      if (l === "uk") return `Зіграти ${target} боїв на арені`;
+      return `Сыграть ${target} боёв на арене`;
+    }
     if (id === "farm_harvest") {
       if (l === "en") return "Harvest and sell any farm crop";
       if (l === "uk") return "Зібрати й продати будь-який врожай на фермі";
