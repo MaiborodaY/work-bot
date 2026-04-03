@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { QuestService } from "../QuestService.js";
+import { CONFIG } from "../GameConfig.js";
 
 function makeService() {
   return new QuestService({
@@ -355,4 +356,43 @@ test("daily colosseum quest: completes from battlesToday for current UTC day", a
   assert.equal(u.quests.daily.list[0].done, true);
   assert.equal(u.money, 500);
   assert.ok(Array.isArray(res.events));
+});
+
+test("weekly quest availability: w_biz_expand is hidden when all businesses and all slots are already bought", () => {
+  const qs = makeService();
+  const u = makeUser({ withBusiness: false });
+  u.biz.owned = Object.keys(CONFIG.BUSINESS || {}).map((bizId) => {
+    const levelDefs = CONFIG?.LABOUR_MARKET?.SLOTS?.[bizId]?.levels;
+    const slotsLen = Array.isArray(levelDefs) && levelDefs.length > 0 ? levelDefs.length : 1;
+    return {
+      id: bizId,
+      boughtAt: 0,
+      lastClaimDayUTC: "",
+      slots: Array.from({ length: slotsLen }, () => ({ purchased: true }))
+    };
+  });
+
+  assert.equal(qs._weeklyQuestAvailable(u, "w_biz_expand"), false);
+});
+
+test("weekly quest availability: w_biz_expand stays available when at least one slot is not bought", () => {
+  const qs = makeService();
+  const u = makeUser({ withBusiness: false });
+  u.biz.owned = Object.keys(CONFIG.BUSINESS || {}).map((bizId) => {
+    const levelDefs = CONFIG?.LABOUR_MARKET?.SLOTS?.[bizId]?.levels;
+    const slotsLen = Array.isArray(levelDefs) && levelDefs.length > 0 ? levelDefs.length : 1;
+    const slots = Array.from({ length: slotsLen }, () => ({ purchased: true }));
+    return {
+      id: bizId,
+      boughtAt: 0,
+      lastClaimDayUTC: "",
+      slots
+    };
+  });
+
+  if (u.biz.owned[0] && Array.isArray(u.biz.owned[0].slots) && u.biz.owned[0].slots.length > 0) {
+    u.biz.owned[0].slots[u.biz.owned[0].slots.length - 1].purchased = false;
+  }
+
+  assert.equal(qs._weeklyQuestAvailable(u, "w_biz_expand"), true);
 });

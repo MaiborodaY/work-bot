@@ -314,6 +314,56 @@ export class QuestService {
     return out;
   }
 
+  _allBusinessIds() {
+    const cfg = CONFIG?.BUSINESS;
+    if (!cfg || typeof cfg !== "object") return [];
+    return Object.keys(cfg).filter((id) => !!String(id || "").trim());
+  }
+
+  _maxSlotCountByBizId(bizId) {
+    const levels = CONFIG?.LABOUR_MARKET?.SLOTS?.[String(bizId || "")]?.levels;
+    if (Array.isArray(levels) && levels.length > 0) return levels.length;
+    return 1;
+  }
+
+  _countPurchasedBizSlots(entry) {
+    if (!entry || typeof entry !== "object") return 0;
+
+    const slots = Array.isArray(entry?.slots) ? entry.slots : [];
+    if (slots.length > 0) {
+      let count = 0;
+      for (const slot of slots) {
+        if (slot?.purchased) count += 1;
+      }
+      return count;
+    }
+
+    return entry?.slot?.purchased ? 1 : 0;
+  }
+
+  _hasAnyBusinessOrSlotExpansion(u) {
+    const owned = this._iterBizOwnedObjects(u);
+    const allBizIds = this._allBusinessIds();
+    if (!allBizIds.length) return this._hasAnyBusiness(u);
+
+    const ownedIds = new Set(
+      owned.map((e) => String(e?.id || "").trim()).filter(Boolean)
+    );
+    for (const bizId of allBizIds) {
+      if (!ownedIds.has(bizId)) return true;
+    }
+
+    for (const entry of owned) {
+      const bizId = String(entry?.id || "").trim();
+      if (!bizId) continue;
+      const maxSlots = this._maxSlotCountByBizId(bizId);
+      const purchasedSlots = this._countPurchasedBizSlots(entry);
+      if (purchasedSlots < maxSlots) return true;
+    }
+
+    return false;
+  }
+
   _slotIsActive(slot) {
     if (!slot || typeof slot !== "object") return false;
     if (!slot.purchased) return false;
@@ -409,8 +459,9 @@ export class QuestService {
       case "w_gym_7trains":
         return this._canDoGymQuest(u);
       case "w_biz_streak":
-      case "w_biz_expand":
         return this._hasAnyBusiness(u);
+      case "w_biz_expand":
+        return this._hasAnyBusinessOrSlotExpansion(u);
       case "w_labour_hire":
         return this._hasAnyFreeLabourSlot(u);
       case "w_labour_finish_contracts":
