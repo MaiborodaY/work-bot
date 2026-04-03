@@ -69,11 +69,12 @@ function zoneDamage(zone) {
 }
 
 export class ColosseumService {
-  constructor({ db, users, now, bot = null }) {
+  constructor({ db, users, now, bot = null, isAdmin = null }) {
     this.db = db || users?.db || null;
     this.users = users || null;
     this.now = now || (() => Date.now());
     this.bot = bot || null;
+    this.isAdmin = (typeof isAdmin === "function") ? isAdmin : (() => false);
   }
 
   _cfg() {
@@ -197,6 +198,8 @@ export class ColosseumService {
   _openBattlesKey() { return "colosseum:open:v1"; }
   _battleKey(battleIdRaw) { return `colosseum:battle:${String(battleIdRaw || "").trim()}`; }
   _ratingKey(weekKey) { return `colosseum:rating:${String(weekKey || "").trim()}`; }
+  _weeklyRewardsArmedWeekKey() { return "colosseum:weekly_rewards:armed_week"; }
+  _weeklyRewardsStateKey(weekKey) { return `colosseum:weekly_rewards:state:${String(weekKey || "").trim()}`; }
   _clanKey(clanId) { return `${CLAN_KEY_PREFIX}${String(clanId || "").trim()}`; }
   _minEnergyMax() { return Math.max(1, toInt(this._cfg().MIN_ENERGY_MAX, 50)); }
   _dailyLimit() { return Math.max(1, toInt(this._cfg().DAILY_LIMIT, 10)); }
@@ -209,6 +212,8 @@ export class ColosseumService {
   _ratingTtlSec() { return Math.max(24 * 3600, toInt(this._cfg().RATING_TTL_SEC, 21 * 24 * 3600)); }
   _nowDayKey() { return dayKeyUtc(this.now()); }
   _nowWeekKey() { return isoWeekKey(this.now()); }
+  _prevWeekKey() { return isoWeekKey(this.now() - (7 * DAY_MS)); }
+  _weeklyRewardsStateTtlSec() { return Math.max(30 * DAY_MS / 1000, this._ratingTtlSec()); }
   _asset() {
     const fileId = String(ASSETS?.Colosseum || "").trim();
     return fileId || undefined;
@@ -227,6 +232,149 @@ export class ColosseumService {
   }
   _isAccessUnlocked(u) { return Math.max(0, toInt(u?.energy_max, 0)) >= this._minEnergyMax(); }
   _secondsLeft(deadlineTs) { return Math.max(0, toInt((Number(deadlineTs) - this.now()) / 1000, 0)); }
+  _isAdminUserId(userId) {
+    const id = String(userId || "").trim();
+    if (!id) return false;
+    try {
+      return !!this.isAdmin(id);
+    } catch {
+      return false;
+    }
+  }
+
+  _weeklyRewardForPlace(place) {
+    const defaults = {
+      1: { gems: 30, money: 100000 },
+      2: { gems: 25, money: 80000 },
+      3: { gems: 20, money: 60000 },
+      4: { gems: 15, money: 40000 },
+      5: { gems: 10, money: 20000 }
+    };
+    const table = this._cfg()?.WEEKLY_REWARDS || {};
+    const raw = table?.[place] || table?.[String(place)] || defaults?.[place] || {};
+    return {
+      gems: Math.max(0, toInt(raw?.gems, defaults?.[place]?.gems || 0)),
+      money: Math.max(0, toInt(raw?.money, defaults?.[place]?.money || 0))
+    };
+  }
+
+  _rewardSummary(lang, reward) {
+    const money = Math.max(0, toInt(reward?.money, 0));
+    const gems = Math.max(0, toInt(reward?.gems, 0));
+    if (lang === "en") return `$${money} + 💎${gems}`;
+    return `$${money} + 💎${gems}`;
+  }
+
+  _weeklyRewardNotifyText(user, place, reward) {
+    const lang = this._lang(user);
+    const summary = this._rewardSummary(lang, reward);
+    if (lang === "en") {
+      return `🏆 Colosseum weekly rewards\nYou finished #${place} and received: ${summary}.`;
+    }
+    if (lang === "uk") {
+      return `🏆 Щотижнева нагорода Колізею\nТи посів(ла) ${place} місце та отримав(ла): ${summary}.`;
+    }
+    return `🏆 Недельная награда Колизея\nТы занял(а) ${place} место и получил(а): ${summary}.`;
+  }
+
+  async _loadWeeklyRewardsState(weekKey) {
+    if (!this.db) return { done: false, paidUserIds: [] };
+    const raw = await this.db.get(this._weeklyRewardsStateKey(weekKey)).catch(() => null);
+    const parsed = this._safeJson(raw, {});
+    const paid = Array.isArray(parsed?.paidUserIds)
+      ? parsed.paidUserIds.map((x) => String(x || "").trim()).filter(Boolean)
+      : [];
+    return {
+      done: !!parsed?.done,
+      paidUserIds: [...new Set(paid)],
+      paidAt: Math.max(0, toInt(parsed?.paidAt, 0)),
+      armedWeek: String(parsed?.armedWeek || "")
+    };
+  }
+
+  async _saveWeeklyRewardsState(weekKey, state) {
+    if (!this.db) return;
+    const payload = {
+      done: !!state?.done,
+      paidUserIds: Array.isArray(state?.paidUserIds)
+        ? [...new Set(state.paidUserIds.map((x) => String(x || "").trim()).filter(Boolean))]
+        : [],
+      paidAt: Math.max(0, toInt(state?.paidAt, 0)),
+      armedWeek: String(state?.armedWeek || "")
+    };
+    await this.db.put(this._weeklyRewardsStateKey(weekKey), JSON.stringify(payload), {
+      expirationTtl: this._weeklyRewardsStateTtlSec()
+    });
+  }
+
+  async _payWeeklyRewardsForWeek(weekKey) {
+    const wk = String(weekKey || "").trim();
+    if (!wk) return { rewarded: 0, skippedAdmins: 0, skippedPaid: 0 };
+    const state = await this._loadWeeklyRewardsState(wk);
+    if (state.done) return { rewarded: 0, skippedAdmins: 0, skippedPaid: 0 };
+
+    const top = await this._loadWeeklyRating(wk);
+    const recipients = top
+      .filter((row) => String(row?.userId || "").trim())
+      .slice(0, 5);
+
+    let rewarded = 0;
+    let skippedPaid = 0;
+    for (let i = 0; i < recipients.length; i += 1) {
+      const place = i + 1;
+      const row = recipients[i];
+      const userId = String(row?.userId || "").trim();
+      if (!userId) continue;
+      if (state.paidUserIds.includes(userId)) {
+        skippedPaid += 1;
+        continue;
+      }
+      const reward = this._weeklyRewardForPlace(place);
+      const user = await this._loadUser(userId);
+      if (!user) {
+        state.paidUserIds.push(userId);
+        await this._saveWeeklyRewardsState(wk, state);
+        continue;
+      }
+      const money = Math.max(0, toInt(reward?.money, 0));
+      const gems = Math.max(0, toInt(reward?.gems, 0));
+      if (money > 0) user.money = Math.max(0, toInt(user?.money, 0)) + money;
+      if (gems > 0) user.premium = Math.max(0, toInt(user?.premium, 0)) + gems;
+      await this._saveUser(user);
+      state.paidUserIds.push(userId);
+      rewarded += 1;
+      await this._saveWeeklyRewardsState(wk, state);
+
+      const chatId = String(user?.chatId || "").trim();
+      if (chatId) {
+        const s = this._s(this._lang(user));
+        const text = this._weeklyRewardNotifyText(user, place, reward);
+        await this._sendInline(chatId, text, [[{ text: s.btnBackColosseum, callback_data: "go:Colosseum" }]]);
+      }
+    }
+
+    state.done = true;
+    state.paidAt = this.now();
+    await this._saveWeeklyRewardsState(wk, state);
+    return { rewarded, skippedAdmins: 0, skippedPaid };
+  }
+
+  async _processWeeklyRewardsRollover() {
+    if (!this.db) return { rewarded: 0 };
+    const currentWeek = this._nowWeekKey();
+    const armedKey = this._weeklyRewardsArmedWeekKey();
+    const armedWeek = String(await this.db.get(armedKey).catch(() => null) || "").trim();
+    if (!armedWeek) {
+      await this.db.put(armedKey, currentWeek, { expirationTtl: this._weeklyRewardsStateTtlSec() });
+      return { rewarded: 0 };
+    }
+    if (armedWeek === currentWeek) return { rewarded: 0 };
+
+    const payoutWeek = armedWeek;
+    const res = await this._payWeeklyRewardsForWeek(payoutWeek);
+    await this.db.put(armedKey, currentWeek, { expirationTtl: this._weeklyRewardsStateTtlSec() });
+    return res;
+  }
 
   _zoneLabel(zone, lang = "en") {
     const s = this._s(lang);
@@ -919,6 +1067,8 @@ export class ColosseumService {
   }
 
   async runTick() {
+    await this._processWeeklyRewardsRollover().catch(() => {});
+
     const queue = await this._loadQueue();
     await this._saveQueue(queue);
 

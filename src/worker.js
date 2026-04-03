@@ -121,7 +121,7 @@ export default {
       });
       const pet = new PetService({ db: env.DB, users, now: () => Date.now(), bot, quests, achievements });
       const farm = new FarmService({ db: env.DB, users, now: () => Date.now(), bot, quests, achievements, social });
-      const colosseum = new ColosseumService({ db: env.DB, users, now: () => Date.now(), bot });
+      const colosseum = new ColosseumService({ db: env.DB, users, now: () => Date.now(), bot, isAdmin });
       const notifier = new NotificationService({
         users,
         bot,
@@ -220,7 +220,7 @@ export default {
     });
     const pet = new PetService({ db: env.DB, users, now, bot, quests, achievements });
     const farm = new FarmService({ db: env.DB, users, now, bot, quests, achievements, social });
-    const colosseum = new ColosseumService({ db: env.DB, users, now, bot });
+    const colosseum = new ColosseumService({ db: env.DB, users, now, bot, isAdmin });
     const referrals = new ReferralService({
       users,
       now,
@@ -1421,7 +1421,7 @@ export default {
     });
     const pet = new PetService({ db: env.DB, users, now: () => Date.now(), bot, quests, achievements });
     const farm = new FarmService({ db: env.DB, users, now: () => Date.now(), bot, quests, achievements, social });
-    const colosseum = new ColosseumService({ db: env.DB, users, now: () => Date.now(), bot });
+    const colosseum = new ColosseumService({ db: env.DB, users, now: () => Date.now(), bot, isAdmin });
 
     const notifier = new NotificationService({
       users,

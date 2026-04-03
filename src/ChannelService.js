@@ -11,6 +11,16 @@ function toInt(v, fallback = 0) {
   return Number.isFinite(n) ? Math.floor(n) : fallback;
 }
 
+function isoWeekKey(ts = Date.now()) {
+  const d = new Date(Number(ts) || Date.now());
+  const dt = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  const dayNum = dt.getUTCDay() || 7;
+  dt.setUTCDate(dt.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(dt.getUTCFullYear(), 0, 1));
+  const week = Math.ceil((((dt - yearStart) / DAY_MS) + 1) / 7);
+  return `${dt.getUTCFullYear()}${String(week).padStart(2, "0")}`;
+}
+
 export class ChannelService {
   constructor({
     db,
@@ -70,6 +80,10 @@ export class ChannelService {
     return Math.max(1, toInt(this._cfg()?.TOP_BIZ_DAY_LIMIT, this._cfg()?.TOP_BIZ_LIMIT ?? 3));
   }
 
+  _topColosseumLimit() {
+    return Math.max(1, toInt(this._cfg()?.TOP_COLOSSEUM_LIMIT, 5));
+  }
+
   _isAdminUserId(userId) {
     const id = String(userId ?? "").trim();
     if (!id) return false;
@@ -78,6 +92,41 @@ export class ChannelService {
     } catch {
       return false;
     }
+  }
+
+  _colosseumRatingKey(weekKey) {
+    return `colosseum:rating:${String(weekKey || "").trim()}`;
+  }
+
+  async _getColosseumWeekTop() {
+    if (!this.db) return [];
+    const weekKey = isoWeekKey(this.now());
+    const raw = await this.db.get(this._colosseumRatingKey(weekKey)).catch(() => null);
+    if (!raw) return [];
+
+    let parsed = [];
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      return [];
+    }
+    const list = Array.isArray(parsed) ? parsed : [];
+    return list
+      .filter((row) => !this._isAdminUserId(row?.userId))
+      .map((row) => ({
+        userId: String(row?.userId || "").trim(),
+        name: this._name(row?.name, row?.userId),
+        wins: Math.max(0, toInt(row?.wins, 0)),
+        reachedAt: Math.max(0, toInt(row?.reachedAt, 0))
+      }))
+      .filter((row) => row.userId)
+      .sort((a, b) => {
+        if (b.wins !== a.wins) return b.wins - a.wins;
+        if (a.reachedAt !== b.reachedAt) return a.reachedAt - b.reachedAt;
+        return String(a.userId).localeCompare(String(b.userId));
+      })
+      .slice(0, this._topColosseumLimit())
+      .map((row, idx) => ({ ...row, place: idx + 1 }));
   }
 
   _scheduleDays() {
@@ -234,6 +283,8 @@ export class ChannelService {
         total: Math.max(0, toInt(row?.total, 0))
       }));
 
+    const topColosseum = await this._getColosseumWeekTop();
+
     const earnersPositive = topEarners.filter((x) => Math.max(0, toInt(x?.earned, 0)) > 0).length;
     const shouldPost = earnersPositive >= this._minEarnersToPost();
 
@@ -242,6 +293,7 @@ export class ChannelService {
       topEarners,
       topBizDay,
       topFarm,
+      topColosseum,
       topThieves,
       shouldPost
     };
@@ -275,6 +327,7 @@ export class ChannelService {
     const topEarners = Array.isArray(snapshot?.topEarners) ? snapshot.topEarners : [];
     const topBizDay = Array.isArray(snapshot?.topBizDay) ? snapshot.topBizDay : [];
     const topFarm = Array.isArray(snapshot?.topFarm) ? snapshot.topFarm : [];
+    const topColosseum = Array.isArray(snapshot?.topColosseum) ? snapshot.topColosseum : [];
     const topThieves = Array.isArray(snapshot?.topThieves) ? snapshot.topThieves : [];
     const dateTs = Date.parse(`${date}T00:00:00Z`);
 
@@ -315,6 +368,17 @@ export class ChannelService {
         const name = this._escapeHtml(this._name(row?.name, row?.userId));
         const total = this._formatMoney(row?.total);
         lines.push(`${marker} ${name} — ${total}`);
+      }
+    }
+
+    if (topColosseum.length) {
+      lines.push("");
+      lines.push("⚔️ <b>Top Colosseum (this week)</b>");
+      for (const row of topColosseum) {
+        const marker = this._placePrefix(row?.place);
+        const name = this._escapeHtml(this._name(row?.name, row?.userId));
+        const wins = Math.max(0, toInt(row?.wins, 0));
+        lines.push(`${marker} ${name} — ${wins} wins`);
       }
     }
 

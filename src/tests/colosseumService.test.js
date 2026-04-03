@@ -47,6 +47,8 @@ function makeUser(id, name, energyMax = 120) {
     chatId: Number(String(id).replace(/\D/g, "").slice(0, 6) || 1000),
     lang: "en",
     energy_max: energyMax,
+    money: 0,
+    premium: 0,
     createdAt: Date.UTC(2026, 2, 30, 10, 0, 0),
     colosseum: {
       dayKey: "",
@@ -279,4 +281,81 @@ test("colosseum service: main view syncs weekly wins with rating row for current
 
   const saved = await users.load("u1");
   assert.equal(saved.colosseum.weekWins, 2);
+});
+
+test("colosseum service: weekly rewards are paid on rollover for top-5 including admins", async () => {
+  const db = new FakeDb();
+  const users = new FakeUsers({
+    u1: makeUser("u1", "Alpha"),
+    u2: makeUser("u2", "Bravo"),
+    u3: makeUser("u3", "CharlieAdmin"),
+    u4: makeUser("u4", "Delta"),
+    u5: makeUser("u5", "Echo"),
+    u6: makeUser("u6", "Foxtrot")
+  });
+  const sent = [];
+  let nowTs = Date.UTC(2026, 2, 30, 12, 0, 0); // week A
+  const service = new ColosseumService({
+    db,
+    users,
+    now: () => nowTs,
+    isAdmin: (id) => String(id) === "u3",
+    bot: {
+      async sendWithInline(chatId, text) {
+        sent.push({ chatId: String(chatId), text: String(text || "") });
+      }
+    }
+  });
+
+  // First run arms current week only (no retro payout).
+  await service.runTick();
+  const armedA = await db.get(service._weeklyRewardsArmedWeekKey());
+  assert.equal(String(armedA || ""), service._nowWeekKey());
+
+  const weekA = String(armedA || "");
+  await db.put(
+    service._ratingKey(weekA),
+    JSON.stringify([
+      { userId: "u1", name: "Alpha", wins: 10, reachedAt: 1 },
+      { userId: "u2", name: "Bravo", wins: 9, reachedAt: 2 },
+      { userId: "u3", name: "CharlieAdmin", wins: 8, reachedAt: 3 },
+      { userId: "u4", name: "Delta", wins: 7, reachedAt: 4 },
+      { userId: "u5", name: "Echo", wins: 6, reachedAt: 5 },
+      { userId: "u6", name: "Foxtrot", wins: 5, reachedAt: 6 }
+    ])
+  );
+
+  // Move to next week -> payout for weekA.
+  nowTs = Date.UTC(2026, 3, 6, 0, 5, 0); // week B
+  await service.runTick();
+
+  const u1 = await users.load("u1");
+  const u2 = await users.load("u2");
+  const u3 = await users.load("u3");
+  const u4 = await users.load("u4");
+  const u5 = await users.load("u5");
+  const u6 = await users.load("u6");
+
+  // Places from top list as-is:
+  // 1:u1 2:u2 3:u3(admin) 4:u4 5:u5
+  assert.equal(u1.money, 100000);
+  assert.equal(u1.premium, 30);
+  assert.equal(u2.money, 80000);
+  assert.equal(u2.premium, 25);
+  assert.equal(u3.money, 60000);
+  assert.equal(u3.premium, 20);
+  assert.equal(u4.money, 40000);
+  assert.equal(u4.premium, 15);
+  assert.equal(u5.money, 20000);
+  assert.equal(u5.premium, 10);
+  assert.equal(u6.money, 0);
+  assert.equal(u6.premium, 0);
+
+  assert.equal(sent.length, 5);
+
+  // Idempotent: second run in same week must not duplicate rewards.
+  await service.runTick();
+  const u1Again = await users.load("u1");
+  assert.equal(u1Again.money, 100000);
+  assert.equal(u1Again.premium, 30);
 });

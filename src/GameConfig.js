@@ -564,6 +564,13 @@ export const CONFIG = {
     ACCEPT_WINDOW_SEC: 60,
     ROUND_WINDOW_SEC: 60,
     ROUNDS: 3,
+    WEEKLY_REWARDS: {
+      1: { gems: 30, money: 100000 },
+      2: { gems: 25, money: 80000 },
+      3: { gems: 20, money: 60000 },
+      4: { gems: 15, money: 40000 },
+      5: { gems: 10, money: 20000 }
+    },
     RATING_LIMIT: 10,
     BATTLE_TTL_SEC: 24 * 60 * 60,
     QUEUE_TTL_SEC: 10 * 24 * 60 * 60,
