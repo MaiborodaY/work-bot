@@ -1,6 +1,7 @@
 import { CONFIG } from "./GameConfig.js";
 import { getBusinessTitle } from "./I18nCatalog.js";
 import { formatMoney, normalizeLang, t } from "./i18n/index.js";
+import { EnergyService } from "./EnergyService.js";
 
 const LABOUR_FREE_PLAYERS_KEY = "labour:free_players";
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -713,7 +714,7 @@ export class LabourService {
 
     const id = String(u.id || "");
     const name = String(u.displayName || "").trim();
-    const energyMax = Math.max(0, Number(u.energy_max) || 0);
+    const energyMax = EnergyService.effectiveEnergyMax(u, this.now());
     if (!id) return;
 
     const arr = await this._loadFreePlayersIndex();
@@ -1166,7 +1167,7 @@ export class LabourService {
         reserveError = this._t(owner, "labour.err.employee_no_name");
         return emp;
       }
-      if ((Number(emp.energy_max) || 0) < minEnergy) {
+      if (EnergyService.effectiveEnergyMax(emp, this.now()) < minEnergy) {
         reserveError = this._t(owner, "labour.err.employee_not_enough_energy");
         return emp;
       }

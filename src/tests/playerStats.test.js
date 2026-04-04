@@ -49,7 +49,19 @@ test("markUsefulActivity is idempotent on same day", () => {
       didFirstClaim: false,
       didGym: false,
       didBar: false,
-      didBusiness: false
+      didBusiness: false,
+      farmHarvestCount: 0,
+      farmMoneyTotal: 0,
+      farmMoneyWeek: 0,
+      bizClaimDayTotal: 0,
+      gquizDayEarned: 0,
+      labourDayMoney: 0,
+      labourDayGems: 0,
+      farmWeekKey: "",
+      bizClaimDayKey: "",
+      gquizDayKey: "",
+      labourDayKey: "",
+      farmIncomeDays: []
     }
   };
   const nowTs = Date.UTC(2026, 2, 12, 18, 0, 0);

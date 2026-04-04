@@ -3,6 +3,7 @@ import { CONFIG } from "./GameConfig.js";
 import { NotifyDueIndex } from "./NotifyDueIndex.js";
 import { normalizeLang, t } from "./i18n/index.js";
 import { getJobTitle } from "./I18nCatalog.js";
+import { EnergyService } from "./EnergyService.js";
 
 const DUE_LOOKBACK_MINUTES = 15;
 const FALLBACK_SCAN_EVERY_HOURS = 6;
@@ -107,6 +108,15 @@ export class NotificationService {
           }
         }
 
+        if (this._hasExpiredGymPassPending(u, now)) {
+          const passState = EnergyService.gymPassState(u, now);
+          const endedAt = passState.endAt;
+          const textPass = this._t(u, "notify.gym_pass.expired");
+          await this.bot.sendWithInline(u.chatId, textPass, [[{ text: this._t(u, "notify.btn.go_gym"), callback_data: "go:Gym" }]]);
+          changed = EnergyService.markGymPassExpiredNotified(u, endedAt) || changed;
+          changed = EnergyService.clampEnergy(u, now) || changed;
+        }
+
         if (changed) {
           await this.users.save(u);
         }
@@ -145,6 +155,12 @@ export class NotificationService {
     if (g.notified) return false;
     if (now < (g.endAt || 0)) return false;
     return true;
+  }
+
+  _hasExpiredGymPassPending(u, now) {
+    if (!u?.chatId) return false;
+    const state = EnergyService.gymPassState(u, now);
+    return !!state.expiredNeedsNotify;
   }
 
   _isFallbackScanWindow(nowTs) {
@@ -196,7 +212,7 @@ export class NotificationService {
       }
 
       if (!u) continue;
-      if (this._hasReadyWork(u, nowTs) || this._hasReadyStudy(u, nowTs) || this._hasReadyGym(u, nowTs)) {
+      if (this._hasReadyWork(u, nowTs) || this._hasReadyStudy(u, nowTs) || this._hasReadyGym(u, nowTs) || this._hasExpiredGymPassPending(u, nowTs)) {
         out.push(u);
       }
     }
@@ -209,7 +225,7 @@ export class NotificationService {
       const out = [];
       const all = await this.users.listAll();
       for (const u of all) {
-        if (this._hasReadyWork(u, now) || this._hasReadyStudy(u, now) || this._hasReadyGym(u, now)) {
+        if (this._hasReadyWork(u, now) || this._hasReadyStudy(u, now) || this._hasReadyGym(u, now) || this._hasExpiredGymPassPending(u, now)) {
           out.push(u);
         }
       }
@@ -258,7 +274,7 @@ export class NotificationService {
         if (!raw) continue;
         let u;
         try { u = JSON.parse(raw); } catch { continue; }
-        if (this._hasReadyWork(u, now) || this._hasReadyStudy(u, now) || this._hasReadyGym(u, now)) {
+        if (this._hasReadyWork(u, now) || this._hasReadyStudy(u, now) || this._hasReadyGym(u, now) || this._hasExpiredGymPassPending(u, now)) {
           out.push(u);
         }
       }

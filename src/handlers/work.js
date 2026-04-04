@@ -7,6 +7,7 @@ import { getJobTitle } from "../I18nCatalog.js";
 import { safeCall } from "../SafeCall.js";
 import { Routes } from "../Routes.js";
 import { showEnergyChoicePanel } from "./energy.js";
+import { EnergyService } from "../EnergyService.js";
 
 export async function applyWorkClaimSideEffects(ctx, pay, endAt) {
   const { clans, labour, referrals, u, logger } = ctx || {};
@@ -85,7 +86,7 @@ export const workHandler = {
 
       // Если максимальной энергии не хватает для выбранной работы — сразу ведём в зал
       const redirectedToGym = await safeCall("work.start.energy_cap_gate", async () => {
-        const energyCap = typeof u?.energy_max === "number" ? u.energy_max : (CONFIG?.ENERGY_MAX ?? 100);
+        const energyCap = EnergyService.effectiveEnergyMax(u);
         if (requiredEnergy == null || energyCap >= requiredEnergy) return false;
 
         u.nav = typeof u.nav === "object" && u.nav ? u.nav : {};
@@ -120,7 +121,7 @@ export const workHandler = {
           u.flags.onboardingStep = "job_claim";
           const spent = Math.max(0, Number(res?.inst?.energySpent) || 0);
           if (spent > 0) {
-            const energyMax = Math.max(0, Number(u?.energy_max) || 0);
+            const energyMax = EnergyService.effectiveEnergyMax(u);
             u.energy = Math.min(energyMax, Math.max(0, Number(u?.energy) || 0) + spent);
           }
           await users.save(u);

@@ -4,6 +4,7 @@ import { GymService } from "./GymService.js";
 import { normalizeLang, t } from "./i18n/index.js";
 import { getJobTitle, getShopTitle, getUpgradeDesc, getUpgradeTitle } from "./I18nCatalog.js";
 import { Routes, toGoCallback } from "./Routes.js";
+import { EnergyService } from "./EnergyService.js";
 
 export class UiFactory {
   _lang(lang) {
@@ -393,14 +394,41 @@ export class UiFactory {
 
     const { timeMs, costMoney, costEnergy } = GymService.computeForUser(user);
     const mins = Math.max(1, Math.round(timeMs / 60000));
+    const passCfg = EnergyService.passCfg();
+    const passState = EnergyService.gymPassState(user, now);
+    const gymCap = Math.max(0, Number(CONFIG?.GYM?.MAX_ENERGY_CAP) || 160);
+    const baseEnergyMax = Math.max(0, Number(user?.energy_max) || 0);
 
-    return [
+    const out = [
       [{
         text: this._t(l, "ui.gym.start", { money: costMoney, energy: costEnergy, mins }),
         callback_data: "gym:start"
       }],
-      [{ text: this._t(l, "ui.back.progress"), callback_data: this._go(Routes.PROGRESS) }],
     ];
+
+    if (passState.active) {
+      const leftMin = Math.max(1, Math.ceil(passState.leftMs / 60000));
+      const d = Math.floor(leftMin / (24 * 60));
+      const h = Math.floor((leftMin % (24 * 60)) / 60);
+      const m = leftMin % 60;
+      out.push([{
+        text: this._t(l, "ui.gym.pass_active", { bonus: passCfg.bonusEnergyMax, d, h, m }),
+        callback_data: "noop"
+      }]);
+    } else if (baseEnergyMax >= gymCap) {
+      out.push([{
+        text: this._t(l, "ui.gym.pass_buy", { bonus: passCfg.bonusEnergyMax, gems: passCfg.priceGems }),
+        callback_data: "gym:pass:buy"
+      }]);
+    } else {
+      out.push([{
+        text: this._t(l, "ui.gym.pass_locked", { need: gymCap, have: baseEnergyMax }),
+        callback_data: "noop"
+      }]);
+    }
+
+    out.push([{ text: this._t(l, "ui.back.progress"), callback_data: this._go(Routes.PROGRESS) }]);
+    return out;
   }
 
   // ---------- Улучшения ----------

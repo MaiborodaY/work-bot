@@ -7,6 +7,7 @@ import {
   normalizeBusinessEntry
 } from "./BusinessPayout.js";
 import { formatMoney, normalizeLang, t } from "./i18n/index.js";
+import { EnergyService } from "./EnergyService.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -555,7 +556,7 @@ export class ThiefService {
       name: this._userName(thief, owner),
       level: Math.max(0, Math.floor(Number(thief?.thief?.level) || 0)),
       energy: Math.max(0, Math.floor(Number(thief?.energy) || 0)),
-      energyMax: Math.max(0, Math.floor(Number(thief?.energy_max) || 0)),
+      energyMax: EnergyService.effectiveEnergyMax(thief, this.now()),
       bizCount,
       achCount: Math.max(0, Math.floor(Number(achCount) || 0))
     });

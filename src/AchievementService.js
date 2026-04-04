@@ -67,7 +67,8 @@ export class AchievementService {
       gquizPlayedTotal: 0,
       gquizPerfectTotal: 0,
       gquizPerfectStreak: 0,
-      gquizHardPerfectTotal: 0
+      gquizHardPerfectTotal: 0,
+      gymPassBoughtTotal: 0
     };
     for (const [k, d] of Object.entries(defaultsNum)) {
       if (typeof p[k] !== "number" || !Number.isFinite(p[k])) {
@@ -230,6 +231,10 @@ export class AchievementService {
         } else {
           changed = this._set(u, "gquizPerfectStreak", 0) || changed;
         }
+        break;
+      }
+      case "gym_pass_buy": {
+        changed = this._inc(u, "gymPassBoughtTotal", 1) || changed;
         break;
       }
       default:
@@ -400,6 +405,9 @@ export class AchievementService {
     }
     if (id === "farm_all_crops") {
       return `${farmTypesCount}/3`;
+    }
+    if (id === "gym_pass_first") {
+      return `${Math.max(0, Math.floor(n(p.gymPassBoughtTotal)))}/1`;
     }
 
     const ru = {

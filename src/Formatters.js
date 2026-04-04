@@ -3,6 +3,7 @@ import { CONFIG } from "./GameConfig.js";
 import { EconomyService } from "./EconomyService.js";
 import { normalizeLang, t } from "./i18n/index.js";
 import { getJobTitle } from "./I18nCatalog.js";
+import { EnergyService } from "./EnergyService.js";
 
 export const Formatters = {
   _lang(u, lang = null) {
@@ -16,7 +17,7 @@ export const Formatters = {
   balance(u, lang = null) {
     const money     = Number.isFinite(u?.money) ? u.money : 0;
     const energy    = Number.isFinite(u?.energy) ? u.energy : 0;
-    const energyMax = Number.isFinite(u?.energy_max) ? u.energy_max : (CONFIG?.ENERGY_MAX ?? 100);
+    const energyMax = EnergyService.effectiveEnergyMax(u);
     const premium   = Number.isFinite(u?.premium) ? u.premium : 0;
     const gemEmoji  = CONFIG?.PREMIUM?.emoji ?? "💎";
 
@@ -138,6 +139,24 @@ export const Formatters = {
 
     if (deps?.employmentLine && String(deps.employmentLine).trim()) {
       lines.push(String(deps.employmentLine).trim());
+    }
+
+    const passState = EnergyService.gymPassState(u);
+    if (passState.active) {
+      const leftMin = Math.max(1, Math.ceil(passState.leftMs / 60000));
+      const d = Math.floor(leftMin / (24 * 60));
+      const h = Math.floor((leftMin % (24 * 60)) / 60);
+      const m = leftMin % 60;
+      lines.push(this._t(u, "fmt.status.gym_pass_active", {
+        bonus: EnergyService.passCfg().bonusEnergyMax,
+        d,
+        h,
+        m
+      }, l));
+    } else {
+      lines.push(this._t(u, "fmt.status.gym_pass_inactive", {
+        price: EnergyService.passCfg().priceGems
+      }, l));
     }
 
     lines.push(Formatters.studyLine(u, l));

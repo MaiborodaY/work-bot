@@ -1,5 +1,6 @@
 import { CONFIG } from "../GameConfig.js";
 import { HomeService } from "../HomeService.js";
+import { EnergyService } from "../EnergyService.js";
 
 export const homeHandler = {
   match: (data) =>
@@ -50,7 +51,7 @@ export const homeHandler = {
       u.rest.active = false;
       await users.save(u);
 
-      await goTo(u, "Home", `🛌 Отдых прерван: +${res.gained}⚡ (${u.energy}/${u.energy_max}).`);
+      await goTo(u, "Home", `🛌 Отдых прерван: +${res.gained}⚡ (${u.energy}/${EnergyService.effectiveEnergyMax(u)}).`);
       return;
     }
 
@@ -68,7 +69,7 @@ export const homeHandler = {
       await users.save(u);
 
       const extra = res.stopped ? " Отдых остановлен — полная энергия." : "";
-      await goTo(u, "Home", `🍽️ Ты съел: ${it.title}. Энергия: ${u.energy}/${u.energy_max}.${extra}`);
+      await goTo(u, "Home", `🍽️ Ты съел: ${it.title}. Энергия: ${u.energy}/${EnergyService.effectiveEnergyMax(u)}.${extra}`);
       return;
     }
   }

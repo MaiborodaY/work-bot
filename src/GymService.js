@@ -2,6 +2,7 @@
 import { CONFIG } from "./GameConfig.js";
 import { NotifyDueIndex } from "./NotifyDueIndex.js";
 import { markFunnelStep, markUsefulActivity } from "./PlayerStats.js";
+import { EnergyService } from "./EnergyService.js";
 
 /**
  * Сервис тренажёрного зала:
@@ -39,7 +40,7 @@ export class GymService {
 
       // награда
       REWARD_ENERGY_MAX: CONFIG.GYM?.REWARD_ENERGY_MAX ?? 5,
-      MAX_ENERGY_CAP:    CONFIG.GYM?.MAX_ENERGY_CAP    ?? 150,
+      MAX_ENERGY_CAP:    CONFIG.GYM?.MAX_ENERGY_CAP    ?? 160,
     };
   }
 
@@ -58,9 +59,21 @@ export class GymService {
   /** Запуск тренировки */
   async start(u) {
     u.gym = u.gym || { level: 0, active: false, startAt: 0, endAt: 0 };
+    EnergyService.ensureGymPassModel(u);
 
     if (u.gym.active) {
       return { ok: false, error: "Тренировка уже идет." };
+    }
+
+    const C = GymService.cfg();
+    const baseEnergyMax = Math.max(0, Number(u?.energy_max) || 0);
+    if (baseEnergyMax >= C.MAX_ENERGY_CAP) {
+      return {
+        ok: false,
+        code: "max_energy_reached",
+        maxEnergyCap: C.MAX_ENERGY_CAP,
+        error: "Достигнут максимум энергии."
+      };
     }
 
     const { timeMs, costMoney, costEnergy, level } = GymService.computeForUser(u);
@@ -112,6 +125,7 @@ export class GymService {
     if (now < (u.gym.endAt || 0)) return false;
 
     const C = GymService.cfg();
+    EnergyService.ensureGymPassModel(u);
 
     // ап уровня и награда к капу энергии
     const prevLevel = Math.max(0, u.gym.level || 0);
@@ -155,5 +169,78 @@ export class GymService {
       await this.send(intro);
     }
     return true;
+  }
+
+  getPassViewModel(u) {
+    EnergyService.ensureGymPassModel(u);
+    const passCfg = EnergyService.passCfg();
+    const passState = EnergyService.gymPassState(u, this.now());
+    const gymCfg = GymService.cfg();
+    const baseEnergyMax = Math.max(0, Number(u?.energy_max) || 0);
+    const canBuy = !passState.active && baseEnergyMax >= gymCfg.MAX_ENERGY_CAP;
+    return {
+      active: passState.active,
+      leftMs: passState.leftMs,
+      endAt: passState.endAt,
+      priceGems: passCfg.priceGems,
+      bonusEnergyMax: passCfg.bonusEnergyMax,
+      canBuy,
+      baseEnergyMax,
+      requiredBaseEnergyMax: gymCfg.MAX_ENERGY_CAP
+    };
+  }
+
+  async buyPass(u) {
+    EnergyService.ensureGymPassModel(u);
+    const passCfg = EnergyService.passCfg();
+    const passState = EnergyService.gymPassState(u, this.now());
+    if (passState.active) {
+      return { ok: false, code: "pass_already_active", leftMs: passState.leftMs };
+    }
+
+    const gymCfg = GymService.cfg();
+    const baseEnergyMax = Math.max(0, Number(u?.energy_max) || 0);
+    if (baseEnergyMax < gymCfg.MAX_ENERGY_CAP) {
+      return {
+        ok: false,
+        code: "pass_requires_max_energy",
+        need: gymCfg.MAX_ENERGY_CAP,
+        have: baseEnergyMax
+      };
+    }
+
+    const needGems = passCfg.priceGems;
+    const haveGems = Math.max(0, Math.floor(Number(u?.premium) || 0));
+    if (haveGems < needGems) {
+      return {
+        ok: false,
+        code: "pass_not_enough_gems",
+        need: needGems,
+        have: haveGems
+      };
+    }
+
+    u.premium = haveGems - needGems;
+    const endAt = EnergyService.activateGymPass(u, this.now());
+    EnergyService.clampEnergy(u, this.now());
+    await this.users.save(u);
+
+    try {
+      if (this.dueIndex) {
+        await this.dueIndex.markDue({
+          userId: u.id,
+          activity: "gym_pass",
+          endAt,
+          ttlSec: Math.max(60, Math.ceil(passCfg.durationMs / 1000) + (3 * 24 * 60 * 60))
+        });
+      }
+    } catch {}
+
+    return {
+      ok: true,
+      spentGems: needGems,
+      endAt,
+      bonusEnergyMax: passCfg.bonusEnergyMax
+    };
   }
 }

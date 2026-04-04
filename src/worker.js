@@ -28,6 +28,7 @@ import { ColosseumService } from "./ColosseumService.js";
 import { ASSETS, JOB_ASSETS } from "./Assets.js";
 import { normalizeLang, t } from "./i18n/index.js";
 import { safeCall } from "./SafeCall.js";
+import { EnergyService } from "./EnergyService.js";
 
 // handlers test comm
 import { workHandler } from "./handlers/work.js";
@@ -576,7 +577,7 @@ export default {
       const name = String(target?.displayName || "").trim() || `u${String(target?.id || "").slice(-4).padStart(4, "0")}`;
       const money = Math.max(0, Math.floor(Number(target?.money) || 0));
       const energy = Math.max(0, Math.floor(Number(target?.energy) || 0));
-      const energyMax = Math.max(0, Math.floor(Number(target?.energy_max) || 0));
+      const energyMax = EnergyService.effectiveEnergyMax(target, now());
       const stolen = Math.max(0, Math.floor(Number(target?.thief?.totalStolen || target?.achievements?.progress?.totalStolen) || 0));
       const hideMoneyInPublicProfile = true;
 

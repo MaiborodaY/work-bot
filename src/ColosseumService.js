@@ -11,6 +11,7 @@ import {
 } from "./ColosseumRules.js";
 import { normalizeLang, STRINGS } from "./i18n/index.js";
 import { markUsefulActivity } from "./PlayerStats.js";
+import { EnergyService } from "./EnergyService.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const CLAN_KEY_PREFIX = "clan:item:";
@@ -230,7 +231,7 @@ export class ColosseumService {
     const fileId = String(ASSETS?.ColosseumLose || "").trim();
     return fileId || this._asset();
   }
-  _isAccessUnlocked(u) { return Math.max(0, toInt(u?.energy_max, 0)) >= this._minEnergyMax(); }
+  _isAccessUnlocked(u) { return EnergyService.effectiveEnergyMax(u, this.now()) >= this._minEnergyMax(); }
   _secondsLeft(deadlineTs) { return Math.max(0, toInt((Number(deadlineTs) - this.now()) / 1000, 0)); }
   _isAdminUserId(userId) {
     const id = String(userId || "").trim();
@@ -1108,7 +1109,7 @@ export class ColosseumService {
     if (!this._isAccessUnlocked(user)) {
       await this._saveUserIfDirty(user, dirty);
       return {
-        caption: `${s.title}\n${s.subtitle}\n\n${this._fmt(s.locked, { need: this._minEnergyMax(), have: Math.max(0, toInt(user?.energy_max, 0)) })}`,
+        caption: `${s.title}\n${s.subtitle}\n\n${this._fmt(s.locked, { need: this._minEnergyMax(), have: EnergyService.effectiveEnergyMax(user, this.now()) })}`,
         asset: this._asset(),
         keyboard: [[{ text: s.btnBack, callback_data: "go:City" }]]
       };

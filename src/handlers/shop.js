@@ -1,5 +1,6 @@
 import { CONFIG } from "../GameConfig.js";
 import { HomeService } from "../HomeService.js";
+import { EnergyService } from "../EnergyService.js";
 import { normalizeLang, t } from "../i18n/index.js";
 import { getShopTitle } from "../I18nCatalog.js";
 
@@ -19,7 +20,8 @@ export const shopHandler = {
     // ===== Покупка за обычные $ (еда — моменталка) =====
     if (typeof it.price === "number") {
       // Блокируем покупку, если уже полный кап энергии
-      if ((u.energy || 0) >= (u.energy_max || CONFIG.ENERGY_MAX)) {
+      const effectiveEnergyMax = EnergyService.effectiveEnergyMax(u);
+      if ((u.energy || 0) >= effectiveEnergyMax) {
         await answer(cb.id, tt("handler.shop.energy_full_skip"));
         return;
       }
@@ -50,7 +52,8 @@ export const shopHandler = {
       // Спец-логика для Coca-Cola Zero (полный рефил, 3/день UTC, блок при полном капе)
       if (key === "coke_zero") {
         // Блокируем, если уже полный кап
-        if ((u.energy || 0) >= (u.energy_max || CONFIG.ENERGY_MAX)) {
+        const effectiveEnergyMax = EnergyService.effectiveEnergyMax(u);
+        if ((u.energy || 0) >= effectiveEnergyMax) {
           await answer(cb.id, tt("handler.shop.energy_full_no_gems"));
           return;
         }
@@ -71,7 +74,7 @@ export const shopHandler = {
         // Списание и эффект полного рефила
         u.premium -= need;
               // Моментальное применение энергии с авто-стопом отдыха - АВТОСТОП ВЫКЛЮЧЕН FALSE
-        const toMax = (u.energy_max || CONFIG.ENERGY_MAX) - (u.energy || 0);
+        const toMax = effectiveEnergyMax - (u.energy || 0);
         HomeService.applyEnergy(u, toMax, { autoStopRest: false });
         u.premiumDaily.coke = (u.premiumDaily.coke || 0) + 1;
 
@@ -83,7 +86,7 @@ export const shopHandler = {
           tt("handler.shop.coke_drink_ok", {
             title: itemTitle,
             energy: u.energy,
-            energyMax: u.energy_max,
+            energyMax: effectiveEnergyMax,
             emoji: CONFIG.PREMIUM.emoji,
             premium: u.premium
           })

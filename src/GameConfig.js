@@ -78,6 +78,12 @@ export const CONFIG = {
     MAX_ENERGY_CAP:    160
   },
 
+  GYM_PASS: {
+    PRICE_GEMS: 10,
+    BONUS_ENERGY_MAX: 20,
+    DURATION_MS: 7 * 24 * 60 * 60 * 1000
+  },
+
   PREMIUM: {
     name: "Кристаллы",
     emoji: "💎",

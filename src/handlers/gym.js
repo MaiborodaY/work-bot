@@ -10,7 +10,8 @@ export const gymHandler = {
     data === "gym:start" ||
     data === "gym:finish" ||
     data === "gym:skip" ||
-    data === "gym:skip_free",
+    data === "gym:skip_free" ||
+    data === "gym:pass:buy",
 
   async handle(ctx) {
     const { u, cb, answer, users, locations, now, send, orders, social, labour, achievements, quests } = ctx;
@@ -51,6 +52,11 @@ export const gymHandler = {
 
       const res = await gym.start(u);
       if (!res.ok) {
+        if (res.code === "max_energy_reached") {
+          await answer(cb.id, tt("handler.gym.max_energy_reached"));
+          await locations.show(u, null, "Gym");
+          return;
+        }
         const lowEnergy = res.code === "not_enough_energy" || /energy/i.test(String(res.error || ""));
         if (lowEnergy) {
           await answer(cb.id);
@@ -81,6 +87,33 @@ export const gymHandler = {
       });
       await answer(cb.id, tt("handler.gym.started_ok"));
       await locations.show(u, intro, "Gym");
+      return;
+    }
+
+    if (ctx.data === "gym:pass:buy") {
+      const res = await gym.buyPass(u);
+      if (!res.ok) {
+        if (res.code === "pass_already_active") {
+          await answer(cb.id, tt("handler.gym.pass_already_active"));
+        } else if (res.code === "pass_requires_max_energy") {
+          await answer(cb.id, tt("handler.gym.pass_requires_max_energy", { need: res.need, have: res.have }));
+        } else if (res.code === "pass_not_enough_gems") {
+          await answer(cb.id, tt("handler.gym.pass_not_enough_gems", { need: res.need, have: res.have }));
+        } else {
+          await answer(cb.id, tt("handler.gym.pass_buy_failed"));
+        }
+        await locations.show(u, null, "Gym");
+        return;
+      }
+
+      try {
+        if (achievements?.onEvent) {
+          await achievements.onEvent(u, "gym_pass_buy", { spentGems: res.spentGems });
+        }
+      } catch {}
+
+      await answer(cb.id, tt("handler.gym.pass_buy_ok"));
+      await locations.show(u, null, "Gym");
       return;
     }
 

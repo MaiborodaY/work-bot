@@ -1,5 +1,5 @@
 // HomeService.js — доменная логика Дома: кровати, восстановление, энергия
-import { CONFIG } from "./GameConfig.js";
+import { EnergyService } from "./EnergyService.js";
 
 export class HomeService {
   // --- Тиры кроватей ---
@@ -48,7 +48,7 @@ export class HomeService {
    * @returns {{before:number, after:number, gained:number, stopped:boolean}}
    */
   static applyEnergy(u, delta, opts = {}) {
-    const max = u?.energy_max || CONFIG.ENERGY_MAX;
+    const max = EnergyService.effectiveEnergyMax(u);
     const before = Math.max(0, Number(u?.energy || 0));
     const afterRaw = before + Number(delta || 0);
     const after = Math.min(max, Math.max(0, afterRaw));

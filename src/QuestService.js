@@ -1,5 +1,6 @@
 import { CONFIG } from "./GameConfig.js";
 import { formatMoney, normalizeLang } from "./i18n/index.js";
+import { EnergyService } from "./EnergyService.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -418,7 +419,7 @@ export class QuestService {
 
   _canAccessColosseum(u) {
     const minEnergyMax = Math.max(0, toInt(CONFIG?.COLOSSEUM?.MIN_ENERGY_MAX, 50));
-    return Math.max(0, toInt(u?.energy_max, 0)) >= minEnergyMax;
+    return EnergyService.effectiveEnergyMax(u, this.now()) >= minEnergyMax;
   }
 
   _forcedDailyQuestIds(u) {

@@ -1,6 +1,7 @@
 import { CONFIG } from "../../GameConfig.js";
 import { BarService } from "../../BarService.js";
 import { Routes, toGoCallback } from "../../Routes.js";
+import { EnergyService } from "../../EnergyService.js";
 
 export async function renderCityBoardRoute(ctx, user, { header = "", lang = "ru" } = {}) {
   await ctx.media.show({
@@ -147,6 +148,25 @@ export async function renderGymRoute(ctx, user, { introText = null, lang = "ru",
   }
 
   const titleOrHeader = (introText && introText.trim()) ? introText.trim() : defaultTitle;
+  const passCfg = EnergyService.passCfg();
+  const passState = EnergyService.gymPassState(user, ctx.now());
+  const gymCap = Math.max(0, Number(CONFIG?.GYM?.MAX_ENERGY_CAP) || 160);
+  const baseEnergyMax = Math.max(0, Number(user?.energy_max) || 0);
+  let passLine = "";
+  if (passState.active) {
+    const leftMin = Math.max(1, Math.ceil(passState.leftMs / 60000));
+    const d = Math.floor(leftMin / (24 * 60));
+    const h = Math.floor((leftMin % (24 * 60)) / 60);
+    const m = leftMin % 60;
+    passLine = ctx._t(user, "loc.gym.pass_active_line", { bonus: passCfg.bonusEnergyMax, d, h, m });
+  } else if (baseEnergyMax >= gymCap) {
+    passLine = ctx._t(user, "loc.gym.pass_available_line", { bonus: passCfg.bonusEnergyMax, gems: passCfg.priceGems });
+  } else {
+    passLine = ctx._t(user, "loc.gym.pass_locked_line", { need: gymCap, have: baseEnergyMax });
+  }
+  const captionText = passLine
+    ? `${titleOrHeader}\n\n${passLine}\n\n${ctx.formatters.balance(user)}`
+    : `${titleOrHeader}\n\n${ctx.formatters.balance(user)}`;
 
   if (user?.gym?.active) {
     const gymActiveAsset = (CONFIG.ASSETS?.GymActive || CONFIG.ASSETS?.Gym);
@@ -154,7 +174,7 @@ export async function renderGymRoute(ctx, user, { introText = null, lang = "ru",
       sourceMsg: ctx._sourceMsg,
       place: Routes.GYM,
       asset: gymActiveAsset,
-      caption: titleOrHeader + "\n\n" + ctx.formatters.balance(user),
+      caption: captionText,
       keyboard: kb,
       policy: "photo",
     });
@@ -162,7 +182,7 @@ export async function renderGymRoute(ctx, user, { introText = null, lang = "ru",
     await ctx.media.show({
       sourceMsg: ctx._sourceMsg,
       place: Routes.GYM,
-      caption: titleOrHeader + "\n\n" + ctx.formatters.balance(user),
+      caption: captionText,
       keyboard: kb,
       policy: "auto",
     });

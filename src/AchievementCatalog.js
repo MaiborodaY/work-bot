@@ -152,6 +152,13 @@ export const ACHIEVEMENTS = [
     done: (u) => Math.max(0, Number(u?.study?.level) || 0) >= 5
   },
   {
+    id: "gym_pass_first",
+    reward: 3,
+    events: ["gym_pass_buy"],
+    title: { ru: "Абонемент в зал", uk: "Абонемент до залу", en: "Gym membership" },
+    done: (u) => p(u, "gymPassBoughtTotal") >= 1
+  },
+  {
     id: "pet_owner",
     reward: 2,
     events: ["pet_buy", "retro"],

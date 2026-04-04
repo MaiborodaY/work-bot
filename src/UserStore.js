@@ -1,6 +1,7 @@
 // UserStore.js
 import { CONFIG } from "./GameConfig.js";
 import { ensurePlayerStatsShape } from "./PlayerStats.js";
+import { EnergyService } from "./EnergyService.js";
 
 export class UserStore {
   static START_ENERGY_MIN = 20;
@@ -110,16 +111,19 @@ export class UserStore {
     if (!u.flags || typeof u.flags !== "object") { u.flags = {}; dirty = true; }
     const minEnergy = UserStore.START_ENERGY_MIN;
     const baseEnergyMax = Math.max(Number(CONFIG.ENERGY_MAX) || 0, minEnergy);
+    const gymBaseCap = Math.max(minEnergy, Number(CONFIG?.GYM?.MAX_ENERGY_CAP) || baseEnergyMax);
     if (typeof u.energy_max !== "number") { u.energy_max = baseEnergyMax; dirty = true; }
     if (u.energy_max < minEnergy) { u.energy_max = minEnergy; dirty = true; }
+    if (u.energy_max > gymBaseCap) { u.energy_max = gymBaseCap; dirty = true; }
     if (typeof u.energy !== "number") { u.energy = minEnergy; dirty = true; }
     if (u.energy < 0) { u.energy = 0; dirty = true; }
-    if (u.energy > u.energy_max) { u.energy = u.energy_max; dirty = true; }
     if (u.flags.energyBackfill20Done !== true) {
       if (u.energy < minEnergy) { u.energy = minEnergy; dirty = true; }
       u.flags.energyBackfill20Done = true;
       dirty = true;
     }
+    dirty = EnergyService.ensureGymPassModel(u) || dirty;
+    dirty = EnergyService.clampEnergy(u, Date.now()) || dirty;
 
     // Ник/онбординг
     if (typeof u.displayName !== "string") { u.displayName = ""; dirty = true; }
@@ -786,6 +790,7 @@ export class UserStore {
       study: { level: 0, active: false, startAt: 0, endAt: 0 },
 
       gym: { active: false, startAt: 0, endAt: 0, level: 0 },
+      gymPass: { endAt: 0, notifiedEndAt: 0 },
 
       subReward: { day: "", eligible: false },
 
