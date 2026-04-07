@@ -373,16 +373,16 @@ test("colosseum service: weekly rewards are paid on rollover for top-5 including
 
   // Places from top list as-is:
   // 1:u1 2:u2 3:u3(admin) 4:u4 5:u5
-  assert.equal(u1.money, 100000);
-  assert.equal(u1.premium, 30);
-  assert.equal(u2.money, 80000);
-  assert.equal(u2.premium, 25);
-  assert.equal(u3.money, 60000);
-  assert.equal(u3.premium, 20);
-  assert.equal(u4.money, 40000);
-  assert.equal(u4.premium, 15);
-  assert.equal(u5.money, 20000);
-  assert.equal(u5.premium, 10);
+  assert.equal(u1.money, 33000);
+  assert.equal(u1.premium, 10);
+  assert.equal(u2.money, 27000);
+  assert.equal(u2.premium, 8);
+  assert.equal(u3.money, 20000);
+  assert.equal(u3.premium, 6);
+  assert.equal(u4.money, 13000);
+  assert.equal(u4.premium, 5);
+  assert.equal(u5.money, 7000);
+  assert.equal(u5.premium, 3);
   assert.equal(u6.money, 0);
   assert.equal(u6.premium, 0);
 
@@ -391,6 +391,6 @@ test("colosseum service: weekly rewards are paid on rollover for top-5 including
   // Idempotent: second run in same week must not duplicate rewards.
   await service.runTick();
   const u1Again = await users.load("u1");
-  assert.equal(u1Again.money, 100000);
-  assert.equal(u1Again.premium, 30);
+  assert.equal(u1Again.money, 33000);
+  assert.equal(u1Again.premium, 10);
 });

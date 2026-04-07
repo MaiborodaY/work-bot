@@ -253,11 +253,11 @@ export class ColosseumService {
 
   _weeklyRewardForPlace(place) {
     const defaults = {
-      1: { gems: 30, money: 100000 },
-      2: { gems: 25, money: 80000 },
-      3: { gems: 20, money: 60000 },
-      4: { gems: 15, money: 40000 },
-      5: { gems: 10, money: 20000 }
+      1: { gems: 10, money: 33000 },
+      2: { gems: 8, money: 27000 },
+      3: { gems: 6, money: 20000 },
+      4: { gems: 5, money: 13000 },
+      5: { gems: 3, money: 7000 }
     };
     const table = this._cfg()?.WEEKLY_REWARDS || {};
     const raw = table?.[place] || table?.[String(place)] || defaults?.[place] || {};
