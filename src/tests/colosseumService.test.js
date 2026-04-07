@@ -145,6 +145,41 @@ test("colosseum service: both accepts start battle and consume daily attempts", 
   assert.ok(Number(battle.roundDeadline) > Date.UTC(2026, 2, 30, 12, 5, 0));
 });
 
+test("colosseum service: starting battle triggers quest event for both players", async () => {
+  const db = new FakeDb();
+  const users = new FakeUsers({
+    u1: makeUser("u1", "Alpha"),
+    u2: makeUser("u2", "Bravo")
+  });
+  const questCalls = [];
+  const quests = {
+    async onEvent(user, event) {
+      questCalls.push({ userId: String(user?.id || ""), event: String(event || "") });
+      return { ok: true, changed: false, events: [] };
+    }
+  };
+  const service = new ColosseumService({
+    db,
+    users,
+    now: () => Date.UTC(2026, 2, 30, 12, 6, 0),
+    bot: { async sendWithInline() {} },
+    quests
+  });
+
+  await service.joinQueue(await users.load("u1"));
+  await service.joinQueue(await users.load("u2"));
+  await service.accept(await users.load("u1"));
+  await service.accept(await users.load("u2"));
+
+  assert.deepEqual(
+    questCalls.sort((a, b) => String(a.userId).localeCompare(String(b.userId))),
+    [
+      { userId: "u1", event: "colosseum_battle_played" },
+      { userId: "u2", event: "colosseum_battle_played" }
+    ]
+  );
+});
+
 test("colosseum service: defense cannot be the same zone as selected attack", async () => {
   const db = new FakeDb();
   const users = new FakeUsers({

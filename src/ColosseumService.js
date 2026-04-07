@@ -70,12 +70,13 @@ function zoneDamage(zone) {
 }
 
 export class ColosseumService {
-  constructor({ db, users, now, bot = null, isAdmin = null }) {
+  constructor({ db, users, now, bot = null, isAdmin = null, quests = null }) {
     this.db = db || users?.db || null;
     this.users = users || null;
     this.now = now || (() => Date.now());
     this.bot = bot || null;
     this.isAdmin = (typeof isAdmin === "function") ? isAdmin : (() => false);
+    this.quests = quests || null;
   }
 
   _cfg() {
@@ -137,7 +138,11 @@ export class ColosseumService {
       activeScore: this._tr(lang, "colosseum.active_score"),
       activeDeadline: this._tr(lang, "colosseum.active_deadline"),
       activeHistoryTitle: this._tr(lang, "colosseum.active_history_title"),
+      activeHistoryRoundTitle: this._tr(lang, "colosseum.active_history_round_title"),
       activeHistoryLine: this._tr(lang, "colosseum.active_history_line"),
+      activeHistoryPairLine: this._tr(lang, "colosseum.active_history_pair_line"),
+      activeHistoryResultHit: this._tr(lang, "colosseum.active_history_result_hit"),
+      activeHistoryResultBlocked: this._tr(lang, "colosseum.active_history_result_blocked"),
       activeHistoryRoundWin: this._tr(lang, "colosseum.active_history_round_win"),
       activeHistoryRoundDraw: this._tr(lang, "colosseum.active_history_round_draw"),
       activeHistoryRoundLose: this._tr(lang, "colosseum.active_history_round_lose"),
@@ -383,6 +388,12 @@ export class ColosseumService {
     if (zone === "body") return s.zoneBody;
     if (zone === "legs") return s.zoneLegs;
     return "-";
+  }
+
+  _zoneLabelTitle(zone, lang = "en") {
+    const raw = String(this._zoneLabel(zone, lang) || "");
+    if (!raw || raw === "-") return raw;
+    return raw.charAt(0).toUpperCase() + raw.slice(1);
   }
 
   _ensureUserState(u) {
@@ -893,20 +904,36 @@ export class ColosseumService {
     if (!rounds.length) return [];
     const s = this._s(lang);
     const lines = [s.activeHistoryTitle];
+    const myName = shortName(myId, battle?.names?.[myId] || "");
+    const enemyName = shortName(enemyId, battle?.names?.[enemyId] || "");
     for (const row of rounds) {
       const me = row?.[myId] || {};
       const enemy = row?.[enemyId] || {};
       const myDmg = Math.max(0, toInt(me?.dealt, 0));
       const enemyDmg = Math.max(0, toInt(enemy?.dealt, 0));
-      lines.push(this._fmt(s.activeHistoryLine, {
-        round: Math.max(1, toInt(row?.round, 1)),
-        myAttack: this._zoneLabel(String(me?.attack || ""), lang),
-        myDef: this._zoneLabel(String(me?.defense || ""), lang),
-        enemyAttack: this._zoneLabel(String(enemy?.attack || ""), lang),
-        enemyDef: this._zoneLabel(String(enemy?.defense || ""), lang),
-        myDmg,
-        enemyDmg
+      lines.push(this._fmt(s.activeHistoryRoundTitle, { round: Math.max(1, toInt(row?.round, 1)) }));
+      lines.push(this._fmt(s.activeHistoryPairLine, {
+        attacker: myName,
+        attack: this._zoneLabelTitle(String(me?.attack || ""), lang),
+        defender: enemyName,
+        defense: this._zoneLabelTitle(String(enemy?.defense || ""), lang)
       }));
+      lines.push(
+        myDmg > 0
+          ? this._fmt(s.activeHistoryResultHit, { attacker: myName, damage: myDmg })
+          : this._fmt(s.activeHistoryResultBlocked, { damage: 0 })
+      );
+      lines.push(this._fmt(s.activeHistoryPairLine, {
+        attacker: enemyName,
+        attack: this._zoneLabelTitle(String(enemy?.attack || ""), lang),
+        defender: myName,
+        defense: this._zoneLabelTitle(String(me?.defense || ""), lang)
+      }));
+      lines.push(
+        enemyDmg > 0
+          ? this._fmt(s.activeHistoryResultHit, { attacker: enemyName, damage: enemyDmg })
+          : this._fmt(s.activeHistoryResultBlocked, { damage: 0 })
+      );
       lines.push(this._roundSummaryText(myDmg, enemyDmg, s));
     }
     return lines;
@@ -1494,6 +1521,26 @@ export class ColosseumService {
     enemyFresh.colosseum.inQueue = false;
     meDirty = true;
     enemyDirty = true;
+    if (this.quests?.onEvent) {
+      try {
+        const qMe = await this.quests.onEvent(
+          meFresh,
+          "colosseum_battle_played",
+          {},
+          { persist: false, notify: true }
+        );
+        meDirty = meDirty || !!qMe?.changed;
+      } catch {}
+      try {
+        const qEnemy = await this.quests.onEvent(
+          enemyFresh,
+          "colosseum_battle_played",
+          {},
+          { persist: false, notify: true }
+        );
+        enemyDirty = enemyDirty || !!qEnemy?.changed;
+      } catch {}
+    }
     meDirty = markUsefulActivity(meFresh, this.now()) || meDirty;
     enemyDirty = markUsefulActivity(enemyFresh, this.now()) || enemyDirty;
 
