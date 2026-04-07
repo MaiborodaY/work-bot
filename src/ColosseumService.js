@@ -140,6 +140,9 @@ export class ColosseumService {
       activeHistoryTitle: this._tr(lang, "colosseum.active_history_title"),
       activeHistoryRoundTitle: this._tr(lang, "colosseum.active_history_round_title"),
       activeHistoryLine: this._tr(lang, "colosseum.active_history_line"),
+      activeHistoryYou: this._tr(lang, "colosseum.active_history_you"),
+      activeHistoryOpponent: this._tr(lang, "colosseum.active_history_opponent"),
+      activeHistoryShortLine: this._tr(lang, "colosseum.active_history_short_line"),
       activeHistoryPairLine: this._tr(lang, "colosseum.active_history_pair_line"),
       activeHistoryResultHit: this._tr(lang, "colosseum.active_history_result_hit"),
       activeHistoryResultBlocked: this._tr(lang, "colosseum.active_history_result_blocked"),
@@ -904,36 +907,24 @@ export class ColosseumService {
     if (!rounds.length) return [];
     const s = this._s(lang);
     const lines = [s.activeHistoryTitle];
-    const myName = shortName(myId, battle?.names?.[myId] || "");
-    const enemyName = shortName(enemyId, battle?.names?.[enemyId] || "");
     for (const row of rounds) {
       const me = row?.[myId] || {};
       const enemy = row?.[enemyId] || {};
       const myDmg = Math.max(0, toInt(me?.dealt, 0));
       const enemyDmg = Math.max(0, toInt(enemy?.dealt, 0));
       lines.push(this._fmt(s.activeHistoryRoundTitle, { round: Math.max(1, toInt(row?.round, 1)) }));
-      lines.push(this._fmt(s.activeHistoryPairLine, {
-        attacker: myName,
+      lines.push(this._fmt(s.activeHistoryShortLine, {
+        who: s.activeHistoryYou,
         attack: this._zoneLabelTitle(String(me?.attack || ""), lang),
-        defender: enemyName,
-        defense: this._zoneLabelTitle(String(enemy?.defense || ""), lang)
+        defense: this._zoneLabelTitle(String(me?.defense || ""), lang),
+        damage: myDmg
       }));
-      lines.push(
-        myDmg > 0
-          ? this._fmt(s.activeHistoryResultHit, { attacker: myName, damage: myDmg })
-          : this._fmt(s.activeHistoryResultBlocked, { damage: 0 })
-      );
-      lines.push(this._fmt(s.activeHistoryPairLine, {
-        attacker: enemyName,
+      lines.push(this._fmt(s.activeHistoryShortLine, {
+        who: s.activeHistoryOpponent,
         attack: this._zoneLabelTitle(String(enemy?.attack || ""), lang),
-        defender: myName,
-        defense: this._zoneLabelTitle(String(me?.defense || ""), lang)
+        defense: this._zoneLabelTitle(String(enemy?.defense || ""), lang),
+        damage: enemyDmg
       }));
-      lines.push(
-        enemyDmg > 0
-          ? this._fmt(s.activeHistoryResultHit, { attacker: enemyName, damage: enemyDmg })
-          : this._fmt(s.activeHistoryResultBlocked, { damage: 0 })
-      );
       lines.push(this._roundSummaryText(myDmg, enemyDmg, s));
     }
     return lines;
