@@ -747,7 +747,7 @@ export const EN = {
   "colosseum.top_empty": "No winners yet.",
   "colosseum.top_line": "{{place}} {{name}} - {{wins}}",
   "colosseum.me_top": "You are in top: place {{place}}",
-  "colosseum.me_out": "You are outside top-10",
+  "colosseum.me_out": "You are outside top-15",
   "colosseum.btn_find": "Find opponent",
   "colosseum.btn_leave_queue": "Leave queue",
   "colosseum.btn_open_battle": "Open battle",

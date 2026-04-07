@@ -30,7 +30,7 @@ export class RatingService {
   }
 
   _limit() {
-    return 10;
+    return 15;
   }
 
   _safeJson(raw, fallback) {
@@ -268,9 +268,9 @@ export class RatingService {
       if (l === "uk") return `👤 Ти — місце ${place} · ${metric}`;
       return `👤 Ты — место ${place} · ${metric}`;
     }
-    if (l === "en") return `👤 You — outside top-10 · ${metric}`;
-    if (l === "uk") return `👤 Ти — поза топ-10 · ${metric}`;
-    return `👤 Ты — вне топ-10 · ${metric}`;
+    if (l === "en") return `👤 You — outside top-15 · ${metric}`;
+    if (l === "uk") return `👤 Ти — поза топ-15 · ${metric}`;
+    return `👤 Ты — вне топ-15 · ${metric}`;
   }
 
   _short(raw) {

@@ -850,7 +850,7 @@ export const RU = {
   "colosseum.top_empty": "Пока нет победителей.",
   "colosseum.top_line": "{{place}} {{name}} — {{wins}}",
   "colosseum.me_top": "Ты в топе: место {{place}}",
-  "colosseum.me_out": "Ты вне топ-10",
+  "colosseum.me_out": "Ты вне топ-15",
   "colosseum.btn_find": "Найти соперника",
   "colosseum.btn_leave_queue": "Выйти из очереди",
   "colosseum.btn_open_battle": "Открыть бой",

@@ -747,7 +747,7 @@ export const UK = {
   "colosseum.top_empty": "Поки що немає переможців.",
   "colosseum.top_line": "{{place}} {{name}} — {{wins}}",
   "colosseum.me_top": "Ти в топі: місце {{place}}",
-  "colosseum.me_out": "Ти поза топ-10",
+  "colosseum.me_out": "Ти поза топ-15",
   "colosseum.btn_find": "Знайти суперника",
   "colosseum.btn_leave_queue": "Вийти з черги",
   "colosseum.btn_open_battle": "Відкрити бій",

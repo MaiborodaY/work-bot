@@ -29,7 +29,7 @@ export const socialHandler = {
     };
     const topProfileKb = (list, sourceToken, baseKb) => {
       const kb = [];
-      const arr = Array.isArray(list) ? list.slice(0, 10) : [];
+      const arr = Array.isArray(list) ? list.slice(0, 15) : [];
       for (let i = 0; i < arr.length; i++) {
         const row = arr[i] || {};
         const uid = String(row.userId ?? row.id ?? "").trim();
@@ -68,7 +68,7 @@ export const socialHandler = {
 
     if (data === "city:toplucky") {
       await answer(cb.id);
-      const list = await social.getLuckyTop(10).catch(() => []);
+      const list = await social.getLuckyTop(15).catch(() => []);
       await locations.media.show({
         sourceMsg: locations._sourceMsg,
         place: "CityBoard",

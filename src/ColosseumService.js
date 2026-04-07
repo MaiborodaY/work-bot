@@ -215,7 +215,7 @@ export class ColosseumService {
   _acceptWindowSec() { return Math.max(10, toInt(this._cfg().ACCEPT_WINDOW_SEC, 60)); }
   _roundWindowSec() { return Math.max(10, toInt(this._cfg().ROUND_WINDOW_SEC, 60)); }
   _roundsCount() { return Math.max(1, toInt(this._cfg().ROUNDS, 3)); }
-  _ratingLimit() { return Math.max(1, toInt(this._cfg().RATING_LIMIT, 10)); }
+  _ratingLimit() { return Math.max(1, toInt(this._cfg().RATING_LIMIT, 15)); }
   _battleTtlSec() { return Math.max(3600, toInt(this._cfg().BATTLE_TTL_SEC, 24 * 3600)); }
   _queueTtlSec() { return Math.max(24 * 3600, toInt(this._cfg().QUEUE_TTL_SEC, 10 * 24 * 3600)); }
   _ratingTtlSec() { return Math.max(24 * 3600, toInt(this._cfg().RATING_TTL_SEC, 21 * 24 * 3600)); }

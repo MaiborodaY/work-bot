@@ -577,7 +577,7 @@ export const CONFIG = {
       4: { gems: 5, money: 13000 },
       5: { gems: 3, money: 7000 }
     },
-    RATING_LIMIT: 10,
+    RATING_LIMIT: 15,
     BATTLE_TTL_SEC: 24 * 60 * 60,
     QUEUE_TTL_SEC: 10 * 24 * 60 * 60,
     RATING_TTL_SEC: 21 * 24 * 60 * 60

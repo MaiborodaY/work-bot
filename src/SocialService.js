@@ -25,6 +25,10 @@ export class SocialService {
     return arr.filter((row) => !this._isAdminUserId(row?.userId));
   }
 
+  _topLimit() {
+    return 15;
+  }
+
   // ====== периодные ключи (UTC) ======
   _dateKey() {
     const d = new Date(this.now());
@@ -288,7 +292,7 @@ export class SocialService {
     if (this._isAdminUserId(idStr)) {
       const cleaned = list.filter((x) => String(x.userId) !== idStr);
       cleaned.sort((a, b) => (Number(b.total) || 0) - (Number(a.total) || 0));
-      const trimmed = cleaned.slice(0, 10);
+      const trimmed = cleaned.slice(0, this._topLimit());
       await this.db.put("lb:day", JSON.stringify(trimmed));
       return trimmed;
     }
@@ -302,7 +306,7 @@ export class SocialService {
     }
 
     list.sort((a, b) => b.total - a.total);
-    const trimmed = list.slice(0, 10);
+    const trimmed = list.slice(0, this._topLimit());
     await this.db.put("lb:day", JSON.stringify(trimmed));
     return trimmed;
   }
@@ -316,7 +320,7 @@ export class SocialService {
     if (this._isAdminUserId(idStr)) {
       const cleaned = list.filter((x) => String(x.userId) !== idStr);
       cleaned.sort((a, b) => (Number(b.total) || 0) - (Number(a.total) || 0));
-      const trimmed = cleaned.slice(0, 10);
+      const trimmed = cleaned.slice(0, this._topLimit());
       await this.db.put("lb:week", JSON.stringify(trimmed));
       return trimmed;
     }
@@ -330,7 +334,7 @@ export class SocialService {
     }
 
     list.sort((a, b) => b.total - a.total);
-    const trimmed = list.slice(0, 10);
+    const trimmed = list.slice(0, this._topLimit());
     await this.db.put("lb:week", JSON.stringify(trimmed));
     return trimmed;
   }
@@ -350,7 +354,7 @@ export class SocialService {
     if (this._isAdminUserId(idStr)) {
       const cleaned = list.filter((x) => String(x.userId) !== idStr);
       cleaned.sort((a, b) => (Number(b.total) || 0) - (Number(a.total) || 0));
-      const trimmed = cleaned.slice(0, 10);
+      const trimmed = cleaned.slice(0, this._topLimit());
       await this.db.put(key, JSON.stringify(trimmed));
       return trimmed;
     }
@@ -365,7 +369,7 @@ export class SocialService {
     }
 
     list.sort((a, b) => (Number(b.total) || 0) - (Number(a.total) || 0));
-    const trimmed = list.slice(0, 10);
+    const trimmed = list.slice(0, this._topLimit());
     await this.db.put(key, JSON.stringify(trimmed));
     return trimmed;
   }
@@ -410,7 +414,7 @@ export class SocialService {
         if (moneyDiff !== 0) return moneyDiff;
         return (Number(b.gems) || 0) - (Number(a.gems) || 0);
       });
-      const trimmed = cleaned.slice(0, 10);
+      const trimmed = cleaned.slice(0, this._topLimit());
       await this.db.put(key, JSON.stringify(trimmed));
       return trimmed;
     }
@@ -431,7 +435,7 @@ export class SocialService {
       if (moneyDiff !== 0) return moneyDiff;
       return (Number(b.gems) || 0) - (Number(a.gems) || 0);
     });
-    const trimmed = list.slice(0, 10);
+    const trimmed = list.slice(0, this._topLimit());
     await this.db.put(key, JSON.stringify(trimmed));
     return trimmed;
   }
@@ -472,7 +476,7 @@ export class SocialService {
     if (this._isAdminUserId(idStr)) {
       const cleaned = list.filter(x => String(x.userId) !== idStr);
       cleaned.sort((a, b) => (Number(b.level) || 0) - (Number(a.level) || 0));
-      const trimmed = cleaned.slice(0, 10);
+      const trimmed = cleaned.slice(0, this._topLimit());
       await this.db.put("lb:smart", JSON.stringify(trimmed));
       return trimmed;
     }
@@ -489,7 +493,7 @@ export class SocialService {
 
     // Стабильная сортировка V8 сохранит порядок “кто раньше попал — тот выше” при равенстве уровней
     list.sort((a, b) => (b.level - a.level));
-    const trimmed = list.slice(0, 10);
+    const trimmed = list.slice(0, this._topLimit());
     await this.db.put("lb:smart", JSON.stringify(trimmed));
     return trimmed;
   }
@@ -525,7 +529,7 @@ export class SocialService {
     if (this._isAdminUserId(idStr)) {
       const cleaned = list.filter((x) => String(x.userId) !== idStr);
       cleaned.sort((a, b) => (Number(b.total) || 0) - (Number(a.total) || 0));
-      const trimmed = cleaned.slice(0, 10);
+      const trimmed = cleaned.slice(0, this._topLimit());
       await this.db.put("lb:biz_day", JSON.stringify(trimmed));
       return trimmed;
     }
@@ -540,7 +544,7 @@ export class SocialService {
     }
 
     list.sort((a, b) => (Number(b.total) || 0) - (Number(a.total) || 0));
-    const trimmed = list.slice(0, 10);
+    const trimmed = list.slice(0, this._topLimit());
     await this.db.put("lb:biz_day", JSON.stringify(trimmed));
     return trimmed;
   }
@@ -564,7 +568,7 @@ export class SocialService {
     if (this._isAdminUserId(idStr)) {
       const cleaned = list.filter(x => String(x.userId) !== idStr);
       cleaned.sort((a, b) => (Number(b.energyMax) || 0) - (Number(a.energyMax) || 0));
-      const trimmed = cleaned.slice(0, 10);
+      const trimmed = cleaned.slice(0, this._topLimit());
       await this.db.put("lb:gym_all", JSON.stringify(trimmed));
       return trimmed;
     }
@@ -587,7 +591,7 @@ export class SocialService {
     // сортировка: по energyMax desc, без доп. тай-брейков (как просил)
     list.sort((a, b) => (b.energyMax - a.energyMax));
 
-    const trimmed = list.slice(0, 10);
+    const trimmed = list.slice(0, this._topLimit());
     await this.db.put("lb:gym_all", JSON.stringify(trimmed));
     return trimmed;
   }
@@ -600,7 +604,7 @@ export class SocialService {
   // ------ Lucky (max single spin win) ------
   _luckyKey() { return `lb:lucky_all`; }
 
-  async getLuckyTop(limit = 10) {
+  async getLuckyTop(limit = 15) {
     const raw = await this.db.get(this._luckyKey());
     const arr = raw ? JSON.parse(raw) : [];
     return this._filterOutAdmins(Array.isArray(arr) ? arr : []).slice(0, limit);
@@ -622,7 +626,7 @@ export class SocialService {
     if (this._isAdminUserId(id)) {
       const cleaned = arr.filter((x) => String(x.userId) !== id);
       cleaned.sort((a, b) => (Number(b.best) || 0) - (Number(a.best) || 0));
-      const trimmed = cleaned.slice(0, 10);
+      const trimmed = cleaned.slice(0, this._topLimit());
       await this.db.put(key, JSON.stringify(trimmed));
       return trimmed;
     }
@@ -640,7 +644,7 @@ export class SocialService {
 
     // сортировка: по best desc, tie-break — прежний порядок (без доп. полей)
     arr.sort((a, b) => (b.best || 0) - (a.best || 0));
-    if (arr.length > 10) arr = arr.slice(0, 10);
+    if (arr.length > this._topLimit()) arr = arr.slice(0, this._topLimit());
 
     await this.db.put(key, JSON.stringify(arr));
   }
