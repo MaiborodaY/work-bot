@@ -181,6 +181,7 @@ export class QuestService {
       workShifts: 0,
       workEarn: 0,
       gymTrains: 0,
+      colosseumBattles: 0,
       farmPlants: 0,
       farmHarvestCarrot: 0,
       farmHarvestTomato: 0,
@@ -423,9 +424,8 @@ export class QuestService {
   }
 
   _forcedDailyQuestIds(u) {
-    const forced = [];
-    if (this._canAccessColosseum(u)) forced.push("colosseum_battles_5");
-    return forced;
+    void u;
+    return [];
   }
 
   _dailyQuestAvailable(u, id) {
@@ -459,6 +459,8 @@ export class QuestService {
     switch (id) {
       case "w_gym_7trains":
         return this._canDoGymQuest(u);
+      case "w_colosseum_10battles":
+        return this._canAccessColosseum(u);
       case "w_biz_streak":
         return this._hasAnyBusiness(u);
       case "w_biz_expand":
@@ -748,6 +750,8 @@ export class QuestService {
         return toInt(w.workEarn, 0);
       case "w_gym_7trains":
         return toInt(w.gymTrains, 0);
+      case "w_colosseum_10battles":
+        return toInt(w.colosseumBattles, 0);
       case "w_farm_plant_seeds":
         return toInt(w.farmPlants, 0);
       case "w_farm_harvest_carrot":
@@ -855,6 +859,10 @@ export class QuestService {
       case "gym_finish":
         d.gymTrains += 1;
         w.gymTrains += 1;
+        changed = true;
+        break;
+      case "colosseum_battle_played":
+        w.colosseumBattles += 1;
         changed = true;
         break;
       case "pet_feed":
@@ -1030,6 +1038,7 @@ export class QuestService {
         w_work_10shifts: `Завершить ${target} смен за неделю`,
         w_work_earn: `Получить выплатами со смен $${target} за неделю`,
         w_gym_7trains: `Сделать ${target} тренировок за неделю`,
+        w_colosseum_10battles: `Сыграть ${target} боёв на арене за неделю`,
         w_biz_streak: `Собирать доход с бизнеса ${target} дней подряд`,
         w_biz_expand: "Купить новый бизнес или слот",
         w_labour_hire: "Нанять наёмника",
@@ -1071,6 +1080,7 @@ export class QuestService {
         w_work_10shifts: `Завершити ${target} змін за тиждень`,
         w_work_earn: `Отримати виплатами зі змін $${target} за тиждень`,
         w_gym_7trains: `Зробити ${target} тренувань за тиждень`,
+        w_colosseum_10battles: `Зіграти ${target} боїв на арені за тиждень`,
         w_biz_streak: `Збирати дохід з бізнесу ${target} днів поспіль`,
         w_biz_expand: "Купити новий бізнес або слот",
         w_labour_hire: "Найняти найманця",
@@ -1112,6 +1122,7 @@ export class QuestService {
         w_work_10shifts: `Complete ${target} shifts this week`,
         w_work_earn: `Get $${target} from shift payouts this week`,
         w_gym_7trains: `Do ${target} workouts this week`,
+        w_colosseum_10battles: `Play ${target} arena battles this week`,
         w_biz_streak: `Collect business income ${target} days in a row`,
         w_biz_expand: "Buy a new business or slot",
         w_labour_hire: "Hire a worker",

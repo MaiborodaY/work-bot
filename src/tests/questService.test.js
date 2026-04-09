@@ -308,16 +308,42 @@ test("weekly farm planting quest progresses on farm_plant events", async () => {
   assert.equal(u.money, 500);
 });
 
-test("daily generation: colosseum quest is forced when arena is unlocked", async () => {
+test("weekly colosseum quest: progresses on colosseum_battle_played events", async () => {
+  const qs = makeService();
+  const u = makeUser({ withBusiness: false });
+  u.energy_max = 50;
+  await qs.ensureCycles(u, { persist: false });
+  u.quests.weekly.list = [
+    {
+      id: "w_colosseum_10battles",
+      type: "weekly",
+      category: "colosseum",
+      difficulty: "hard",
+      rewardMoney: 900,
+      target: 2,
+      progress: 0,
+      done: false,
+      paid: false
+    }
+  ];
+
+  await qs.onEvent(u, "colosseum_battle_played", {}, { persist: false, notify: false });
+  assert.equal(u.quests.weekly.list[0].progress, 1);
+  assert.equal(u.quests.weekly.list[0].done, false);
+
+  await qs.onEvent(u, "colosseum_battle_played", {}, { persist: false, notify: false });
+  assert.equal(u.quests.weekly.list[0].progress, 2);
+  assert.equal(u.quests.weekly.list[0].done, true);
+  assert.equal(u.money, 900);
+});
+
+test("daily generation: colosseum quest is not forced when arena is unlocked", async () => {
   const qs = makeService();
   const u = makeUser({ withBusiness: false });
   u.energy_max = 50;
 
-  await qs.ensureCycles(u, { persist: false });
-
-  const daily = Array.isArray(u?.quests?.daily?.list) ? u.quests.daily.list : [];
-  assert.equal(daily.length, 3);
-  assert.ok(daily.some((q) => String(q?.id || "") === "colosseum_battles_5"));
+  const forced = qs._forcedDailyQuestIds(u);
+  assert.deepEqual(forced, []);
 });
 
 test("daily generation: colosseum quest is hidden when arena is locked", async () => {
@@ -331,7 +357,18 @@ test("daily generation: colosseum quest is hidden when arena is locked", async (
   assert.equal(daily.some((q) => String(q?.id || "") === "colosseum_battles_5"), false);
 });
 
-test("daily colosseum quest: completes from battlesToday for current UTC day", async () => {
+test("weekly quest availability: w_colosseum_10battles requires unlocked arena", () => {
+  const qs = makeService();
+  const u = makeUser({ withBusiness: false });
+
+  u.energy_max = 49;
+  assert.equal(qs._weeklyQuestAvailable(u, "w_colosseum_10battles"), false);
+
+  u.energy_max = 50;
+  assert.equal(qs._weeklyQuestAvailable(u, "w_colosseum_10battles"), true);
+});
+
+test("daily colosseum quest: completes from battlesToday for current UTC day (target 3)", async () => {
   const qs = makeService();
   const u = makeUser({ withBusiness: false });
   u.quests.daily.day = "2026-03-13";
@@ -342,17 +379,17 @@ test("daily colosseum quest: completes from battlesToday for current UTC day", a
       category: "colosseum",
       difficulty: "hard",
       rewardMoney: 500,
-      target: 5,
+      target: 3,
       progress: 0,
       done: false,
       paid: false
     }
   ];
-  u.colosseum = { dayKey: "2026-03-13", battlesToday: 5 };
+  u.colosseum = { dayKey: "2026-03-13", battlesToday: 3 };
 
   const res = await qs.onEvent(u, "sub_bonus_claim", {}, { persist: false, notify: false });
 
-  assert.equal(u.quests.daily.list[0].progress, 5);
+  assert.equal(u.quests.daily.list[0].progress, 3);
   assert.equal(u.quests.daily.list[0].done, true);
   assert.equal(u.money, 500);
   assert.ok(Array.isArray(res.events));

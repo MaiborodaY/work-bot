@@ -142,7 +142,7 @@ export const CONFIG = {
       { id: "stocks_invest_daily", type: "daily", category: "stocks", difficulty: "hard", rewardMoney: 600, target: 5000 },
       { id: "thief_attempt", type: "daily", category: "thief", difficulty: "medium", rewardMoney: 700, target: 1 },
       { id: "thief_success", type: "daily", category: "thief", difficulty: "hard", rewardMoney: 1200, target: 1 },
-      { id: "colosseum_battles_5", type: "daily", category: "colosseum", difficulty: "hard", rewardMoney: 500, target: 5 }
+      { id: "colosseum_battles_5", type: "daily", category: "colosseum", difficulty: "hard", rewardMoney: 500, target: 3 }
     ],
 
     WEEKLY_POOL: [
@@ -158,6 +158,7 @@ export const CONFIG = {
       { id: "w_stocks_invest", type: "weekly", category: "stocks", difficulty: "hard", rewardMoney: 7000, target: 50000 },
       { id: "w_thief_3attempts", type: "weekly", category: "thief", difficulty: "medium", rewardMoney: 6000, target: 3 },
       { id: "w_thief_total", type: "weekly", category: "thief", difficulty: "hard", rewardMoney: 10000, target: 10000 },
+      { id: "w_colosseum_10battles", type: "weekly", category: "colosseum", difficulty: "hard", rewardMoney: 9000, target: 10 },
       { id: "w_farm_harvest_carrot", type: "weekly", category: "farm", difficulty: "easy", rewardMoney: 3500, target: 6 },
       { id: "w_farm_harvest_tomato", type: "weekly", category: "farm", difficulty: "medium", rewardMoney: 5000, target: 4 },
       { id: "w_farm_harvest_corn", type: "weekly", category: "farm", difficulty: "hard", rewardMoney: 7000, target: 2 },
