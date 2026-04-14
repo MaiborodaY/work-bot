@@ -78,17 +78,17 @@ test("bar tasks view: does not render refresh button", async () => {
   assert.equal(view.keyboard[0]?.[0]?.callback_data, "go:Bar");
 });
 
-test("newbie tasks view: starts from daily bonus and shows next step preview", async () => {
+test("newbie tasks view: starts from daily bonus with bar navigation and no next-step block", async () => {
   const qs = makeService();
   const u = makeUser({ withBusiness: false });
 
   const view = await qs.buildBarNewbieTasksView(u);
   const text = String(view?.caption || "");
 
-  assert.match(text, /Забери ежедневный бонус/);
-  assert.match(text, /Следующий шаг:/);
-  assert.match(text, /Запусти ещё одну работу/);
-  assert.equal(view.keyboard[0]?.[0]?.callback_data, "bar:newbie:daily_claim");
+  assert.equal(Array.isArray(view.keyboard), true);
+  assert.equal(view.keyboard.length, 2);
+  assert.equal(/\u{1F512}/u.test(text), false);
+  assert.equal(view.keyboard[0]?.[0]?.callback_data, "go:Bar");
   assert.equal(typeof u.newbiePath.ctx, "object");
 });
 

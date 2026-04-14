@@ -541,7 +541,7 @@ export class Locations {
   async _renderOnboardingToBarRoute(user, opts = {}) {
     const header = String(opts?.header || "");
     const caption = header + this._t(user, "loc.onboarding.to_bar.caption");
-    const keyboard = [[{ text: this._t(user, "loc.onboarding.to_bar.btn"), callback_data: toGoCallback(Routes.BAR) }]];
+    const keyboard = [[{ text: this._t(user, "loc.onboarding.to_bar.btn"), callback_data: toGoCallback(Routes.BAR_NEWBIE_TASKS) }]];
     await this.media.show({
       sourceMsg: this._sourceMsg,
       place: Routes.ONBOARDING_TO_BAR,

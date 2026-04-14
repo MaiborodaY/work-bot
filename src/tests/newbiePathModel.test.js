@@ -44,7 +44,7 @@ test("UiFactory: bar shows newbie tasks button for incomplete newbie path", () =
   const user = {
     lang: "ru",
     flags: { onboarding: false, onboardingDone: true },
-    newbiePath: { completed: false },
+    newbiePath: { step: 2, pending: false, completed: false },
     bar: {},
     study: { level: 0 },
     subReward: { day: "" }
@@ -53,6 +53,22 @@ test("UiFactory: bar shows newbie tasks button for incomplete newbie path", () =
   const kb = ui.bar(user, Date.UTC(2026, 2, 13, 12, 0, 0), "ru");
   const buttons = kb.flat();
   assert.equal(buttons.some((btn) => btn.callback_data === "bar:newbie"), true);
+});
+
+test("UiFactory: bar shows daily bonus button on newbie step 1", () => {
+  const ui = new UiFactory();
+  const user = {
+    lang: "ru",
+    flags: { onboarding: false, onboardingDone: true },
+    newbiePath: { step: 1, pending: false, completed: false },
+    bar: {},
+    study: { level: 0 },
+    subReward: { day: "" }
+  };
+
+  const kb = ui.bar(user, Date.UTC(2026, 2, 13, 12, 0, 0), "ru");
+  const buttons = kb.flat();
+  assert.equal(buttons[0]?.callback_data, "daily:claim");
 });
 
 test("UiFactory: bar hides newbie tasks button after completion", () => {

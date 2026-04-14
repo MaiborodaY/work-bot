@@ -43,10 +43,7 @@ export async function renderSquareRoute(ctx, user, { header = "", lang = "ru", o
     return;
   }
 
-  const kbBase = ctx.ui.square(lang);
-  const kb = (ctx.daily && ctx.daily.canClaim(user))
-    ? [[{ text: ctx._t(user, "loc.daily_bonus"), callback_data: "daily:claim" }], ...kbBase]
-    : kbBase;
+  const kb = ctx.ui.square(lang);
 
   let yesterdayBlock = "";
   if (ctx.social && typeof ctx.social.getDailyWinnersSnapshot === "function") {
@@ -108,10 +105,7 @@ export async function renderSquareRoute(ctx, user, { header = "", lang = "ru", o
 }
 
 export async function renderFallbackSquareRoute(ctx, user, { header = "", lang = "ru" } = {}) {
-  let kb = ctx.ui.square(lang);
-  if (ctx.daily && ctx.daily.canClaim(user)) {
-    kb = [[{ text: ctx._t(user, "loc.daily_bonus"), callback_data: "daily:claim" }], ...kb];
-  }
+  const kb = ctx.ui.square(lang);
   await ctx.media.show({
     sourceMsg: ctx._sourceMsg,
     place: Routes.SQUARE,

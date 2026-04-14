@@ -1510,9 +1510,6 @@ export class QuestService {
 
   _newbieActionButton(u, stepDef) {
     if (!stepDef) return null;
-    if (stepDef.id === "daily_bonus") {
-      return { text: this._newbieStepCta(u, stepDef.id), callback_data: "bar:newbie:daily_claim" };
-    }
     const route = String(stepDef.targetRoute || "").trim();
     if (!route) return null;
     return { text: this._newbieStepCta(u, stepDef.id), callback_data: `go:${route}` };
@@ -1632,7 +1629,6 @@ export class QuestService {
 
     const step = Math.max(1, toInt(u?.newbiePath?.step, 1));
     const current = defs[step - 1] || null;
-    const next = defs[step] || null;
     if (!current) {
       return {
         caption: `${s.barTitle}\n\n${this._newbieDoneLine(u)}`,
@@ -1654,7 +1650,6 @@ export class QuestService {
         bar: this._newbieProgressBar(step, total)
       }),
       "",
-      t("newbie.current", this._lang(u)),
       `${t("newbie.icon.current", this._lang(u))} ${this._newbieStepTitle(u, current.id)}`,
       this._newbieStepDesc(u, current.id),
       "",
@@ -1666,15 +1661,16 @@ export class QuestService {
       lines.push("", t("newbie.pending", this._lang(u)));
       keyboard.push([{ text: t("newbie.claim", this._lang(u)), callback_data: "bar:newbie:claim" }]);
     } else {
-      lines.push("", t("newbie.where", this._lang(u)), this._newbieStepWhere(u, current.id));
+      lines.push(
+        "",
+        t("newbie.where", this._lang(u)),
+        this._newbieStepWhere(u, current.id),
+        "",
+        t("newbie.return_hint", this._lang(u))
+      );
       const actionBtn = this._newbieActionButton(u, current);
       if (actionBtn) keyboard.push([actionBtn]);
     }
-
-    if (next) {
-      lines.push("", "────────────", "", t("newbie.next", this._lang(u)), `🔒 ${this._newbieStepTitle(u, next.id)}`);
-    }
-
     keyboard.push([{ text: s.back, callback_data: "go:Bar" }]);
     return { caption: lines.join("\n").trim(), keyboard };
   }

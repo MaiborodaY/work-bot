@@ -148,6 +148,17 @@ export class UiFactory {
       return kb;
     }
 
+    const newbieStep = Math.max(1, Number(user?.newbiePath?.step) || 1);
+    const newbiePending = user?.newbiePath?.pending === true;
+    const showNewbieDailyBonus =
+      this._hasPendingNewbieTasks(user) &&
+      newbieStep === 1 &&
+      !newbiePending;
+
+    if (showNewbieDailyBonus) {
+      kb.push([{ text: this._t(l, "loc.daily_bonus"), callback_data: "daily:claim" }]);
+    }
+
     kb.push([{ text: this._t(l, "ui.bar.tasks"), callback_data: "bar:tasks" }]);
     if (this._hasPendingNewbieTasks(user)) {
       kb.push([{ text: this._t(l, "ui.bar.newbie_tasks"), callback_data: "bar:newbie" }]);
