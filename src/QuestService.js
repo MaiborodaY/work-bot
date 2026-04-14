@@ -1,5 +1,5 @@
 import { CONFIG } from "./GameConfig.js";
-import { formatMoney, normalizeLang } from "./i18n/index.js";
+import { formatMoney, normalizeLang, t } from "./i18n/index.js";
 import { EnergyService } from "./EnergyService.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -152,6 +152,18 @@ export class QuestService {
     return Math.max(0, toInt(this._cfg().CLAN_JOIN_GUIDE_REWARD_MONEY, 0));
   }
 
+  _newbiePathDefs() {
+    return Array.isArray(this._cfg().NEWBIE_PATH) ? this._cfg().NEWBIE_PATH : [];
+  }
+
+  _newbieFinalRewardMoney() {
+    return Math.max(0, toInt(this._cfg().NEWBIE_FINAL_REWARD_MONEY, 0));
+  }
+
+  _newbieFinalRewardGems() {
+    return Math.max(0, toInt(this._cfg().NEWBIE_FINAL_REWARD_GEMS, 0));
+  }
+
   _dailyCounterDefaults() {
     return {
       workShifts: 0,
@@ -291,6 +303,49 @@ export class QuestService {
       }
     }
 
+    return dirty;
+  }
+
+  _ensureNewbiePathModel(u) {
+    if (!u || typeof u !== "object") return false;
+    let dirty = false;
+    const completedStep = this._newbiePathDefs().length + 1;
+    const defs = this._newbiePathDefs();
+    if (!u.newbiePath || typeof u.newbiePath !== "object") {
+      const completed = !!u?.flags?.onboardingDone;
+      const stepDef = !completed ? (defs[0] || null) : null;
+      u.newbiePath = {
+        step: completed ? completedStep : 1,
+        pending: false,
+        completed,
+        ctx: !completed && stepDef ? this.initNewbieStepContext(u) : null,
+        updatedAt: 0
+      };
+      return true;
+    }
+    const fixedStep = Math.max(1, Math.floor(Number(u.newbiePath.step) || 1));
+    if (fixedStep !== u.newbiePath.step) { u.newbiePath.step = fixedStep; dirty = true; }
+    if (typeof u.newbiePath.pending !== "boolean") { u.newbiePath.pending = false; dirty = true; }
+    if (typeof u.newbiePath.completed !== "boolean") { u.newbiePath.completed = false; dirty = true; }
+    if (u.newbiePath.ctx !== null && typeof u.newbiePath.ctx !== "object") { u.newbiePath.ctx = null; dirty = true; }
+    if (typeof u.newbiePath.updatedAt !== "number" || !Number.isFinite(u.newbiePath.updatedAt)) {
+      u.newbiePath.updatedAt = 0;
+      dirty = true;
+    }
+    if (u?.flags?.onboardingDone && !u?.flags?.onboarding && !u.newbiePath.completed && u.newbiePath.step > defs.length) {
+      u.newbiePath.step = completedStep;
+      u.newbiePath.pending = false;
+      u.newbiePath.completed = true;
+      u.newbiePath.ctx = null;
+      dirty = true;
+    }
+    if (!u.newbiePath.completed && !u.newbiePath.pending && u.newbiePath.ctx == null) {
+      const currentDef = defs[Math.max(1, toInt(u.newbiePath.step, 1)) - 1] || null;
+      if (currentDef) {
+        u.newbiePath.ctx = this.initNewbieStepContext(u);
+        dirty = true;
+      }
+    }
     return dirty;
   }
 
@@ -1217,6 +1272,7 @@ export class QuestService {
 
   async ensureCycles(u, { persist = true } = {}) {
     let dirty = this._ensureModel(u);
+    dirty = this._ensureNewbiePathModel(u) || dirty;
     const nowTs = this.now();
     const day = dayStr(nowTs);
     const week = isoWeekKey(nowTs);
@@ -1261,6 +1317,7 @@ export class QuestService {
     const persist = options.persist !== false;
     const notify = options.notify !== false;
     let dirty = this._ensureModel(u);
+    dirty = this._ensureNewbiePathModel(u) || dirty;
 
     const cycleRes = await this.ensureCycles(u, { persist: false });
     dirty = dirty || !!cycleRes?.changed;
@@ -1271,89 +1328,8 @@ export class QuestService {
     dirty = this._applyQuestCompletion(u, "daily", events) || dirty;
     dirty = this._applyQuestCompletion(u, "weekly", events) || dirty;
 
-    if (String(event || "") === "sub_bonus_claim" && !u.flags.subBonusClaimed) {
-      u.flags.subBonusClaimed = true;
-      const reward = this._subBonusRewardMoney();
-      if (reward > 0) {
-        u.money = Math.max(0, toInt(u.money, 0)) + reward;
-      }
-      events.push({ kind: "quest_done", scope: "special", id: "sub_bonus", rewardMoney: reward });
-      dirty = true;
-    }
-
-    if (String(event || "") === "pet_buy" && !u.flags.petBuyGuideClaimed) {
-      const rewardMoney = this._petBuyGuideRewardMoney();
-      if (rewardMoney > 0) {
-        u.money = Math.max(0, toInt(u.money, 0)) + rewardMoney;
-      }
-      u.flags.petBuyGuideClaimed = true;
-      events.push({
-        kind: "quest_done",
-        scope: "special",
-        id: "pet_buy_first",
-        rewardMoney
-      });
-      dirty = true;
-    }
-
-    if (String(event || "") === "biz_expand" && !u.flags.firstBizGuideClaimed) {
-      const kind = String(ctx?.kind || "").toLowerCase();
-      if (kind === "business") {
-        const rewardMoney = this._firstBizGuideRewardMoney();
-        if (rewardMoney > 0) {
-          u.money = Math.max(0, toInt(u.money, 0)) + rewardMoney;
-        }
-        u.flags.firstBizGuideClaimed = true;
-        events.push({
-          kind: "quest_done",
-          scope: "special",
-          id: "biz_buy_first",
-          rewardMoney
-        });
-        dirty = true;
-      }
-    }
-
-    if (String(event || "") === "study_finish" && !u.flags.studyLevel5GuideClaimed) {
-      const levelNow = Math.max(0, toInt(ctx?.level, toInt(u?.study?.level, 0)));
-      if (levelNow === 5) {
-        const rewardMoney = this._studyGuideRewardMoney();
-        const rewardGems = this._studyGuideRewardGems();
-        if (rewardMoney > 0) {
-          u.money = Math.max(0, toInt(u.money, 0)) + rewardMoney;
-        }
-        if (rewardGems > 0) {
-          u.premium = Math.max(0, toInt(u.premium, 0)) + rewardGems;
-        }
-        u.flags.studyLevel5GuideClaimed = true;
-        events.push({
-          kind: "quest_done",
-          scope: "special",
-          id: "study_level_5",
-          rewardMoney,
-          rewardGems
-        });
-        dirty = true;
-      }
-    }
-
-    if (String(event || "") === "clan_join" && !u.flags.clanJoinGuideClaimed) {
-      const clanId = String(ctx?.clanId || u?.clan?.clanId || "").trim();
-      if (clanId) {
-        const rewardMoney = this._clanJoinGuideRewardMoney();
-        if (rewardMoney > 0) {
-          u.money = Math.max(0, toInt(u.money, 0)) + rewardMoney;
-        }
-        u.flags.clanJoinGuideClaimed = true;
-        events.push({
-          kind: "quest_done",
-          scope: "special",
-          id: "clan_join_first",
-          rewardMoney
-        });
-        dirty = true;
-      }
-    }
+    // Legacy special guide rewards are intentionally disabled.
+    // The newbie journey is now handled by u.newbiePath with manual claim in the Bar.
 
     if (dirty && persist) {
       await this.users.save(u);
@@ -1425,6 +1401,123 @@ export class QuestService {
     return "Все задания для новичков выполнены.";
   }
 
+  _getNewbieStepDef(u) {
+    this._ensureNewbiePathModel(u);
+    const defs = this._newbiePathDefs();
+    const step = Math.max(1, toInt(u?.newbiePath?.step, 1));
+    return defs[step - 1] || null;
+  }
+
+  _newbieStepTitle(u, id) {
+    return t(`newbie.${id}.title`, this._lang(u));
+  }
+
+  _newbieStepDesc(u, id) {
+    return t(`newbie.${id}.desc`, this._lang(u));
+  }
+
+  _newbieStepWhere(u, id) {
+    return t(`newbie.${id}.where`, this._lang(u));
+  }
+
+  _newbieStepCta(u, id) {
+    return t(`newbie.${id}.cta`, this._lang(u));
+  }
+
+  _newbieProgressBar(current, total) {
+    const filled = Math.max(0, Math.min(total, current));
+    return `${"█".repeat(filled)}${"░".repeat(Math.max(0, total - filled))}`;
+  }
+
+  initNewbieStepContext(u) {
+    return {
+      startedAt: this.now(),
+      totalShiftsStart: Math.max(0, toInt(u?.achievements?.progress?.totalShifts, 0)),
+      gymLevelStart: Math.max(0, toInt(u?.gym?.level, 0))
+    };
+  }
+
+  isNewbieStepComplete(u, stepId, ctx = {}) {
+    const today = dayStr(this.now());
+    switch (String(stepId || "")) {
+      case "daily_bonus":
+        return String(u?.bonus?.last || "") === today;
+      case "work_job":
+        return (
+          Math.max(0, toInt(u?.achievements?.progress?.totalShifts, 0)) >= (Math.max(0, toInt(ctx.totalShiftsStart, 0)) + 1) ||
+          (!!u?.jobs?.active?.[0] && Math.max(0, toInt(u.jobs.active[0]?.startAt, 0)) >= Math.max(0, toInt(ctx.startedAt, 0)))
+        );
+      case "start_study":
+        return !!u?.study?.active || Math.max(0, toInt(u?.study?.level, 0)) >= 1;
+      case "rest_home":
+        return Math.max(0, toInt(u?.rest?.last, 0)) >= Math.max(0, toInt(ctx.startedAt, 0));
+      case "buy_pet":
+        return String(u?.pet?.type || "").trim().length > 0;
+      case "gym_train":
+        return (
+          Math.max(0, toInt(u?.gym?.level, 0)) >= (Math.max(0, toInt(ctx.gymLevelStart, 0)) + 1) ||
+          (!!u?.gym?.active && Math.max(0, toInt(u?.gym?.startAt, 0)) >= Math.max(0, toInt(ctx.startedAt, 0)))
+        );
+      case "study_level_5":
+        return Math.max(0, toInt(u?.study?.level, 0)) >= 5;
+      case "buy_business":
+        return this._hasAnyBusiness(u);
+      default:
+        return false;
+    }
+  }
+
+  maybeCompleteNewbieStep(u) {
+    this._ensureNewbiePathModel(u);
+    if (!u?.flags?.onboardingDone) return false;
+    if (u?.newbiePath?.completed || u?.newbiePath?.pending) return false;
+    const stepDef = this._getNewbieStepDef(u);
+    if (!stepDef) return false;
+    const ctx = (u?.newbiePath?.ctx && typeof u.newbiePath.ctx === "object") ? u.newbiePath.ctx : {};
+    if (!this.isNewbieStepComplete(u, stepDef.id, ctx)) return false;
+    u.newbiePath.pending = true;
+    u.newbiePath.updatedAt = this.now();
+    return true;
+  }
+
+  claimNewbieStep(u) {
+    this._ensureNewbiePathModel(u);
+    if (!u?.newbiePath?.pending) return { ok: false };
+
+    const defs = this._newbiePathDefs();
+    const idx = Math.max(0, toInt(u.newbiePath.step, 1) - 1);
+    const def = defs[idx];
+    if (!def) return { ok: false };
+
+    u.money = Math.max(0, toInt(u?.money, 0)) + Math.max(0, toInt(def.rewardMoney, 0));
+    u.premium = Math.max(0, toInt(u?.premium, 0)) + Math.max(0, toInt(def.rewardGems, 0));
+    u.newbiePath.step = idx + 2;
+    u.newbiePath.pending = false;
+    u.newbiePath.completed = u.newbiePath.step > defs.length;
+    u.newbiePath.ctx = null;
+    u.newbiePath.updatedAt = this.now();
+
+    if (u.newbiePath.completed) {
+      u.money += this._newbieFinalRewardMoney();
+      u.premium += this._newbieFinalRewardGems();
+      return { ok: true, completed: true };
+    }
+
+    const nextDef = defs[u.newbiePath.step - 1];
+    u.newbiePath.ctx = nextDef ? this.initNewbieStepContext(u) : null;
+    return { ok: true, completed: false, step: u.newbiePath.step };
+  }
+
+  _newbieActionButton(u, stepDef) {
+    if (!stepDef) return null;
+    if (stepDef.id === "daily_bonus") {
+      return { text: this._newbieStepCta(u, stepDef.id), callback_data: "bar:newbie:daily_claim" };
+    }
+    const route = String(stepDef.targetRoute || "").trim();
+    if (!route) return null;
+    return { text: this._newbieStepCta(u, stepDef.id), callback_data: `go:${route}` };
+  }
+
   _buildSpecialQuestLines(u) {
     const s = this._strings(u);
     const specialLines = [];
@@ -1467,7 +1560,8 @@ export class QuestService {
   }
 
   hasPendingNewbieQuests(u) {
-    return this._buildSpecialQuestLines(u).length > 0;
+    this._ensureNewbiePathModel(u);
+    return !!u?.flags?.onboardingDone && u?.newbiePath?.completed !== true;
   }
 
   async buildBarTasksView(u) {
@@ -1511,16 +1605,77 @@ export class QuestService {
   async buildBarNewbieTasksView(u) {
     await this.ensureCycles(u, { persist: false });
     const s = this._strings(u);
-    const specialLines = this._buildSpecialQuestLines(u);
-    const lines = [s.barTitle, "", this._newbieTitle(u), this._newbieUnlocksHint(u), ""];
-    if (specialLines.length) {
-      lines.push(...specialLines);
-    } else {
-      lines.push(this._newbieDoneLine(u));
+    this._ensureNewbiePathModel(u);
+    const defs = this._newbiePathDefs();
+    const total = defs.length;
+
+    if (u?.newbiePath?.completed) {
+      const rewardParts = [];
+      if (this._newbieFinalRewardMoney() > 0) rewardParts.push(formatMoney(this._newbieFinalRewardMoney(), this._lang(u)));
+      if (this._newbieFinalRewardGems() > 0) rewardParts.push(`💎${this._newbieFinalRewardGems()}`);
+      return {
+        caption: [
+          s.barTitle,
+          "",
+          t("newbie.complete.title", this._lang(u)),
+          "",
+          t("newbie.complete.desc", this._lang(u)),
+          "",
+          t("newbie.reward", this._lang(u), { reward: rewardParts.join(" + ") || "$0" })
+        ].join("\n").trim(),
+        keyboard: [
+          [{ text: t("newbie.complete.cta", this._lang(u)), callback_data: "bar:tasks" }],
+          [{ text: s.back, callback_data: "go:Bar" }]
+        ]
+      };
     }
-    const keyboard = [
-      [{ text: s.back, callback_data: "go:Bar" }]
+
+    const step = Math.max(1, toInt(u?.newbiePath?.step, 1));
+    const current = defs[step - 1] || null;
+    const next = defs[step] || null;
+    if (!current) {
+      return {
+        caption: `${s.barTitle}\n\n${this._newbieDoneLine(u)}`,
+        keyboard: [[{ text: s.back, callback_data: "go:Bar" }]]
+      };
+    }
+
+    const rewardParts = [];
+    if (Math.max(0, toInt(current.rewardMoney, 0)) > 0) rewardParts.push(formatMoney(current.rewardMoney, this._lang(u)));
+    if (Math.max(0, toInt(current.rewardGems, 0)) > 0) rewardParts.push(`💎${toInt(current.rewardGems, 0)}`);
+
+    const lines = [
+      s.barTitle,
+      "",
+      this._newbieTitle(u),
+      t("newbie.progress", this._lang(u), {
+        step,
+        total,
+        bar: this._newbieProgressBar(step, total)
+      }),
+      "",
+      t("newbie.current", this._lang(u)),
+      `${t("newbie.icon.current", this._lang(u))} ${this._newbieStepTitle(u, current.id)}`,
+      this._newbieStepDesc(u, current.id),
+      "",
+      t("newbie.reward", this._lang(u), { reward: rewardParts.join(" + ") || "$0" })
     ];
+
+    const keyboard = [];
+    if (u?.newbiePath?.pending) {
+      lines.push("", t("newbie.pending", this._lang(u)));
+      keyboard.push([{ text: t("newbie.claim", this._lang(u)), callback_data: "bar:newbie:claim" }]);
+    } else {
+      lines.push("", t("newbie.where", this._lang(u)), this._newbieStepWhere(u, current.id));
+      const actionBtn = this._newbieActionButton(u, current);
+      if (actionBtn) keyboard.push([actionBtn]);
+    }
+
+    if (next) {
+      lines.push("", "────────────", "", t("newbie.next", this._lang(u)), `🔒 ${this._newbieStepTitle(u, next.id)}`);
+    }
+
+    keyboard.push([{ text: s.back, callback_data: "go:Bar" }]);
     return { caption: lines.join("\n").trim(), keyboard };
   }
 }

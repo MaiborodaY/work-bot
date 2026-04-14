@@ -108,6 +108,18 @@ export const CONFIG = {
     WEEKLY_COUNT: 3,
     DAILY_BONUS_GEMS: 1,
     WEEKLY_BONUS_GEMS: 3,
+    NEWBIE_FINAL_REWARD_MONEY: 500,
+    NEWBIE_FINAL_REWARD_GEMS: 5,
+    NEWBIE_PATH: [
+      { id: "daily_bonus", rewardMoney: 300, rewardGems: 0, targetRoute: "Bar" },
+      { id: "work_job", rewardMoney: 200, rewardGems: 0, targetRoute: "Work" },
+      { id: "start_study", rewardMoney: 300, rewardGems: 0, targetRoute: "Study" },
+      { id: "rest_home", rewardMoney: 150, rewardGems: 0, targetRoute: "Home" },
+      { id: "buy_pet", rewardMoney: 500, rewardGems: 0, targetRoute: "Pet" },
+      { id: "gym_train", rewardMoney: 200, rewardGems: 0, targetRoute: "Gym" },
+      { id: "study_level_5", rewardMoney: 800, rewardGems: 2, targetRoute: "Study" },
+      { id: "buy_business", rewardMoney: 1000, rewardGems: 5, targetRoute: "Business" }
+    ],
     SUB_BONUS_REWARD_MONEY: 300,
     PET_BUY_GUIDE_REWARD_MONEY: 500,
     FIRST_BIZ_GUIDE_REWARD_MONEY: 1000,

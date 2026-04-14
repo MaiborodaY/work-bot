@@ -29,15 +29,9 @@ export class UiFactory {
   }
 
   _hasPendingNewbieTasks(user) {
-    const flags = user?.flags || {};
-    if (!flags.subBonusClaimed) return true;
-    if (!flags.petBuyGuideClaimed && user?.pet == null) return true;
-    if (!flags.firstBizGuideClaimed && !this._hasAnyBusiness(user)) return true;
-    const studyLevel = Math.max(0, Number(user?.study?.level) || 0);
-    if (!flags.studyLevel5GuideClaimed && studyLevel < 5) return true;
-    const hasClan = !!String(user?.clan?.clanId || "").trim();
-    if (!flags.clanJoinGuideClaimed && !hasClan) return true;
-    return false;
+    if (user?.flags?.onboarding) return true;
+    if (!user?.flags?.onboardingDone) return false;
+    return user?.newbiePath?.completed !== true;
   }
 
   mainReply(lang = "en") {

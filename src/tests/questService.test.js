@@ -16,6 +16,8 @@ function makeUser({ withBusiness = false } = {}) {
     id: withBusiness ? "u-mid" : "u-new",
     lang: "ru",
     flags: {
+      onboarding: false,
+      onboardingDone: true,
       subBonusClaimed: true,
       petBuyGuideClaimed: false,
       firstBizGuideClaimed: false,
@@ -24,6 +26,8 @@ function makeUser({ withBusiness = false } = {}) {
     },
     money: 0,
     premium: 0,
+    bonus: { last: "", streak: 0 },
+    rest: { active: false, last: 0 },
     study: { level: 0, active: false },
     biz: {
       owned: withBusiness
@@ -32,8 +36,11 @@ function makeUser({ withBusiness = false } = {}) {
     },
     stocks: { holdings: {} },
     thief: { level: 1 },
-    gym: { level: 0, active: false },
+    pet: null,
+    achievements: { progress: { totalShifts: 0 } },
+    gym: { level: 0, active: false, startAt: 0 },
     energy_max: 20,
+    newbiePath: { step: 1, pending: false, completed: false, ctx: null, updatedAt: 0 },
     quests: {
       daily: { day: "", list: [], bonusPaid: false, counters: {} },
       weekly: { week: "", list: [], bonusPaid: false, counters: {}, bizStreakCurrent: 0, lastBizClaimDay: "" }
@@ -71,31 +78,121 @@ test("bar tasks view: does not render refresh button", async () => {
   assert.equal(view.keyboard[0]?.[0]?.callback_data, "go:Bar");
 });
 
-test("newbie tasks view: shows study level 5 special quest for newbies", async () => {
+test("newbie tasks view: starts from daily bonus and shows next step preview", async () => {
   const qs = makeService();
   const u = makeUser({ withBusiness: false });
 
   const view = await qs.buildBarNewbieTasksView(u);
   const text = String(view?.caption || "");
 
-  assert.match(text, /Дойти до 5 уровня учёбы/);
-  assert.match(text, /0\/5/);
+  assert.match(text, /Забери ежедневный бонус/);
+  assert.match(text, /Следующий шаг:/);
+  assert.match(text, /Запусти ещё одну работу/);
+  assert.equal(view.keyboard[0]?.[0]?.callback_data, "bar:newbie:daily_claim");
+  assert.equal(typeof u.newbiePath.ctx, "object");
 });
 
-test("study level 5 special quest: auto-awards money and gems once", async () => {
+test("newbie path: daily bonus completion becomes pending after claim", () => {
+  const qs = makeService();
+  const u = makeUser({ withBusiness: false });
+  u.bonus.last = "2026-03-13";
+
+  const changed = qs.maybeCompleteNewbieStep(u);
+
+  assert.equal(changed, true);
+  assert.equal(u.newbiePath.pending, true);
+});
+
+test("newbie path: claiming step reward advances to next step and stores context", () => {
+  const qs = makeService();
+  const u = makeUser({ withBusiness: false });
+  u.newbiePath.pending = true;
+
+  const res = qs.claimNewbieStep(u);
+
+  assert.equal(res.ok, true);
+  assert.equal(u.money, 300);
+  assert.equal(u.newbiePath.step, 2);
+  assert.equal(u.newbiePath.pending, false);
+  assert.equal(typeof u.newbiePath.ctx, "object");
+  assert.equal(u.newbiePath.ctx.totalShiftsStart, 0);
+});
+
+test("newbie path: work step completes on new job start without waiting for payout", () => {
+  const qs = makeService();
+  const u = makeUser({ withBusiness: false });
+  u.newbiePath = {
+    step: 2,
+    pending: false,
+    completed: false,
+    ctx: { startedAt: Date.UTC(2026, 2, 13, 11, 0, 0), totalShiftsStart: 0, gymLevelStart: 0 },
+    updatedAt: 0
+  };
+  u.jobs = { active: [{ startAt: Date.UTC(2026, 2, 13, 11, 30, 0) }] };
+
+  const changed = qs.maybeCompleteNewbieStep(u);
+
+  assert.equal(changed, true);
+  assert.equal(u.newbiePath.pending, true);
+});
+
+test("newbie path: missing ctx is restored for current step before checks", () => {
+  const qs = makeService();
+  const u = makeUser({ withBusiness: false });
+  u.newbiePath = { step: 2, pending: false, completed: false, ctx: null, updatedAt: 0 };
+
+  const changed = qs._ensureNewbiePathModel(u);
+
+  assert.equal(changed, true);
+  assert.equal(typeof u.newbiePath.ctx, "object");
+  assert.equal(u.newbiePath.ctx.totalShiftsStart, 0);
+});
+
+test("newbie tasks view: pending state shows claim button", async () => {
+  const qs = makeService();
+  const u = makeUser({ withBusiness: false });
+  u.newbiePath.pending = true;
+
+  const view = await qs.buildBarNewbieTasksView(u);
+  const text = String(view?.caption || "");
+
+  assert.match(text, /Задание выполнено/);
+  assert.equal(view.keyboard[0]?.[0]?.callback_data, "bar:newbie:claim");
+});
+
+test("newbie path: completed state renders final screen", async () => {
+  const qs = makeService();
+  const u = makeUser({ withBusiness: false });
+  u.newbiePath = { step: 9, pending: false, completed: true, ctx: null, updatedAt: 0 };
+
+  const view = await qs.buildBarNewbieTasksView(u);
+  const text = String(view?.caption || "");
+
+  assert.match(text, /Путь новичка пройден/);
+  assert.equal(view.keyboard[0]?.[0]?.callback_data, "bar:tasks");
+});
+
+test("legacy special rewards stay disabled for pet_buy", async () => {
   const qs = makeService();
   const u = makeUser({ withBusiness: false });
 
-  const first = await qs.onEvent(u, "study_finish", { level: 5 });
-  assert.equal(u.flags.studyLevel5GuideClaimed, true);
-  assert.equal(u.money, 800);
-  assert.equal(u.premium, 2);
-  assert.ok(first.events.some((ev) => ev.id === "study_level_5"));
+  const res = await qs.onEvent(u, "pet_buy", { type: "dog" }, { persist: false, notify: false });
 
-  const second = await qs.onEvent(u, "study_finish", { level: 5 });
-  assert.equal(u.money, 800);
-  assert.equal(u.premium, 2);
-  assert.equal(second.events.some((ev) => ev.id === "study_level_5"), false);
+  assert.equal(u.money, 0);
+  assert.equal(Array.isArray(res.events), true);
+  assert.equal(res.events.some((ev) => ev.id === "pet_buy_first"), false);
+});
+
+test("legacy special rewards stay disabled for study level 5", async () => {
+  const qs = makeService();
+  const u = makeUser({ withBusiness: false });
+
+  const res = await qs.onEvent(u, "study_finish", { level: 5 }, { persist: false, notify: false });
+
+  assert.equal(u.money, 0);
+  assert.equal(u.premium, 0);
+  assert.equal(Array.isArray(res.events), true);
+  assert.equal(res.events.some((ev) => ev.id === "study_level_5"), false);
 });
 
 test("stocks_buy3 progress uses holdings count, not binary flag", async () => {
@@ -151,121 +248,6 @@ test("stocks_buy3 stale counter is recovered from current holdings on cycle ensu
 
   assert.equal(u.quests.daily.list[0].progress, 3);
   assert.equal(u.quests.daily.list[0].done, true);
-});
-
-test("newbie tasks view: shows clan join special quest when user has no clan", async () => {
-  const qs = makeService();
-  const u = makeUser({ withBusiness: false });
-
-  const view = await qs.buildBarNewbieTasksView(u);
-  const text = String(view?.caption || "");
-
-  assert.match(text, /Вступить в клан или создать свой/);
-  assert.match(text, /\$(1000|1к|1k)/);
-});
-
-test("clan join special quest: awards money once", async () => {
-  const qs = makeService();
-  const u = makeUser({ withBusiness: false });
-
-  const first = await qs.onEvent(u, "clan_join", { clanId: "clan_1" }, { persist: false, notify: false });
-  assert.equal(u.flags.clanJoinGuideClaimed, true);
-  assert.equal(u.money, 1000);
-  assert.ok(first.events.some((ev) => ev.id === "clan_join_first"));
-
-  const second = await qs.onEvent(u, "clan_join", { clanId: "clan_1" }, { persist: false, notify: false });
-  assert.equal(u.money, 1000);
-  assert.equal(second.events.some((ev) => ev.id === "clan_join_first"), false);
-});
-
-test("newbie tasks view: shows pet buy special quest when pet is missing", async () => {
-  const qs = makeService();
-  const u = makeUser({ withBusiness: false });
-  u.lang = "en";
-  u.flags.subBonusClaimed = true;
-  u.flags.studyLevel5GuideClaimed = true;
-  u.flags.clanJoinGuideClaimed = true;
-  u.pet = null;
-
-  const view = await qs.buildBarNewbieTasksView(u);
-  const text = String(view?.caption || "");
-
-  assert.match(text, /Buy a pet \(Square -> City -> Home -> Pet\)/);
-  assert.match(text, /\$500/);
-});
-
-test("pet buy special quest: awards money once and does not repeat", async () => {
-  const qs = makeService();
-  const u = makeUser({ withBusiness: false });
-  u.flags.petBuyGuideClaimed = false;
-
-  const first = await qs.onEvent(u, "pet_buy", { type: "dog" }, { persist: false, notify: false });
-  assert.equal(u.flags.petBuyGuideClaimed, true);
-  assert.equal(u.money, 500);
-  assert.ok(first.events.some((ev) => ev.id === "pet_buy_first"));
-
-  const second = await qs.onEvent(u, "pet_buy", { type: "cat" }, { persist: false, notify: false });
-  assert.equal(u.money, 500);
-  assert.equal(second.events.some((ev) => ev.id === "pet_buy_first"), false);
-});
-
-test("bar tasks view: hides pet buy special quest for users with existing pet", async () => {
-  const qs = makeService();
-  const u = makeUser({ withBusiness: false });
-  u.lang = "en";
-  u.flags.subBonusClaimed = true;
-  u.flags.studyLevel5GuideClaimed = true;
-  u.flags.clanJoinGuideClaimed = true;
-  u.flags.petBuyGuideClaimed = false;
-  u.pet = {
-    type: "cat",
-    name: "Murka",
-    status: "healthy",
-    streak: 0,
-    lastFedDay: "",
-    sickSince: "",
-    boughtAt: Date.UTC(2026, 2, 12, 12, 0, 0)
-  };
-
-  const view = await qs.buildBarTasksView(u);
-  const text = String(view?.caption || "");
-
-  assert.doesNotMatch(text, /Buy a pet \(Square -> City -> Home -> Pet\)/);
-});
-
-test("newbie tasks view: shows first business special quest when user has 0 businesses", async () => {
-  const qs = makeService();
-  const u = makeUser({ withBusiness: false });
-  u.lang = "en";
-  u.flags.subBonusClaimed = true;
-  u.flags.petBuyGuideClaimed = true;
-  u.flags.studyLevel5GuideClaimed = true;
-  u.flags.clanJoinGuideClaimed = true;
-
-  const view = await qs.buildBarNewbieTasksView(u);
-  const text = String(view?.caption || "");
-
-  assert.match(text, /Buy your first business \(Square -> Earnings -> Business\)/);
-  assert.match(text, /\$(1000|1к|1k)/);
-});
-
-test("first business special quest: awards money once on business buy only", async () => {
-  const qs = makeService();
-  const u = makeUser({ withBusiness: false });
-
-  const slotEvent = await qs.onEvent(u, "biz_expand", { bizId: "shawarma", kind: "slot" }, { persist: false, notify: false });
-  assert.equal(u.flags.firstBizGuideClaimed, false);
-  assert.equal(u.money, 0);
-  assert.equal(slotEvent.events.some((ev) => ev.id === "biz_buy_first"), false);
-
-  const first = await qs.onEvent(u, "biz_expand", { bizId: "shawarma", kind: "business" }, { persist: false, notify: false });
-  assert.equal(u.flags.firstBizGuideClaimed, true);
-  assert.equal(u.money, 1000);
-  assert.ok(first.events.some((ev) => ev.id === "biz_buy_first"));
-
-  const second = await qs.onEvent(u, "biz_expand", { bizId: "dent", kind: "business" }, { persist: false, notify: false });
-  assert.equal(u.money, 1000);
-  assert.equal(second.events.some((ev) => ev.id === "biz_buy_first"), false);
 });
 
 test("weekly generation: always includes exactly one farm weekly quest and total is 3", async () => {

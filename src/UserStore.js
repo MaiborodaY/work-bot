@@ -761,6 +761,28 @@ export class UserStore {
     if (typeof u.flags.studyLevel5GuideClaimed !== "boolean") { u.flags.studyLevel5GuideClaimed = false; dirty = true; }
     if (typeof u.flags.clanJoinGuideClaimed !== "boolean") { u.flags.clanJoinGuideClaimed = false; dirty = true; }
 
+    if (!u.newbiePath || typeof u.newbiePath !== "object") {
+      const completedByDefault = !!u.flags.onboardingDone;
+      u.newbiePath = {
+        step: completedByDefault ? 9 : 1,
+        pending: false,
+        completed: completedByDefault,
+        ctx: null,
+        updatedAt: 0
+      };
+      dirty = true;
+    } else {
+      const fixedStep = Math.max(1, Math.floor(Number(u.newbiePath.step) || 1));
+      if (fixedStep !== u.newbiePath.step) { u.newbiePath.step = fixedStep; dirty = true; }
+      if (typeof u.newbiePath.pending !== "boolean") { u.newbiePath.pending = false; dirty = true; }
+      if (typeof u.newbiePath.completed !== "boolean") { u.newbiePath.completed = false; dirty = true; }
+      if (u.newbiePath.ctx !== null && typeof u.newbiePath.ctx !== "object") { u.newbiePath.ctx = null; dirty = true; }
+      if (typeof u.newbiePath.updatedAt !== "number" || !Number.isFinite(u.newbiePath.updatedAt)) {
+        u.newbiePath.updatedAt = 0;
+        dirty = true;
+      }
+    }
+
     // Player stats (tops + retention/funnel telemetry)
     if (ensurePlayerStatsShape(u)) dirty = true;
     if (typeof u.lastDailyRewardDay !== "string") { u.lastDailyRewardDay = ""; dirty = true; }
@@ -836,6 +858,13 @@ export class UserStore {
 
       premium: 20,
       pet: null,
+      newbiePath: {
+        step: 1,
+        pending: false,
+        completed: false,
+        ctx: null,
+        updatedAt: 0
+      },
       farm: {
         plotMode: "purchase_v1",
         plotCount: 1,

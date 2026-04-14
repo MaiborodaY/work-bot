@@ -9,6 +9,8 @@ export const barHandler = {
     data === "go:Bar" ||
     data === "bar:tasks" ||
     data === "bar:newbie" ||
+    data === "bar:newbie:claim" ||
+    data === "bar:newbie:daily_claim" ||
     data === "bar:sub" ||
     data === "bar:sub:check",
 
@@ -22,6 +24,7 @@ export const barHandler = {
       now,
       locations,
       env,
+      daily,
       sendPhoto,
       sendWithInline,
       deleteMsg,
@@ -39,6 +42,17 @@ export const barHandler = {
     };
     const showBarNewbieTasks = async () => {
       await locations.show(u, null, "BarNewbieTasks");
+    };
+    const syncNewbieStepIfNeeded = async () => {
+      let needSave = false;
+      if (quests?.ensureCycles) {
+        const qRes = await quests.ensureCycles(u, { persist: false });
+        needSave = needSave || !!qRes?.changed;
+      }
+      if (quests?.maybeCompleteNewbieStep) {
+        needSave = quests.maybeCompleteNewbieStep(u) || needSave;
+      }
+      if (needSave) await users.save(u);
     };
 
     const showSubScreen = async () => {
@@ -123,6 +137,33 @@ export const barHandler = {
         needSave = needSave || !!qRes?.changed;
       }
       if (needSave) await users.save(u);
+      await syncNewbieStepIfNeeded();
+      await showBarNewbieTasks();
+      return;
+    }
+
+    if (data === "bar:newbie:claim") {
+      await answer(cb.id);
+      let needSave = false;
+      if (quests?.claimNewbieStep) {
+        const res = quests.claimNewbieStep(u);
+        needSave = !!res?.ok;
+      }
+      if (needSave) await users.save(u);
+      await syncNewbieStepIfNeeded();
+      await showBarNewbieTasks();
+      return;
+    }
+
+    if (data === "bar:newbie:daily_claim") {
+      await answer(cb.id);
+      const res = await daily.claim(u);
+      if (!res?.ok) {
+        await syncNewbieStepIfNeeded();
+        await showBarNewbieTasks();
+        return;
+      }
+      await syncNewbieStepIfNeeded();
       await showBarNewbieTasks();
       return;
     }
