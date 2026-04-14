@@ -91,12 +91,20 @@ export const barHandler = {
         needSave = needSave || !!qRes?.changed;
       }
       if (needSave) await users.save(u);
-      await showBarMain();
+      if (u?.flags?.onboarding) {
+        await showBarNewbieTasks();
+      } else {
+        await showBarMain();
+      }
       return;
     }
 
     if (data === "bar:tasks") {
       await answer(cb.id);
+      if (u?.flags?.onboarding) {
+        await showBarNewbieTasks();
+        return;
+      }
       let needSave = markFunnelStep(u, "didBar");
       if (quests?.ensureCycles) {
         const qRes = await quests.ensureCycles(u, { persist: false });
@@ -121,6 +129,10 @@ export const barHandler = {
 
     if (data === "bar:sub") {
       await answer(cb.id);
+      if (u?.flags?.onboarding) {
+        await showBarNewbieTasks();
+        return;
+      }
       await showSubScreen();
       return;
     }

@@ -147,6 +147,13 @@ export class UiFactory {
     const studyLevel = Math.max(0, Number(user?.study?.level) || 0);
     const canOpenArcana = studyLevel >= minStudy;
   
+    // Onboarding: keep bar menu focused on newbie tasks only.
+    if (user?.flags?.onboarding) {
+      kb.push([{ text: this._t(l, "ui.bar.newbie_tasks"), callback_data: "bar:newbie" }]);
+      kb.push([{ text: this._t(l, "ui.back.earn"), callback_data: this._go(Routes.EARN) }]);
+      return kb;
+    }
+
     kb.push([{ text: this._t(l, "ui.bar.tasks"), callback_data: "bar:tasks" }]);
     if (this._hasPendingNewbieTasks(user)) {
       kb.push([{ text: this._t(l, "ui.bar.newbie_tasks"), callback_data: "bar:newbie" }]);
