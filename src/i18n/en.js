@@ -344,7 +344,7 @@ export const EN = {
   "loc.quiz.unavailable": "Quiz is temporarily unavailable.",
   "ui.work.claim": "💵 Claim payout (${{pay}})",
   "ui.work.cancel_shift": "✖️ Cancel shift",
-  "ui.work.running": "⏳ Running ~{{mins}} min",
+  "ui.work.running": "⏳ In progress",
   "ui.work.skip_for": "⏩ Finish for {{cost}}",
   "ui.work.cancel_penalty": "🛑 Cancel (penalty $5)",
   "ui.work.entry": "▶️ {{title}} · {{mins}} min · ${{pay}} · {{energy}}⚡",

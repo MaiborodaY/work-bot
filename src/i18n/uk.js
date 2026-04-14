@@ -344,7 +344,7 @@ export const UK = {
   "loc.quiz.unavailable": "Вікторина тимчасово недоступна.",
   "ui.work.claim": "💵 Забрати виплату (${{pay}})",
   "ui.work.cancel_shift": "✖️ Скасувати зміну",
-  "ui.work.running": "⏳ Виконується ~{{mins}} хв",
+  "ui.work.running": "⏳ Зміна триває",
   "ui.work.skip_for": "⏩ Завершити за {{cost}}",
   "ui.work.cancel_penalty": "🛑 Скасувати (штраф $5)",
   "ui.work.entry": "▶️ {{title}} · {{mins}} хв · ${{pay}} · {{energy}}⚡",

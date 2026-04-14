@@ -69,7 +69,7 @@ export const RU = {
 
   "ui.work.claim": "💵 Получить выплату (${{pay}})",
   "ui.work.cancel_shift": "✖️ Отменить смену",
-  "ui.work.running": "⏳ Выполняется ~{{mins}} мин",
+  "ui.work.running": "⏳ Смена идёт",
   "ui.work.skip_for": "⏩ Завершить за {{cost}}",
   "ui.work.cancel_penalty": "🛑 Отменить (штраф $5)",
   "ui.work.entry": "▶️ {{title}} · {{mins}} мин · ${{pay}} · {{energy}}⚡",
