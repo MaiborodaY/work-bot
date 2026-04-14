@@ -10,6 +10,7 @@ import { getBusinessNote, getBusinessTitle } from "../../I18nCatalog.js";
 import { Routes, toGoCallback } from "../../Routes.js";
 
 export async function renderBusinessRoute(ctx, user, { header = "", lang = "ru", route = Routes.BUSINESS } = {}) {
+  const backTo = (user?.nav?.backTo || null) || Routes.EARN;
   let activeDefenseLoaded = false;
   let activeDefense = null;
   const getActiveDefense = async () => {
@@ -149,7 +150,7 @@ export async function renderBusinessRoute(ctx, user, { header = "", lang = "ru",
     if (opts.showBackToBusinesses) {
       kb.push([{ text: ctx._t(user, "loc.business.btn.back_businesses"), callback_data: toGoCallback(Routes.BUSINESS) }]);
     }
-    kb.push([{ text: ctx._t(user, "loc.business.btn.back_earn"), callback_data: toGoCallback(Routes.EARN) }]);
+    kb.push([{ text: ctx._t(user, "ui.back.default"), callback_data: toGoCallback(backTo) }]);
 
     const intro = opts.includeIntro ? ctx._t(user, "loc.business.caption_intro") + "\n\n" : "";
     const modeLine = opts.useManualClaim
@@ -231,7 +232,7 @@ export async function renderBusinessRoute(ctx, user, { header = "", lang = "ru",
         }),
         callback_data: "biz:claim_all"
       }]);
-      kb.push([{ text: ctx._t(user, "loc.business.btn.back_earn"), callback_data: toGoCallback(Routes.EARN) }]);
+      kb.push([{ text: ctx._t(user, "ui.back.default"), callback_data: toGoCallback(backTo) }]);
       await ctx.media.show({
         sourceMsg: ctx._sourceMsg,
         place: Routes.BUSINESS,

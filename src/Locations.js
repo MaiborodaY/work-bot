@@ -404,7 +404,8 @@ export class Locations {
         return;
       }
 
-      const kb = this.ui.workV2(user, {}, lang);
+      const backTo = (user?.nav?.backTo || null) || Routes.EARN;
+      const kb = this.ui.workV2(user, { backTo }, lang);
       const caption =
         (header || "") +
         this._t(user, "loc.work.onboarding_step1") + "\n\n" +
@@ -461,7 +462,7 @@ export class Locations {
         place: Routes.WORK,
         asset: fileId,
         caption,
-        keyboard: this.ui.workV2(user, { active, ready, ffCost, onboardingStep: onboardingStage }, lang),
+        keyboard: this.ui.workV2(user, { active, ready, ffCost, onboardingStep: onboardingStage, backTo: (user?.nav?.backTo || null) || Routes.EARN }, lang),
         policy: "photo",
       });
     } else {
@@ -472,7 +473,7 @@ export class Locations {
         this.formatters.balance(user) + "\n\n" +
         this._t(user, "loc.work.bonuses") + "\n" + perks;
 
-      const kb = this.ui.workV2(user, {}, lang);
+      const kb = this.ui.workV2(user, { backTo: (user?.nav?.backTo || null) || Routes.EARN }, lang);
 
       await this.media.show({
         sourceMsg: this._sourceMsg,

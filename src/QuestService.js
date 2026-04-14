@@ -1512,7 +1512,7 @@ export class QuestService {
     if (!stepDef) return null;
     const route = String(stepDef.targetRoute || "").trim();
     if (!route) return null;
-    return { text: this._newbieStepCta(u, stepDef.id), callback_data: `go:${route}` };
+    return { text: this._newbieStepCta(u, stepDef.id), callback_data: `bar:newbie:go:${route}` };
   }
 
   _buildSpecialQuestLines(u) {

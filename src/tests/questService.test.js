@@ -88,7 +88,7 @@ test("newbie tasks view: starts from daily bonus with bar navigation and no next
   assert.equal(Array.isArray(view.keyboard), true);
   assert.equal(view.keyboard.length, 2);
   assert.equal(/\u{1F512}/u.test(text), false);
-  assert.equal(view.keyboard[0]?.[0]?.callback_data, "go:Bar");
+  assert.equal(view.keyboard[0]?.[0]?.callback_data, "bar:newbie:go:Bar");
   assert.equal(typeof u.newbiePath.ctx, "object");
 });
 

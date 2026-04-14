@@ -3,6 +3,7 @@ import { NameService } from "../../NameService.js";
 import { Routes, toGoCallback } from "../../Routes.js";
 
 export async function renderStudyRoute(ctx, user, { header = "", lang = "ru" } = {}) {
+  const backTo = (user?.nav?.backTo || null) || Routes.PROGRESS;
   if (!user.displayName || !String(user.displayName).trim()) {
     if (ctx.users && typeof ctx.users.save === "function") {
       user.awaitingName = true;
@@ -16,7 +17,7 @@ export async function renderStudyRoute(ctx, user, { header = "", lang = "ru" } =
         sourceMsg: ctx._sourceMsg,
         place: Routes.STUDY,
         caption: text,
-        keyboard: extra?.reply_markup?.inline_keyboard || [[{ text: ctx._t(user, "ui.back.square"), callback_data: toGoCallback(Routes.SQUARE) }]],
+        keyboard: extra?.reply_markup?.inline_keyboard || [[{ text: ctx._t(user, "ui.back.default"), callback_data: toGoCallback(backTo) }]],
         policy: "photo",
       });
       ctx.setSourceMessage(null);
@@ -57,7 +58,7 @@ export async function renderStudyRoute(ctx, user, { header = "", lang = "ru" } =
         title +
         "\n\n" + ctx.formatters.balance(user) +
         "\n" + ctx.formatters.studyLine(user),
-      keyboard: ctx.ui.studyActive(progress, { ready, ffCost }, lang),
+      keyboard: ctx.ui.studyActive(progress, { ready, ffCost, backTo }, lang),
       policy: "photo",
     });
   } else {
@@ -67,7 +68,7 @@ export async function renderStudyRoute(ctx, user, { header = "", lang = "ru" } =
       caption: header +
         ctx._t(user, "loc.study.caption_intro") + "\n\n" +
         ctx.formatters.balance(user) + "\n" + ctx.formatters.studyLine(user),
-      keyboard: ctx.ui.studyIdle(ctx.economy.fmtStudyEffects(user), lang),
+      keyboard: ctx.ui.studyIdle(ctx.economy.fmtStudyEffects(user), { backTo }, lang),
       policy: "auto",
     });
   }

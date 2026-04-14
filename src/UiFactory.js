@@ -194,6 +194,9 @@ export class UiFactory {
     const l = this._lang(lang || user?.lang);
     const { active = null, ready = false } = options;
     const kb = [];
+    const backTo = (options && typeof options.backTo === "string" && options.backTo) ? options.backTo : null;
+    const backText = this._t(l, "ui.back.default");
+    const backCb = this._go(backTo || Routes.EARN);
     const onboarding = !!(user?.flags?.onboarding);
     const onboardingStep = String(user?.flags?.onboardingStep || options.onboardingStep || "");
     const canUseFreeSkip = onboarding && onboardingStep === "job_claim" && !user?.flags?.freeSkipUsed_work;
@@ -216,7 +219,7 @@ export class UiFactory {
           kb.push([{ text: this._t(l, "ui.work.cancel_penalty"), callback_data: "work:cancel" }]);
         }
       }
-      kb.push([{ text: this._t(l, "ui.back.earn"), callback_data: this._go(Routes.EARN) }]);
+      kb.push([{ text: backText, callback_data: backCb }]);
       return kb;
     }
 
@@ -231,26 +234,27 @@ export class UiFactory {
       }]);
     }
 
-    kb.push([{ text: this._t(l, "ui.back.city"), callback_data: this._go(Routes.SQUARE) }]);
+    kb.push([{ text: backText, callback_data: backCb }]);
     return kb;
   }
 
   // ---------- Учеба ----------
-  studyIdle(effectsText, lang = "ru") {
+  studyIdle(effectsText, opts = {}, lang = "ru") {
     const l = this._lang(lang);
+    const backTo = (opts && typeof opts.backTo === "string" && opts.backTo) ? opts.backTo : Routes.PROGRESS;
       return [
         [{ text: this._t(l, "ui.study.start", { effects: effectsText }), callback_data: "study:start" }],
-        [{ text: this._t(l, "ui.back.progress"), callback_data: this._go(Routes.PROGRESS) }],
+        [{ text: this._t(l, "ui.back.default"), callback_data: this._go(backTo) }],
       ];
   }
 
-  studyActive(progress, { ready = false, ffCost = null } = {}, lang = "ru") {
+  studyActive(progress, { ready = false, ffCost = null, backTo = Routes.PROGRESS } = {}, lang = "ru") {
     const l = this._lang(lang);
     if (ready) {
       return [
         [{ text: this._t(l, "ui.progress.line", { progress }), callback_data: "noop" }],
         [{ text: this._t(l, "ui.study.finish"), callback_data: "study:finish" }],
-        [{ text: this._t(l, "ui.back.progress"), callback_data: this._go(Routes.PROGRESS) }],
+        [{ text: this._t(l, "ui.back.default"), callback_data: this._go(backTo) }],
       ];
     }
 
@@ -260,7 +264,7 @@ export class UiFactory {
     return [
       [{ text: this._t(l, "ui.progress.line", { progress }), callback_data: "noop" }],
       [{ text: this._t(l, "ui.study.skip_for", { cost: costLabel }), callback_data: "study:skip" }],
-      [{ text: this._t(l, "ui.back.progress"), callback_data: this._go(Routes.PROGRESS) }],
+      [{ text: this._t(l, "ui.back.default"), callback_data: this._go(backTo) }],
     ];
   }
 

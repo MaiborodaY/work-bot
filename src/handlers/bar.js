@@ -1,4 +1,5 @@
 import { CONFIG } from "../GameConfig.js";
+import { Routes } from "../Routes.js";
 import { normalizeLang, t } from "../i18n/index.js";
 import { markFunnelStep } from "../PlayerStats.js";
 
@@ -11,6 +12,7 @@ export const barHandler = {
     data === "bar:newbie" ||
     data === "bar:newbie:claim" ||
     data === "bar:newbie:daily_claim" ||
+    data.startsWith("bar:newbie:go:") ||
     data === "bar:sub" ||
     data === "bar:sub:check",
 
@@ -152,6 +154,16 @@ export const barHandler = {
       if (needSave) await users.save(u);
       await syncNewbieStepIfNeeded();
       await showBarNewbieTasks();
+      return;
+    }
+
+    if (data.startsWith("bar:newbie:go:")) {
+      await answer(cb.id);
+      const route = String(data.slice("bar:newbie:go:".length) || "").trim() || Routes.BAR;
+      u.nav = (u.nav && typeof u.nav === "object") ? u.nav : {};
+      u.nav.backTo = Routes.BAR_NEWBIE_TASKS;
+      await users.save(u);
+      await ctx.goTo(u, route, null);
       return;
     }
 
