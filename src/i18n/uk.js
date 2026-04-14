@@ -626,6 +626,8 @@ export const UK = {
   "loc.onboarding.claim_shift": "Забрати виплату",
   "loc.onboarding.caption_claim_shift": "💵 Зміна завершилась. Забери гроші в Роботах — це важливий крок.",
   "loc.onboarding.caption_finish_gym": "🏋️ Тренування запущено. Заверши його, щоб відкрити все місто.",
+  "loc.onboarding.to_bar.caption": "🎉 Чудово! Перше тренування зроблено.\n\nЩо більше енергії — то більше змін ти можеш брати і тим швидше росте дохід.\n\n🍻 Переходь у Бар — там на тебе чекають нові завдання.",
+  "loc.onboarding.to_bar.btn": "🍻 Перейти в Бар",
   "handler.work.onboarding_use_free_skip": "У навчанні використовуй безкоштовне завершення.",
   "handler.work.skip_free_unavailable": "Безкоштовне завершення зараз недоступне.",
   "handler.work.skip_free_ok": "⚡ Зміну завершено безкоштовно. +${{pay}}",

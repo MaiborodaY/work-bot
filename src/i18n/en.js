@@ -626,6 +626,8 @@ export const EN = {
   "loc.onboarding.claim_shift": "Claim payout",
   "loc.onboarding.caption_claim_shift": "💵 Shift is done. Claim money in Jobs - this is a key step.",
   "loc.onboarding.caption_finish_gym": "🏋️ Training started. Finish it to unlock the full city.",
+  "loc.onboarding.to_bar.caption": "🎉 Great! Your first training is done.\n\nMore energy = more shifts you can take and faster income growth.\n\n🍻 Go to the Bar — new tasks are waiting for you.",
+  "loc.onboarding.to_bar.btn": "🍻 Go to Bar",
   "handler.work.onboarding_use_free_skip": "Use the free finish in onboarding.",
   "handler.work.skip_free_unavailable": "Free finish is unavailable right now.",
   "handler.work.skip_free_ok": "⚡ Shift finished for free. +${{pay}}",

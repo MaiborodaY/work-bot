@@ -461,6 +461,7 @@ export class Locations {
       [Routes.SHOP]: async () => this._renderShopRoute(user, { header, lang }),
       [Routes.CASINO]: async () => this._renderCasinoRoute(user, { lang }),
       [Routes.BAR]: async () => this._renderBarRoute(user, { lang }),
+      [Routes.ONBOARDING_TO_BAR]: async () => this._renderOnboardingToBarRoute(user, { header, lang }),
       [Routes.GYM]: async () => this._renderGymRoute(user, { introText, lang, onboardingStage }),
       [Routes.UPGRADES]: async () => this._renderUpgradesRoute(user, { lang }),
       [Routes.BAR_TASKS]: async () => this._renderBarTasksRoute(user, { lang }),
@@ -499,6 +500,21 @@ export class Locations {
 
   async _renderBarRoute(user, opts = {}) {
     return renderBarRoute(this, user, opts);
+  }
+
+  async _renderOnboardingToBarRoute(user, opts = {}) {
+    const header = String(opts?.header || "");
+    const caption = header + this._t(user, "loc.onboarding.to_bar.caption");
+    const keyboard = [[{ text: this._t(user, "loc.onboarding.to_bar.btn"), callback_data: toGoCallback(Routes.BAR) }]];
+    await this.media.show({
+      sourceMsg: this._sourceMsg,
+      place: Routes.ONBOARDING_TO_BAR,
+      caption,
+      keyboard,
+      policy: "text",
+    });
+    this._sourceMsg = null;
+    this._route = Routes.ONBOARDING_TO_BAR;
   }
 
   async _renderGymRoute(user, opts = {}) {

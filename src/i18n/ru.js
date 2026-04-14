@@ -740,6 +740,8 @@ export const RU = {
   "loc.onboarding.claim_shift": "Забрать выплату",
   "loc.onboarding.caption_claim_shift": "💵 Смена завершилась. Забери деньги в Работах — это важный шаг.",
   "loc.onboarding.caption_finish_gym": "🏋️ Тренировка запущена. Заверши её, чтобы открыть весь город.",
+  "loc.onboarding.to_bar.caption": "🎉 Отлично! Первая тренировка сделана.\n\nЧем больше энергии — тем больше смен ты можешь брать и тем быстрее растёт доход.\n\n🍻 Перейди в Бар — там тебя ждут новые задания.",
+  "loc.onboarding.to_bar.btn": "🍻 Перейти в Бар",
   "handler.work.onboarding_use_free_skip": "В онбординге используй бесплатное завершение.",
   "handler.work.skip_free_unavailable": "Бесплатное завершение сейчас недоступно.",
   "handler.work.skip_free_ok": "⚡ Смена завершена бесплатно. +${{pay}}",

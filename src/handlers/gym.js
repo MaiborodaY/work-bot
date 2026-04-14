@@ -171,10 +171,7 @@ export const gymHandler = {
       const onboardingDone = await finishOnboardingIfNeeded();
       await answer(cb.id, tt("handler.gym.skip_free_ok"));
       if (onboardingDone) {
-        if (markFunnelStep(u, "didBar")) {
-          await users.save(u);
-        }
-        await ctx.goTo(u, "Bar", tt("worker.onboarding.done"));
+        await ctx.goTo(u, Routes.ONBOARDING_TO_BAR, null);
       } else {
         await locations.show(u, null, "Gym");
       }
@@ -218,10 +215,7 @@ export const gymHandler = {
       const onboardingDone = onboardingFinish ? await finishOnboardingIfNeeded() : false;
       await answer(cb.id, tt("handler.gym.finish_ok"));
       if (onboardingDone) {
-        if (markFunnelStep(u, "didBar")) {
-          await users.save(u);
-        }
-        await ctx.goTo(u, "Bar", tt("worker.onboarding.done"));
+        await ctx.goTo(u, Routes.ONBOARDING_TO_BAR, null);
       }
       return;
     }
