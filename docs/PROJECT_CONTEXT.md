@@ -5,6 +5,11 @@ Last updated: 2026-04-14 (UTC)
 This document is a compact source of truth for engineering context.
 Read this before implementing new features or hotfixes.
 
+## 0) Collaboration Rule (Very Important)
+
+- Do not change gameplay/UI/logic in the repo unless the user explicitly commands it (for example: "делай", "начинай кодить", "комит и пуш").
+- When the user asks a question or requests validation/ideas, propose options first and wait for an explicit "go" before editing code.
+
 ## 1) Runtime and Storage
 
 - Platform: Cloudflare Workers.

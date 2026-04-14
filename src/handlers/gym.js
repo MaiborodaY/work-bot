@@ -33,7 +33,8 @@ export const gymHandler = {
 
     if (ctx.data === "gym:start") {
       const onboardingStep = String(u?.flags?.onboardingStep || "");
-      if (u?.flags?.onboarding && onboardingStep === "go_gym") {
+      const isOnboardingStart = u?.flags?.onboarding && onboardingStep === "go_gym";
+      if (isOnboardingStart) {
         // Keep onboarding deterministic: guarantee resources for the first gym run.
         try {
           const q = GymService.computeForUser(u);
@@ -80,7 +81,10 @@ export const gymHandler = {
       } catch {}
 
       const mins = Math.max(1, Math.round(res.timeMs / 60000));
-      const intro = tt("handler.gym.started_intro", {
+      const introKey = isOnboardingStart
+        ? "handler.gym.started_intro_onboarding"
+        : "handler.gym.started_intro";
+      const intro = tt(introKey, {
         costMoney: res.costMoney,
         costEnergy: res.costEnergy,
         mins

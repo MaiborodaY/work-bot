@@ -178,7 +178,7 @@ export const RU = {
   "loc.work.active_ready": "💰 Готово к выплате: {{title}} [$${{pay}}]",
   "loc.work.active_running": "⏳ Идет смена: {{title}} (~{{mins}} мин)",
   "loc.work.active_tip": "💡 Совет: можно открыть другие разделы.",
-  "loc.work.active_tip_onboarding": "💡 Совет: нажми Завершить сейчас, чтобы не ждать (для обучения сейчас это бесплатно).",
+  "loc.work.active_tip_onboarding": "💡 Совет: нажми Завершить сейчас, чтобы не ждать (сейчас это бесплатно).",
   "loc.work.bonuses": "✨ Бонусы от учёбы и улучшений:",
 
   "loc.study.ready_title": "📘 Обучение завершено — можно повысить уровень",
@@ -299,6 +299,7 @@ export const RU = {
   "handler.gym.low_energy_to_shop": "⚡ Не хватает энергии — открыл магазин.",
   "handler.gym.start_failed": "Не удалось начать тренировку.",
   "handler.gym.started_intro": "🏋️ Тренировка начата: −${{costMoney}}, −{{costEnergy}}⚡, ~{{mins}} мин.\nМожешь заняться другими делами",
+  "handler.gym.started_intro_onboarding": "🏋️ Тренировка начата: −${{costMoney}}, −{{costEnergy}}⚡, ~{{mins}} мин.\n💡 Совет: нажми Завершить сейчас, чтобы не ждать (сейчас это бесплатно).",
   "handler.gym.started_ok": "🏁 Запустил тренировку.",
   "handler.gym.skip_failed": "Не удалось завершить мгновенно.",
   "handler.gym.skip_ok": "⏩ Мгновенно завершено (−💎{{cost}}).",

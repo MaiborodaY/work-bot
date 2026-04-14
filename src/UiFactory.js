@@ -193,8 +193,6 @@ export class UiFactory {
           kb.push([{ text: this._t(l, "ui.work.cancel_shift"), callback_data: "work:cancel" }]);
         }
       } else {
-        const left = Math.max(0, Math.ceil((active.endAt - Date.now())/60000));
-        kb.push([{ text: this._t(l, "ui.work.running", { mins: left }), callback_data: "noop" }]);
         if (canUseFreeSkip) {
           kb.push([{ text: this._t(l, "ui.work.skip_free"), callback_data: "work:skip_free" }]);
         } else {
