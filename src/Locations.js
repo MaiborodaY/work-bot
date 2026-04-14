@@ -184,6 +184,21 @@ export class Locations {
         place: Routes.LABOUR,
         policy: "auto",
         buildView: async () => {
+          const owned = Array.isArray(user?.biz?.owned) ? user.biz.owned : [];
+          const hasBiz = owned.some((x) => {
+            if (!x) return false;
+            if (typeof x === "string") return x.trim().length > 0;
+            return String(x?.id || "").trim().length > 0;
+          });
+          if (!hasBiz) {
+            return {
+              caption: this._t(user, "labour.view.need_business"),
+              keyboard: [
+                [{ text: this._t(user, "ui.earn.business"), callback_data: toGoCallback(Routes.BUSINESS) }],
+                [{ text: this._t(user, "ui.back.earn"), callback_data: toGoCallback(Routes.EARN) }],
+              ],
+            };
+          }
           if (this.labour && typeof this.labour.buildMainView === "function") {
             return this.labour.buildMainView(user);
           }
@@ -283,6 +298,21 @@ export class Locations {
         place: Routes.THIEF,
         policy: "auto",
         buildView: async () => {
+          const owned = Array.isArray(user?.biz?.owned) ? user.biz.owned : [];
+          const hasBiz = owned.some((x) => {
+            if (!x) return false;
+            if (typeof x === "string") return x.trim().length > 0;
+            return String(x?.id || "").trim().length > 0;
+          });
+          if (!hasBiz) {
+            return {
+              caption: this._t(user, "labour.view.need_business"),
+              keyboard: [
+                [{ text: this._t(user, "ui.earn.business"), callback_data: toGoCallback(Routes.BUSINESS) }],
+                [{ text: this._t(user, "ui.back.default"), callback_data: toGoCallback(Routes.CITY) }],
+              ],
+            };
+          }
           if (this.thief && typeof this.thief.buildMainView === "function") {
             return this.thief.buildMainView(user);
           }
@@ -318,7 +348,7 @@ export class Locations {
         routeName: Routes.EARN,
         place: Routes.SQUARE,
         caption: (header || "") + this._t(user, "loc.earn.caption"),
-        keyboard: this.ui.earn(lang),
+        keyboard: this.ui.earn(user, lang),
         policy: "photo",
       }),
 
@@ -334,7 +364,7 @@ export class Locations {
         routeName: Routes.CITY,
         place: Routes.SQUARE,
         caption: (header || "") + this._t(user, "loc.city.caption"),
-        keyboard: this.ui.city(lang),
+        keyboard: this.ui.city(user, lang),
         policy: "photo",
       }),
 

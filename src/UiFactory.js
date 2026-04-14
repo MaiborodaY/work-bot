@@ -68,17 +68,30 @@ export class UiFactory {
     ];
   }
   
-  earn(lang = "ru") {
+  earn(userOrLang = "ru", langMaybe = "ru") {
+    const user = (userOrLang && typeof userOrLang === "object") ? userOrLang : null;
+    const lang = user ? (langMaybe || user?.lang || "ru") : String(userOrLang || "ru");
     const l = this._lang(lang);
-    return [
+
+    const kb = [
       [{ text: this._t(l, "ui.earn.work"), callback_data: this._go(Routes.WORK) }],
       [{ text: this._t(l, "ui.earn.bar"), callback_data: this._go(Routes.BAR) }],
       [{ text: this._t(l, "ui.earn.business"), callback_data: this._go(Routes.BUSINESS) }],
       [{ text: this._t(l, "ui.earn.farm"), callback_data: this._go(Routes.FARM) }],
-      [{ text: this._t(l, "ui.earn.labour"), callback_data: this._go(Routes.LABOUR) }],
-      [{ text: this._t(l, "ui.earn.stocks"), callback_data: this._go(Routes.STOCKS) }],
-      [{ text: this._t(l, "ui.back.city"), callback_data: this._go(Routes.SQUARE) }]
     ];
+
+    // Hide hires menu for players without any purchased business (prevents early confusion).
+    // If user isn't provided (legacy call sites), keep showing the button to avoid behavior change.
+    if (!user || this._hasAnyBusiness(user)) {
+      kb.push([{ text: this._t(l, "ui.earn.labour"), callback_data: this._go(Routes.LABOUR) }]);
+    }
+
+    kb.push(
+      [{ text: this._t(l, "ui.earn.stocks"), callback_data: this._go(Routes.STOCKS) }],
+      [{ text: this._t(l, "ui.back.city"), callback_data: this._go(Routes.SQUARE) }],
+    );
+
+    return kb;
   }
   progress(lang = "ru") {
     const l = this._lang(lang);
@@ -89,18 +102,31 @@ export class UiFactory {
       [{ text: this._t(l, "ui.back.city"), callback_data: this._go(Routes.SQUARE) }],
     ];
   }
-  city(lang = "ru") {
+  city(userOrLang = "ru", langMaybe = "ru") {
+    const user = (userOrLang && typeof userOrLang === "object") ? userOrLang : null;
+    const lang = user ? (langMaybe || user?.lang || "ru") : String(userOrLang || "ru");
     const l = this._lang(lang);
-    return [
+
+    const kb = [
       [{ text: this._t(l, "ui.city.home"), callback_data: this._go(Routes.HOME) }],
       [{ text: this._t(l, "ui.city.board"), callback_data: this._go(Routes.CITY_BOARD) }],
       [{ text: this._t(l, "ui.city.ratings"), callback_data: this._go(Routes.RATINGS) }],
       [{ text: this._t(l, "ui.city.clans"), callback_data: this._go(Routes.CLAN) }],
       [{ text: this._t(l, "ui.city.colosseum"), callback_data: this._go(Routes.COLOSSEUM) }],
-      [{ text: this._t(l, "ui.city.thief"), callback_data: this._go(Routes.THIEF) }],
+    ];
+
+    // Hide theft menu for players without any purchased business (prevents early confusion).
+    // If user isn't provided (legacy call sites), keep showing the button to avoid behavior change.
+    if (!user || this._hasAnyBusiness(user)) {
+      kb.push([{ text: this._t(l, "ui.city.thief"), callback_data: this._go(Routes.THIEF) }]);
+    }
+
+    kb.push(
       [{ text: this._t(l, "ui.city.referral"), callback_data: this._go(Routes.REFERRAL) }],
       [{ text: this._t(l, "ui.back.city"), callback_data: this._go(Routes.SQUARE) }],
-    ];
+    );
+
+    return kb;
   }
   shopHub(lang = "ru") {
     const l = this._lang(lang);
