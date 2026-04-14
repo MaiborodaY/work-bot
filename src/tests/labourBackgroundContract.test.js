@@ -262,6 +262,75 @@ test("labour bg: reconcileOwnerSlots does not reload owner from KV on dirty save
   assert.equal(Boolean(after?.biz?.owned?.[0]?.slots?.[0]?.purchased), true);
 });
 
+test("labour biz view: shows plan for bg contracts even when slot contractModel is stale", async () => {
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  const db = makeDb();
+
+  const nowTs = Date.UTC(2026, 2, 20, 12, 0, 0);
+  const owner = {
+    id: "ownerX",
+    displayName: "Owner",
+    money: 100000,
+    premium: 0,
+    energy_max: 200,
+    biz: {
+      owned: [{
+        id: "shawarma",
+        boughtAt: nowTs - 10 * DAY_MS,
+        lastClaimDayUTC: "",
+        slots: [
+          { purchased: true, employeeId: "empA", contractStart: nowTs - DAY_MS, contractEnd: nowTs + DAY_MS, earnedTotal: 0, lastEmployeeId: "", ownerPct: 0.06, bonusCarry: 0, contractModel: "legacy_claim_share" },
+          { purchased: true, employeeId: "empB", contractStart: nowTs - DAY_MS, contractEnd: nowTs + DAY_MS, earnedTotal: 0, lastEmployeeId: "", ownerPct: 0.08, bonusCarry: 0, contractModel: "legacy_claim_share" }
+        ]
+      }]
+    }
+  };
+
+  const empA = {
+    id: "empA",
+    displayName: "EmpA",
+    money: 0,
+    premium: 0,
+    energy_max: 120,
+    employment: {
+      active: true,
+      ownerId: owner.id,
+      bizId: "shawarma",
+      slotIndex: 0,
+      contractStart: nowTs - DAY_MS,
+      contractEnd: nowTs + DAY_MS,
+      model: "bg_fixed_v1",
+      bgOwnerMoneyTotal: 54,
+      bgOwnerGemsTotal: 2
+    }
+  };
+  const empB = {
+    id: "empB",
+    displayName: "EmpB",
+    money: 0,
+    premium: 0,
+    energy_max: 120,
+    employment: {
+      active: true,
+      ownerId: owner.id,
+      bizId: "shawarma",
+      slotIndex: 1,
+      contractStart: nowTs - DAY_MS,
+      contractEnd: nowTs + DAY_MS,
+      model: "bg_fixed_v1",
+      bgOwnerMoneyTotal: 72,
+      bgOwnerGemsTotal: 2
+    }
+  };
+
+  const users = makeUsers(db, { [owner.id]: owner, [empA.id]: empA, [empB.id]: empB });
+  const labour = new LabourService({ db, users, now: () => nowTs, bot: null });
+
+  const view = await labour.buildBizView(await users.load(owner.id), "shawarma");
+  assert.match(view.caption, /Слот 1 .*план:/);
+  assert.match(view.caption, /Слот 2 .*план:/);
+});
+
 test("labour bg: expiry payout survives legacy string totals", async () => {
   const db = makeDb();
   const { owner, employee } = makeFixture();

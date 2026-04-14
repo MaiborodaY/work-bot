@@ -1576,29 +1576,59 @@ export class LabourService {
       const levelCfg = this._slotLevelCfg(B.id, i);
       const pct = Math.max(0, Math.floor(Math.max(Number(slot.ownerPct) || 0, Number(levelCfg?.ownerPct) || 0) * 100));
 
-      if (slot.employeeId && Number(slot.contractEnd || 0) > nowTs) {
-        const employee = await this.users.load(slot.employeeId).catch(() => null);
-        const employeeName = employee
-          ? this._formatName(employee, langSource)
-          : this._t(langSource, "labour.player_short", {
-              id: String(slot.employeeId).slice(-4).padStart(4, "0")
-            });
-        const leftTime = this._formatTimeLeftDhM(langSource, slot.contractEnd);
-        let earnPart = "";
-        if (String(slot.contractModel || "") === CONTRACT_MODEL_BG_V1) {
-          const planMoney = Math.max(0, Math.floor(Number(slot.bgOwnerMoneyTotal) || 0));
-          const planGems = Math.max(0, Math.floor(Number(slot.bgOwnerGemsTotal) || 0));
-          earnPart = this._t(langSource, "labour.biz.plan_part", {
-            money: this._money(langSource, planMoney),
-            gemsEmoji: CONFIG?.PREMIUM?.emoji || "💎",
-            gems: planGems
-          });
-        } else {
-          const earned = Math.max(0, Math.floor(Number(slot.earnedTotal) || 0));
-          earnPart = earned > 0
-            ? this._t(langSource, "labour.biz.earned_part", { earned: this._money(langSource, earned) })
-            : "";
-        }
+       if (slot.employeeId && Number(slot.contractEnd || 0) > nowTs) {
+         const employee = await this.users.load(slot.employeeId).catch(() => null);
+         const employeeName = employee
+           ? this._formatName(employee, langSource)
+           : this._t(langSource, "labour.player_short", {
+               id: String(slot.employeeId).slice(-4).padStart(4, "0")
+             });
+         const leftTime = this._formatTimeLeftDhM(langSource, slot.contractEnd);
+         let earnPart = "";
+
+         // Prefer the employee's live model when possible (old slots might have stale contractModel).
+         let model = String(slot.contractModel || "");
+         if (employee?.employment?.active) {
+           const sameOwner = String(employee.employment.ownerId || "") === String(owner.id || "");
+           const sameBiz = String(employee.employment.bizId || "") === String(B.id || "");
+           const sameSlot = this._slotIndex(employee.employment.slotIndex) === i;
+           if (sameOwner && sameBiz && sameSlot) {
+             model = String(employee.employment.model || model);
+           }
+         }
+
+         if (model === CONTRACT_MODEL_BG_V1) {
+           // For background contracts, show the fixed plan (money + gems) to the owner.
+           let planMoney = Math.max(0, Math.floor(Number(slot.bgOwnerMoneyTotal) || 0));
+           let planGems = Math.max(0, Math.floor(Number(slot.bgOwnerGemsTotal) || 0));
+           if (planMoney <= 0 && employee?.employment?.bgOwnerMoneyTotal != null) {
+             planMoney = Math.max(0, Math.floor(Number(employee.employment.bgOwnerMoneyTotal) || 0));
+           }
+           if (planGems <= 0 && employee?.employment?.bgOwnerGemsTotal != null) {
+             planGems = Math.max(0, Math.floor(Number(employee.employment.bgOwnerGemsTotal) || 0));
+           }
+           // Last resort: compute from contract window and slot ownerPct (no writes, view-only).
+           if ((planMoney <= 0 || planGems <= 0) && bizId) {
+             const startAt = Math.max(0, Number(slot.contractStart) || 0);
+             const endAt = Math.max(0, Number(slot.contractEnd) || 0);
+             if (startAt > 0 && endAt > startAt) {
+               const ownerPct = Math.max(0, Number(slot.ownerPct) || 0, Number(levelCfg?.ownerPct) || 0);
+               const plan = this._buildBgPlan(bizId, startAt, endAt, ownerPct);
+               if (planMoney <= 0) planMoney = Math.max(0, Math.floor(Number(plan.ownerMoneyTotal) || 0));
+               if (planGems <= 0) planGems = Math.max(0, Math.floor(Number(plan.ownerGemsTotal) || 0));
+             }
+           }
+           earnPart = this._t(langSource, "labour.biz.plan_part", {
+             money: this._money(langSource, planMoney),
+             gemsEmoji: CONFIG?.PREMIUM?.emoji || "💎",
+             gems: planGems
+           });
+         } else {
+           const earned = Math.max(0, Math.floor(Number(slot.earnedTotal) || 0));
+           earnPart = earned > 0
+             ? this._t(langSource, "labour.biz.earned_part", { earned: this._money(langSource, earned) })
+             : "";
+         }
         lines.push(this._t(langSource, "labour.biz.slot_busy", {
           slotNum,
           pct,
