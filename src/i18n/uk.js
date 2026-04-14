@@ -438,6 +438,7 @@ export const UK = {
   "loc.work.active_ready": "💰 Готово до виплати: {{title}} [$${{pay}}]",
   "loc.work.active_running": "⏳ Зміна триває: {{title}} (~{{mins}} хв)",
   "loc.work.active_tip": "💡 Порада: поки чекаєш, можна відкрити інші розділи.",
+  "loc.work.active_tip_onboarding": "💡 Порада: натисни Завершити зараз, щоб не чекати (у навчанні це безкоштовно).",
   "loc.work.bonuses": "✨ Бонуси від навчання та покращень:",
   "loc.study.ready_title": "📘 Навчання завершено — можна підвищити рівень",
   "loc.study.active_title": "📘 Триває навчання (~{{mins}} хв)",

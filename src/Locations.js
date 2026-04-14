@@ -444,11 +444,17 @@ export class Locations {
       const fileId = JOB_ASSETS[typeId] || ASSETS.WorkDefault;
       const activeTitle = getJobTitle(typeId, lang) || active.title || this._t(user, "loc.work.shift_fallback");
 
+      const isOnboardingShift = onboarding && onboardingStage === "job_claim";
+      const tipKey = isOnboardingShift ? "loc.work.active_tip_onboarding" : "loc.work.active_tip";
+      const balance = isOnboardingShift
+        ? this.formatters.balance(user, { showGems: false }, lang)
+        : this.formatters.balance(user, lang);
+
       const caption = ready
         ? this._t(user, "loc.work.active_ready", { title: activeTitle, pay: active.plannedPay })
         : this._t(user, "loc.work.active_running", { title: activeTitle, mins: leftMin }) + "\n\n" +
-          this._t(user, "loc.work.active_tip") + "\n\n" +
-          this.formatters.balance(user);
+          this._t(user, tipKey) + "\n\n" +
+          balance;
 
       await this.media.show({
         sourceMsg: this._sourceMsg,

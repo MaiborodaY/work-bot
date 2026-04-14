@@ -178,6 +178,7 @@ export const RU = {
   "loc.work.active_ready": "💰 Готово к выплате: {{title}} [$${{pay}}]",
   "loc.work.active_running": "⏳ Идет смена: {{title}} (~{{mins}} мин)",
   "loc.work.active_tip": "💡 Совет: можно открыть другие разделы.",
+  "loc.work.active_tip_onboarding": "💡 Совет: нажми Завершить сейчас, чтобы не ждать (для обучения сейчас это бесплатно).",
   "loc.work.bonuses": "✨ Бонусы от учёбы и улучшений:",
 
   "loc.study.ready_title": "📘 Обучение завершено — можно повысить уровень",

@@ -14,20 +14,49 @@ export const Formatters = {
     return t(key, this._lang(u, lang), vars);
   },
 
-  balance(u, lang = null) {
+  balance(u, opts = {}, lang = null) {
+
+    // Backward compatible signature:
+
+    // - balance(u, "en")
+
+    // - balance(u, { showGems: false }, "en")
+
+    if (typeof opts === "string" || opts == null) {
+
+      lang = opts;
+
+      opts = {};
+
+    }
+
     const money     = Number.isFinite(u?.money) ? u.money : 0;
+
     const energy    = Number.isFinite(u?.energy) ? u.energy : 0;
+
     const energyMax = EnergyService.effectiveEnergyMax(u);
+
     const premium   = Number.isFinite(u?.premium) ? u.premium : 0;
+
     const gemEmoji  = CONFIG?.PREMIUM?.emoji ?? "💎";
 
-    return (
-      this._t(u, "fmt.balance.money", { money }, lang) + "\n" +
-      this._t(u, "fmt.balance.energy", { energy, energyMax }, lang) + "\n" +
-      this._t(u, "fmt.balance.gems", { gemEmoji, premium }, lang)
-    );
-  },
+    const showGems  = opts?.showGems !== false;
 
+  
+
+    const lines = [
+
+      this._t(u, "fmt.balance.money", { money }, lang),
+
+      this._t(u, "fmt.balance.energy", { energy, energyMax }, lang),
+
+    ];
+
+    if (showGems) lines.push(this._t(u, "fmt.balance.gems", { gemEmoji, premium }, lang));
+
+    return lines.join("\n");
+
+  },
   moneyLine(u, lang = null) {
     const money = Number.isFinite(u?.money) ? u.money : 0;
     return this._t(u, "fmt.money_line", { money }, lang);
