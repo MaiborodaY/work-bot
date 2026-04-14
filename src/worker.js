@@ -821,12 +821,14 @@ export default {
           return new Response("ok");
         }
 
-        const onboardingWelcome = t("worker.onboarding.welcome", normalizeLang(u?.lang || "en"));
+        const onboardingLang = normalizeLang(u?.lang || "en");
+        const onboardingWelcome = t("worker.onboarding.welcome", onboardingLang);
         await safeCall("worker.start.send_onboarding_welcome", async () => {
-          await send(onboardingWelcome);
+          await sendWithInline(
+            onboardingWelcome,
+            [[{ text: t("loc.onboarding.start_first_shift", onboardingLang), callback_data: "start:onboarding:first_job" }]]
+          );
         });
-
-        await goTo(u, "Square");
         return new Response("ok");
       }
 
@@ -1126,12 +1128,21 @@ export default {
           replyLang = next;
           const onboardingWelcome = t("worker.onboarding.welcome", next);
           await safeCall("worker.start.send_onboarding_welcome_after_lang_pick", async () => {
-            await send(onboardingWelcome);
+            await sendWithInline(
+              onboardingWelcome,
+              [[{ text: t("loc.onboarding.start_first_shift", next), callback_data: "start:onboarding:first_job" }]]
+            );
           });
-          await goTo(u, "Square");
           return new Response("ok");
         }
         await renderProfile(u, cb.message);
+        return new Response("ok");
+      }
+
+      if (data === "start:onboarding:first_job") {
+        await answer(cb.id);
+        locations.setSourceMessage(null);
+        await goTo(u, "Work");
         return new Response("ok");
       }
 
