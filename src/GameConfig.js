@@ -567,7 +567,7 @@ export const CONFIG = {
 
   COLOSSEUM: {
     MIN_ENERGY_MAX: 50,
-    DAILY_LIMIT: 50,
+    DAILY_LIMIT: 30,
     ACCEPT_WINDOW_SEC: 60,
     ROUND_WINDOW_SEC: 60,
     ROUNDS: 3,

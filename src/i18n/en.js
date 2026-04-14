@@ -816,7 +816,7 @@ export const EN = {
   "colosseum.btn_back_colosseum": "Back to Colosseum",
   "colosseum.help_title": "How Colosseum works",
   "colosseum.help_line1": "- Entry: from 50 max energy.",
-  "colosseum.help_line2": "- Up to 50 battles per UTC day.",
+  "colosseum.help_line2": "- Up to 30 battles per UTC day.",
   "colosseum.help_line3": "- Queue lives until UTC 00:00.",
   "colosseum.help_line4": "- Accept window is 1 minute.",
   "colosseum.help_line5": "- 3 rounds: choose attack + defense.",

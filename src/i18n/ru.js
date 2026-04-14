@@ -919,7 +919,7 @@ export const RU = {
   "colosseum.btn_back_colosseum": "Назад в Колизей",
   "colosseum.help_title": "Как работает Колизей",
   "colosseum.help_line1": "- Вход: от 50 макс. энергии.",
-  "colosseum.help_line2": "- До 50 боёв в сутки (UTC).",
+  "colosseum.help_line2": "- До 30 боёв в сутки (UTC).",
   "colosseum.help_line3": "- Очередь живёт до 00:00 UTC.",
   "colosseum.help_line4": "- На принятие боя: 1 минута.",
   "colosseum.help_line5": "- 3 раунда: выбери атаку и защиту.",

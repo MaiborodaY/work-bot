@@ -816,7 +816,7 @@ export const UK = {
   "colosseum.btn_back_colosseum": "Назад у Колізей",
   "colosseum.help_title": "Як працює Колізей",
   "colosseum.help_line1": "- Вхід: від 50 макс. енергії.",
-  "colosseum.help_line2": "- До 50 боїв на добу (UTC).",
+  "colosseum.help_line2": "- До 30 боїв на добу (UTC).",
   "colosseum.help_line3": "- Черга живе до 00:00 UTC.",
   "colosseum.help_line4": "- На прийняття бою: 1 хвилина.",
   "colosseum.help_line5": "- 3 раунди: обирай атаку та захист.",
