@@ -1012,9 +1012,9 @@ export class QuestService {
     }
     const map = {
       ru: {
-        work_1shift: "Завершить 1 смену",
-        work_2shifts: `Завершить ${target} смен(ы)`,
-        work_earn: `Получить выплатами со смен $${target} за сегодня`,
+        work_1shift: "Завершить 1 работу",
+        work_2shifts: `Завершить ${target} работ(ы)`,
+        work_earn: `Получить выплатами с работ $${target} за сегодня`,
         gym_train: "Сделать 1 тренировку",
         gym_2trains: `Сделать ${target} тренировк(и)`,
         pet_feed: "Покормить питомца",
@@ -1035,8 +1035,8 @@ export class QuestService {
         stocks_invest_daily: `Купить акций суммарно на $${target} за сегодня`,
         thief_attempt: "Совершить 1 попытку воровства",
         thief_success: "Успешно украсть",
-        w_work_10shifts: `Завершить ${target} смен за неделю`,
-        w_work_earn: `Получить выплатами со смен $${target} за неделю`,
+        w_work_10shifts: `Завершить ${target} работ за неделю`,
+        w_work_earn: `Получить выплатами с работ $${target} за неделю`,
         w_gym_7trains: `Сделать ${target} тренировок за неделю`,
         w_colosseum_10battles: `Сыграть ${target} боёв на арене за неделю`,
         w_biz_streak: `Собирать доход с бизнеса ${target} дней подряд`,
@@ -1054,9 +1054,9 @@ export class QuestService {
         w_thief_total: `Украсть суммарно $${target}`
       },
       uk: {
-        work_1shift: "Завершити 1 зміну",
-        work_2shifts: `Завершити ${target} змін(и)`,
-        work_earn: `Отримати виплатами зі змін $${target} за сьогодні`,
+        work_1shift: "Завершити 1 роботу",
+        work_2shifts: `Завершити ${target} робіт`,
+        work_earn: `Отримати виплатами з робіт $${target} за сьогодні`,
         gym_train: "Зробити 1 тренування",
         gym_2trains: `Зробити ${target} тренуванн(я)`,
         pet_feed: "Погодувати улюбленця",
@@ -1077,8 +1077,8 @@ export class QuestService {
         stocks_invest_daily: `Купити акцій сумарно на $${target} за сьогодні`,
         thief_attempt: "Здійснити 1 спробу крадіжки",
         thief_success: "Успішно вкрасти",
-        w_work_10shifts: `Завершити ${target} змін за тиждень`,
-        w_work_earn: `Отримати виплатами зі змін $${target} за тиждень`,
+        w_work_10shifts: `Завершити ${target} робіт за тиждень`,
+        w_work_earn: `Отримати виплатами з робіт $${target} за тиждень`,
         w_gym_7trains: `Зробити ${target} тренувань за тиждень`,
         w_colosseum_10battles: `Зіграти ${target} боїв на арені за тиждень`,
         w_biz_streak: `Збирати дохід з бізнесу ${target} днів поспіль`,
@@ -1096,9 +1096,9 @@ export class QuestService {
         w_thief_total: `Вкрасти сумарно $${target}`
       },
       en: {
-        work_1shift: "Complete 1 shift",
-        work_2shifts: `Complete ${target} shift(s)`,
-        work_earn: `Get $${target} from shift payouts today`,
+        work_1shift: "Complete 1 job",
+        work_2shifts: `Complete ${target} job(s)`,
+        work_earn: `Get $${target} from job payouts today`,
         gym_train: "Do 1 workout",
         gym_2trains: `Do ${target} workout(s)`,
         pet_feed: "Feed your pet",
@@ -1119,8 +1119,8 @@ export class QuestService {
         stocks_invest_daily: `Buy shares for total $${target} today`,
         thief_attempt: "Make 1 theft attempt",
         thief_success: "Steal successfully",
-        w_work_10shifts: `Complete ${target} shifts this week`,
-        w_work_earn: `Get $${target} from shift payouts this week`,
+        w_work_10shifts: `Complete ${target} jobs this week`,
+        w_work_earn: `Get $${target} from job payouts this week`,
         w_gym_7trains: `Do ${target} workouts this week`,
         w_colosseum_10battles: `Play ${target} arena battles this week`,
         w_biz_streak: `Collect business income ${target} days in a row`,
@@ -1157,7 +1157,7 @@ export class QuestService {
         subText: "Claim subscription reward",
         petBuyGuideHint: "Tip: Square -> City -> Home -> Pet.",
         firstBizGuideHint: "Tip: Square -> Earnings -> Business.",
-        studyGuideHint: "Tip: after Study, go to Jobs and run shifts for income.",
+        studyGuideHint: "Tip: after Study, go to Jobs and run jobs for income.",
         clanGuideHint: "Tip: open City -> Clans and join any open clan or create your own.",
         back: "⬅️ Back",
         refresh: "🔄 Refresh",
@@ -1181,7 +1181,7 @@ export class QuestService {
         subText: "Забрати нагороду за підписку",
         petBuyGuideHint: "Порада: Площа -> Місто -> Дім -> Улюбленець.",
         firstBizGuideHint: "Порада: Площа -> Заробіток -> Бізнес.",
-        studyGuideHint: "Порада: після навчання повернись у Роботи й запускай зміни для доходу.",
+        studyGuideHint: "Порада: після навчання повернись у Роботи й запускай роботи для доходу.",
         clanGuideHint: "Порада: відкрий Місто -> Клани та вступи у відкритий клан або створи свій.",
         back: "⬅️ Назад",
         refresh: "🔄 Оновити",
@@ -1204,7 +1204,7 @@ export class QuestService {
       subText: "Забрать награду за подписку",
       petBuyGuideHint: "Подсказка: Площадь -> Город -> Дом -> Питомец.",
       firstBizGuideHint: "Подсказка: Площадь -> Заработок -> Бизнес.",
-      studyGuideHint: "Подсказка: после учёбы вернись в Работы и запускай смены для дохода.",
+      studyGuideHint: "Подсказка: после учёбы вернись в Работы и запускай работы для дохода.",
       clanGuideHint: "Подсказка: открой Город -> Кланы и вступи в открытый клан или создай свой.",
       back: "⬅️ Назад",
       refresh: "🔄 Обновить",
@@ -1411,6 +1411,13 @@ export class QuestService {
     return "🧭 Задания для новичков";
   }
 
+  _newbieUnlocksHint(source) {
+    const l = this._lang(source);
+    if (l === "en") return "ℹ️ As you progress, new locations will unlock.";
+    if (l === "uk") return "ℹ️ У міру розвитку відкриватимуться нові локації.";
+    return "ℹ️ По мере развития персонажа открываются новые локации.";
+  }
+
   _newbieDoneLine(source) {
     const l = this._lang(source);
     if (l === "en") return "All newbie quests are completed.";
@@ -1505,7 +1512,7 @@ export class QuestService {
     await this.ensureCycles(u, { persist: false });
     const s = this._strings(u);
     const specialLines = this._buildSpecialQuestLines(u);
-    const lines = [s.barTitle, "", this._newbieTitle(u), ""];
+    const lines = [s.barTitle, "", this._newbieTitle(u), this._newbieUnlocksHint(u), ""];
     if (specialLines.length) {
       lines.push(...specialLines);
     } else {

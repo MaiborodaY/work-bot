@@ -91,20 +91,20 @@ export function buildQuizCatalog(cfg = CONFIG) {
     {
       id: "q01_work_skip",
       text: {
-        ru: "Что нужно нажать, чтобы мгновенно завершить смену?",
-        uk: "Що треба натиснути, щоб миттєво завершити зміну?",
-        en: "What should you tap to finish a shift instantly?"
+        ru: "Что нужно нажать, чтобы мгновенно завершить работу?",
+        uk: "Що треба натиснути, щоб миттєво завершити роботу?",
+        en: "What should you tap to finish a job instantly?"
       },
       options: {
-        ru: ["Пропустить смену", "⏩ Завершить за кристаллы", "Отменить смену", "Ускорить"],
-        uk: ["Пропустити зміну", "⏩ Завершити за кристали", "Скасувати зміну", "Прискорити"],
-        en: ["Skip shift", "⏩ Finish for crystals", "Cancel shift", "Boost shift"]
+        ru: ["Пропустить работу", "⏩ Завершить за кристаллы", "Отменить работу", "Ускорить"],
+        uk: ["Пропустити роботу", "⏩ Завершити за кристали", "Скасувати роботу", "Прискорити"],
+        en: ["Skip job", "⏩ Finish for crystals", "Cancel job", "Boost"]
       },
       correct: 1,
       explain: {
-        ru: "Кнопка «Завершить» тратит кристаллы и закрывает смену сразу.",
-        uk: "Кнопка «Завершити» витрачає кристали й одразу закриває зміну.",
-        en: "The “Finish” button spends crystals and closes the shift right away."
+        ru: "Кнопка «Завершить» тратит кристаллы и закрывает работу сразу.",
+        uk: "Кнопка «Завершити» витрачає кристали й одразу закриває роботу.",
+        en: "The “Finish” button spends crystals and closes the job right away."
       }
     },
     {
@@ -115,23 +115,23 @@ export function buildQuizCatalog(cfg = CONFIG) {
         en: "What does Study improve?"
       },
       options: {
-        ru: ["Максимум энергии", "Скорость тренировок", "Скорость выполнения смен", "Доход с бизнеса"],
-        uk: ["Максимум енергії", "Швидкість тренувань", "Швидкість виконання змін", "Дохід з бізнесу"],
-        en: ["Max energy", "Workout speed", "Shift completion speed", "Business income"]
+        ru: ["Максимум энергии", "Скорость тренировок", "Скорость выполнения работ", "Доход с бизнеса"],
+        uk: ["Максимум енергії", "Швидкість тренувань", "Швидкість виконання робіт", "Дохід з бізнесу"],
+        en: ["Max energy", "Workout speed", "Job completion speed", "Business income"]
       },
       correct: 2,
       explain: {
-        ru: "Чем выше уровень учёбы, тем быстрее идут рабочие смены.",
-        uk: "Чим вищий рівень навчання, тим швидше йдуть робочі зміни.",
-        en: "The higher your Study level, the faster your job shifts complete."
+        ru: "Чем выше уровень учёбы, тем быстрее выполняются работы.",
+        uk: "Чим вищий рівень навчання, тим швидше виконуються роботи.",
+        en: "The higher your Study level, the faster your jobs complete."
       }
     },
     {
       id: "q03_work_parallel",
       text: {
-        ru: "Сколько смен можно выполнять одновременно?",
-        uk: "Скільки змін можна виконувати одночасно?",
-        en: "How many shifts can run at the same time?"
+        ru: "Сколько работ можно выполнять одновременно?",
+        uk: "Скільки робіт можна виконувати одночасно?",
+        en: "How many jobs can run at the same time?"
       },
       options: {
         ru: ["1", "2", "3", "Без ограничений"],
@@ -140,9 +140,9 @@ export function buildQuizCatalog(cfg = CONFIG) {
       },
       correct: 0,
       explain: {
-        ru: "В один момент времени можно вести только одну активную смену.",
-        uk: "В один момент часу можна вести лише одну активну зміну.",
-        en: "You can only have one active shift at a time."
+        ru: "В один момент времени можно вести только одну активную работу.",
+        uk: "В один момент часу можна вести лише одну активну роботу.",
+        en: "You can only have one active job at a time."
       }
     },
     {
@@ -153,15 +153,15 @@ export function buildQuizCatalog(cfg = CONFIG) {
         en: "What does Gym training improve?"
       },
       options: {
-        ru: ["Скорость смен", "Максимум энергии", "Уровень учёбы", "Доход с бизнеса"],
-        uk: ["Швидкість змін", "Максимум енергії", "Рівень навчання", "Дохід з бізнесу"],
-        en: ["Shift speed", "Max energy", "Study level", "Business income"]
+        ru: ["Скорость работы", "Максимум энергии", "Уровень учёбы", "Доход с бизнеса"],
+        uk: ["Швидкість роботи", "Максимум енергії", "Рівень навчання", "Дохід з бізнесу"],
+        en: ["Job speed", "Max energy", "Study level", "Business income"]
       },
       correct: 1,
       explain: {
-        ru: "Зал увеличивает максимум энергии, чтобы ты мог брать больше смен.",
-        uk: "Зал збільшує максимум енергії, щоб ти міг брати більше змін.",
-        en: "Gym increases your max energy so you can run more shifts."
+        ru: "Зал увеличивает максимум энергии, чтобы ты мог брать больше работ.",
+        uk: "Зал збільшує максимум енергії, щоб ти міг виконувати більше робіт.",
+        en: "Gym increases your max energy so you can run more jobs."
       }
     },
     {
@@ -248,9 +248,9 @@ export function buildQuizCatalog(cfg = CONFIG) {
         en: "When does the owner receive worker bonus?"
       },
       options: {
-        ru: ["Каждый час", "Каждый день", "В конце контракта", "После каждой смены"],
-        uk: ["Щогодини", "Щодня", "У кінці контракту", "Після кожної зміни"],
-        en: ["Every hour", "Every day", "At contract end", "After each shift"]
+        ru: ["Каждый час", "Каждый день", "В конце контракта", "После каждой работы"],
+        uk: ["Щогодини", "Щодня", "У кінці контракту", "Після кожної роботи"],
+        en: ["Every hour", "Every day", "At contract end", "After each job"]
       },
       correct: 2,
       explain: {
@@ -401,19 +401,19 @@ export function buildQuizCatalog(cfg = CONFIG) {
       },
       options: {
         ru: [
-          "Только для быстрого завершения смен",
+          "Только для быстрого завершения работ",
           "Для ускорений, лечения питомца и иммунитета бизнеса",
           "Только для покупки питомца",
           "Только для иммунитета бизнеса"
         ],
         uk: [
-          "Лише для швидкого завершення змін",
+          "Лише для швидкого завершення робіт",
           "Для прискорень, лікування улюбленця та імунітету бізнесу",
           "Лише для купівлі улюбленця",
           "Лише для імунітету бізнесу"
         ],
         en: [
-          "Only for instant shift finish",
+          "Only for instant job finish",
           "For skips, pet healing, and business immunity",
           "Only for buying pets",
           "Only for business immunity"
@@ -612,9 +612,9 @@ export function buildQuizCatalog(cfg = CONFIG) {
       },
       correct: 2,
       explain: {
-        ru: "Каждая смена требует расход энергии.",
-        uk: "Кожна зміна потребує витрати енергії.",
-        en: "Every shift consumes energy."
+        ru: "Каждая работа требует расход энергии.",
+        uk: "Кожна робота потребує витрати енергії.",
+        en: "Every job consumes energy."
       }
     },
     {

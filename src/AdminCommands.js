@@ -1151,7 +1151,7 @@ export class AdminCommands {
       "<b>Onboarding funnel (all-time)</b>",
       "",
       `Registered users: ${registered}`,
-      `First shift started: ${firstShift} (${this._pct(firstShift, registered)}%)`,
+      `First job started: ${firstShift} (${this._pct(firstShift, registered)}%)`,
       `First payout claimed: ${firstClaim} (${this._pct(firstClaim, registered)}%)`,
       `First workout finished: ${firstGym} (${this._pct(firstGym, registered)}%)`,
       `Opened bar: ${firstBar} (${this._pct(firstBar, registered)}%)`,
@@ -1256,7 +1256,7 @@ export class AdminCommands {
       `Showing: ${capped.length} (limit ${limit})`,
       `Excluded admins: ${excludedAdmins}`,
       "",
-      "Funnel legend: S=first shift, C=first claim, G=first gym, B=opened bar, Z=bought business"
+      "Funnel legend: S=first job, C=first claim, G=first gym, B=opened bar, Z=bought business"
     ];
     await this.send(header.join("\n"));
 

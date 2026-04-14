@@ -30,9 +30,9 @@ export const CONFIG = {
   },
 
   UPGRADES: {
-    coffee: { title: "Кофемашина", titleKey: "cfg.upg.coffee.title", desc: "-5% к расходу энергии на смену", descKey: "cfg.upg.coffee.desc", price: 1000 },
+    coffee: { title: "Кофемашина", titleKey: "cfg.upg.coffee.title", desc: "-5% к расходу энергии на работу", descKey: "cfg.upg.coffee.desc", price: 1000 },
     laptop: { title: "Ноутбук", titleKey: "cfg.upg.laptop.title",     desc: "+10% к оплате за работу", descKey: "cfg.upg.laptop.desc",         price: 5000, price_premium: 100 },
-    car:    { title: "Авто", titleKey: "cfg.upg.car.title",        desc: "+10% к скорости смены", descKey: "cfg.upg.car.desc",           price: 10000, price_premium: 200 },
+    car:    { title: "Авто", titleKey: "cfg.upg.car.title",        desc: "+10% к скорости работы", descKey: "cfg.upg.car.desc",           price: 10000, price_premium: 200 },
 
     bed1:   { title: "Comfort Bed", titleKey: "cfg.upg.bed1.title", desc: "Отдых на 50% быстрее", descKey: "cfg.upg.bed1.desc",            price: 80 },
     bed2:   { title: "Luxury Bed", titleKey: "cfg.upg.bed2.title",  desc: "Отдых в 2 раза быстрее", descKey: "cfg.upg.bed2.desc",          price: 1600, price_premium: 32 },

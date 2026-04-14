@@ -411,9 +411,9 @@ export class AchievementService {
     }
 
     const ru = {
-      work_first_shift: `${totalShifts}/1 смен`,
-      work_shifts_50: `${totalShifts}/50 смен`,
-      work_shifts_500: `${totalShifts}/500 смен`,
+      work_first_shift: `${totalShifts}/1 работа`,
+      work_shifts_50: `${totalShifts}/50 работ`,
+      work_shifts_500: `${totalShifts}/500 работ`,
       work_earned_1k: `$${totalEarned}/$1000`,
       work_earned_1m: `$${totalEarned}/$1000000`,
       biz_first: `${ownedBiz}/1 бизнесов`,
@@ -445,9 +445,9 @@ export class AchievementService {
       referrals_5: `${refs}/5 рефералов`
     };
     const uk = {
-      work_first_shift: `${totalShifts}/1 змін`,
-      work_shifts_50: `${totalShifts}/50 змін`,
-      work_shifts_500: `${totalShifts}/500 змін`,
+      work_first_shift: `${totalShifts}/1 робота`,
+      work_shifts_50: `${totalShifts}/50 робіт`,
+      work_shifts_500: `${totalShifts}/500 робіт`,
       work_earned_1k: `$${totalEarned}/$1000`,
       work_earned_1m: `$${totalEarned}/$1000000`,
       biz_first: `${ownedBiz}/1 бізнесів`,
@@ -479,9 +479,9 @@ export class AchievementService {
       referrals_5: `${refs}/5 рефералів`
     };
     const en = {
-      work_first_shift: `${totalShifts}/1 shifts`,
-      work_shifts_50: `${totalShifts}/50 shifts`,
-      work_shifts_500: `${totalShifts}/500 shifts`,
+      work_first_shift: `${totalShifts}/1 job`,
+      work_shifts_50: `${totalShifts}/50 jobs`,
+      work_shifts_500: `${totalShifts}/500 jobs`,
       work_earned_1k: `$${totalEarned}/$1000`,
       work_earned_1m: `$${totalEarned}/$1000000`,
       biz_first: `${ownedBiz}/1 businesses`,

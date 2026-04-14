@@ -204,7 +204,7 @@ export class ChannelService {
       "You in the list today? If not, your turn is next.",
       "The city never sleeps. Keep climbing.",
       "The leaderboard resets every day. Push now.",
-      "Today matters. Every shift counts.",
+      "Today matters. Every job counts.",
       "See you in tomorrow's rankings."
     ];
     const idx = Math.abs(dayStrUtc(day).split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0)) % variants.length;
