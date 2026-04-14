@@ -144,14 +144,19 @@ export async function renderGymRoute(ctx, user, { introText = null, lang = "ru",
       defaultTitle = ctx._t(user, "loc.gym.active_title", { mins: leftMin });
     }
   } else {
-    defaultTitle = ctx._t(user, "loc.gym.caption_intro");
+    defaultTitle = user?.flags?.onboarding
+      ? ctx._t(user, "loc.gym.caption_intro_onboarding")
+      : ctx._t(user, "loc.gym.caption_intro");
   }
 
   const titleOrHeader = (introText && introText.trim()) ? introText.trim() : defaultTitle;
+  const balanceText = user?.flags?.onboarding
+    ? ctx.formatters.balance(user, { showGems: false }, lang)
+    : ctx.formatters.balance(user, lang);
   // Avoid extra noise while a training is running.
   // The gym pass info is relevant on idle screen, not during an active training.
-  let captionText = `${titleOrHeader}\n\n${ctx.formatters.balance(user)}`;
-  if (!user?.gym?.active) {
+  let captionText = `${titleOrHeader}\n\n${balanceText}`;
+  if (!user?.gym?.active && !user?.flags?.onboarding) {
     const passCfg = EnergyService.passCfg();
     const passState = EnergyService.gymPassState(user, ctx.now());
     const gymCap = Math.max(0, Number(CONFIG?.GYM?.MAX_ENERGY_CAP) || 160);
@@ -169,8 +174,8 @@ export async function renderGymRoute(ctx, user, { introText = null, lang = "ru",
       passLine = ctx._t(user, "loc.gym.pass_locked_line", { need: gymCap, have: baseEnergyMax });
     }
     captionText = passLine
-      ? `${titleOrHeader}\n\n${passLine}\n\n${ctx.formatters.balance(user)}`
-      : `${titleOrHeader}\n\n${ctx.formatters.balance(user)}`;
+      ? `${titleOrHeader}\n\n${passLine}\n\n${balanceText}`
+      : `${titleOrHeader}\n\n${balanceText}`;
   }
 
   if (user?.gym?.active) {

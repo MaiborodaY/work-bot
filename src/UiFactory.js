@@ -437,6 +437,12 @@ export class UiFactory {
       }],
     ];
 
+    // Onboarding: avoid extra noise and future mechanics like gym pass.
+    if (onboarding) {
+      out.push([{ text: this._t(l, "ui.back.progress"), callback_data: this._go(Routes.PROGRESS) }]);
+      return out;
+    }
+
     if (passState.active) {
       const leftMin = Math.max(1, Math.ceil(passState.leftMs / 60000));
       const d = Math.floor(leftMin / (24 * 60));
