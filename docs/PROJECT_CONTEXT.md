@@ -1,6 +1,6 @@
 # World of Life - Project Context (Agent Memory)
 
-Last updated: 2026-04-11 (UTC)
+Last updated: 2026-04-14 (UTC)
 
 This document is a compact source of truth for engineering context.
 Read this before implementing new features or hotfixes.
@@ -11,6 +11,8 @@ Read this before implementing new features or hotfixes.
 - Primary storage: Cloudflare KV (user profiles + indexes + snapshots).
 - No D1/SQL in production flow right now.
 - Most daily/weekly logic is UTC-based.
+- Cron: `*/5 * * * *` (see `wrangler.jsonc`). Time-sensitive mechanics are not real-time; expect up to ~5 minutes delay.
+- Manual cron runner: `GET /cron-run` (worker route) for emergency runs/testing.
 
 Key files:
 - `src/worker.js` - entrypoint, routing, cron.
@@ -36,6 +38,8 @@ Key files:
   - separate economy loop,
   - net profit metrics are used in top/channels (seed cost is included).
 
+Source of truth for balance/limits: `src/GameConfig.js` (avoid duplicating numbers in code and texts).
+
 ## 3) Encoding and Text Safety
 
 Known historical risk: Cyrillic corruption ("кракозябры").
@@ -57,6 +61,10 @@ Typical event hotspots:
 - work/gym/biz/stock/thief/labour/farm/colosseum handlers.
 - delayed/cron outcomes (contract end, theft resolve, weekly payouts).
 
+Quest UX note:
+- Quest completion push messages are sent only from `QuestService.onEvent(..., { notify: true })`.
+- "Lazy" completion when opening a screen (cycle ensure / render-only) can update progress, but will not send a push.
+
 ## 5) Gameplay Surfaces in Code
 
 - Jobs/Work: `src/JobService.js`, `src/handlers/work.js`
@@ -73,7 +81,13 @@ Typical event hotspots:
 - Ratings: `src/RatingService.js`
 - Channel posts: `src/ChannelService.js`
 
-## 6) Current Analytics / Ops Signals
+## 6) Runtime Secrets / Variables
+
+Cloudflare Workers env vars used by gameplay/ops:
+- `BOT_USERNAME` - used to build deep links like `t.me/<bot>?start=...`.
+- `CHANNEL_ID` - numeric `-100...` channel id for scheduled posts.
+
+## 7) Current Analytics / Ops Signals
 
 - Referrals and source tracking: `/admin_referrals`
 - Retention/cohorts: `/admin_retention`
@@ -83,7 +97,7 @@ Typical event hotspots:
 
 Use admin commands first before adding one-off scripts.
 
-## 7) Safe Change Checklist
+## 8) Safe Change Checklist
 
 Before merge:
 1. Run targeted tests for changed domain (`node --test ...`).
@@ -92,7 +106,7 @@ Before merge:
 4. Confirm cron-dependent features still work with current schedule.
 5. Confirm no accidental rules drift in `GameConfig.js`.
 
-## 8) If You Add New Features
+## 9) If You Add New Features
 
 Minimum update set:
 1. `GameConfig.js` constants.
@@ -101,4 +115,3 @@ Minimum update set:
 4. Quest/Achievement hooks if relevant.
 5. Admin observability (if feature impacts retention/economy).
 6. Tests for the happy path and key edge case.
-

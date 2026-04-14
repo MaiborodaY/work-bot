@@ -1,6 +1,6 @@
 # World of Life - Admin Runbook
 
-Last updated: 2026-04-11 (UTC)
+Last updated: 2026-04-14 (UTC)
 
 This file documents active admin commands and when to use them.
 Command parsing source: `src/AdminCommands.js`.
@@ -67,6 +67,7 @@ Command parsing source: `src/AdminCommands.js`.
 
 ## 5) Channel Posting
 
+- Required env var: `CHANNEL_ID` (numeric `-100...`). Resolve via `/admin_channel_check`.
 - `/admin_channel_preview`
   - Generate preview post (yesterday snapshot) to admin chat.
 
@@ -79,6 +80,11 @@ Command parsing source: `src/AdminCommands.js`.
 - `/admin_channel_check [chat]`
   - Validate bot rights and resolve channel id.
   - Example: `/admin_channel_check @WorldOfLifeGame`
+
+## 5.1) Deep Links / Bot Username
+
+- Required env var: `BOT_USERNAME` (without `@`).
+  - Used to build links like `t.me/<bot>?start=ads_...` and referral links.
 
 ## 6) Broadcast Tools
 
@@ -109,4 +115,3 @@ Command parsing source: `src/AdminCommands.js`.
 - Some stats are event-driven; if a metric looks stale, verify event hook exists.
 - Use preview/check commands before any force publish to channel.
 - Prefer existing patch/reindex commands over manual KV edits.
-
