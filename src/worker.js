@@ -1141,7 +1141,7 @@ export default {
 
       if (data === "start:onboarding:first_job") {
         await answer(cb.id);
-        locations.setSourceMessage(null);
+        locations.setSourceMessage(cb.message);
         await goTo(u, "Work");
         return new Response("ok");
       }

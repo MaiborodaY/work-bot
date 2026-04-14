@@ -644,7 +644,7 @@ export const EN = {
   "handler.gym.pass_buy_failed": "Failed to buy gym pass.",
   "handler.gym.pass_buy_ok": "🏷️ Gym pass purchased successfully.",
   "worker.onboarding.done": "🎉 That's it - the city is yours.\nYou are already in the Bar: this is where daily and weekly tasks give money and crystals.\n\nWhat to do next:\n1) Open the \"📋 Tasks\" section in the Bar and complete 2-3 easy goals.\n2) Push Study to level 5 to unlock the Arcane Hall.\n3) Then go back to Jobs and run jobs to save for your first business.\n\nGood luck. Lekha is at the bar if you need anything.",
-  "worker.onboarding.welcome": "👋 Welcome to World of Life.\n\nFirst steps:\n1) ▶️ Start your first 1-minute job.\n2) ⚡ Finish it for free and claim money.\n3) 🏋️ Go to gym, start training, and finish it for free too.\n\n✨ While you're new, we show only essential buttons.",
+  "worker.onboarding.welcome": "👋 Welcome to World of Life.\n\nYour first earnings are close.\nRight now we will show only what matters most:\nfirst your first job, then the gym, and after that you will reach the Bar where newbie tasks will be waiting for you.\n\nTap the button below to begin.",
   "ui.city.thief": "🌑 Theft",
   "ui.city.colosseum": "⚔️ Colosseum",
   "loc.thief.unavailable": "🌑 Theft is temporarily unavailable.",
