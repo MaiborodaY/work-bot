@@ -128,6 +128,16 @@ export const workHandler = {
         }
       }, { logger: console });
 
+      let newbieCompleted = false;
+      await safeCall("work.start.newbie_path", async () => {
+        if (!!u?.flags?.onboardingDone && quests?.maybeCompleteNewbieStep) {
+          newbieCompleted = !!quests.maybeCompleteNewbieStep(u);
+          if (newbieCompleted) {
+            await users.save(u);
+          }
+        }
+      }, { logger: console });
+
       const startedTitle = getJobTitle(res?.inst?.typeId, lang) || tt("handler.work.shift_fallback");
       await answer(
         cb.id,
@@ -136,6 +146,10 @@ export const workHandler = {
           mins: Math.ceil((res.inst.endAt - now()) / 60000)
         })
       );
+      if (newbieCompleted) {
+        await goTo(u, Routes.BAR_NEWBIE_TASKS);
+        return;
+      }
       await render();
       return;
     }

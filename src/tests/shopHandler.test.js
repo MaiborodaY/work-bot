@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { shopHandler } from "../handlers/shop.js";
+import { Routes } from "../Routes.js";
 
 test("shop handler: buying coffee marks newbie coffee step as pending", async () => {
   const saves = [];
@@ -42,5 +43,5 @@ test("shop handler: buying coffee marks newbie coffee step as pending", async ()
   assert.equal(ctx.u.newbiePath.pending, true);
   assert.equal(saves.length, 1);
   assert.equal(goes.length, 1);
-  assert.equal(goes[0].route, "Shop");
+  assert.equal(goes[0].route, Routes.BAR_NEWBIE_TASKS);
 });

@@ -95,7 +95,20 @@ if (!res.ok) {
       costEnergy: res.costEnergy,
       mins
     });
+    let newbieCompleted = false;
+    try {
+      if (!!u?.flags?.onboardingDone && quests?.maybeCompleteNewbieStep) {
+        newbieCompleted = !!quests.maybeCompleteNewbieStep(u);
+        if (newbieCompleted) {
+          await users.save(u);
+        }
+      }
+    } catch {}
     await answer(cb.id, tt("handler.study.started_ok"));
+    if (newbieCompleted) {
+      await goTo(u, Routes.BAR_NEWBIE_TASKS, intro);
+      return;
+    }
     await goTo(u, "Study", intro);
   }
 };

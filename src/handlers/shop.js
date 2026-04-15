@@ -3,6 +3,7 @@ import { HomeService } from "../HomeService.js";
 import { EnergyService } from "../EnergyService.js";
 import { normalizeLang, t } from "../i18n/index.js";
 import { getShopTitle } from "../I18nCatalog.js";
+import { Routes } from "../Routes.js";
 
 export const shopHandler = {
   match: (data) => data.startsWith("buy_"),
@@ -36,16 +37,17 @@ export const shopHandler = {
       const res = HomeService.applyEnergy(u, it.heal, { autoStopRest: false });
       void res;
 
+      let newbieCompleted = false;
       if (quests?.markNewbieAction) {
         try {
-          quests.markNewbieAction(u, "shop_buy", { key });
+          newbieCompleted = !!quests.markNewbieAction(u, "shop_buy", { key });
         } catch {}
       }
 
       await users.save(u);
       await goTo(
         u,
-        "Shop",
+        newbieCompleted ? Routes.BAR_NEWBIE_TASKS : "Shop",
         tt("handler.shop.bought_money_ok", { title: itemTitle })
       );
       return;

@@ -4,6 +4,7 @@ import { applyBusinessClaim, getTodayUTC, normalizeBusinessEntry } from "../Busi
 import { normalizeLang, t } from "../i18n/index.js";
 import { getBusinessTitle } from "../I18nCatalog.js";
 import { markFunnelStep, markUsefulActivity } from "../PlayerStats.js";
+import { Routes } from "../Routes.js";
 
 export const businessHandler = {
   match: (data) => data.startsWith("biz:"),
@@ -93,12 +94,27 @@ export const businessHandler = {
         }
       } catch {}
 
-      await send(tt("handler.business.buy_ok", {
+      let newbieCompleted = false;
+      try {
+        if (!!u?.flags?.onboardingDone && quests?.maybeCompleteNewbieStep) {
+          newbieCompleted = !!quests.maybeCompleteNewbieStep(u);
+          if (newbieCompleted) {
+            await users.save(u);
+          }
+        }
+      } catch {}
+
+      const buyOkText = tt("handler.business.buy_ok", {
         emoji: B.emoji,
         title: bizTitle,
         price,
         money: u.money
-      }));
+      });
+      if (newbieCompleted) {
+        await goTo(u, Routes.BAR_NEWBIE_TASKS, buyOkText);
+        return;
+      }
+      await send(buyOkText);
       await goTo(u, bizRoute(id));
       return;
     }
