@@ -461,7 +461,7 @@ export const CONFIG = {
     PLANT_ENERGY_COST: 20,
     PLOT_PRICES: [5000, 15000, 35000, 75000, 150000],
     CROPS: {
-      carrot: { emoji: "🥕", seedPrice: 250, growMs: 60 * 60_000, sellPrice: 400, plantEnergy: 10 },
+      carrot: { emoji: "🥕", seedPrice: 250, growMs: 60 * 60_000, sellPrice: 400, plantEnergy: 8 },
       tomato: { emoji: "🍅", seedPrice: 700, growMs: 180 * 60_000, sellPrice: 1000, plantEnergy: 20 },
       corn: { emoji: "🌽", seedPrice: 1800, growMs: 480 * 60_000, sellPrice: 2200, plantEnergy: 30 }
     },
