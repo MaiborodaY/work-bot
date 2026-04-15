@@ -8,7 +8,7 @@ export const shopHandler = {
   match: (data) => data.startsWith("buy_"),
 
   async handle(ctx) {
-    const { data, u, cb, answer, users, goTo } = ctx;
+    const { data, u, cb, answer, users, goTo, quests } = ctx;
     const lang = normalizeLang(u?.lang || "ru");
     const tt = (key, vars = {}) => t(key, lang, vars);
 
@@ -34,6 +34,13 @@ export const shopHandler = {
 
       // Моментальное применение энергии с авто-стопом отдыха - АВТОСТОП ВЫКЛЮЧЕН FALSE
       const res = HomeService.applyEnergy(u, it.heal, { autoStopRest: false });
+      void res;
+
+      if (quests?.markNewbieAction) {
+        try {
+          quests.markNewbieAction(u, "shop_buy", { key });
+        } catch {}
+      }
 
       await users.save(u);
       await goTo(

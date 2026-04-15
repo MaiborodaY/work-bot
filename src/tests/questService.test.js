@@ -136,6 +136,24 @@ test("newbie path: work step completes on new job start without waiting for payo
   assert.equal(u.newbiePath.pending, true);
 });
 
+test("newbie path: buy coffee step completes only from explicit shop buy event", () => {
+  const qs = makeService();
+  const u = makeUser({ withBusiness: false });
+  u.newbiePath = {
+    step: 4,
+    pending: false,
+    completed: false,
+    ctx: { startedAt: Date.UTC(2026, 2, 13, 11, 0, 0), totalShiftsStart: 0, gymLevelStart: 0 },
+    updatedAt: 0
+  };
+
+  assert.equal(qs.maybeCompleteNewbieStep(u), false);
+  assert.equal(qs.markNewbieAction(u, "shop_buy", { key: "sandwich" }), false);
+  assert.equal(u.newbiePath.pending, false);
+  assert.equal(qs.markNewbieAction(u, "shop_buy", { key: "coffee" }), true);
+  assert.equal(u.newbiePath.pending, true);
+});
+
 test("newbie path: missing ctx is restored for current step before checks", () => {
   const qs = makeService();
   const u = makeUser({ withBusiness: false });

@@ -114,7 +114,7 @@ export const CONFIG = {
       { id: "daily_bonus", rewardMoney: 300, rewardGems: 0, targetRoute: "Bar" },
       { id: "work_job", rewardMoney: 200, rewardGems: 0, targetRoute: "Work" },
       { id: "start_study", rewardMoney: 300, rewardGems: 0, targetRoute: "Study" },
-      { id: "rest_home", rewardMoney: 150, rewardGems: 0, targetRoute: "Home" },
+      { id: "buy_coffee", rewardMoney: 150, rewardGems: 0, targetRoute: "Shop" },
       { id: "buy_pet", rewardMoney: 500, rewardGems: 0, targetRoute: "Pet" },
       { id: "gym_train", rewardMoney: 200, rewardGems: 0, targetRoute: "Gym" },
       { id: "study_level_5", rewardMoney: 800, rewardGems: 2, targetRoute: "Study" },

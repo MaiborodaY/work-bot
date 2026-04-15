@@ -1449,8 +1449,8 @@ export class QuestService {
         );
       case "start_study":
         return !!u?.study?.active || Math.max(0, toInt(u?.study?.level, 0)) >= 1;
-      case "rest_home":
-        return Math.max(0, toInt(u?.rest?.last, 0)) >= Math.max(0, toInt(ctx.startedAt, 0));
+      case "buy_coffee":
+        return !!ctx?.completedByEvent;
       case "buy_pet":
         return String(u?.pet?.type || "").trim().length > 0;
       case "gym_train":
@@ -1478,6 +1478,27 @@ export class QuestService {
     u.newbiePath.pending = true;
     u.newbiePath.updatedAt = this.now();
     return true;
+  }
+
+  markNewbieAction(u, action, ctx = {}) {
+    this._ensureNewbiePathModel(u);
+    if (!u?.flags?.onboardingDone) return false;
+    if (u?.newbiePath?.completed || u?.newbiePath?.pending) return false;
+    const stepDef = this._getNewbieStepDef(u);
+    if (!stepDef) return false;
+
+    if (String(stepDef.id) === "buy_coffee" && String(action || "") === "shop_buy" && String(ctx?.key || "") === "coffee") {
+      u.newbiePath.pending = true;
+      u.newbiePath.ctx = {
+        ...(u?.newbiePath?.ctx && typeof u.newbiePath.ctx === "object" ? u.newbiePath.ctx : {}),
+        completedByEvent: true,
+        completedAt: this.now()
+      };
+      u.newbiePath.updatedAt = this.now();
+      return true;
+    }
+
+    return false;
   }
 
   claimNewbieStep(u) {
