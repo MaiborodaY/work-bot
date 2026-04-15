@@ -1,6 +1,7 @@
 const DAY_MS = 24 * 60 * 60 * 1000;
 const ACTIVE_DAYS_LIMIT = 45;
 const FARM_INCOME_DAYS_LIMIT = 35;
+const NEWBIE_STEP_KEYS = ["1","2","3","4","5","6","7","8"];
 
 export function dayStrUtc(ts = Date.now()) {
   const d = new Date(ts);
@@ -162,6 +163,60 @@ export function ensurePlayerStatsShape(u) {
   ) {
     s.farmIncomeDays = normalizedFarmIncomeDays;
     changed = true;
+  }
+
+  if (!s.newbie || typeof s.newbie !== "object") {
+    s.newbie = {};
+    changed = true;
+  }
+  const nb = s.newbie;
+  const dayFields = ["openedDay", "completedDay", "lastStepSeenDay", "lastStepClaimedDay"];
+  for (const f of dayFields) {
+    if (!isDayStr(nb[f])) {
+      if (nb[f] !== "") {
+        nb[f] = "";
+        changed = true;
+      } else if (typeof nb[f] !== "string") {
+        nb[f] = "";
+        changed = true;
+      }
+    }
+  }
+  if (typeof nb.maxStepSeen !== "number" || !Number.isFinite(nb.maxStepSeen)) {
+    nb.maxStepSeen = 0;
+    changed = true;
+  }
+  if (typeof nb.maxStepClaimed !== "number" || !Number.isFinite(nb.maxStepClaimed)) {
+    nb.maxStepClaimed = 0;
+    changed = true;
+  }
+  if (!nb.stepsSeen || typeof nb.stepsSeen !== "object" || Array.isArray(nb.stepsSeen)) {
+    nb.stepsSeen = {};
+    changed = true;
+  }
+  if (!nb.stepsClaimed || typeof nb.stepsClaimed !== "object" || Array.isArray(nb.stepsClaimed)) {
+    nb.stepsClaimed = {};
+    changed = true;
+  }
+  for (const key of NEWBIE_STEP_KEYS) {
+    if (!isDayStr(nb.stepsSeen[key])) {
+      if (nb.stepsSeen[key] !== "") {
+        nb.stepsSeen[key] = "";
+        changed = true;
+      } else if (typeof nb.stepsSeen[key] !== "string") {
+        nb.stepsSeen[key] = "";
+        changed = true;
+      }
+    }
+    if (!isDayStr(nb.stepsClaimed[key])) {
+      if (nb.stepsClaimed[key] !== "") {
+        nb.stepsClaimed[key] = "";
+        changed = true;
+      } else if (typeof nb.stepsClaimed[key] !== "string") {
+        nb.stepsClaimed[key] = "";
+        changed = true;
+      }
+    }
   }
   return changed;
 }

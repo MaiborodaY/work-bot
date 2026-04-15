@@ -92,6 +92,19 @@ test("newbie tasks view: starts from daily bonus with bar navigation and no next
   assert.equal(typeof u.newbiePath.ctx, "object");
 });
 
+test("newbie analytics: touch view records opened day and current seen step", () => {
+  const qs = makeService();
+  const u = makeUser({ withBusiness: false });
+
+  const changed = qs.touchNewbieView(u);
+
+  assert.equal(changed, true);
+  assert.equal(u.stats?.newbie?.openedDay, "2026-03-13");
+  assert.equal(u.stats?.newbie?.lastStepSeenDay, "2026-03-13");
+  assert.equal(u.stats?.newbie?.stepsSeen?.["1"], "2026-03-13");
+  assert.equal(u.stats?.newbie?.maxStepSeen, 1);
+});
+
 test("newbie path: daily bonus completion becomes pending after claim", () => {
   const qs = makeService();
   const u = makeUser({ withBusiness: false });
@@ -116,6 +129,9 @@ test("newbie path: claiming step reward advances to next step and stores context
   assert.equal(u.newbiePath.pending, false);
   assert.equal(typeof u.newbiePath.ctx, "object");
   assert.equal(u.newbiePath.ctx.totalShiftsStart, 0);
+  assert.equal(u.stats?.newbie?.stepsClaimed?.["1"], "2026-03-13");
+  assert.equal(u.stats?.newbie?.lastStepClaimedDay, "2026-03-13");
+  assert.equal(u.stats?.newbie?.maxStepClaimed, 1);
 });
 
 test("newbie path: work step completes on new job start without waiting for payout", () => {
@@ -188,6 +204,21 @@ test("newbie path: completed state renders final screen", async () => {
 
   assert.match(text, /Путь новичка пройден/);
   assert.equal(view.keyboard[0]?.[0]?.callback_data, "bar:tasks");
+});
+
+test("newbie path: final claim records completed day", () => {
+  const qs = makeService();
+  const u = makeUser({ withBusiness: false });
+  u.newbiePath = { step: 8, pending: true, completed: false, ctx: {}, updatedAt: 0 };
+  u.biz.owned = [{ id: "shawarma" }];
+
+  const res = qs.claimNewbieStep(u);
+
+  assert.equal(res.ok, true);
+  assert.equal(res.completed, true);
+  assert.equal(u.newbiePath.completed, true);
+  assert.equal(u.stats?.newbie?.stepsClaimed?.["8"], "2026-03-13");
+  assert.equal(u.stats?.newbie?.completedDay, "2026-03-13");
 });
 
 test("legacy special rewards stay disabled for pet_buy", async () => {

@@ -9,7 +9,7 @@ export const petHandler = {
     data.startsWith("pet:buy:"),
 
   async handle(ctx) {
-    const { data, u, cb, answer, goTo, pet, locations } = ctx;
+    const { data, u, cb, answer, goTo, pet, locations, users, quests } = ctx;
     if (!pet) {
       await answer(cb.id, "Питомец временно недоступен.");
       return;
@@ -67,9 +67,20 @@ export const petHandler = {
       await answer(cb.id);
       const res = await pet.confirmBuy(u);
       if (!res.ok) {
-        await answer(cb.id, res.error || "Не удалось купить питомца.");
+        await answer(cb.id, res.error || "?? ??????? ?????? ???????.");
+        await goTo(u, "Pet");
+        return;
       }
-      await goTo(u, "Pet");
+      let newbieCompleted = false;
+      try {
+        if (!!u?.flags?.onboardingDone && quests?.maybeCompleteNewbieStep) {
+          newbieCompleted = !!quests.maybeCompleteNewbieStep(u);
+          if (newbieCompleted) {
+            await users.save(u);
+          }
+        }
+      } catch {}
+      await goTo(u, newbieCompleted ? "BarNewbieTasks" : "Pet");
       return;
     }
 

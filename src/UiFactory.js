@@ -224,7 +224,14 @@ export class UiFactory {
     }
 
     const entries = Object.entries(CONFIG.JOBS || {});
-    const list = (user?.flags?.onboarding) ? entries.slice(0, 1) : entries;
+    const newbieWorkOnly = (
+      !!user?.flags?.onboardingDone &&
+      !user?.flags?.onboarding &&
+      user?.newbiePath?.completed !== true &&
+      user?.newbiePath?.pending !== true &&
+      Number(user?.newbiePath?.step || 0) === 2
+    );
+    const list = (user?.flags?.onboarding || newbieWorkOnly) ? entries.slice(0, 1) : entries;
     for (const [id, j] of list) {
       const mins = Math.max(1, Math.round((j.durationMs || 0) / 60000));
       const title = getJobTitle(id, l);

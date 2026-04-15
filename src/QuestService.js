@@ -1,6 +1,7 @@
 import { CONFIG } from "./GameConfig.js";
 import { formatMoney, normalizeLang, t } from "./i18n/index.js";
 import { EnergyService } from "./EnergyService.js";
+import { ensurePlayerStatsShape } from "./PlayerStats.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -1429,6 +1430,70 @@ export class QuestService {
     return `${"█".repeat(filled)}${"░".repeat(Math.max(0, total - filled))}`;
   }
 
+  _ensureNewbieStatsShape(u) {
+    ensurePlayerStatsShape(u);
+    return (u?.stats && typeof u.stats === "object" && u.stats.newbie && typeof u.stats.newbie === "object")
+      ? u.stats.newbie
+      : null;
+  }
+
+  _recordNewbieStepSeen(u, step) {
+    const nb = this._ensureNewbieStatsShape(u);
+    const stepKey = String(Math.max(1, toInt(step, 1)));
+    if (!nb) return false;
+    const today = dayStr(this.now());
+    let changed = false;
+    if (!nb.openedDay) {
+      nb.openedDay = today;
+      changed = true;
+    }
+    if (!nb.stepsSeen[stepKey]) {
+      nb.stepsSeen[stepKey] = today;
+      changed = true;
+    }
+    if (toInt(nb.maxStepSeen, 0) < toInt(stepKey, 0)) {
+      nb.maxStepSeen = toInt(stepKey, 0);
+      changed = true;
+    }
+    if (nb.lastStepSeenDay !== today) {
+      nb.lastStepSeenDay = today;
+      changed = true;
+    }
+    return changed;
+  }
+
+  _recordNewbieStepClaimed(u, step) {
+    const nb = this._ensureNewbieStatsShape(u);
+    const stepKey = String(Math.max(1, toInt(step, 1)));
+    if (!nb) return false;
+    const today = dayStr(this.now());
+    let changed = false;
+    if (!nb.openedDay) {
+      nb.openedDay = today;
+      changed = true;
+    }
+    if (!nb.stepsClaimed[stepKey]) {
+      nb.stepsClaimed[stepKey] = today;
+      changed = true;
+    }
+    if (toInt(nb.maxStepClaimed, 0) < toInt(stepKey, 0)) {
+      nb.maxStepClaimed = toInt(stepKey, 0);
+      changed = true;
+    }
+    if (nb.lastStepClaimedDay !== today) {
+      nb.lastStepClaimedDay = today;
+      changed = true;
+    }
+    return changed;
+  }
+
+  touchNewbieView(u) {
+    this._ensureNewbiePathModel(u);
+    if (!u?.flags?.onboardingDone) return false;
+    if (u?.newbiePath?.completed) return false;
+    return this._recordNewbieStepSeen(u, Math.max(1, toInt(u?.newbiePath?.step, 1)));
+  }
+
   initNewbieStepContext(u) {
     return {
       startedAt: this.now(),
@@ -1479,6 +1544,7 @@ export class QuestService {
     if (!this.isNewbieStepComplete(u, stepDef.id, ctx)) return false;
     u.newbiePath.pending = true;
     u.newbiePath.updatedAt = this.now();
+    this._recordNewbieStepSeen(u, Math.max(1, toInt(u?.newbiePath?.step, 1)));
     return true;
   }
 
@@ -1520,9 +1586,11 @@ export class QuestService {
 
     const defs = this._newbiePathDefs();
     const idx = Math.max(0, toInt(u.newbiePath.step, 1) - 1);
+    const currentStep = idx + 1;
     const def = defs[idx];
     if (!def) return { ok: false };
 
+    this._recordNewbieStepClaimed(u, currentStep);
     u.money = Math.max(0, toInt(u?.money, 0)) + Math.max(0, toInt(def.rewardMoney, 0));
     u.premium = Math.max(0, toInt(u?.premium, 0)) + Math.max(0, toInt(def.rewardGems, 0));
     u.newbiePath.step = idx + 2;
@@ -1534,6 +1602,10 @@ export class QuestService {
     if (u.newbiePath.completed) {
       u.money += this._newbieFinalRewardMoney();
       u.premium += this._newbieFinalRewardGems();
+      const nb = this._ensureNewbieStatsShape(u);
+      if (nb && !nb.completedDay) {
+        nb.completedDay = dayStr(this.now());
+      }
       return { ok: true, completed: true };
     }
 

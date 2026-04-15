@@ -68,7 +68,14 @@ export const workHandler = {
     }
 
     // Доп. проверка для онбординга: разрешаем только первое задание
-    if (data.startsWith("work:start:") && u?.flags?.onboarding) {
+    const newbieWorkOnly = !!(
+      u?.flags?.onboardingDone &&
+      !u?.flags?.onboarding &&
+      u?.newbiePath?.completed !== true &&
+      u?.newbiePath?.pending !== true &&
+      Number(u?.newbiePath?.step || 0) === 2
+    );
+    if (data.startsWith("work:start:") && (u?.flags?.onboarding || newbieWorkOnly)) {
       const typeId = data.split(":")[2];
       const firstType = Object.keys(CONFIG.JOBS || {})[0];
       if (firstType && typeId !== firstType) {

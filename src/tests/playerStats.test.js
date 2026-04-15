@@ -19,6 +19,17 @@ test("ensurePlayerStatsShape fills retention and funnel fields", () => {
   assert.equal(typeof u.stats.didGym, "boolean");
   assert.equal(typeof u.stats.didBar, "boolean");
   assert.equal(typeof u.stats.didBusiness, "boolean");
+  assert.equal(typeof u.stats.newbie, "object");
+  assert.equal(typeof u.stats.newbie.openedDay, "string");
+  assert.equal(typeof u.stats.newbie.completedDay, "string");
+  assert.equal(typeof u.stats.newbie.lastStepSeenDay, "string");
+  assert.equal(typeof u.stats.newbie.lastStepClaimedDay, "string");
+  assert.equal(typeof u.stats.newbie.maxStepSeen, "number");
+  assert.equal(typeof u.stats.newbie.maxStepClaimed, "number");
+  assert.equal(typeof u.stats.newbie.stepsSeen, "object");
+  assert.equal(typeof u.stats.newbie.stepsClaimed, "object");
+  assert.equal(typeof u.stats.newbie.stepsSeen["1"], "string");
+  assert.equal(typeof u.stats.newbie.stepsClaimed["8"], "string");
 });
 
 test("markUsefulActivity sets firstActiveDay from createdAt and appends active day", () => {
@@ -61,7 +72,17 @@ test("markUsefulActivity is idempotent on same day", () => {
       bizClaimDayKey: "",
       gquizDayKey: "",
       labourDayKey: "",
-      farmIncomeDays: []
+      farmIncomeDays: [],
+      newbie: {
+        openedDay: "",
+        completedDay: "",
+        lastStepSeenDay: "",
+        lastStepClaimedDay: "",
+        maxStepSeen: 0,
+        maxStepClaimed: 0,
+        stepsSeen: { "1": "", "2": "", "3": "", "4": "", "5": "", "6": "", "7": "", "8": "" },
+        stepsClaimed: { "1": "", "2": "", "3": "", "4": "", "5": "", "6": "", "7": "", "8": "" }
+      }
     }
   };
   const nowTs = Date.UTC(2026, 2, 12, 18, 0, 0);

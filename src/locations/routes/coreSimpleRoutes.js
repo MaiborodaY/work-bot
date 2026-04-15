@@ -220,6 +220,12 @@ export async function renderUpgradesRoute(ctx, user, { lang = "ru" } = {}) {
 export async function renderBarTasksRoute(ctx, user, { lang = "ru" } = {}) {
   let caption = `${ctx._t(user, "loc.bartasks.title")}\n\n${ctx._t(user, "loc.bartasks.empty")}`;
   let keyboard = ctx.ui.barTasks(user, lang);
+  if (ctx.quests?.touchNewbieView) {
+    const changed = !!ctx.quests.touchNewbieView(user);
+    if (changed && ctx.users?.save) {
+      await ctx.users.save(user);
+    }
+  }
   if (ctx.quests?.buildBarTasksView) {
     const view = await ctx.quests.buildBarTasksView(user);
     if (view && typeof view === "object") {

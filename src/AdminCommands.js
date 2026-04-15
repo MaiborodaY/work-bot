@@ -64,6 +64,7 @@ export class AdminCommands {
         "/admin_referrals &lt;userId&gt; - referral info by user\n" +
         "/admin_retention - cohorts retention (30d)\n" +
         "/admin_funnel - onboarding funnel (all-time)\n" +
+        "/admin_newbie - newbie path funnel/retention\n" +
         "/admin_new_users [limit] - newest users list\n" +
         "/admin_quiz - quiz stats\n\n" +
         "<b>Channel</b>\n" +
@@ -380,6 +381,10 @@ export class AdminCommands {
     }
     if (/^\/admin_funnel(?:@\w+)?\s*$/i.test(input)) {
       await this._sendOnboardingFunnel();
+      return true;
+    }
+    if (/^\/admin_newbie(?:@\w+)?\s*$/i.test(input)) {
+      await this._sendNewbieStats();
       return true;
     }
     const mAdminNewUsers = input.match(/^\/admin_new_users(?:@\w+)?(?:\s+(\d+))?\s*$/i);
@@ -1175,6 +1180,251 @@ export class AdminCommands {
     ];
     const done = marks.filter((x) => x !== "·").length;
     return { done, text: marks.join("") };
+  }
+
+  _newbieStepDefs() {
+    return Array.isArray(CONFIG?.QUESTS?.NEWBIE_PATH) ? CONFIG.QUESTS.NEWBIE_PATH : [];
+  }
+
+  _newbieStepLabel(stepId = "") {
+    switch (String(stepId || "")) {
+      case "daily_bonus": return "daily bonus";
+      case "work_job": return "flyers job";
+      case "start_study": return "start study";
+      case "buy_coffee": return "buy coffee";
+      case "buy_pet": return "buy pet";
+      case "gym_train": return "gym workout";
+      case "plant_carrot": return "plant carrot";
+      case "buy_business": return "first business";
+      default: return String(stepId || "-");
+    }
+  }
+
+  _newbieStats(rawStats) {
+    const stats = (rawStats && typeof rawStats === "object") ? rawStats : {};
+    const nb = (stats.newbie && typeof stats.newbie === "object") ? stats.newbie : {};
+    const stepsSeen = (nb.stepsSeen && typeof nb.stepsSeen === "object") ? nb.stepsSeen : {};
+    const stepsClaimed = (nb.stepsClaimed && typeof nb.stepsClaimed === "object") ? nb.stepsClaimed : {};
+    return {
+      openedDay: isDayStr(nb.openedDay) ? String(nb.openedDay) : "",
+      completedDay: isDayStr(nb.completedDay) ? String(nb.completedDay) : "",
+      maxStepSeen: Math.max(0, Math.floor(Number(nb.maxStepSeen) || 0)),
+      maxStepClaimed: Math.max(0, Math.floor(Number(nb.maxStepClaimed) || 0)),
+      stepsSeen,
+      stepsClaimed
+    };
+  }
+
+  _newbieStageLabel(u, defs) {
+    if (u?.newbiePath?.completed) return "done";
+    const step = Math.max(1, Math.floor(Number(u?.newbiePath?.step) || 1));
+    const def = defs[step - 1] || null;
+    const label = this._newbieStepLabel(def?.id || `step_${step}`);
+    return `${label} (${u?.newbiePath?.pending ? "pending" : "active"})`;
+  }
+
+  _retentionIntoBucket(bucket, milestoneDay, u, today) {
+    if (!isDayStr(milestoneDay)) return;
+    bucket.total += 1;
+    const age = dayDiffUtc(milestoneDay, today);
+    const checks = [
+      { n: 1, e: "d1e", r: "d1r" },
+      { n: 3, e: "d3e", r: "d3r" },
+      { n: 7, e: "d7e", r: "d7r" }
+    ];
+    for (const c of checks) {
+      if (age < c.n) continue;
+      bucket[c.e] += 1;
+      const targetDay = addDaysUtc(milestoneDay, c.n);
+      if (targetDay && hasActivityOnDay(u, targetDay)) {
+        bucket[c.r] += 1;
+      }
+    }
+  }
+
+  async _sendNewbieStats() {
+    await this.send("Newbie stats started...");
+    const prefix = "u:";
+    const today = dayStrUtc(Date.now());
+    const defs = this._newbieStepDefs();
+    let cursor = undefined;
+    let scannedUsers = 0;
+    let excludedAdmins = 0;
+
+    const sourceStats = {
+      ads: { started: 0, completed: 0 },
+      ref: { started: 0, completed: 0 },
+      organic: { started: 0, completed: 0 }
+    };
+    const steps = defs.map((def, idx) => ({
+      idx: idx + 1,
+      id: String(def?.id || ""),
+      label: this._newbieStepLabel(def?.id || ""),
+      seen: 0,
+      claimed: 0,
+      activeNow: 0,
+      pendingNow: 0
+    }));
+    const milestones = {
+      started: this._retentionCounters(),
+      step3: this._retentionCounters(),
+      step5: this._retentionCounters(),
+      completed: this._retentionCounters()
+    };
+    const stalled = [];
+    const recentCompleted = [];
+
+    while (true) {
+      const page = await this.db.list({ prefix, cursor });
+      const keys = Array.isArray(page?.keys) ? page.keys : [];
+      for (const k of keys) {
+        try {
+          const raw = await this.db.get(k.name);
+          if (!raw) continue;
+          const u = JSON.parse(raw);
+          const fallbackId = String(k.name || "").slice(prefix.length);
+          const id = String((u?.id ?? fallbackId) || "");
+          if (!id) continue;
+          if (this.isAdmin(id)) {
+            excludedAdmins += 1;
+            continue;
+          }
+
+          scannedUsers += 1;
+          const stats = (u?.stats && typeof u.stats === "object") ? u.stats : {};
+          const nb = this._newbieStats(stats);
+          const lastActiveDay = isDayStr(stats.lastActiveDay) ? String(stats.lastActiveDay) : "";
+          const firstActiveDay = isDayStr(stats.firstActiveDay) ? String(stats.firstActiveDay) : "";
+          const name = String(u?.displayName || "").trim() || "(no name)";
+          const snap = this._refSnapshot(u);
+          const source = this._cohortSource(snap);
+          const sourceLabel = source === "ads" ? "ads_*" : (source === "ref" ? "ref_*" : "organic");
+
+          if (nb.openedDay) {
+            sourceStats[source].started += 1;
+            this._retentionIntoBucket(milestones.started, nb.openedDay, u, today);
+          }
+          if (nb.completedDay) {
+            sourceStats[source].completed += 1;
+            this._retentionIntoBucket(milestones.completed, nb.completedDay, u, today);
+            recentCompleted.push({
+              id,
+              name,
+              sourceLabel,
+              completedDay: nb.completedDay,
+              lastActiveDay: lastActiveDay || "-"
+            });
+          }
+
+          const step3Day = String(nb.stepsClaimed["3"] || "");
+          const step5Day = String(nb.stepsClaimed["5"] || "");
+          if (isDayStr(step3Day)) this._retentionIntoBucket(milestones.step3, step3Day, u, today);
+          if (isDayStr(step5Day)) this._retentionIntoBucket(milestones.step5, step5Day, u, today);
+
+          for (const row of steps) {
+            if (isDayStr(nb.stepsSeen[String(row.idx)])) row.seen += 1;
+            if (isDayStr(nb.stepsClaimed[String(row.idx)])) row.claimed += 1;
+          }
+
+          if (!!u?.flags?.onboardingDone && u?.newbiePath?.completed !== true) {
+            const stepIdx = Math.max(1, Math.floor(Number(u?.newbiePath?.step) || 1));
+            const row = steps[stepIdx - 1] || null;
+            if (row) {
+              if (u?.newbiePath?.pending) row.pendingNow += 1;
+              else row.activeNow += 1;
+            }
+            const inactiveDays = lastActiveDay ? Math.max(0, dayDiffUtc(lastActiveDay, today)) : 999;
+            stalled.push({
+              id,
+              name,
+              sourceLabel,
+              stage: this._newbieStageLabel(u, defs),
+              firstActiveDay: firstActiveDay || "-",
+              lastActiveDay: lastActiveDay || "-",
+              inactiveDays
+            });
+          }
+        } catch {
+          // skip bad rows
+        }
+      }
+      if (!page || page.list_complete || !page.cursor) break;
+      cursor = page.cursor;
+    }
+
+    stalled.sort((a, b) => {
+      if (b.inactiveDays !== a.inactiveDays) return b.inactiveDays - a.inactiveDays;
+      if (String(a.lastActiveDay) !== String(b.lastActiveDay)) {
+        return String(a.lastActiveDay).localeCompare(String(b.lastActiveDay));
+      }
+      return String(a.id).localeCompare(String(b.id));
+    });
+    recentCompleted.sort((a, b) => {
+      if (String(b.completedDay) !== String(a.completedDay)) {
+        return String(b.completedDay).localeCompare(String(a.completedDay));
+      }
+      return String(a.id).localeCompare(String(b.id));
+    });
+
+    const startedTotal = sourceStats.ads.started + sourceStats.ref.started + sourceStats.organic.started;
+    const completedTotal = sourceStats.ads.completed + sourceStats.ref.completed + sourceStats.organic.completed;
+    const completionPct = startedTotal > 0 ? Math.round((completedTotal * 100) / startedTotal) : 0;
+
+    const lines = [
+      "<b>Newbie path analytics</b>",
+      "",
+      `Started: ${startedTotal}`,
+      `Completed: ${completedTotal} (${completionPct}%)`,
+      "",
+      "<b>By source</b>",
+      `ads_*: started ${sourceStats.ads.started} · completed ${sourceStats.ads.completed} (${this._pct(sourceStats.ads.completed, sourceStats.ads.started)}%)`,
+      `ref_*: started ${sourceStats.ref.started} · completed ${sourceStats.ref.completed} (${this._pct(sourceStats.ref.completed, sourceStats.ref.started)}%)`,
+      `organic: started ${sourceStats.organic.started} · completed ${sourceStats.organic.completed} (${this._pct(sourceStats.organic.completed, sourceStats.organic.started)}%)`,
+      "",
+      "<b>Steps funnel</b>"
+    ];
+    for (const row of steps) {
+      lines.push(`${row.idx}. ${this._escapeHtml(row.label)} — seen ${row.seen} · claimed ${row.claimed} · active ${row.activeNow} · pending ${row.pendingNow}`);
+    }
+    lines.push(
+      "",
+      "<b>Retention after milestones</b>",
+      `Path started: D1 ${this._fmtRetentionPair(milestones.started.d1r, milestones.started.d1e)} · D3 ${this._fmtRetentionPair(milestones.started.d3r, milestones.started.d3e)} · D7 ${this._fmtRetentionPair(milestones.started.d7r, milestones.started.d7e)}`,
+      `Step 3 claimed: D1 ${this._fmtRetentionPair(milestones.step3.d1r, milestones.step3.d1e)} · D3 ${this._fmtRetentionPair(milestones.step3.d3r, milestones.step3.d3e)} · D7 ${this._fmtRetentionPair(milestones.step3.d7r, milestones.step3.d7e)}`,
+      `Step 5 claimed: D1 ${this._fmtRetentionPair(milestones.step5.d1r, milestones.step5.d1e)} · D3 ${this._fmtRetentionPair(milestones.step5.d3r, milestones.step5.d3e)} · D7 ${this._fmtRetentionPair(milestones.step5.d7r, milestones.step5.d7e)}`,
+      `Path completed: D1 ${this._fmtRetentionPair(milestones.completed.d1r, milestones.completed.d1e)} · D3 ${this._fmtRetentionPair(milestones.completed.d3r, milestones.completed.d3e)} · D7 ${this._fmtRetentionPair(milestones.completed.d7r, milestones.completed.d7e)}`,
+      "",
+      `Scanned users (non-admin): ${scannedUsers}`,
+      `Excluded admins: ${excludedAdmins}`
+    );
+    await this.send(lines.join("\n"));
+
+    const stalledRows = stalled.filter((row) => row.inactiveDays >= 1).slice(0, 15);
+    if (stalledRows.length) {
+      const out = ["<b>Stalled users</b>"];
+      for (const row of stalledRows) {
+        out.push(
+          `<code>${this._escapeHtml(row.id)}</code> ${this._escapeHtml(row.name)}`,
+          `${this._escapeHtml(row.stage)} · inactive ${row.inactiveDays}d · ${this._escapeHtml(row.sourceLabel)}`,
+          `first ${this._escapeHtml(row.firstActiveDay)} · last ${this._escapeHtml(row.lastActiveDay)}`,
+          ""
+        );
+      }
+      await this.send(out.join("\n").trim());
+    }
+
+    const completedRows = recentCompleted.slice(0, 10);
+    if (completedRows.length) {
+      const out = ["<b>Recent completions</b>"];
+      for (const row of completedRows) {
+        out.push(
+          `<code>${this._escapeHtml(row.id)}</code> ${this._escapeHtml(row.name)}`,
+          `completed ${this._escapeHtml(row.completedDay)} · last ${this._escapeHtml(row.lastActiveDay)} · ${this._escapeHtml(row.sourceLabel)}`,
+          ""
+        );
+      }
+      await this.send(out.join("\n").trim());
+    }
   }
 
   async _sendNewUsers(limit = 50) {

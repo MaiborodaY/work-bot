@@ -86,3 +86,17 @@ test("UiFactory: bar hides newbie tasks button after completion", () => {
   const buttons = kb.flat();
   assert.equal(buttons.some((btn) => btn.callback_data === "bar:newbie"), false);
 });
+
+test("UiFactory: work shows only first job on newbie work step", () => {
+  const ui = new UiFactory();
+  const user = {
+    lang: "ru",
+    flags: { onboarding: false, onboardingDone: true },
+    newbiePath: { step: 2, pending: false, completed: false }
+  };
+
+  const kb = ui.workV2(user, { backTo: "Earn" }, "ru");
+  const jobButtons = kb.flat().filter((btn) => String(btn?.callback_data || "").startsWith("work:start:"));
+  assert.equal(jobButtons.length, 1);
+  assert.equal(jobButtons[0]?.callback_data, "work:start:flyers");
+});
