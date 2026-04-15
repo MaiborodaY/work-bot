@@ -616,7 +616,7 @@ export const CONFIG = {
       title: "Ларек с шавермой",
       titleKey: "cfg.biz.shawarma.title",
       price: 10000,
-      daily: 500,
+      daily: 1000,
       resetPolicy: "utc_daily_burn",
       note: "Продает шаверму раз в день. Доход сгорает, если не забрать.",
       noteKey: "cfg.biz.shawarma.note"

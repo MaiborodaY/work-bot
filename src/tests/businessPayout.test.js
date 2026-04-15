@@ -17,8 +17,8 @@ test("business payout: available today subtracts pending theft for next claim", 
     pendingTheftAmount: 120
   }, "shawarma");
 
-  const available = getBusinessAvailableToday(entry, 500, today);
-  assert.equal(available, 380);
+  const available = getBusinessAvailableToday(entry, 1000, today);
+  assert.equal(available, 880);
 });
 
 test("business payout: stealable amount respects owner minimum remain percent", () => {
@@ -26,9 +26,9 @@ test("business payout: stealable amount respects owner minimum remain percent", 
     id: "shawarma",
     pendingTheftAmount: 140
   }, "shawarma");
-  const stealable = getBusinessStealableForNextClaim(entry, 500, 0.5);
-  // daily 500, owner must keep at least 250, pending 140 => stealable 110
-  assert.equal(stealable, 110);
+  const stealable = getBusinessStealableForNextClaim(entry, 1000, 0.5);
+  // daily 1000, owner must keep at least 500, pending 140 => stealable 360
+  assert.equal(stealable, 360);
 });
 
 test("business payout: pending theft add is capped to owner protection budget", () => {
@@ -37,10 +37,10 @@ test("business payout: pending theft add is capped to owner protection budget", 
     pendingTheftAmount: 200
   }, "shawarma");
 
-  const applied = addBusinessPendingTheft(entry, 500, 100, 0.5);
-  // max pending for 50% owner protection is 250
-  assert.equal(applied, 50);
-  assert.equal(entry.pendingTheftAmount, 250);
+  const applied = addBusinessPendingTheft(entry, 1000, 400, 0.5);
+  // max pending for 50% owner protection is 500
+  assert.equal(applied, 300);
+  assert.equal(entry.pendingTheftAmount, 500);
 });
 
 test("business payout: claim applies available reward and resets pending theft", () => {
@@ -51,8 +51,8 @@ test("business payout: claim applies available reward and resets pending theft",
     pendingTheftAmount: 200
   }, "shawarma");
 
-  const reward = applyBusinessClaim(entry, 500, today);
-  assert.equal(reward, 300);
+  const reward = applyBusinessClaim(entry, 1000, today);
+  assert.equal(reward, 800);
   assert.equal(entry.lastClaimDayUTC, today);
   assert.equal(entry.pendingTheftAmount, 0);
 });
