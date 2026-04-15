@@ -13,7 +13,7 @@ export const farmHandler = {
     data.startsWith("farm:harvest:"),
 
   async handle(ctx) {
-    const { data, u, cb, answer, farm, locations, goTo } = ctx;
+    const { data, u, cb, answer, farm, locations, goTo, quests, users } = ctx;
     const lang = normalizeLang(u?.lang || "ru");
     const tt = (key, vars = {}) => t(key, lang, vars);
 
@@ -108,6 +108,19 @@ export const farmHandler = {
         return;
       }
       const view = farm.buildPlantResultView(u, res);
+      let newbieCompleted = false;
+      if (quests?.markNewbieAction) {
+        try {
+          newbieCompleted = !!quests.markNewbieAction(u, "farm_plant", { cropId });
+        } catch {}
+      }
+      if (newbieCompleted && users?.save) {
+        await users.save(u);
+      }
+      if (newbieCompleted) {
+        await goTo(u, "BarNewbieTasks", view.caption);
+        return;
+      }
       await show(view);
       return;
     }

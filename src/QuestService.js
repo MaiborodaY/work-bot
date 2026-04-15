@@ -1458,8 +1458,10 @@ export class QuestService {
           Math.max(0, toInt(u?.gym?.level, 0)) >= (Math.max(0, toInt(ctx.gymLevelStart, 0)) + 1) ||
           (!!u?.gym?.active && Math.max(0, toInt(u?.gym?.startAt, 0)) >= Math.max(0, toInt(ctx.startedAt, 0)))
         );
-      case "study_level_5":
-        return Math.max(0, toInt(u?.study?.level, 0)) >= 5;
+      case "plant_carrot":
+        return !!ctx?.completedByEvent || !!(Array.isArray(u?.farm?.plots) && u.farm.plots.some((p) =>
+          String(p?.cropId || "") === "carrot" && (String(p?.status || "") === "growing" || String(p?.status || "") === "ready")
+        ));
       case "buy_business":
         return this._hasAnyBusiness(u);
       default:
@@ -1488,6 +1490,17 @@ export class QuestService {
     if (!stepDef) return false;
 
     if (String(stepDef.id) === "buy_coffee" && String(action || "") === "shop_buy" && String(ctx?.key || "") === "coffee") {
+      u.newbiePath.pending = true;
+      u.newbiePath.ctx = {
+        ...(u?.newbiePath?.ctx && typeof u.newbiePath.ctx === "object" ? u.newbiePath.ctx : {}),
+        completedByEvent: true,
+        completedAt: this.now()
+      };
+      u.newbiePath.updatedAt = this.now();
+      return true;
+    }
+
+    if (String(stepDef.id) === "plant_carrot" && String(action || "") === "farm_plant" && String(ctx?.cropId || "") === "carrot") {
       u.newbiePath.pending = true;
       u.newbiePath.ctx = {
         ...(u?.newbiePath?.ctx && typeof u.newbiePath.ctx === "object" ? u.newbiePath.ctx : {}),

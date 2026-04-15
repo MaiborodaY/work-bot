@@ -213,6 +213,24 @@ test("legacy special rewards stay disabled for study level 5", async () => {
   assert.equal(res.events.some((ev) => ev.id === "study_level_5"), false);
 });
 
+test("newbie path: plant carrot step completes only from carrot planting", () => {
+  const qs = makeService();
+  const u = makeUser({ withBusiness: false });
+  u.newbiePath = {
+    step: 7,
+    pending: false,
+    completed: false,
+    ctx: { startedAt: Date.UTC(2026, 2, 13, 11, 0, 0), totalShiftsStart: 0, gymLevelStart: 0 },
+    updatedAt: 0
+  };
+
+  assert.equal(qs.maybeCompleteNewbieStep(u), false);
+  assert.equal(qs.markNewbieAction(u, "farm_plant", { cropId: "tomato" }), false);
+  assert.equal(u.newbiePath.pending, false);
+  assert.equal(qs.markNewbieAction(u, "farm_plant", { cropId: "carrot" }), true);
+  assert.equal(u.newbiePath.pending, true);
+});
+
 test("stocks_buy3 progress uses holdings count, not binary flag", async () => {
   const qs = makeService();
   const u = makeUser({ withBusiness: false });
