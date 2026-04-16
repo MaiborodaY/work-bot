@@ -8,6 +8,9 @@ export const thiefHandler = {
     data === "thief:upgrade" ||
     data.startsWith("thief:targets:") ||
     data.startsWith("thief:attack:") ||
+    data.startsWith("thief:def:open:") ||
+    data.startsWith("thief:def:atk:") ||
+    data.startsWith("thief:def:def:") ||
     data.startsWith("thief:reveal:confirm:") ||
     data.startsWith("thief:reveal:") ||
     data.startsWith("thief:defend:"),
@@ -118,23 +121,55 @@ export const thiefHandler = {
       const attackId = String(data.split(":")[2] || "");
       const res = await thief.defend(u, attackId);
       if (!res.ok) {
-        if (res.code === "not_enough_energy_defend") {
-          await answer(cb.id);
-          await showEnergyChoicePanel(ctx, {
-            origin: Routes.BUSINESS,
-            need: Math.max(0, Number(res?.needEnergy) || 0)
-          });
-          return;
-        }
         await answer(cb.id, res.error || tt("handler.thief.defend_failed"));
         await reloadSelf();
         await goTo(u, "Business");
         return;
+      }
+      await answer(cb.id, tt("handler.thief.defend_ok"));
+      await reloadSelf();
+      const view = await thief.buildDefenseBattleView(u, attackId);
+      await show(view);
+      return;
+    }
+
+    if (data.startsWith("thief:def:open:")) {
+      const attackId = String(data.split(":")[3] || "");
+      await answer(cb.id);
+      const view = await thief.buildDefenseBattleView(u, attackId);
+      await show(view);
+      return;
+    }
+
+    if (data.startsWith("thief:def:atk:")) {
+      const parts = data.split(":");
+      const attackId = String(parts[3] || "");
+      const zone = String(parts[4] || "");
+      const res = await thief.pickDefenseBattleAttack(u, attackId, zone);
+      if (!res.ok) {
+        await answer(cb.id, res.error || tt("handler.thief.defend_failed"));
       } else {
-        await answer(cb.id, tt("handler.thief.defend_ok"));
+        await answer(cb.id);
       }
       await reloadSelf();
-      await goTo(u, "Business", tt("handler.thief.defend_done_intro"));
+      const view = await thief.buildDefenseBattleView(u, attackId);
+      await show(view);
+      return;
+    }
+
+    if (data.startsWith("thief:def:def:")) {
+      const parts = data.split(":");
+      const attackId = String(parts[3] || "");
+      const zone = String(parts[4] || "");
+      const res = await thief.pickDefenseBattleDefense(u, attackId, zone);
+      if (!res.ok) {
+        await answer(cb.id, res.error || tt("handler.thief.defend_failed"));
+      } else {
+        await answer(cb.id);
+      }
+      await reloadSelf();
+      const view = await thief.buildDefenseBattleView(u, attackId);
+      await show(view);
       return;
     }
   }

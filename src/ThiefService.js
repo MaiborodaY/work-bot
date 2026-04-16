@@ -8,6 +8,14 @@ import {
 } from "./BusinessPayout.js";
 import { formatMoney, normalizeLang, t } from "./i18n/index.js";
 import { EnergyService } from "./EnergyService.js";
+import {
+  combatDefenseOptions,
+  combatZoneDamage,
+  decideCombatWinner,
+  isCombatSelectionValid,
+  isCombatZone,
+  resolveCombatRound
+} from "./CombatEngine.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -57,6 +65,26 @@ export class ThiefService {
 
   _guardExtraWindowMs() {
     return Math.max(0, Math.floor(Number(this._guardCfg()?.EXTRA_WINDOW_MS) || 0));
+  }
+
+  _defenseCfg() {
+    return this._cfg()?.DEFENSE_BATTLE || {};
+  }
+
+  _reactionWindowMs() {
+    return Math.max(60_000, Math.floor(Number(this._defenseCfg()?.REACTION_WINDOW_MS) || (2 * 60_000)));
+  }
+
+  _defenseRounds() {
+    return Math.max(1, Math.floor(Number(this._defenseCfg()?.ROUNDS) || 3));
+  }
+
+  _defenseRoundWindowMs() {
+    return Math.max(10_000, Math.floor(Number(this._defenseCfg()?.ROUND_WINDOW_SEC) || 60) * 1000);
+  }
+
+  _defenseBattleTtlSec() {
+    return Math.max(60, Math.floor(Number(this._defenseCfg()?.BATTLE_TTL_SEC) || (2 * DAY_MS / 1000)));
   }
 
   _guardPrice(bizId) {
@@ -222,11 +250,24 @@ export class ThiefService {
     return `thief:due:${bucket}:${String(attackId || "")}`;
   }
 
+  _defenseKey(attackId) {
+    return `thief:defense:${String(attackId || "")}`;
+  }
+
+  _defenseDueKey(bucket, attackId) {
+    return `thief:defense_due:${bucket}:${String(attackId || "")}`;
+  }
+
   _protectionDueKey(bucket, kind, ownerId, bizId) {
     return `thief:protect_due:${bucket}:${String(kind || "")}:${String(ownerId || "")}:${String(bizId || "")}`;
   }
 
   _parseDueAttackId(key) {
+    const parts = String(key || "").split(":");
+    return parts.length >= 4 ? String(parts[3] || "") : "";
+  }
+
+  _parseDefenseDueAttackId(key) {
     const parts = String(key || "").split(":");
     return parts.length >= 4 ? String(parts[3] || "") : "";
   }
@@ -340,6 +381,22 @@ export class ThiefService {
     await this.db.put(this._attackKey(attack.id), JSON.stringify(attack), { expirationTtl: ttl });
   }
 
+  async _saveDefenseBattle(battle) {
+    const attackId = String(battle?.attackId || battle?.id || "").trim();
+    if (!attackId) return;
+    await this.db.put(this._defenseKey(attackId), JSON.stringify(battle), { expirationTtl: this._defenseBattleTtlSec() });
+  }
+
+  async _loadDefenseBattle(attackId) {
+    const id = String(attackId || "").trim();
+    if (!id) return null;
+    const raw = await this.db.get(this._defenseKey(id));
+    const data = this._safeJson(raw, null);
+    if (!data || typeof data !== "object") return null;
+    if (!String(data.attackId || "").trim()) data.attackId = id;
+    return data;
+  }
+
   async _loadAttack(attackId) {
     const id = String(attackId || "").trim();
     if (!id) return null;
@@ -369,6 +426,14 @@ export class ThiefService {
     await this.db.put(this._dueKey(bucket, id), "1", { expirationTtl: ttlSec }).catch(() => {});
   }
 
+  async _markDueDefenseBattle(attackId, dueAt) {
+    const id = String(attackId || "").trim();
+    if (!id) return;
+    const bucket = this._dueBucket(dueAt);
+    const ttlSec = Math.max(60, Math.ceil((Number(dueAt) - this.now()) / 1000) + (2 * DAY_MS / 1000));
+    await this.db.put(this._defenseDueKey(bucket, id), "1", { expirationTtl: ttlSec }).catch(() => {});
+  }
+
   async _markProtectionDue(kind, ownerId, bizId, resolveAt) {
     const k = String(kind || "").trim();
     const oid = String(ownerId || "").trim();
@@ -393,6 +458,26 @@ export class ThiefService {
         cursor = page?.cursor;
         for (const key of page?.keys || []) {
           const id = this._parseDueAttackId(key?.name);
+          if (id) result.add(id);
+        }
+      } while (cursor);
+    }
+    return [...result];
+  }
+
+  async _collectDueDefenseBattleIds({ nowTs = this.now(), lookbackMinutes = 15 } = {}) {
+    const result = new Set();
+    const endBucket = this._dueBucket(nowTs);
+    const buckets = Math.max(0, Math.ceil((Math.max(0, Number(lookbackMinutes) || 0) * 60_000) / this._dueBucketMs()));
+    const startBucket = endBucket - buckets;
+    for (let b = startBucket; b <= endBucket; b++) {
+      const prefix = `thief:defense_due:${b}:`;
+      let cursor = undefined;
+      do {
+        const page = await this.db.list({ prefix, cursor });
+        cursor = page?.cursor;
+        for (const key of page?.keys || []) {
+          const id = this._parseDefenseDueAttackId(key?.name);
           if (id) result.add(id);
         }
       } while (cursor);
@@ -777,7 +862,7 @@ export class ThiefService {
       const attack = await this._loadAttack(attackId);
       const invalid =
         !attack ||
-        String(attack.status || "") !== "active" ||
+        !["active", "battle"].includes(String(attack.status || "")) ||
         String(attack.ownerId || "") !== oid ||
         String(attack.bizId || "") !== String(bizId);
 
@@ -786,18 +871,27 @@ export class ThiefService {
         continue;
       }
 
-      if (Number(attack.resolveAt || 0) <= nowTs) {
+      if (String(attack.status || "") === "battle") {
+        const battle = await this._loadDefenseBattle(attackId);
+        if (battle && Number(battle.roundDeadline || 0) <= nowTs) {
+          await this._resolveDefenseBattleTimeout(attackId, { source: "lazy" }).catch(() => {});
+          continue;
+        }
+      } else if (Number(attack.resolveAt || 0) <= nowTs) {
         await this._resolveAttack(attack, { source: "lazy" }).catch(() => {});
         continue;
       }
 
       const leftMs = Math.max(0, Number(attack.resolveAt || 0) - nowTs);
+      const battle = String(attack.status || "") === "battle" ? await this._loadDefenseBattle(attackId) : null;
+      const dueAt = battle?.roundDeadline || attack.resolveAt;
       const row = {
         attackId,
         bizId: String(bizId),
-        resolveAt: Number(attack.resolveAt || 0),
-        minsLeft: this._formatMinutes(leftMs),
-        defendEnergy: Math.max(1, Math.floor(Number(attack.defendEnergy) || this._defendEnergy(bizId)))
+        resolveAt: Number(dueAt || 0),
+        minsLeft: this._formatMinutes(Math.max(0, Number(dueAt || 0) - nowTs)),
+        inBattle: String(attack.status || "") === "battle",
+        currentRound: Math.max(1, Math.floor(Number(battle?.currentRound) || 1))
       };
 
       if (!best || row.resolveAt < best.resolveAt) best = row;
@@ -818,6 +912,13 @@ export class ThiefService {
       if (!attack || String(attack.attackerId || "") !== String(attacker.id || "")) {
         attacker.thief.activeAttackId = "";
         dirty = true;
+      } else if (String(attack.status || "") === "battle") {
+        const battle = await this._loadDefenseBattle(activeId);
+        if (battle && Number(battle.roundDeadline || 0) <= this.now()) {
+          await this._resolveDefenseBattleTimeout(activeId, { source: "lazy" });
+          const fresh = await this.users.load(attacker.id).catch(() => attacker);
+          return fresh;
+        }
       } else if (Number(attack.resolveAt || 0) <= this.now()) {
         await this._resolveAttack(attack, { source: "lazy" });
         const fresh = await this.users.load(attacker.id).catch(() => attacker);
@@ -977,12 +1078,11 @@ export class ThiefService {
     const level = Math.max(0, Math.floor(Number(attacker?.thief?.level) || 0));
     const maxLevel = Math.max(0, Number(this._cfg()?.MAX_LEVEL) || 5);
     const nextLevel = Math.min(maxLevel, level + 1);
-    const successPct = Math.floor(this._successChance(Math.max(1, level)) * 100);
     const lines = [
       this._t(attacker, "thief.view.title"),
       "",
       this._t(attacker, "thief.view.level", { level, maxLevel }),
-      this._t(attacker, "thief.view.success", { success: successPct })
+      this._t(attacker, "thief.view.rule", { mins: this._formatMinutes(this._reactionWindowMs()) })
     ];
 
     const activeId = String(attacker?.thief?.activeAttackId || "");
@@ -990,8 +1090,17 @@ export class ThiefService {
       const attack = await this._loadAttack(activeId);
       if (attack) {
         const bizTitle = this._bizTitle(attack.bizId, attacker);
-        const leftMin = this._formatMinutes(Number(attack.resolveAt || 0) - this.now());
-        lines.push(this._t(attacker, "thief.view.active_attack", { bizTitle, leftMin }));
+        if (String(attack.status || "") === "battle") {
+          const battle = await this._loadDefenseBattle(activeId);
+          lines.push(this._t(attacker, "thief.view.active_battle", {
+            bizTitle,
+            round: Math.max(1, Math.floor(Number(battle?.currentRound) || 1)),
+            totalRounds: Math.max(1, Math.floor(Number(battle?.totalRounds) || this._defenseRounds()))
+          }));
+        } else {
+          const leftMin = this._formatMinutes(Number(attack.resolveAt || 0) - this.now());
+          lines.push(this._t(attacker, "thief.view.active_attack", { bizTitle, leftMin }));
+        }
       }
     }
 
@@ -1033,7 +1142,6 @@ export class ThiefService {
     const maxLevel = Math.max(1, Number(this._cfg()?.MAX_LEVEL) || 5);
     const levels = Array.from({ length: maxLevel }, (_, i) => i + 1);
     const energyMultiplier = 2;
-    const successByLevel = levels.map((lvl) => `${lvl}→${Math.floor(this._successChance(lvl) * 100)}%`).join(", ");
     const cooldownUnit = this._lang(user) === "en" ? "m" : (this._lang(user) === "uk" ? "хв" : "мин");
     const cooldownByLevel = levels.map((lvl) => `${lvl}→${this._cooldownMinutes(lvl)}${cooldownUnit}`).join(", ");
     const costsByLevel = levels.map((lvl) => `${lvl}→${this._money(user, this._upgradeCost(lvl))}`).join(", ");
@@ -1044,6 +1152,8 @@ export class ThiefService {
     const attempts = this._dailyAttemptsLimit();
     const protectHours = Math.round(this._minAccountAgeMs() / (60 * 60 * 1000));
     const minTarget = this._money(user, this._minTargetCash());
+    const baseReactionMins = this._formatMinutes(this._reactionWindowMs());
+    const guardReactionMins = this._formatMinutes(this._reactionWindowMs() + this._guardExtraWindowMs());
 
     const lines = [
       this._t(user, "thief.help.title"),
@@ -1051,7 +1161,7 @@ export class ThiefService {
       this._t(user, "thief.help.line1"),
       this._t(user, "thief.help.line2", { energyMultiplier }),
       this._t(user, "thief.help.line3"),
-      this._t(user, "thief.help.line4", { successByLevel }),
+      this._t(user, "thief.help.line4", { mins: this._formatMinutes(this._reactionWindowMs()) }),
       this._t(user, "thief.help.line5", { stealPctMin, stealPctMax }),
       this._t(user, "thief.help.line6", { ownerMinPct }),
       this._t(user, "thief.help.line7"),
@@ -1076,8 +1186,8 @@ export class ThiefService {
         bizTitle: this._bizTitle(bizId, user),
         unlock: Math.max(1, Math.floor(Number(cfg.unlockLevel) || 1)),
         attack: this._attackEnergy(bizId),
-        defend: this._defendEnergy(bizId),
-        mins: this._formatMinutes(this._attackWindowMs(bizId))
+        mins: baseReactionMins,
+        guardMins: guardReactionMins
       }));
     }
 
@@ -1140,8 +1250,7 @@ export class ThiefService {
       this._t(attacker, "thief.targets.title", { bizTitle: this._bizTitle(biz, attacker) }),
       this._t(attacker, "thief.targets.energy_cost", {
         attackEnergy: this._attackEnergy(biz),
-        startNeed: this._attackEnergy(biz) * 2,
-        defendEnergy: this._defendEnergy(biz)
+        startNeed: this._attackEnergy(biz) * 2
       }),
       ""
     ];
@@ -1290,8 +1399,7 @@ export class ThiefService {
 
     const createdAt = this.now();
     const guardApplied = protection.guardActive;
-    const resolveAt = createdAt + this._attackWindowMs(biz) + (guardApplied ? this._guardExtraWindowMs() : 0);
-    const successChance = this._successChance(level) * (guardApplied ? this._guardSuccessMultiplier() : 1);
+    const resolveAt = createdAt + this._reactionWindowMs() + (guardApplied ? this._guardExtraWindowMs() : 0);
     const attackId = `${createdAt}_${String(attacker.id)}_${Math.floor(Math.random() * 1_000_000)}`;
     const attack = {
       id: attackId,
@@ -1303,8 +1411,6 @@ export class ThiefService {
       bizId: biz,
       levelAtStart: level,
       attackEnergy,
-      defendEnergy: this._defendEnergy(biz),
-      successChance,
       cooldownMinutes: this._cooldownMinutes(level)
     };
 
@@ -1352,124 +1458,341 @@ export class ThiefService {
     if (!id) return { ok: false, error: this._t(owner, "thief.err.attack_not_found") };
 
     const attack = await this._loadAttack(id);
-    if (!attack || String(attack.status || "") !== "active") {
+    if (!attack || !["active", "battle"].includes(String(attack.status || ""))) {
       return { ok: false, error: this._t(owner, "thief.err.attack_not_found") };
     }
     if (String(attack.ownerId || "") !== String(owner?.id || "")) {
       return { ok: false, error: this._t(owner, "thief.err.not_your_attack") };
     }
-    if (Number(attack.resolveAt || 0) <= this.now()) {
+    if (String(attack.status || "") === "active" && Number(attack.resolveAt || 0) <= this.now()) {
       return { ok: false, error: this._t(owner, "thief.err.attack_already_resolved") };
     }
+    const existingBattle = await this._loadDefenseBattle(id);
+    if (existingBattle && String(existingBattle.status || "") === "active") {
+      return { ok: true, battleStarted: false, attackId: id };
+    }
 
-    const defendEnergy = Math.max(1, Math.floor(Number(attack.defendEnergy) || this._defendEnergy(attack.bizId)));
-    if (Math.max(0, Number(owner?.energy) || 0) < defendEnergy) {
+    const battle = {
+      id: id,
+      attackId: id,
+      bizId: String(attack.bizId || ""),
+      ownerId: String(attack.ownerId || ""),
+      thiefId: String(attack.attackerId || ""),
+      status: "active",
+      currentRound: 1,
+      totalRounds: this._defenseRounds(),
+      roundDeadline: this.now() + this._defenseRoundWindowMs(),
+      ownerScore: 0,
+      thiefScore: 0,
+      rounds: [],
+      selections: {
+        owner: { attack: "", defense: "", submittedAt: 0 },
+        thief: { attack: "", defense: "", submittedAt: 0 }
+      },
+      result: { winnerSide: "", reason: "" },
+      createdAt: this.now(),
+      updatedAt: this.now(),
+      finishedAt: 0
+    };
+
+    attack.status = "battle";
+    attack.battleStartedAt = this.now();
+    attack.battleRoundDeadline = battle.roundDeadline;
+    await this._saveAttack(attack);
+    await this._saveDefenseBattle(battle);
+    await this._markDueDefenseBattle(id, battle.roundDeadline);
+
+    const attacker = await this.users.load(attack.attackerId).catch(() => null);
+    if (attacker?.chatId) {
+      const bizTitle = this._bizTitle(attack.bizId, attacker);
+      await this._sendInline(
+        attacker.chatId,
+        this._t(attacker, "thief.notify.defense_battle_started_thief", { bizTitle }),
+        [[{ text: this._t(attacker, "thief.btn.open_battle"), callback_data: `thief:def:open:${id}` }]]
+      );
+    }
+
+    if (owner?.chatId) {
+      const bizTitle = this._bizTitle(attack.bizId, owner);
+      await this._sendInline(
+        owner.chatId,
+        this._t(owner, "thief.notify.defense_battle_started_owner", { bizTitle }),
+        [[{ text: this._t(owner, "thief.btn.open_battle"), callback_data: `thief:def:open:${id}` }]]
+      );
+    }
+
+    return { ok: true, battleStarted: true, attackId: id };
+  }
+
+  _battleSideForUser(battle, userId) {
+    const uid = String(userId || "");
+    if (uid && uid === String(battle?.ownerId || "")) return "owner";
+    if (uid && uid === String(battle?.thiefId || "")) return "thief";
+    return "";
+  }
+
+  _battleOpponentSide(side) {
+    return side === "owner" ? "thief" : "owner";
+  }
+
+  _emptyBattleSelection() {
+    return { attack: "", defense: "", submittedAt: 0 };
+  }
+
+  _sanitizeBattleSelection(raw) {
+    const attack = String(raw?.attack || "");
+    const defense = String(raw?.defense || "");
+    const submittedAt = Math.max(0, Math.floor(Number(raw?.submittedAt) || 0));
+    if (isCombatZone(attack) && !defense) {
+      return { attack, defense: "", submittedAt: 0 };
+    }
+    if (!isCombatSelectionValid(attack, defense)) return this._emptyBattleSelection();
+    return { attack, defense, submittedAt };
+  }
+
+  _battleRoundReady(battle) {
+    const ownerSel = this._sanitizeBattleSelection(battle?.selections?.owner);
+    const thiefSel = this._sanitizeBattleSelection(battle?.selections?.thief);
+    return !!ownerSel.submittedAt && !!thiefSel.submittedAt;
+  }
+
+  _battlePlayerLabel(user, battle, side) {
+    if (side === "owner") return this._userName(user, user);
+    return this._userName(user, user);
+  }
+
+  _zoneLabel(user, zone) {
+    return this._t(user, `colosseum.zone_${String(zone || "")}`);
+  }
+
+  _zoneAttackButton(user, zone) {
+    return this._t(user, `colosseum.btn_atk_${String(zone || "")}`);
+  }
+
+  _zoneDefenseButton(user, zone) {
+    return this._t(user, `colosseum.btn_def_${String(zone || "")}`);
+  }
+
+  _battleLinesForRound(user, round, side) {
+    const me = side === "owner" ? round.owner : round.thief;
+    const them = side === "owner" ? round.thief : round.owner;
+    return [
+      this._t(user, "thief.defense.round_title", { round: round.round }),
+      this._t(user, "thief.defense.round_line_you", {
+        attack: this._zoneLabel(user, me.attack),
+        defense: this._zoneLabel(user, me.defense),
+        damage: me.dealt
+      }),
+      this._t(user, "thief.defense.round_line_enemy", {
+        attack: this._zoneLabel(user, them.attack),
+        defense: this._zoneLabel(user, them.defense),
+        damage: them.dealt
+      }),
+      this._t(user, `thief.defense.round_outcome_${round.outcome}`)
+    ];
+  }
+
+  async buildDefenseBattleView(user, attackId) {
+    const attack = await this._loadAttack(attackId);
+    const battle = await this._loadDefenseBattle(attackId);
+    if (!battle) {
       return {
-        ok: false,
-        code: "not_enough_energy_defend",
-        needEnergy: Math.max(0, Number(defendEnergy) || 0),
-        haveEnergy: Math.max(0, Number(owner?.energy) || 0),
-        error: this._t(owner, "thief.err.not_enough_energy_defend", { need: defendEnergy })
+        caption: this._t(user, "thief.err.attack_not_found"),
+        keyboard: [[{ text: this._t(user, "thief.btn.back"), callback_data: "go:Business" }]]
       };
     }
 
-    owner.energy = Math.max(0, Math.floor(Number(owner.energy) || 0) - defendEnergy);
-    const ownerFound = this._findOwnedEntry(owner, attack.bizId);
-    if (ownerFound.idx >= 0 && ownerFound.entry) {
-      ownerFound.entry.guardBlocked = Math.max(0, Math.floor(Number(ownerFound.entry.guardBlocked) || 0)) + 1;
-      ownerFound.arr[ownerFound.idx] = ownerFound.entry;
-      owner.biz = owner.biz || {};
-      owner.biz.owned = ownerFound.arr;
-    }
-    let ownerAch = null;
-    if (this.achievements?.onEvent) {
-      try {
-        ownerAch = await this.achievements.onEvent(owner, "thief_defense_success", { bizId: attack.bizId }, {
-          persist: false,
-          notify: false
-        });
-      } catch {}
-    }
-    await this.users.save(owner);
-    if (ownerAch?.newlyEarned?.length && this.achievements?.notifyEarned) {
-      await this.achievements.notifyEarned(owner, ownerAch.newlyEarned);
+    const side = this._battleSideForUser(battle, user?.id);
+    if (!side) {
+      return {
+        caption: this._t(user, "thief.err.not_your_attack"),
+        keyboard: [[{ text: this._t(user, "thief.btn.back"), callback_data: "go:Business" }]]
+      };
     }
 
-    const attacker = await this.users.load(attack.attackerId).catch(() => null);
-    if (attacker) {
-      this._ensureThiefState(attacker);
-      if (String(attacker.thief.activeAttackId || "") === String(id)) {
-        attacker.thief.activeAttackId = "";
-      }
-      const cooldownUntil = this.now() + Math.max(1, Math.floor(Number(attack.cooldownMinutes) || 0)) * 60_000;
-      attacker.thief.cooldowns = attacker.thief.cooldowns || {};
-      attacker.thief.cooldowns[String(attack.bizId || "")] = cooldownUntil;
-      if (this.achievements?.onEvent) {
-        try {
-          await this.achievements.onEvent(attacker, "thief_fail", { bizId: attack.bizId, reason: "blocked" }, {
-            persist: false,
-            notify: false
-          });
-        } catch {}
-      }
-      await this.users.save(attacker);
+    const ownerUser = await this.users.load(battle.ownerId).catch(() => null);
+    const thiefUser = await this.users.load(battle.thiefId).catch(() => null);
+    const ownerName = this._userName(ownerUser || { id: battle.ownerId }, user);
+    const thiefName = this._userName(thiefUser || { id: battle.thiefId }, user);
+    const bizTitle = this._bizTitle(battle.bizId, user);
+    const lines = [
+      this._t(user, "thief.defense.title", { bizTitle }),
+      "",
+      this._t(user, "thief.defense.vs", { ownerName, thiefName }),
+      this._t(user, "thief.defense.score", { owner: battle.ownerScore || 0, thief: battle.thiefScore || 0 })
+    ];
 
-      if (attacker?.chatId) {
-        const bizTitle = this._bizTitle(attack.bizId, attacker);
-        await this._sendInline(
-          attacker.chatId,
-          this._t(attacker, "thief.notify.attacker_blocked", { bizTitle }),
-          [[{ text: this._t(attacker, "thief.btn.menu"), callback_data: "go:Square" }]]
-        );
-      }
+    for (const round of Array.isArray(battle.rounds) ? battle.rounds : []) {
+      lines.push("");
+      lines.push(...this._battleLinesForRound(user, round, side));
     }
 
-    await this._deleteAttack(attack);
-    return { ok: true };
+    const kb = [];
+    if (String(battle.status || "") === "finished") {
+      lines.push("");
+      lines.push(this._t(user, `thief.defense.result_${battle?.result?.winnerSide === "thief" ? "thief" : "owner"}`));
+      kb.push([{ text: this._t(user, "thief.btn.back"), callback_data: "go:Business" }]);
+      return { caption: lines.join("\n"), keyboard: kb };
+    }
+
+    const me = this._sanitizeBattleSelection(battle?.selections?.[side]);
+    const timeLeftSec = Math.max(0, Math.ceil((Number(battle.roundDeadline || 0) - this.now()) / 1000));
+    lines.push("");
+    lines.push(this._t(user, "thief.defense.round_header", {
+      round: battle.currentRound || 1,
+      totalRounds: battle.totalRounds || this._defenseRounds()
+    }));
+    lines.push(this._t(user, "thief.defense.deadline", { secs: timeLeftSec }));
+
+    if (!me.attack) {
+      lines.push("");
+      lines.push(this._t(user, "thief.defense.pick_attack"));
+      kb.push([
+        { text: this._zoneAttackButton(user, "head"), callback_data: `thief:def:atk:${attackId}:head` },
+        { text: this._zoneAttackButton(user, "body"), callback_data: `thief:def:atk:${attackId}:body` }
+      ]);
+      kb.push([
+        { text: this._zoneAttackButton(user, "legs"), callback_data: `thief:def:atk:${attackId}:legs` }
+      ]);
+    } else if (!me.defense) {
+      lines.push("");
+      lines.push(this._t(user, "thief.defense.pick_defense", { attack: this._zoneLabel(user, me.attack) }));
+      const options = combatDefenseOptions(me.attack);
+      kb.push(options.map((zone) => ({
+        text: this._zoneDefenseButton(user, zone),
+        callback_data: `thief:def:def:${attackId}:${zone}`
+      })));
+    } else {
+      lines.push("");
+      lines.push(this._t(user, "thief.defense.waiting"));
+    }
+
+    kb.push([{ text: this._t(user, "thief.btn.refresh"), callback_data: `thief:def:open:${attackId}` }]);
+    kb.push([{ text: this._t(user, "thief.btn.back"), callback_data: "go:Business" }]);
+    return { caption: lines.join("\n"), keyboard: kb };
   }
 
-  async _resolveAttack(attackOrId, { source = "cron" } = {}) {
-    const attack = (typeof attackOrId === "string")
-      ? await this._loadAttack(attackOrId)
-      : attackOrId;
-    if (!attack || String(attack.status || "") !== "active") return { ok: false, skipped: true };
-    if (Number(attack.resolveAt || 0) > this.now()) return { ok: false, skipped: true };
+  async pickDefenseBattleAttack(user, attackId, zone) {
+    const attack = await this._loadAttack(attackId);
+    const battle = await this._loadDefenseBattle(attackId);
+    if (!attack || !battle || String(battle.status || "") !== "active") {
+      return { ok: false, error: this._t(user, "thief.err.attack_not_found") };
+    }
+    const side = this._battleSideForUser(battle, user?.id);
+    if (!side) return { ok: false, error: this._t(user, "thief.err.not_your_attack") };
+    const safeZone = String(zone || "");
+    if (!isCombatZone(safeZone)) return { ok: false, error: this._t(user, "thief.err.bad_zone") };
 
+    const current = this._sanitizeBattleSelection(battle.selections?.[side]);
+    current.attack = safeZone;
+    current.defense = "";
+    current.submittedAt = 0;
+    battle.selections = battle.selections || {};
+    battle.selections[side] = current;
+    battle.updatedAt = this.now();
+    await this._saveDefenseBattle(battle);
+    return { ok: true, needDefense: true };
+  }
+
+  async pickDefenseBattleDefense(user, attackId, zone) {
+    const attack = await this._loadAttack(attackId);
+    const battle = await this._loadDefenseBattle(attackId);
+    if (!attack || !battle || String(battle.status || "") !== "active") {
+      return { ok: false, error: this._t(user, "thief.err.attack_not_found") };
+    }
+    const side = this._battleSideForUser(battle, user?.id);
+    if (!side) return { ok: false, error: this._t(user, "thief.err.not_your_attack") };
+    const safeZone = String(zone || "");
+    const current = this._sanitizeBattleSelection(battle.selections?.[side]);
+    if (!isCombatSelectionValid(current.attack, safeZone)) {
+      return { ok: false, error: this._t(user, "thief.err.bad_zone") };
+    }
+
+    current.defense = safeZone;
+    current.submittedAt = this.now();
+    battle.selections = battle.selections || {};
+    battle.selections[side] = current;
+    battle.updatedAt = this.now();
+    await this._saveDefenseBattle(battle);
+
+    if (this._battleRoundReady(battle)) {
+      return await this._resolveDefenseRoundIfReady(attack, battle, { source: "click" });
+    }
+    return { ok: true, waiting: true };
+  }
+
+  async _resolveDefenseRoundIfReady(attack, battle, { source = "click", forceTimeout = false } = {}) {
+    if (!attack || !battle || String(battle.status || "") !== "active") {
+      return { ok: false, skipped: true };
+    }
+
+    const ownerSel = forceTimeout
+      ? this._sanitizeBattleSelection(battle?.selections?.owner)
+      : this._sanitizeBattleSelection(battle?.selections?.owner);
+    const thiefSel = forceTimeout
+      ? this._sanitizeBattleSelection(battle?.selections?.thief)
+      : this._sanitizeBattleSelection(battle?.selections?.thief);
+
+    const ready = this._battleRoundReady(battle) || forceTimeout;
+    if (!ready) return { ok: false, skipped: true };
+
+    const round = resolveCombatRound(ownerSel, thiefSel);
+    const ownerDealt = round.left.dealt;
+    const thiefDealt = round.right.dealt;
+    battle.ownerScore = Math.max(0, Math.floor(Number(battle.ownerScore) || 0) + ownerDealt);
+    battle.thiefScore = Math.max(0, Math.floor(Number(battle.thiefScore) || 0) + thiefDealt);
+    const outcome = ownerDealt > thiefDealt ? "win" : (ownerDealt < thiefDealt ? "lose" : "draw");
+    battle.rounds = Array.isArray(battle.rounds) ? battle.rounds : [];
+    battle.rounds.push({
+      round: Math.max(1, Math.floor(Number(battle.currentRound) || 1)),
+      owner: { attack: ownerSel.attack, defense: ownerSel.defense, dealt: ownerDealt, taken: round.left.taken },
+      thief: { attack: thiefSel.attack, defense: thiefSel.defense, dealt: thiefDealt, taken: round.right.taken },
+      outcome
+    });
+
+    if ((battle.currentRound || 1) >= (battle.totalRounds || this._defenseRounds())) {
+      return await this._finalizeDefenseBattle(attack, battle, { source });
+    }
+
+    battle.currentRound = Math.max(1, Math.floor(Number(battle.currentRound) || 1)) + 1;
+    battle.roundDeadline = this.now() + this._defenseRoundWindowMs();
+    battle.selections = { owner: this._emptyBattleSelection(), thief: this._emptyBattleSelection() };
+    battle.updatedAt = this.now();
+    await this._saveDefenseBattle(battle);
+    await this._markDueDefenseBattle(attack.id, battle.roundDeadline);
+    return { ok: true, advanced: true };
+  }
+
+  async _resolveAttackSuccess(attack, { source = "cron" } = {}) {
     const attacker = await this.users.load(attack.attackerId).catch(() => null);
     const owner = await this.users.load(attack.ownerId).catch(() => null);
     const bizId = String(attack.bizId || "");
-    const B = CONFIG?.BUSINESS?.[bizId];
     const todayUTC = getTodayUTC(this.now());
 
     let success = false;
     let stolen = 0;
-
     let revealEventId = "";
-    if (owner && B) {
+    if (owner && CONFIG?.BUSINESS?.[bizId]) {
       const avail = this._availableForOwner(owner, bizId, todayUTC);
       const available = Math.max(0, Math.floor(Number(avail.available) || 0));
-      if (available >= this._minTargetCash()) {
-        const roll = Math.random();
-        const chance = Math.max(0, Math.min(1, Number(attack.successChance) || 0));
-        if (roll <= chance && avail.entry) {
-          const daily = Math.max(0, Number(avail.daily) || 0);
-          const range = this._attackPctRange();
-          const percent = this._rand(range.min, range.max);
-          const rawStolen = Math.max(1, Math.floor(daily * percent));
-          stolen = Math.max(0, Math.min(rawStolen, available));
-          if (stolen > 0) {
-            const applied = addBusinessPendingTheft(avail.entry, daily, stolen, this._ownerRemainPct());
-            stolen = Math.max(0, applied);
-            success = stolen > 0;
-            if (success) {
-              revealEventId = this._appendTheftLog(owner, bizId, {
-                thiefId: String(attack.attackerId || ""),
-                amount: stolen,
-                ts: this.now(),
-                revealed: false
-              });
-              await this.users.save(owner);
-            }
+      if (available >= this._minTargetCash() && avail.entry) {
+        const daily = Math.max(0, Number(avail.daily) || 0);
+        const range = this._attackPctRange();
+        const percent = this._rand(range.min, range.max);
+        const rawStolen = Math.max(1, Math.floor(daily * percent));
+        stolen = Math.max(0, Math.min(rawStolen, available));
+        if (stolen > 0) {
+          const applied = addBusinessPendingTheft(avail.entry, daily, stolen, this._ownerRemainPct());
+          stolen = Math.max(0, applied);
+          success = stolen > 0;
+          if (success) {
+            revealEventId = this._appendTheftLog(owner, bizId, {
+              thiefId: String(attack.attackerId || ""),
+              amount: stolen,
+              ts: this.now(),
+              revealed: false
+            });
+            await this.users.save(owner);
           }
         }
       }
@@ -1483,24 +1806,17 @@ export class ThiefService {
 
       let attackerAch = null;
       let attackerQuest = null;
-
       if (success) {
         attacker.money = Math.max(0, Math.floor(Number(attacker.money) || 0) + stolen);
         attacker.thief.totalStolen = Math.max(0, Math.floor(Number(attacker.thief.totalStolen) || 0) + Math.max(0, Math.floor(Number(stolen) || 0)));
         if (this.achievements?.onEvent) {
           try {
-            attackerAch = await this.achievements.onEvent(attacker, "thief_success", { amount: stolen, bizId }, {
-              persist: false,
-              notify: false
-            });
+            attackerAch = await this.achievements.onEvent(attacker, "thief_success", { amount: stolen, bizId }, { persist: false, notify: false });
           } catch {}
         }
         if (this.quests?.onEvent) {
           try {
-            attackerQuest = await this.quests.onEvent(attacker, "thief_success", { amount: stolen, bizId }, {
-              persist: false,
-              notify: false
-            });
+            attackerQuest = await this.quests.onEvent(attacker, "thief_success", { amount: stolen, bizId }, { persist: false, notify: false });
           } catch {}
         }
       } else {
@@ -1511,22 +1827,15 @@ export class ThiefService {
         attacker.thief.cooldowns[bizId] = cooldownUntil;
         if (this.achievements?.onEvent) {
           try {
-            attackerAch = await this.achievements.onEvent(attacker, "thief_fail", { bizId, reason: "resolve_fail" }, {
-              persist: false,
-              notify: false
-            });
+            attackerAch = await this.achievements.onEvent(attacker, "thief_fail", { bizId, reason: "resolve_fail" }, { persist: false, notify: false });
           } catch {}
         }
       }
 
       await this.users.save(attacker);
-      if (success && stolen > 0) {
-        await this._recordDailyStolen(attacker, stolen, todayUTC);
-      }
+      if (success && stolen > 0) await this._recordDailyStolen(attacker, stolen, todayUTC);
       if (success && this.ratings?.updateUser) {
-        try {
-          await this.ratings.updateUser(attacker, ["thief"]);
-        } catch {}
+        try { await this.ratings.updateUser(attacker, ["thief"]); } catch {}
       }
       if (attackerAch?.newlyEarned?.length && this.achievements?.notifyEarned) {
         await this.achievements.notifyEarned(attacker, attackerAch.newlyEarned);
@@ -1545,41 +1854,115 @@ export class ThiefService {
         const revealKb = revealEventId
           ? [[{ text: this._t(owner, "thief.btn.reveal", { cost }), callback_data: `thief:reveal:${revealEventId}` }]]
           : [[{ text: this._t(owner, "thief.btn.business"), callback_data: "go:Business" }]];
-        await this._sendInline(
-          owner.chatId,
-          this._t(owner, "thief.notify.owner_robbed_unknown", { bizTitle, amount: this._money(owner, stolen) }),
-          revealKb
-        );
+        await this._sendInline(owner.chatId, this._t(owner, "thief.notify.owner_robbed_unknown", { bizTitle, amount: this._money(owner, stolen) }), revealKb);
       }
       if (attacker?.chatId) {
         const bizTitle = this._bizTitle(bizId, attacker);
-        await this._sendInline(
-          attacker.chatId,
-          this._t(attacker, "thief.notify.attacker_success", { bizTitle, amount: this._money(attacker, stolen) }),
-          [[{ text: this._t(attacker, "thief.btn.menu"), callback_data: "go:Square" }]]
-        );
+        await this._sendInline(attacker.chatId, this._t(attacker, "thief.notify.attacker_success", { bizTitle, amount: this._money(attacker, stolen) }), [[{ text: this._t(attacker, "thief.btn.menu"), callback_data: "go:Square" }]]);
       }
       return { ok: true, resolved: true, success: true, stolen, source };
     }
 
     if (owner?.chatId) {
       const bizTitle = this._bizTitle(bizId, owner);
-      await this._sendInline(
-        owner.chatId,
-        this._t(owner, "thief.notify.owner_failed", { bizTitle }),
-        [[{ text: this._t(owner, "thief.btn.business"), callback_data: "go:Business" }]]
-      );
+      await this._sendInline(owner.chatId, this._t(owner, "thief.notify.owner_failed", { bizTitle }), [[{ text: this._t(owner, "thief.btn.business"), callback_data: "go:Business" }]]);
     }
     if (attacker?.chatId) {
       const bizTitle = this._bizTitle(bizId, attacker);
-      await this._sendInline(
-        attacker.chatId,
-        this._t(attacker, "thief.notify.attacker_failed", { bizTitle }),
-        [[{ text: this._t(attacker, "thief.btn.menu"), callback_data: "go:Square" }]]
-      );
+      await this._sendInline(attacker.chatId, this._t(attacker, "thief.notify.attacker_failed", { bizTitle }), [[{ text: this._t(attacker, "thief.btn.menu"), callback_data: "go:Square" }]]);
     }
 
     return { ok: true, resolved: true, success: false, stolen: 0, source };
+  }
+
+  async _resolveAttackBlocked(attack, { source = "battle" } = {}) {
+    const owner = await this.users.load(attack.ownerId).catch(() => null);
+    const attacker = await this.users.load(attack.attackerId).catch(() => null);
+
+    let ownerAch = null;
+    if (owner) {
+      const ownerFound = this._findOwnedEntry(owner, attack.bizId);
+      if (ownerFound.idx >= 0 && ownerFound.entry) {
+        ownerFound.entry.guardBlocked = Math.max(0, Math.floor(Number(ownerFound.entry.guardBlocked) || 0)) + 1;
+        ownerFound.arr[ownerFound.idx] = ownerFound.entry;
+        owner.biz = owner.biz || {};
+        owner.biz.owned = ownerFound.arr;
+      }
+      if (this.achievements?.onEvent) {
+        try {
+          ownerAch = await this.achievements.onEvent(owner, "thief_defense_success", { bizId: attack.bizId }, { persist: false, notify: false });
+        } catch {}
+      }
+      await this.users.save(owner);
+      if (ownerAch?.newlyEarned?.length && this.achievements?.notifyEarned) {
+        await this.achievements.notifyEarned(owner, ownerAch.newlyEarned);
+      }
+    }
+
+    if (attacker) {
+      this._ensureThiefState(attacker);
+      if (String(attacker.thief.activeAttackId || "") === String(attack.id || "")) {
+        attacker.thief.activeAttackId = "";
+      }
+      const cooldownUntil = this.now() + Math.max(1, Math.floor(Number(attack.cooldownMinutes) || 0)) * 60_000;
+      attacker.thief.cooldowns = attacker.thief.cooldowns || {};
+      attacker.thief.cooldowns[String(attack.bizId || "")] = cooldownUntil;
+      if (this.achievements?.onEvent) {
+        try {
+          await this.achievements.onEvent(attacker, "thief_fail", { bizId: attack.bizId, reason: "blocked" }, { persist: false, notify: false });
+        } catch {}
+      }
+      await this.users.save(attacker);
+    }
+
+    await this._deleteAttack(attack);
+
+    if (owner?.chatId) {
+      const bizTitle = this._bizTitle(attack.bizId, owner);
+      await this._sendInline(owner.chatId, this._t(owner, "thief.notify.defense_owner_won", { bizTitle }), [[{ text: this._t(owner, "thief.btn.business"), callback_data: "go:Business" }]]);
+    }
+    if (attacker?.chatId) {
+      const bizTitle = this._bizTitle(attack.bizId, attacker);
+      await this._sendInline(attacker.chatId, this._t(attacker, "thief.notify.defense_thief_lost", { bizTitle }), [[{ text: this._t(attacker, "thief.btn.menu"), callback_data: "go:Square" }]]);
+    }
+
+    return { ok: true, resolved: true, success: false, blocked: true, source };
+  }
+
+  async _finalizeDefenseBattle(attack, battle, { source = "click" } = {}) {
+    const winner = decideCombatWinner(battle.ownerScore || 0, battle.thiefScore || 0, { tieWinner: "owner" });
+    battle.status = "finished";
+    battle.finishedAt = this.now();
+    battle.updatedAt = this.now();
+    battle.result = {
+      winnerSide: winner === "left" ? "owner" : (winner === "right" ? "thief" : String(winner || "owner")),
+      reason: source
+    };
+    await this._saveDefenseBattle(battle);
+
+    if (battle.result.winnerSide === "owner") {
+      return await this._resolveAttackBlocked(attack, { source });
+    }
+    return await this._resolveAttackSuccess(attack, { source });
+  }
+
+  async _resolveDefenseBattleTimeout(attackId, { source = "cron" } = {}) {
+    const attack = await this._loadAttack(attackId);
+    const battle = await this._loadDefenseBattle(attackId);
+    if (!attack || !battle || String(battle.status || "") !== "active") return { ok: false, skipped: true };
+    if (Number(battle.roundDeadline || 0) > this.now()) return { ok: false, skipped: true };
+    return await this._resolveDefenseRoundIfReady(attack, battle, { source, forceTimeout: true });
+  }
+
+  async _resolveAttack(attackOrId, { source = "cron" } = {}) {
+    const attack = (typeof attackOrId === "string")
+      ? await this._loadAttack(attackOrId)
+      : attackOrId;
+    if (!attack) return { ok: false, skipped: true };
+    if (String(attack.status || "") === "battle") return { ok: false, skipped: true };
+    if (String(attack.status || "") !== "active") return { ok: false, skipped: true };
+    if (Number(attack.resolveAt || 0) > this.now()) return { ok: false, skipped: true };
+    return await this._resolveAttackSuccess(attack, { source });
   }
 
   async _resolveProtectionExpiryEvent(evt) {
@@ -1656,7 +2039,8 @@ export class ThiefService {
 
   async resolveExpired({ limit } = {}) {
     const ids = await this._collectDueAttackIds({ nowTs: this.now(), lookbackMinutes: 15 });
-    if (!ids.length) return { checked: 0, resolved: 0 };
+    const battleIds = await this._collectDueDefenseBattleIds({ nowTs: this.now(), lookbackMinutes: 15 });
+    if (!ids.length && !battleIds.length) return { checked: 0, resolved: 0, processed: 0 };
     let checked = 0;
     let resolved = 0;
     const max = Math.max(1, Math.floor(Number(limit) || Number(this._cfg()?.RESOLVE_LIMIT_PER_RUN) || 200));
@@ -1666,6 +2050,12 @@ export class ThiefService {
       const res = await this._resolveAttack(id, { source: "cron" });
       if (res?.resolved) resolved += 1;
     }
-    return { checked, resolved };
+    for (const id of battleIds) {
+      if (checked >= max) break;
+      checked += 1;
+      const res = await this._resolveDefenseBattleTimeout(id, { source: "cron" });
+      if (res?.resolved) resolved += 1;
+    }
+    return { checked, resolved, processed: checked };
   }
 }

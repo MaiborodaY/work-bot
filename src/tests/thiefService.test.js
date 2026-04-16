@@ -190,10 +190,10 @@ test("thief service: guard purchase sets timer and requires confirm on refresh",
 
   const first = await service.buyGuard(owner, "shawarma");
   assert.equal(first.ok, true);
-  assert.equal(first.price, 50);
+  assert.equal(first.price, 100);
 
   const saved = await users.load("owner");
-  assert.equal(saved.money, 950);
+  assert.equal(saved.money, 900);
   assert.ok(Number(saved?.biz?.owned?.[0]?.guardUntil) > nowTs);
 
   const second = await service.buyGuard(saved, "shawarma");
@@ -238,7 +238,7 @@ test("thief service: immunity blocks attack start", async () => {
   assert.match(String(res.error || ""), /immun/i);
 });
 
-test("thief service: active guard increases window and reduces success chance", async () => {
+test("thief service: active guard increases owner reaction window", async () => {
   const nowTs = Date.now();
   const db = new FakeDb();
   const users = new FakeUsers({
@@ -275,8 +275,167 @@ test("thief service: active guard increases window and reduces success chance", 
   const rawAttack = await db.get(`thief:attack:${res.attackId}`);
   assert.ok(rawAttack);
   const attack = JSON.parse(rawAttack);
-  assert.equal(Number(attack.resolveAt), nowTs + (20 * 60 * 1000) + (20 * 60 * 1000));
-  assert.equal(Number(attack.successChance), 0.15);
+  assert.equal(Number(attack.resolveAt), nowTs + (2 * 60 * 1000) + (20 * 60 * 1000));
+});
+
+test("thief service: defend starts battle without spending owner energy", async () => {
+  const nowTs = Date.now();
+  const db = new FakeDb();
+  const users = new FakeUsers({
+    attacker: {
+      id: "attacker",
+      lang: "en",
+      chatId: 2,
+      money: 50000,
+      energy: 30,
+      createdAt: nowTs - 10 * 24 * 60 * 60 * 1000,
+      thief: { level: 1, activeAttackId: "", cooldowns: {} },
+      biz: { owned: [] }
+    },
+    owner: {
+      id: "owner",
+      lang: "en",
+      chatId: 1,
+      energy: 5,
+      createdAt: nowTs - 10 * 24 * 60 * 60 * 1000,
+      biz: { owned: [{ id: "shawarma", boughtAt: nowTs, lastClaimDayUTC: "", pendingTheftAmount: 0 }] }
+    }
+  });
+  const service = new ThiefService({ db, users, now: () => nowTs, bot: { async sendWithInline() {} } });
+  const attacker = await users.load("attacker");
+  const owner = await users.load("owner");
+  const started = await service.startAttack(attacker, "shawarma", "owner");
+
+  const beforeOwner = await users.load("owner");
+  const res = await service.defend(beforeOwner, started.attackId);
+
+  assert.equal(res.ok, true);
+  assert.equal(res.battleStarted, true);
+  const afterOwner = await users.load("owner");
+  assert.equal(afterOwner.energy, 5);
+  const rawBattle = await db.get(`thief:defense:${started.attackId}`);
+  assert.ok(rawBattle);
+});
+
+test("thief service: unresolved attack auto succeeds when owner does not defend", async () => {
+  let nowTs = Date.UTC(2026, 3, 16, 12, 0, 0);
+  const db = new FakeDb();
+  const users = new FakeUsers({
+    attacker: {
+      id: "attacker",
+      lang: "en",
+      chatId: 2,
+      money: 0,
+      energy: 30,
+      createdAt: nowTs - 10 * 24 * 60 * 60 * 1000,
+      thief: { level: 1, activeAttackId: "", cooldowns: {} },
+      biz: { owned: [] }
+    },
+    owner: {
+      id: "owner",
+      lang: "en",
+      chatId: 1,
+      createdAt: nowTs - 10 * 24 * 60 * 60 * 1000,
+      biz: { owned: [{ id: "shawarma", boughtAt: nowTs, lastClaimDayUTC: "", pendingTheftAmount: 0 }] }
+    }
+  });
+  const service = new ThiefService({ db, users, now: () => nowTs, bot: { async sendWithInline() {} } });
+  const started = await service.startAttack(await users.load("attacker"), "shawarma", "owner");
+  nowTs = nowTs + (2 * 60 * 1000) + 1000;
+
+  const out = await service.resolveExpired();
+
+  assert.equal(out.processed > 0, true);
+  const savedAttacker = await users.load("attacker");
+  const savedOwner = await users.load("owner");
+  assert.equal(savedAttacker.money > 0, true);
+  assert.equal(savedOwner.biz.owned[0].pendingTheftAmount > 0, true);
+  assert.equal(savedAttacker.thief.activeAttackId, "");
+  const rawAttack = await db.get(`thief:attack:${started.attackId}`);
+  assert.equal(rawAttack, null);
+});
+
+test("thief service: defense battle tie blocks theft in owner's favor", async () => {
+  const nowTs = Date.UTC(2026, 3, 16, 13, 0, 0);
+  const db = new FakeDb();
+  const users = new FakeUsers({
+    attacker: {
+      id: "attacker",
+      lang: "en",
+      chatId: 2,
+      money: 0,
+      energy: 30,
+      createdAt: nowTs - 10 * 24 * 60 * 60 * 1000,
+      thief: { level: 1, activeAttackId: "", cooldowns: {} },
+      biz: { owned: [] }
+    },
+    owner: {
+      id: "owner",
+      lang: "en",
+      chatId: 1,
+      createdAt: nowTs - 10 * 24 * 60 * 60 * 1000,
+      biz: { owned: [{ id: "shawarma", boughtAt: nowTs, lastClaimDayUTC: "", pendingTheftAmount: 0, guardBlocked: 0 }] }
+    }
+  });
+  const service = new ThiefService({ db, users, now: () => nowTs, bot: { async sendWithInline() {} } });
+  const started = await service.startAttack(await users.load("attacker"), "shawarma", "owner");
+  await service.defend(await users.load("owner"), started.attackId);
+
+  for (let round = 0; round < 3; round += 1) {
+    await service.pickDefenseBattleAttack(await users.load("owner"), started.attackId, "head");
+    await service.pickDefenseBattleAttack(await users.load("attacker"), started.attackId, "head");
+    await service.pickDefenseBattleDefense(await users.load("owner"), started.attackId, "legs");
+    await service.pickDefenseBattleDefense(await users.load("attacker"), started.attackId, "legs");
+  }
+
+  const savedAttacker = await users.load("attacker");
+  const savedOwner = await users.load("owner");
+  assert.equal(savedAttacker.money, 0);
+  assert.equal(savedOwner.biz.owned[0].pendingTheftAmount, 0);
+  assert.equal(savedOwner.biz.owned[0].guardBlocked, 1);
+  const rawBattle = await db.get(`thief:defense:${started.attackId}`);
+  const battle = JSON.parse(rawBattle);
+  assert.equal(battle.status, "finished");
+  assert.equal(battle.result.winnerSide, "owner");
+});
+
+test("thief service: defense battle thief win guarantees theft", async () => {
+  const nowTs = Date.UTC(2026, 3, 16, 14, 0, 0);
+  const db = new FakeDb();
+  const users = new FakeUsers({
+    attacker: {
+      id: "attacker",
+      lang: "en",
+      chatId: 2,
+      money: 0,
+      energy: 30,
+      createdAt: nowTs - 10 * 24 * 60 * 60 * 1000,
+      thief: { level: 1, activeAttackId: "", cooldowns: {} },
+      biz: { owned: [] }
+    },
+    owner: {
+      id: "owner",
+      lang: "en",
+      chatId: 1,
+      createdAt: nowTs - 10 * 24 * 60 * 60 * 1000,
+      biz: { owned: [{ id: "shawarma", boughtAt: nowTs, lastClaimDayUTC: "", pendingTheftAmount: 0 }] }
+    }
+  });
+  const service = new ThiefService({ db, users, now: () => nowTs, bot: { async sendWithInline() {} } });
+  const started = await service.startAttack(await users.load("attacker"), "shawarma", "owner");
+  await service.defend(await users.load("owner"), started.attackId);
+
+  for (let round = 0; round < 3; round += 1) {
+    await service.pickDefenseBattleAttack(await users.load("owner"), started.attackId, "legs");
+    await service.pickDefenseBattleAttack(await users.load("attacker"), started.attackId, "head");
+    await service.pickDefenseBattleDefense(await users.load("owner"), started.attackId, "body");
+    await service.pickDefenseBattleDefense(await users.load("attacker"), started.attackId, "body");
+  }
+
+  const savedAttacker = await users.load("attacker");
+  const savedOwner = await users.load("owner");
+  assert.equal(savedAttacker.money > 0, true);
+  assert.equal(savedOwner.biz.owned[0].pendingTheftAmount > 0, true);
 });
 
 test("thief service: help view includes configured image asset", async () => {

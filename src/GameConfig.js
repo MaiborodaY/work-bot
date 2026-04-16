@@ -523,7 +523,6 @@ export const CONFIG = {
     PROTECTION: {
       GUARD: {
         DURATION_MS: 24 * 60 * 60 * 1000,
-        SUCCESS_REDUCTION_PCT: 0.50,
         EXTRA_WINDOW_MS: 20 * 60 * 1000,
         PRICES: {
           shawarma: 50,
@@ -542,6 +541,12 @@ export const CONFIG = {
       },
       EXPIRE_RESOLVE_LIMIT_PER_RUN: 200,
       EXPIRE_LOOKBACK_MINUTES: 30
+    },
+    DEFENSE_BATTLE: {
+      REACTION_WINDOW_MS: 2 * 60 * 1000,
+      ROUND_WINDOW_SEC: 60,
+      ROUNDS: 3,
+      BATTLE_TTL_SEC: 2 * 24 * 60 * 60
     },
     BUSINESS: {
       shawarma: {

@@ -112,10 +112,17 @@ export async function renderBusinessRoute(ctx, user, { header = "", lang = "ru",
         : (guardActive ? ctx._t(user, "loc.business.protection_guard_hint") : ""))
       : "";
     const activeAttackLine = attackHere
-      ? ctx._t(user, "loc.business.active_attack_line", {
-        bizTitle: attackBizTitle,
-        mins: Math.max(1, Number(activeDef?.minsLeft) || 1)
-      })
+      ? (activeDef?.inBattle
+        ? ctx._t(user, "loc.business.active_defense_battle_line", {
+          bizTitle: attackBizTitle,
+          round: Math.max(1, Number(activeDef?.currentRound) || 1),
+          rounds: 3,
+          mins: Math.max(1, Number(activeDef?.minsLeft) || 1)
+        })
+        : ctx._t(user, "loc.business.active_attack_line", {
+          bizTitle: attackBizTitle,
+          mins: Math.max(1, Number(activeDef?.minsLeft) || 1)
+        }))
       : "";
 
     const kb = [];
@@ -131,8 +138,12 @@ export async function renderBusinessRoute(ctx, user, { header = "", lang = "ru",
     if (isOwned) {
       if (attackHere && String(activeDef?.attackId || "").trim()) {
         kb.push([{
-          text: ctx._t(user, "loc.business.btn.defend_active"),
-          callback_data: `thief:defend:${String(activeDef.attackId)}`
+          text: activeDef?.inBattle
+            ? ctx._t(user, "loc.business.btn.open_defense_battle")
+            : ctx._t(user, "loc.business.btn.defend_active"),
+          callback_data: activeDef?.inBattle
+            ? `thief:def:open:${String(activeDef.attackId)}`
+            : `thief:defend:${String(activeDef.attackId)}`
         }]);
       }
       if (!immunityActive) {
@@ -211,18 +222,29 @@ export async function renderBusinessRoute(ctx, user, { header = "", lang = "ru",
         ctx._t(user, "loc.business.caption_intro") +
         "\n\n" +
         ctx._t(user, "loc.business.choose") +
-        (activeDef ? `\n\n${ctx._t(user, "loc.business.active_attack_line", {
-          bizTitle: activeBizTitle,
-          mins: Math.max(1, Number(activeDef?.minsLeft) || 1)
-        })}` : "");
+        (activeDef ? `\n\n${activeDef?.inBattle
+          ? ctx._t(user, "loc.business.active_defense_battle_line", {
+            bizTitle: activeBizTitle,
+            round: Math.max(1, Number(activeDef?.currentRound) || 1),
+            rounds: 3,
+            mins: Math.max(1, Number(activeDef?.minsLeft) || 1)
+          })
+          : ctx._t(user, "loc.business.active_attack_line", {
+            bizTitle: activeBizTitle,
+            mins: Math.max(1, Number(activeDef?.minsLeft) || 1)
+          })}` : "");
       const kb = items.map((B) => [{
         text: `${B.emoji} ${getBusinessTitle(B.id, lang) || B.title}`,
         callback_data: `go:Biz_${B.id}`,
       }]);
       if (activeDef && String(activeDef.attackId || "").trim()) {
         kb.push([{
-          text: ctx._t(user, "loc.business.btn.defend_active"),
-          callback_data: `thief:defend:${String(activeDef.attackId)}`
+          text: activeDef?.inBattle
+            ? ctx._t(user, "loc.business.btn.open_defense_battle")
+            : ctx._t(user, "loc.business.btn.defend_active"),
+          callback_data: activeDef?.inBattle
+            ? `thief:def:open:${String(activeDef.attackId)}`
+            : `thief:defend:${String(activeDef.attackId)}`
         }]);
       }
       kb.push([{
