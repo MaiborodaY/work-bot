@@ -1562,7 +1562,9 @@ export class ThiefService {
   }
 
   _zoneLabel(user, zone) {
-    return this._t(user, `colosseum.zone_${String(zone || "")}`);
+    const safeZone = String(zone || "").trim();
+    if (!safeZone) return "—";
+    return this._t(user, `colosseum.zone_${safeZone}`);
   }
 
   _zoneAttackButton(user, zone) {
@@ -1576,6 +1578,10 @@ export class ThiefService {
   _battleLinesForRound(user, round, side) {
     const me = side === "owner" ? round.owner : round.thief;
     const them = side === "owner" ? round.thief : round.owner;
+    const rawOutcome = String(round?.outcome || "draw");
+    const perspectiveOutcome = side === "owner"
+      ? rawOutcome
+      : (rawOutcome === "win" ? "lose" : (rawOutcome === "lose" ? "win" : "draw"));
     return [
       this._t(user, "thief.defense.round_title", { round: round.round }),
       this._t(user, "thief.defense.round_line_you", {
@@ -1588,7 +1594,7 @@ export class ThiefService {
         defense: this._zoneLabel(user, them.defense),
         damage: them.dealt
       }),
-      this._t(user, `thief.defense.round_outcome_${round.outcome}`)
+      this._t(user, `thief.defense.round_outcome_${perspectiveOutcome}`)
     ];
   }
 

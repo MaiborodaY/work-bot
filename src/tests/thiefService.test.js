@@ -532,3 +532,79 @@ test("thief service: defense battle view includes configured image asset", async
     "AgACAgIAAxkBAAL1t2nhEDLNKqOuseI6cykgWcQCsxBcAALdE2sbBWkIS7wL42TeGrcZAQADAgADeQADOwQ"
   );
 });
+
+test("thief service: defense round outcome is shown from viewer perspective", async () => {
+  const nowTs = Date.UTC(2026, 3, 16, 16, 30, 0);
+  const db = new FakeDb();
+  const users = new FakeUsers({
+    attacker: {
+      id: "attacker",
+      lang: "ru",
+      chatId: 2,
+      money: 0,
+      energy: 30,
+      createdAt: nowTs - 10 * 24 * 60 * 60 * 1000,
+      thief: { level: 1, activeAttackId: "", cooldowns: {} },
+      biz: { owned: [] }
+    },
+    owner: {
+      id: "owner",
+      lang: "ru",
+      chatId: 1,
+      createdAt: nowTs - 10 * 24 * 60 * 60 * 1000,
+      biz: { owned: [{ id: "shawarma", boughtAt: nowTs, lastClaimDayUTC: "", pendingTheftAmount: 0 }] }
+    }
+  });
+  const service = new ThiefService({ db, users, now: () => nowTs, bot: { async sendWithInline() {} } });
+  const started = await service.startAttack(await users.load("attacker"), "shawarma", "owner");
+  await service.defend(await users.load("owner"), started.attackId);
+
+  await service.pickDefenseBattleAttack(await users.load("owner"), started.attackId, "head");
+  await service.pickDefenseBattleAttack(await users.load("attacker"), started.attackId, "legs");
+  await service.pickDefenseBattleDefense(await users.load("owner"), started.attackId, "body");
+  await service.pickDefenseBattleDefense(await users.load("attacker"), started.attackId, "body");
+
+  const ownerView = await service.buildDefenseBattleView(await users.load("owner"), started.attackId);
+  const thiefView = await service.buildDefenseBattleView(await users.load("attacker"), started.attackId);
+
+  assert.match(String(ownerView.caption || ""), /✅ Победа в раунде/);
+  assert.match(String(thiefView.caption || ""), /❌ Поражение в раунде/);
+});
+
+test("thief service: empty defense battle moves are rendered as dash", async () => {
+  let nowTs = Date.UTC(2026, 3, 16, 17, 0, 0);
+  const db = new FakeDb();
+  const users = new FakeUsers({
+    attacker: {
+      id: "attacker",
+      lang: "ru",
+      chatId: 2,
+      money: 0,
+      energy: 30,
+      createdAt: nowTs - 10 * 24 * 60 * 60 * 1000,
+      thief: { level: 1, activeAttackId: "", cooldowns: {} },
+      biz: { owned: [] }
+    },
+    owner: {
+      id: "owner",
+      lang: "ru",
+      chatId: 1,
+      createdAt: nowTs - 10 * 24 * 60 * 60 * 1000,
+      biz: { owned: [{ id: "shawarma", boughtAt: nowTs, lastClaimDayUTC: "", pendingTheftAmount: 0 }] }
+    }
+  });
+  const service = new ThiefService({ db, users, now: () => nowTs, bot: { async sendWithInline() {} } });
+  const started = await service.startAttack(await users.load("attacker"), "shawarma", "owner");
+  await service.defend(await users.load("owner"), started.attackId);
+
+  await service.pickDefenseBattleAttack(await users.load("owner"), started.attackId, "head");
+  await service.pickDefenseBattleAttack(await users.load("attacker"), started.attackId, "legs");
+  await service.pickDefenseBattleDefense(await users.load("owner"), started.attackId, "body");
+  await service.pickDefenseBattleDefense(await users.load("attacker"), started.attackId, "body");
+
+  nowTs += (60 * 1000) + 1000;
+  await service._resolveDefenseBattleTimeout(started.attackId, { source: "test" });
+
+  const view = await service.buildDefenseBattleView(await users.load("owner"), started.attackId);
+  assert.match(String(view.caption || ""), /Он: ⚔️ — · 🛡️ — · \+0/);
+});
