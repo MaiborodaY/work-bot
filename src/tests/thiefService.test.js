@@ -45,6 +45,16 @@ class FakeUsers {
   }
 }
 
+class FakeBot {
+  constructor() {
+    this.messages = [];
+  }
+
+  async sendWithInline(chatId, text, keyboard) {
+    this.messages.push({ chatId, text, keyboard });
+  }
+}
+
 test("thief service: upgrade level spends money", async () => {
   const db = new FakeDb();
   const users = new FakeUsers({
@@ -438,6 +448,45 @@ test("thief service: defense battle thief win guarantees theft", async () => {
   assert.equal(savedOwner.biz.owned[0].pendingTheftAmount > 0, true);
 });
 
+test("thief service: owner does not get duplicate robbed push after losing defense battle", async () => {
+  const nowTs = Date.UTC(2026, 3, 16, 15, 0, 0);
+  const db = new FakeDb();
+  const bot = new FakeBot();
+  const users = new FakeUsers({
+    attacker: {
+      id: "attacker",
+      lang: "en",
+      chatId: 2,
+      money: 0,
+      energy: 30,
+      createdAt: nowTs - 10 * 24 * 60 * 60 * 1000,
+      thief: { level: 1, activeAttackId: "", cooldowns: {} },
+      biz: { owned: [] }
+    },
+    owner: {
+      id: "owner",
+      lang: "en",
+      chatId: 1,
+      createdAt: nowTs - 10 * 24 * 60 * 60 * 1000,
+      biz: { owned: [{ id: "shawarma", boughtAt: nowTs, lastClaimDayUTC: "", pendingTheftAmount: 0 }] }
+    }
+  });
+  const service = new ThiefService({ db, users, now: () => nowTs, bot });
+  const started = await service.startAttack(await users.load("attacker"), "shawarma", "owner");
+  await service.defend(await users.load("owner"), started.attackId);
+
+  for (let round = 0; round < 3; round += 1) {
+    await service.pickDefenseBattleAttack(await users.load("owner"), started.attackId, "legs");
+    await service.pickDefenseBattleAttack(await users.load("attacker"), started.attackId, "head");
+    await service.pickDefenseBattleDefense(await users.load("owner"), started.attackId, "body");
+    await service.pickDefenseBattleDefense(await users.load("attacker"), started.attackId, "body");
+  }
+
+  const ownerBattleMessages = bot.messages.filter((row) => row.chatId === 1);
+  const robbedMessages = ownerBattleMessages.filter((row) => String(row.text || "").includes("Unknown robbed your"));
+  assert.equal(robbedMessages.length, 0);
+});
+
 test("thief service: help view includes configured image asset", async () => {
   const db = new FakeDb();
   const users = new FakeUsers({});
@@ -447,5 +496,39 @@ test("thief service: help view includes configured image asset", async () => {
   assert.equal(
     view.asset,
     "AgACAgIAAxkBAAJ6y2m2n9iHnqm7tr1kXVm2g-1eQl9NAAKZFGsby1KwSXEibtL1lMpfAQADAgADeQADOgQ"
+  );
+});
+
+test("thief service: defense battle view includes configured image asset", async () => {
+  const nowTs = Date.UTC(2026, 3, 16, 16, 0, 0);
+  const db = new FakeDb();
+  const users = new FakeUsers({
+    attacker: {
+      id: "attacker",
+      lang: "ru",
+      chatId: 2,
+      money: 0,
+      energy: 30,
+      createdAt: nowTs - 10 * 24 * 60 * 60 * 1000,
+      thief: { level: 1, activeAttackId: "", cooldowns: {} },
+      biz: { owned: [] }
+    },
+    owner: {
+      id: "owner",
+      lang: "ru",
+      chatId: 1,
+      createdAt: nowTs - 10 * 24 * 60 * 60 * 1000,
+      biz: { owned: [{ id: "shawarma", boughtAt: nowTs, lastClaimDayUTC: "", pendingTheftAmount: 0 }] }
+    }
+  });
+  const service = new ThiefService({ db, users, now: () => nowTs, bot: { async sendWithInline() {} } });
+  const started = await service.startAttack(await users.load("attacker"), "shawarma", "owner");
+  await service.defend(await users.load("owner"), started.attackId);
+
+  const view = await service.buildDefenseBattleView(await users.load("owner"), started.attackId);
+
+  assert.equal(
+    view.asset,
+    "AgACAgIAAxkBAAL1t2nhEDLNKqOuseI6cykgWcQCsxBcAALdE2sbBWkIS7wL42TeGrcZAQADAgADeQADOwQ"
   );
 });

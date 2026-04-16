@@ -1595,6 +1595,7 @@ export class ThiefService {
   async buildDefenseBattleView(user, attackId) {
     const attack = await this._loadAttack(attackId);
     const battle = await this._loadDefenseBattle(attackId);
+    const battleAsset = String(this._defenseCfg()?.ASSET || "").trim();
     if (!battle) {
       return {
         caption: this._t(user, "thief.err.attack_not_found"),
@@ -1632,7 +1633,7 @@ export class ThiefService {
       lines.push("");
       lines.push(this._t(user, `thief.defense.result_${battle?.result?.winnerSide === "thief" ? "thief" : "owner"}`));
       kb.push([{ text: this._t(user, "thief.btn.back"), callback_data: "go:Business" }]);
-      return { caption: lines.join("\n"), keyboard: kb };
+      return { caption: lines.join("\n"), asset: battleAsset || undefined, keyboard: kb };
     }
 
     const me = this._sanitizeBattleSelection(battle?.selections?.[side]);
@@ -1669,7 +1670,7 @@ export class ThiefService {
 
     kb.push([{ text: this._t(user, "thief.btn.refresh"), callback_data: `thief:def:open:${attackId}` }]);
     kb.push([{ text: this._t(user, "thief.btn.back"), callback_data: "go:Business" }]);
-    return { caption: lines.join("\n"), keyboard: kb };
+    return { caption: lines.join("\n"), asset: battleAsset || undefined, keyboard: kb };
   }
 
   async pickDefenseBattleAttack(user, attackId, zone) {
@@ -1848,7 +1849,7 @@ export class ThiefService {
     await this._deleteAttack(attack);
 
     if (success) {
-      if (owner?.chatId) {
+      if (owner?.chatId && !String(source || "").startsWith("battle")) {
         const bizTitle = this._bizTitle(bizId, owner);
         const cost = this._money(owner, this._revealCost());
         const revealKb = revealEventId
@@ -1940,10 +1941,13 @@ export class ThiefService {
     };
     await this._saveDefenseBattle(battle);
 
+    const battleSource = String(source || "").startsWith("battle")
+      ? String(source || "battle")
+      : `battle:${String(source || "resolve")}`;
     if (battle.result.winnerSide === "owner") {
-      return await this._resolveAttackBlocked(attack, { source });
+      return await this._resolveAttackBlocked(attack, { source: battleSource });
     }
-    return await this._resolveAttackSuccess(attack, { source });
+    return await this._resolveAttackSuccess(attack, { source: battleSource });
   }
 
   async _resolveDefenseBattleTimeout(attackId, { source = "cron" } = {}) {
