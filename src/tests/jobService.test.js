@@ -1,0 +1,84 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { JobService } from "../JobService.js";
+
+class FakeUsers {
+  constructor(seed = {}) {
+    this.store = new Map(Object.entries(seed).map(([id, u]) => [String(id), JSON.parse(JSON.stringify(u))]));
+    this.db = null;
+  }
+
+  async save(u) {
+    const clone = JSON.parse(JSON.stringify(u));
+    this.store.set(String(clone.id), clone);
+    return clone;
+  }
+
+  async load(id) {
+    const v = this.store.get(String(id));
+    return v ? JSON.parse(JSON.stringify(v)) : null;
+  }
+}
+
+function baseUser(overrides = {}) {
+  return {
+    id: "u1",
+    lang: "ru",
+    displayName: "Tester",
+    money: 0,
+    energy: 180,
+    energy_max: 180,
+    upgrades: [],
+    jobs: { slotMax: 1, active: [] },
+    study: { level: 0 },
+    ...overrides
+  };
+}
+
+test("job service: farmer requires 180 max energy", async () => {
+  const nowTs = Date.UTC(2026, 3, 16, 18, 0, 0);
+  const users = new FakeUsers({ u1: baseUser({ energy: 180, energy_max: 160 }) });
+  const jobs = new JobService({ users, now: () => nowTs, random: () => 0.5 });
+  const u = await users.load("u1");
+
+  const res = await jobs.start(u, "farmer");
+
+  assert.equal(res.ok, false);
+  assert.equal(res.code, "not_enough_energy_cap");
+  assert.equal(res.needEnergyCap, 180);
+  assert.equal(res.haveEnergyCap, 160);
+});
+
+test("job service: farmer start rolls planned pay inside configured range", async () => {
+  const nowTs = Date.UTC(2026, 3, 16, 18, 30, 0);
+  const users = new FakeUsers({ u1: baseUser() });
+  const jobs = new JobService({ users, now: () => nowTs, random: () => 0.5 });
+  const u = await users.load("u1");
+
+  const res = await jobs.start(u, "farmer");
+
+  assert.equal(res.ok, true);
+  assert.equal(res.inst.typeId, "farmer");
+  assert.equal(res.inst.energySpent, 180);
+  assert.equal(res.inst.plannedPay >= 2500, true);
+  assert.equal(res.inst.plannedPay <= 4000, true);
+});
+
+test("job service: farmer claim pays rolled amount in range", async () => {
+  let nowTs = Date.UTC(2026, 3, 16, 19, 0, 0);
+  const users = new FakeUsers({ u1: baseUser() });
+  const jobs = new JobService({ users, now: () => nowTs, random: () => 0.9999 });
+  const startUser = await users.load("u1");
+  const started = await jobs.start(startUser, "farmer");
+  assert.equal(started.ok, true);
+
+  nowTs = started.inst.endAt + 1;
+  const claimUser = await users.load("u1");
+  const claim = await jobs.claim(claimUser);
+
+  assert.equal(claim.ok, true);
+  assert.equal(claim.pay, 4000);
+  const saved = await users.load("u1");
+  assert.equal(saved.money, 4000);
+  assert.equal(Array.isArray(saved.jobs.active) && saved.jobs.active.length, 0);
+});

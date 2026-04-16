@@ -63,7 +63,7 @@ test("work route idle: renders Work with photo policy", async () => {
   assert.equal(mediaCalls[0].place, Routes.WORK);
   assert.equal(mediaCalls[0].policy, "photo");
   assert.equal(workV2Calls.length, 1);
-  assert.deepEqual(workV2Calls[0].opts, {});
+  assert.deepEqual(workV2Calls[0].opts, { backTo: Routes.EARN });
 });
 
 test("work route active: passes active state to ui.workV2", async () => {
@@ -103,4 +103,3 @@ test("work route onboarding go_gym: renders auto policy with Gym CTA", async () 
   const firstBtn = mediaCalls[0]?.keyboard?.[0]?.[0];
   assert.equal(firstBtn?.callback_data, "go:Gym");
 });
-

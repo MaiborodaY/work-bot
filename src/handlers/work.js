@@ -46,6 +46,18 @@ export const workHandler = {
     const { data, u, cb, answer, users, now, social, clans, labour, referrals, achievements, quests, goTo, orders, send } = ctx;
     const lang = normalizeLang(u?.lang || "ru");
     const tt = (key, vars = {}) => t(key, lang, vars);
+    const fmtWorkTime = (ms) => {
+      const mins = Math.max(1, Math.ceil(Number(ms || 0) / 60000));
+      if (mins >= 24 * 60 && mins % (24 * 60) === 0) {
+        const days = mins / (24 * 60);
+        return lang === "en" ? `${days}d` : `${days} дн`;
+      }
+      if (mins >= 60 && mins % 60 === 0) {
+        const hours = mins / 60;
+        return lang === "en" ? `${hours}h` : `${hours} ч`;
+      }
+      return lang === "en" ? `${mins} min` : (lang === "uk" ? `${mins} хв` : `${mins} мин`);
+    };
 
     const jobs = new JobService({ users, now, social, achievements, quests });
     const ff = new FastForwardService({ users, orders, now, send });
@@ -150,6 +162,7 @@ export const workHandler = {
         cb.id,
         tt("handler.work.started", {
           title: startedTitle,
+          time: fmtWorkTime(res.inst.endAt - now()),
           mins: Math.ceil((res.inst.endAt - now()) / 60000)
         })
       );

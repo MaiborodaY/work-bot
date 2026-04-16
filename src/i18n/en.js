@@ -37,6 +37,7 @@ export const EN = {
   "cfg.job.shawarma_seller.title": "Shawarma to-go",
   "cfg.job.dentist.title": "Dentist",
   "cfg.job.qa_engineer.title": "QA Engineer",
+  "cfg.job.farmer.title": "Farmer",
 
   "cfg.shop.coffee.title": "Coffee (+10 energy)",
   "cfg.shop.sandwich.title": "Sandwich (+25 energy)",
@@ -391,7 +392,7 @@ export const EN = {
   "ui.work.running": "⏳ In progress",
   "ui.work.skip_for": "⏩ Finish for {{cost}}",
   "ui.work.cancel_penalty": "🛑 Cancel (penalty $5)",
-  "ui.work.entry": "▶️ {{title}} · {{mins}} min · ${{pay}} · {{energy}}⚡",
+  "ui.work.entry": "▶️ {{title}} · {{time}} · ${{pay}} · {{energy}}⚡",
   "ui.study.start": "📘 Start study ({{effects}})",
   "ui.study.finish": "🎓 Finish study",
   "ui.study.skip_for": "⏩ Finish for {{cost}}",

@@ -19,6 +19,27 @@ export class UiFactory {
     return toGoCallback(route);
   }
 
+  _workTimeLabel(durationMs, lang = "en") {
+    const l = this._lang(lang);
+    const mins = Math.max(1, Math.round((Number(durationMs) || 0) / 60000));
+    if (mins >= 24 * 60 && mins % (24 * 60) === 0) {
+      const days = mins / (24 * 60);
+      return l === "en" ? `${days}d` : `${days} дн`;
+    }
+    if (mins >= 60 && mins % 60 === 0) {
+      const hours = mins / 60;
+      return l === "en" ? `${hours}h` : `${hours} ч`;
+    }
+    return l === "en" ? `${mins} min` : (l === "uk" ? `${mins} хв` : `${mins} мин`);
+  }
+
+  _workPayLabel(job) {
+    const min = Math.max(0, Math.floor(Number(job?.payMin) || 0));
+    const max = Math.max(min, Math.floor(Number(job?.payMax) || 0));
+    if (min > 0 || max > 0) return `${min}-${max}`;
+    return Math.max(0, Math.round(Number(job?.pay) || 0));
+  }
+
   _hasAnyBusiness(user) {
     const owned = Array.isArray(user?.biz?.owned) ? user.biz.owned : [];
     return owned.some((x) => {
@@ -233,10 +254,11 @@ export class UiFactory {
     );
     const list = (user?.flags?.onboarding || newbieWorkOnly) ? entries.slice(0, 1) : entries;
     for (const [id, j] of list) {
-      const mins = Math.max(1, Math.round((j.durationMs || 0) / 60000));
+      const time = this._workTimeLabel(j.durationMs, l);
+      const pay = this._workPayLabel(j);
       const title = getJobTitle(id, l);
       kb.push([{
-        text: this._t(l, "ui.work.entry", { title, mins, pay: j.pay, energy: j.energy }),
+        text: this._t(l, "ui.work.entry", { title, time, pay, energy: j.energy }),
         callback_data: `work:start:${id}`
       }]);
     }

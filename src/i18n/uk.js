@@ -37,6 +37,7 @@ export const UK = {
   "cfg.job.shawarma_seller.title": "Шаурма на виніс",
   "cfg.job.dentist.title": "Стоматолог",
   "cfg.job.qa_engineer.title": "QA інженер",
+  "cfg.job.farmer.title": "Фермер",
 
   "cfg.shop.coffee.title": "Кава (+10 енергії)",
   "cfg.shop.sandwich.title": "Сендвіч (+25 енергії)",
@@ -391,7 +392,7 @@ export const UK = {
   "ui.work.running": "⏳ Зміна триває",
   "ui.work.skip_for": "⏩ Завершити за {{cost}}",
   "ui.work.cancel_penalty": "🛑 Скасувати (штраф $5)",
-  "ui.work.entry": "▶️ {{title}} · {{mins}} хв · ${{pay}} · {{energy}}⚡",
+  "ui.work.entry": "▶️ {{title}} · {{time}} · ${{pay}} · {{energy}}⚡",
   "ui.study.start": "📘 Почати навчання ({{effects}})",
   "ui.study.finish": "🎓 Завершити навчання",
   "ui.study.skip_for": "⏩ Завершити за {{cost}}",

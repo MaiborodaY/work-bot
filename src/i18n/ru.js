@@ -116,7 +116,7 @@ export const RU = {
   "ui.work.running": "⏳ Смена идёт",
   "ui.work.skip_for": "⏩ Завершить за {{cost}}",
   "ui.work.cancel_penalty": "🛑 Отменить (штраф $5)",
-  "ui.work.entry": "▶️ {{title}} · {{mins}} мин · ${{pay}} · {{energy}}⚡",
+  "ui.work.entry": "▶️ {{title}} · {{time}} · ${{pay}} · {{energy}}⚡",
 
   "ui.study.start": "📘 Начать учебу ({{effects}})",
   "ui.study.finish": "🎓 Завершить учебу",
@@ -266,6 +266,7 @@ export const RU = {
   "cfg.job.shawarma_seller.title": "Шаверма на вынос",
   "cfg.job.dentist.title": "Стоматолог",
   "cfg.job.qa_engineer.title": "QA engineer",
+  "cfg.job.farmer.title": "Фермер",
 
   "cfg.shop.coffee.title": "Кофе (+10 энергии)",
   "cfg.shop.sandwich.title": "Сэндвич (+25 энергии)",
@@ -322,7 +323,7 @@ export const RU = {
   "handler.work.low_energy_to_shop": "⚡ Не хватает энергии — открыл магазин.",
   "handler.work.start_failed": "Не удалось начать работу.",
   "handler.work.shift_fallback": "Работа",
-  "handler.work.started": "▶️ Начало: {{title}} (~{{mins}} мин)",
+  "handler.work.started": "▶️ Начало: {{title}} (~{{time}})",
   "handler.work.goto_home_intro": "Восстанови энергию и вернемся к работе.",
   "handler.work.goto_shop_intro": "Купи что-то для энергии и вернемся к работе.",
   "handler.work.claim_failed": "Не удалось выдать выплату.",

@@ -3,11 +3,13 @@ import { CONFIG } from "./GameConfig.js";
 import { HomeService } from "./HomeService.js";
 import { NotifyDueIndex } from "./NotifyDueIndex.js";
 import { markFunnelStep, markUsefulActivity } from "./PlayerStats.js";
+import { EnergyService } from "./EnergyService.js";
 
 export class JobService {
-  constructor({ users, now, social, achievements = null, quests = null }) {
+  constructor({ users, now, social, achievements = null, quests = null, random = Math.random }) {
     this.users = users;
     this.now = now || (() => Date.now());
+    this.random = typeof random === "function" ? random : Math.random;
     this.social = social || null;
     this.achievements = achievements || null;
     this.quests = quests || null;
@@ -44,11 +46,32 @@ export class JobService {
     return pay;
   }
 
+  _rollPlannedPay(type) {
+    const min = Math.max(0, Math.floor(Number(type?.payMin) || 0));
+    const max = Math.max(min, Math.floor(Number(type?.payMax) || 0));
+    if (min > 0 || max > 0) {
+      const roll = Math.min(0.999999, Math.max(0, Number(this.random()) || 0));
+      return min + Math.floor((max - min + 1) * roll);
+    }
+    return Math.max(0, Math.round(Number(type?.pay) || 0));
+  }
+
   async start(u, typeId) {
     this._ensureJobs(u);
     const type = CONFIG.JOBS[typeId];
     if (!type) return { ok: false, error: "Неизвестный тип работы." };
     if (this.getActive(u)) return { ok: false, error: "У тебя уже есть активная работа." };
+    const needEnergyMax = Math.max(0, Math.floor(Number(type?.minEnergyMax) || 0));
+    const energyMax = EnergyService.effectiveEnergyMax(u);
+    if (needEnergyMax > 0 && energyMax < needEnergyMax) {
+      return {
+        ok: false,
+        code: "not_enough_energy_cap",
+        needEnergyCap: needEnergyMax,
+        haveEnergyCap: energyMax,
+        error: "Недостаточно максимальной энергии."
+      };
+    }
 
     const mod = this._applyStartModifiers(u, type);
     const startAt = this.now();
@@ -73,7 +96,7 @@ export class JobService {
       startAt,
       endAt,
       energySpent: mod.energy,
-      plannedPay: type.pay,
+      plannedPay: this._rollPlannedPay(type),
       claimed: false,
       notified: false,
       effects: {},
