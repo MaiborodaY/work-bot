@@ -1885,6 +1885,7 @@ export class ThiefService {
   async _resolveAttackBlocked(attack, { source = "battle" } = {}) {
     const owner = await this.users.load(attack.ownerId).catch(() => null);
     const attacker = await this.users.load(attack.attackerId).catch(() => null);
+    const defenseRewardGems = 1;
 
     let ownerAch = null;
     if (owner) {
@@ -1895,6 +1896,7 @@ export class ThiefService {
         owner.biz = owner.biz || {};
         owner.biz.owned = ownerFound.arr;
       }
+      owner.premium = Math.max(0, Math.floor(Number(owner?.premium) || 0)) + defenseRewardGems;
       if (this.achievements?.onEvent) {
         try {
           ownerAch = await this.achievements.onEvent(owner, "thief_defense_success", { bizId: attack.bizId }, { persist: false, notify: false });
@@ -1926,7 +1928,15 @@ export class ThiefService {
 
     if (owner?.chatId) {
       const bizTitle = this._bizTitle(attack.bizId, owner);
-      await this._sendInline(owner.chatId, this._t(owner, "thief.notify.defense_owner_won", { bizTitle }), [[{ text: this._t(owner, "thief.btn.business"), callback_data: "go:Business" }]]);
+      await this._sendInline(
+        owner.chatId,
+        this._t(owner, "thief.notify.defense_owner_won", {
+          bizTitle,
+          emoji: CONFIG?.PREMIUM?.emoji || "💎",
+          reward: defenseRewardGems
+        }),
+        [[{ text: this._t(owner, "thief.btn.business"), callback_data: "go:Business" }]]
+      );
     }
     if (attacker?.chatId) {
       const bizTitle = this._bizTitle(attack.bizId, attacker);

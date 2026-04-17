@@ -886,7 +886,7 @@ export const RU = {
   "thief.notify.owner_attack_started": "🌑 Кто-то лезет в твой {{bizTitle}}! Есть {{mins}} мин, чтобы защититься.",
   "thief.notify.defense_battle_started_owner": "⚔ Защита {{bizTitle}} началась. Не дай вору забрать деньги.",
   "thief.notify.defense_battle_started_thief": "⚔ Хозяин {{bizTitle}} вышел на защиту. Начинается бой 3 раунда.",
-  "thief.notify.defense_owner_won": "🛡️ Ты отбил атаку на {{bizTitle}}. Кража сорвалась.",
+  "thief.notify.defense_owner_won": "🛡️ Ты отбил атаку на {{bizTitle}}. Кража сорвалась.\nНаграда: {{emoji}}{{reward}}",
   "thief.notify.defense_thief_lost": "🛡️ Хозяин {{bizTitle}} отбил атаку. Кража сорвалась.",
   "thief.notify.attacker_blocked": "🛡️ Хозяин защитил {{bizTitle}}. Попытка сорвана.",
   "thief.notify.owner_robbed_unknown": "💸 Неизвестный обокрал твой {{bizTitle}} на {{amount}}.",

@@ -778,7 +778,7 @@ export const EN = {
   "thief.notify.owner_attack_started": "🌑 Someone is breaking into your {{bizTitle}}! You have {{mins}} min to defend.",
   "thief.notify.defense_battle_started_owner": "⚔ Defense of {{bizTitle}} has started. Don't let the thief take your money.",
   "thief.notify.defense_battle_started_thief": "⚔ The owner of {{bizTitle}} stepped in. A 3-round fight begins.",
-  "thief.notify.defense_owner_won": "🛡️ You defended {{bizTitle}}. The theft was stopped.",
+  "thief.notify.defense_owner_won": "🛡️ You defended {{bizTitle}}. The theft was stopped.\nReward: {{emoji}}{{reward}}",
   "thief.notify.defense_thief_lost": "🛡️ The owner defended {{bizTitle}}. The theft was stopped.",
   "thief.notify.attacker_blocked": "🛡️ Owner defended {{bizTitle}}. Attempt blocked.",
   "thief.notify.owner_robbed_unknown": "💸 Unknown robbed your {{bizTitle}} for {{amount}}.",

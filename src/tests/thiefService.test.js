@@ -403,10 +403,49 @@ test("thief service: defense battle tie blocks theft in owner's favor", async ()
   assert.equal(savedAttacker.money, 0);
   assert.equal(savedOwner.biz.owned[0].pendingTheftAmount, 0);
   assert.equal(savedOwner.biz.owned[0].guardBlocked, 1);
+  assert.equal(savedOwner.premium, 1);
   const rawBattle = await db.get(`thief:defense:${started.attackId}`);
   const battle = JSON.parse(rawBattle);
   assert.equal(battle.status, "finished");
   assert.equal(battle.result.winnerSide, "owner");
+});
+
+test("thief service: defense owner win grants 1 crystal", async () => {
+  const nowTs = Date.UTC(2026, 3, 16, 13, 30, 0);
+  const db = new FakeDb();
+  const users = new FakeUsers({
+    attacker: {
+      id: "attacker",
+      lang: "en",
+      chatId: 2,
+      money: 0,
+      energy: 30,
+      createdAt: nowTs - 10 * 24 * 60 * 60 * 1000,
+      thief: { level: 1, activeAttackId: "", cooldowns: {} },
+      biz: { owned: [] }
+    },
+    owner: {
+      id: "owner",
+      lang: "en",
+      chatId: 1,
+      premium: 0,
+      createdAt: nowTs - 10 * 24 * 60 * 60 * 1000,
+      biz: { owned: [{ id: "shawarma", boughtAt: nowTs, lastClaimDayUTC: "", pendingTheftAmount: 0, guardBlocked: 0 }] }
+    }
+  });
+  const service = new ThiefService({ db, users, now: () => nowTs, bot: { async sendWithInline() {} } });
+  const started = await service.startAttack(await users.load("attacker"), "shawarma", "owner");
+  await service.defend(await users.load("owner"), started.attackId);
+
+  for (let round = 0; round < 3; round += 1) {
+    await service.pickDefenseBattleAttack(await users.load("owner"), started.attackId, "head");
+    await service.pickDefenseBattleAttack(await users.load("attacker"), started.attackId, "legs");
+    await service.pickDefenseBattleDefense(await users.load("owner"), started.attackId, "body");
+    await service.pickDefenseBattleDefense(await users.load("attacker"), started.attackId, "body");
+  }
+
+  const savedOwner = await users.load("owner");
+  assert.equal(savedOwner.premium, 1);
 });
 
 test("thief service: defense battle thief win guarantees theft", async () => {

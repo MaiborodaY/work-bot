@@ -778,7 +778,7 @@ export const UK = {
   "thief.notify.owner_attack_started": "🌑 Хтось лізе у твій {{bizTitle}}! Є {{mins}} хв, щоб захиститися.",
   "thief.notify.defense_battle_started_owner": "⚔ Захист {{bizTitle}} почався. Не дай злодію забрати гроші.",
   "thief.notify.defense_battle_started_thief": "⚔ Власник {{bizTitle}} вийшов на захист. Починається бій 3 раунди.",
-  "thief.notify.defense_owner_won": "🛡️ Ти відбив атаку на {{bizTitle}}. Крадіжку зірвано.",
+  "thief.notify.defense_owner_won": "🛡️ Ти відбив атаку на {{bizTitle}}. Крадіжку зірвано.\nНагорода: {{emoji}}{{reward}}",
   "thief.notify.defense_thief_lost": "🛡️ Власник {{bizTitle}} відбив атаку. Крадіжку зірвано.",
   "thief.notify.attacker_blocked": "🛡️ Власник захистив {{bizTitle}}. Спробу зірвано.",
   "thief.notify.owner_robbed_unknown": "💸 Невідомий обікрав твій {{bizTitle}} на {{amount}}.",
