@@ -29,6 +29,7 @@ import { ASSETS, JOB_ASSETS } from "./Assets.js";
 import { normalizeLang, t } from "./i18n/index.js";
 import { safeCall } from "./SafeCall.js";
 import { EnergyService } from "./EnergyService.js";
+import { ProgressionService } from "./ProgressionService.js";
 
 const REPLY_KEYBOARD_VERSION = 2;
 
@@ -536,6 +537,9 @@ export default {
     };
 
     async function renderProfile(u, sourceMsg = null) {
+      if (ProgressionService.ensureRewardBaseline(u)) {
+        await users.save(u);
+      }
       const clan = await safeCall("worker.profile.get_clan", async () => {
         return await clans.getClanForUser(u);
       }, { fallback: null });
@@ -551,7 +555,16 @@ export default {
       const achievementsBtn = lang === "en"
         ? "🏆 Achievements"
         : (lang === "uk" ? "🏆 Досягнення" : "🏆 Достижения");
+      const pendingLevelReward = ProgressionService.getPendingReward(u);
       const kb = [
+        ...(pendingLevelReward ? [[{
+          text: t("profile.level.reward_button", lang, {
+            fromLevel: pendingLevelReward.fromLevel,
+            toLevel: pendingLevelReward.toLevel,
+            gems: pendingLevelReward.gems
+          }),
+          callback_data: "profile:level:claim"
+        }]] : []),
         [{ text: achievementsBtn, callback_data: "profile:achievements" }],
         [{ text: profileLangButtonText(u), callback_data: "profile:lang" }]
       ];
@@ -625,9 +638,11 @@ export default {
       const hideMoneyInPublicProfile = true;
 
       const lines = [];
+      const targetLevelInfo = ProgressionService.getLevelInfo(target);
       if (lang === "en") {
         lines.push(`👤 ${name}`);
         lines.push("");
+        lines.push(`⭐ Level: ${targetLevelInfo.level}`);
         lines.push(`💰 $${money} · ⚡ ${energy}/${energyMax}`);
         lines.push(`🏢 Businesses: ${bizCount} · Slots: ${slotsCount}${clanName ? ` · 🤝 ${clanName}` : ""}`);
         lines.push(`🎖️ Achievements: ${preview.totalDone} · 🌑 Stolen: $${stolen}`);
@@ -636,6 +651,7 @@ export default {
       } else if (lang === "uk") {
         lines.push(`👤 ${name}`);
         lines.push("");
+        lines.push(`⭐ Рівень: ${targetLevelInfo.level}`);
         lines.push(`💰 $${money} · ⚡ ${energy}/${energyMax}`);
         lines.push(`🏢 Бізнесів: ${bizCount} · Слотів: ${slotsCount}${clanName ? ` · 🤝 ${clanName}` : ""}`);
         lines.push(`🎖️ Досягнень: ${preview.totalDone} · 🌑 Вкрадено: $${stolen}`);
@@ -644,6 +660,7 @@ export default {
       } else {
         lines.push(`👤 ${name}`);
         lines.push("");
+        lines.push(`⭐ Уровень: ${targetLevelInfo.level}`);
         lines.push(`💰 $${money} · ⚡ ${energy}/${energyMax}`);
         lines.push(`🏢 Бизнесов: ${bizCount} · Слотов: ${slotsCount}${clanName ? ` · 🤝 ${clanName}` : ""}`);
         lines.push(`🎖️ Ачивок: ${preview.totalDone} · 🌑 Украдено: $${stolen}`);
@@ -651,8 +668,8 @@ export default {
         lines.push("🏆 Последние достижения:");
       }
 
-      if (hideMoneyInPublicProfile && lines.length >= 3) {
-        lines[2] = `⚡ ${energy}/${energyMax}`;
+      if (hideMoneyInPublicProfile && lines.length >= 4) {
+        lines[3] = `⚡ ${energy}/${energyMax}`;
       }
 
       if (preview.lines.length) {
@@ -1243,6 +1260,26 @@ export default {
         } catch {
           await sendWithInline(view.caption, view.keyboard);
         }
+        return new Response("ok");
+      }
+
+      if (data === "profile:level:claim") {
+        if (ProgressionService.ensureRewardBaseline(u)) {
+          await users.save(u);
+        }
+        const claimed = ProgressionService.claimPendingRewards(u);
+        if (!claimed.ok) {
+          await answer(cb.id, t("profile.level.reward_none", lang));
+          await renderProfile(u, cb.message);
+          return new Response("ok");
+        }
+        await users.save(u);
+        await answer(cb.id, t("profile.level.reward_claimed", lang, {
+          fromLevel: claimed.fromLevel,
+          toLevel: claimed.toLevel,
+          gems: claimed.gems
+        }));
+        await renderProfile(u, cb.message);
         return new Response("ok");
       }
 

@@ -783,6 +783,24 @@ export class UserStore {
       }
     }
 
+    if (!u.progression || typeof u.progression !== "object") {
+      u.progression = {
+        rewardLevelClaimed: 0,
+        rewardInitDone: false
+      };
+      dirty = true;
+    } else {
+      const fixedRewardLevelClaimed = Math.max(0, Math.floor(Number(u.progression.rewardLevelClaimed) || 0));
+      if (fixedRewardLevelClaimed !== u.progression.rewardLevelClaimed) {
+        u.progression.rewardLevelClaimed = fixedRewardLevelClaimed;
+        dirty = true;
+      }
+      if (typeof u.progression.rewardInitDone !== "boolean") {
+        u.progression.rewardInitDone = false;
+        dirty = true;
+      }
+    }
+
     // Player stats (tops + retention/funnel telemetry)
     if (ensurePlayerStatsShape(u)) dirty = true;
     if (typeof u.lastDailyRewardDay !== "string") { u.lastDailyRewardDay = ""; dirty = true; }
@@ -857,6 +875,10 @@ export class UserStore {
       lastDailyRewardDay: "",
 
       premium: 20,
+      progression: {
+        rewardLevelClaimed: 1,
+        rewardInitDone: true
+      },
       pet: null,
       newbiePath: {
         step: 1,

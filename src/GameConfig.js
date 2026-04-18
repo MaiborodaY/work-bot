@@ -1,6 +1,31 @@
 // GameConfig.js
 import { ASSETS } from "./Assets.js";
 
+const buildPlayerLevelXpTable = () => {
+  const table = [0];
+  let total = 0;
+  for (let level = 2; level <= 50; level += 1) {
+    const gain = 100 + ((level - 2) * 25);
+    total += gain;
+    table[level - 1] = total;
+  }
+  return table;
+};
+
+const buildPlayerLevelRewards = () => {
+  const rewards = {};
+  for (let level = 2; level <= 50; level += 1) {
+    rewards[level] = 1;
+  }
+  rewards[5] = 2;
+  rewards[10] = 3;
+  rewards[20] = 4;
+  rewards[30] = 5;
+  rewards[40] = 5;
+  rewards[50] = 10;
+  return rewards;
+};
+
 export const CONFIG = {
   SHIFT_MS: 80 * 60 * 1000,
   PAY_BASE: 50,
@@ -83,6 +108,12 @@ export const CONFIG = {
     PRICE_GEMS: 10,
     BONUS_ENERGY_MAX: 20,
     DURATION_MS: 7 * 24 * 60 * 60 * 1000
+  },
+
+  PLAYER_LEVELS: {
+    MAX_LEVEL: 50,
+    XP_TABLE: buildPlayerLevelXpTable(),
+    REWARDS: buildPlayerLevelRewards()
   },
 
   PREMIUM: {

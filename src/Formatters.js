@@ -4,6 +4,7 @@ import { EconomyService } from "./EconomyService.js";
 import { normalizeLang, t } from "./i18n/index.js";
 import { getJobTitle } from "./I18nCatalog.js";
 import { EnergyService } from "./EnergyService.js";
+import { ProgressionService } from "./ProgressionService.js";
 
 export const Formatters = {
   _lang(u, lang = null) {
@@ -114,6 +115,12 @@ export const Formatters = {
     return Array.isArray(u?.upgrades) && u.upgrades.includes(key);
   },
 
+  _progressBar(pct, width = 10) {
+    const safePct = Math.max(0, Math.min(100, Math.floor(Number(pct) || 0)));
+    const filled = Math.max(0, Math.min(width, Math.round((safePct / 100) * width)));
+    return `${"█".repeat(filled)}${"░".repeat(Math.max(0, width - filled))}`;
+  },
+
   _playerCosmeticPrefix(cosmetic, currentWeek = "") {
     const tier = String(cosmetic?.tier || "");
     const weekKey = String(cosmetic?.weekKey || "");
@@ -152,6 +159,26 @@ export const Formatters = {
     }
 
     lines.push(Formatters.balance(u, l));
+
+    const levelInfo = ProgressionService.getLevelInfo(u);
+    lines.push(this._t(u, "fmt.status.level", { level: levelInfo.level }, l));
+    if (levelInfo.isMax) {
+      lines.push(this._t(u, "fmt.status.level_xp_max", { xp: levelInfo.xp, maxLevel: levelInfo.maxLevel }, l));
+    } else {
+      lines.push(this._t(u, "fmt.status.level_xp", {
+        xp: levelInfo.xp,
+        nextLevelXp: levelInfo.nextLevelXp
+      }, l));
+    }
+    lines.push(this._progressBar(levelInfo.progressPct));
+    const pendingReward = ProgressionService.getPendingReward(u);
+    if (pendingReward) {
+      lines.push(this._t(u, "fmt.status.level_reward_ready", {
+        fromLevel: pendingReward.fromLevel,
+        toLevel: pendingReward.toLevel,
+        gems: pendingReward.gems
+      }, l));
+    }
 
     const inst = u?.jobs?.active?.[0] || null;
     if (inst) {
