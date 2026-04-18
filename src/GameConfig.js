@@ -17,7 +17,7 @@ export const CONFIG = {
     shawarma_seller: { title: "Шаверма на вынос",   titleKey: "cfg.job.shawarma_seller.title", durationMs: 120 * 60_000, pay: 216, energy: 72 },
     dentist:         { title: "Стоматолог",         titleKey: "cfg.job.dentist.title", durationMs: 180 * 60_000, pay: 324, energy: 108 },
     qa_engineer:     { title: "QA engineer.",       titleKey: "cfg.job.qa_engineer.title", durationMs: 300 * 60_000, pay: 500, energy: 140 },
-    farmer:          { title: "Farmer",             titleKey: "cfg.job.farmer.title", durationMs: 24 * 60 * 60_000, payMin: 1000, payMax: 3000, energy: 180, minEnergyMax: 180 },
+    farmer:          { title: "Farmer",             titleKey: "cfg.job.farmer.title", durationMs: 24 * 60 * 60_000, payMin: 1500, payMax: 3500, energy: 180, minEnergyMax: 180 },
   },
 
   REST_RECOVER_MS: 5 * 60 * 1000,
@@ -545,7 +545,7 @@ export const CONFIG = {
     },
     DEFENSE_BATTLE: {
       ASSET: "AgACAgIAAxkBAAL1t2nhEDLNKqOuseI6cykgWcQCsxBcAALdE2sbBWkIS7wL42TeGrcZAQADAgADeQADOwQ",
-      REACTION_WINDOW_MS: 2 * 60 * 1000,
+      REACTION_WINDOW_MS: 10 * 60 * 1000,
       ROUND_WINDOW_SEC: 60,
       ROUNDS: 3,
       BATTLE_TTL_SEC: 2 * 24 * 60 * 60

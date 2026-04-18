@@ -285,7 +285,7 @@ test("thief service: active guard increases owner reaction window", async () => 
   const rawAttack = await db.get(`thief:attack:${res.attackId}`);
   assert.ok(rawAttack);
   const attack = JSON.parse(rawAttack);
-  assert.equal(Number(attack.resolveAt), nowTs + (2 * 60 * 1000) + (20 * 60 * 1000));
+  assert.equal(Number(attack.resolveAt), nowTs + (10 * 60 * 1000) + (20 * 60 * 1000));
 });
 
 test("thief service: defend starts battle without spending owner energy", async () => {
@@ -351,7 +351,7 @@ test("thief service: unresolved attack auto succeeds when owner does not defend"
   });
   const service = new ThiefService({ db, users, now: () => nowTs, bot: { async sendWithInline() {} } });
   const started = await service.startAttack(await users.load("attacker"), "shawarma", "owner");
-  nowTs = nowTs + (2 * 60 * 1000) + 1000;
+  nowTs = nowTs + (10 * 60 * 1000) + 1000;
 
   const out = await service.resolveExpired();
 

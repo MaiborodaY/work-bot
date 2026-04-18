@@ -72,7 +72,7 @@ export class ThiefService {
   }
 
   _reactionWindowMs() {
-    return Math.max(60_000, Math.floor(Number(this._defenseCfg()?.REACTION_WINDOW_MS) || (2 * 60_000)));
+    return Math.max(60_000, Math.floor(Number(this._defenseCfg()?.REACTION_WINDOW_MS) || (10 * 60_000)));
   }
 
   _defenseRounds() {

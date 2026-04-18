@@ -60,8 +60,8 @@ test("job service: farmer start rolls planned pay inside configured range", asyn
   assert.equal(res.ok, true);
   assert.equal(res.inst.typeId, "farmer");
   assert.equal(res.inst.energySpent, 180);
-  assert.equal(res.inst.plannedPay >= 2500, true);
-  assert.equal(res.inst.plannedPay <= 4000, true);
+  assert.equal(res.inst.plannedPay >= 1500, true);
+  assert.equal(res.inst.plannedPay <= 3500, true);
 });
 
 test("job service: farmer claim pays rolled amount in range", async () => {
@@ -77,8 +77,8 @@ test("job service: farmer claim pays rolled amount in range", async () => {
   const claim = await jobs.claim(claimUser);
 
   assert.equal(claim.ok, true);
-  assert.equal(claim.pay, 4000);
+  assert.equal(claim.pay, 3500);
   const saved = await users.load("u1");
-  assert.equal(saved.money, 4000);
+  assert.equal(saved.money, 3500);
   assert.equal(Array.isArray(saved.jobs.active) && saved.jobs.active.length, 0);
 });
