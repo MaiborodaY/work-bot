@@ -8,6 +8,8 @@ export const RU = {
   "worker.start.lang_pick_required": "Сначала выбери язык.",
 
   "ui.reply.menu": "🧭 Меню",
+  "ui.reply.square": "🏙️ Площадь",
+  "ui.reply.bar": "🍺 Бар",
   "ui.reply.profile": "👤 Профиль",
 
   "ui.square.earn": "💼 Заработок",

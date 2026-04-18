@@ -297,6 +297,8 @@ export const UK = {
   "worker.btn.cancel": "⬅️ Скасувати",
 
   "ui.reply.menu": "🧭 Меню",
+  "ui.reply.square": "🏙️ Площа",
+  "ui.reply.bar": "🍺 Бар",
   "ui.reply.profile": "👤 Профіль",
   "ui.square.earn": "💼 Заробіток",
   "ui.square.progress": "📈 Прогрес",

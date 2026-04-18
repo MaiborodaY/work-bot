@@ -58,7 +58,16 @@ export class UiFactory {
   mainReply(lang = "en") {
     const l = this._lang(lang);
     return {
-      keyboard: [[{ text: this._t(l, "ui.reply.menu") }, { text: this._t(l, "ui.reply.profile") }]],
+      keyboard: [
+        [
+          { text: this._t(l, "ui.reply.menu") },
+          { text: this._t(l, "ui.reply.square") },
+          { text: this._t(l, "ui.reply.bar") }
+        ],
+        [
+          { text: this._t(l, "ui.reply.profile") }
+        ]
+      ],
       resize_keyboard: true,
     };
   }

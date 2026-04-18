@@ -473,6 +473,20 @@ export default {
       "🧭 Menu",
       ...LANG_OPTIONS.map((x) => t("ui.reply.menu", x.code))
     ]);
+    const squareLabelSet = new Set([
+      "РџР»РѕС‰Р°РґСЊ",
+      "рџЏ™пёЏ РџР»РѕС‰Р°РґСЊ",
+      "Square",
+      "рџЏ™пёЏ Square",
+      ...LANG_OPTIONS.map((x) => t("ui.reply.square", x.code))
+    ]);
+    const barLabelSet = new Set([
+      "Р‘Р°СЂ",
+      "рџЌ» Р‘Р°СЂ",
+      "Bar",
+      "рџЌ» Bar",
+      ...LANG_OPTIONS.map((x) => t("ui.reply.bar", x.code))
+    ]);
     const profileLabelSet = new Set([
       "Профиль",
       "👤 Профиль",
@@ -1006,6 +1020,16 @@ export default {
 
       if (menuLabelSet.has(text)) {
         await goTo(u, "Square");
+        return new Response("ok");
+      }
+
+      if (squareLabelSet.has(text)) {
+        await goTo(u, "Square");
+        return new Response("ok");
+      }
+
+      if (barLabelSet.has(text)) {
+        await goTo(u, "Bar");
         return new Response("ok");
       }
 

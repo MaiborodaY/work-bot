@@ -297,6 +297,8 @@ export const EN = {
   "worker.btn.cancel": "⬅️ Cancel",
 
   "ui.reply.menu": "🧭 Menu",
+  "ui.reply.square": "🏙️ Square",
+  "ui.reply.bar": "🍺 Bar",
   "ui.reply.profile": "👤 Profile",
   "ui.square.earn": "💼 Earnings",
   "ui.square.progress": "📈 Progress",
