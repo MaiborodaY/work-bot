@@ -273,6 +273,8 @@ test("colosseum service: surrender finalizes battle, clears state and updates we
   assert.equal(s2.colosseum.activeBattleId, "");
   assert.equal(s1.colosseum.weekWins, 1);
   assert.equal(s2.colosseum.weekWins, 0);
+  assert.equal(s1.premium, 1);
+  assert.equal(s2.premium, 0);
 
   const battle = await loadBattle(db, battleId);
   assert.equal(battle.status, "finished");
@@ -281,6 +283,58 @@ test("colosseum service: surrender finalizes battle, clears state and updates we
 
   const open = await loadOpenBattles(db);
   assert.equal(open.includes(battleId), false);
+});
+
+test("colosseum service: winner gets 1 gem after normal battle finish", async () => {
+  const db = new FakeDb();
+  const users = new FakeUsers({
+    u1: makeUser("u1", "Alpha"),
+    u2: makeUser("u2", "Bravo")
+  });
+  let nowTs = Date.UTC(2026, 2, 30, 12, 40, 0);
+  const service = new ColosseumService({
+    db,
+    users,
+    now: () => nowTs,
+    bot: { async sendWithInline() {} }
+  });
+
+  await service.joinQueue(await users.load("u1"));
+  await service.joinQueue(await users.load("u2"));
+  await service.accept(await users.load("u1"));
+  await service.accept(await users.load("u2"));
+
+  await service.pickAttack(await users.load("u1"), "head");
+  await service.pickDefense(await users.load("u1"), "body");
+  await service.pickAttack(await users.load("u2"), "legs");
+  await service.pickDefense(await users.load("u2"), "body");
+
+  let battle = await loadBattle(db, (await users.load("u1")).colosseum.activeBattleId);
+  nowTs = Number(battle.roundDeadline) + 1000;
+  await service.runTick();
+
+  battle = await loadBattle(db, battle.id);
+  await service.pickAttack(await users.load("u1"), "head");
+  await service.pickDefense(await users.load("u1"), "body");
+  await service.pickAttack(await users.load("u2"), "legs");
+  await service.pickDefense(await users.load("u2"), "body");
+  nowTs = Number(battle.roundDeadline) + 1000;
+  await service.runTick();
+
+  battle = await loadBattle(db, battle.id);
+  await service.pickAttack(await users.load("u1"), "head");
+  await service.pickDefense(await users.load("u1"), "body");
+  await service.pickAttack(await users.load("u2"), "legs");
+  await service.pickDefense(await users.load("u2"), "body");
+  nowTs = Number(battle.roundDeadline) + 1000;
+  await service.runTick();
+
+  const s1 = await users.load("u1");
+  const s2 = await users.load("u2");
+  assert.equal(s1.colosseum.weekWins, 1);
+  assert.equal(s2.colosseum.weekWins, 0);
+  assert.equal(s1.premium, 1);
+  assert.equal(s2.premium, 0);
 });
 
 test("colosseum service: main view syncs weekly wins with rating row for current user", async () => {

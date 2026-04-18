@@ -1046,6 +1046,7 @@ export class ColosseumService {
       dirty = true;
       if (winnerId && String(u.id || "") === winnerId) {
         u.colosseum.weekWins = Math.max(0, toInt(u.colosseum.weekWins, 0)) + 1;
+        u.premium = Math.max(0, toInt(u.premium, 0)) + 1;
         dirty = true;
       }
       dirty = markUsefulActivity(u, this.now()) || dirty;
