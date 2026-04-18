@@ -337,6 +337,32 @@ test("colosseum service: winner gets 1 gem after normal battle finish", async ()
   assert.equal(s2.premium, 0);
 });
 
+test("colosseum service: finished winner view shows gem reward", async () => {
+  const db = new FakeDb();
+  const users = new FakeUsers({
+    u1: makeUser("u1", "Alpha"),
+    u2: makeUser("u2", "Bravo")
+  });
+  const service = new ColosseumService({
+    db,
+    users,
+    now: () => Date.UTC(2026, 2, 30, 12, 45, 0),
+    bot: { async sendWithInline() {} }
+  });
+
+  const battle = {
+    id: "col_test",
+    players: ["u1", "u2"],
+    names: { u1: "Alpha", u2: "Bravo" },
+    score: { u1: 5, u2: 2 },
+    rounds: [],
+    result: { winnerId: "u1", loserId: "u2", draw: false, reason: "normal" }
+  };
+
+  const view = await service._renderFinishedForUser(await users.load("u1"), battle);
+  assert.match(String(view.caption || ""), /💎1/);
+});
+
 test("colosseum service: main view syncs weekly wins with rating row for current user", async () => {
   const db = new FakeDb();
   const users = new FakeUsers({

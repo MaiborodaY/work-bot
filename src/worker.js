@@ -30,6 +30,8 @@ import { normalizeLang, t } from "./i18n/index.js";
 import { safeCall } from "./SafeCall.js";
 import { EnergyService } from "./EnergyService.js";
 
+const REPLY_KEYBOARD_VERSION = 2;
+
 // handlers test comm
 import { workHandler } from "./handlers/work.js";
 import { studyHandler } from "./handlers/study.js";
@@ -243,6 +245,21 @@ export default {
     const answer = (cbId, t) => bot.answerCallback(cbId, t);
     const edit = (cbMsg, t, inline_keyboard) =>
       bot.editMessage(cbMsg.chat.id, cbMsg.message_id, t, inline_keyboard);
+    const replyKeyboardHubSet = new Set(["Square", "City", "Earn", "Bar", "Profile"]);
+
+    async function maybeRestoreReplyKeyboard(u, place = "") {
+      const target = String(place || "").trim();
+      if (!replyKeyboardHubSet.has(target)) return;
+      const currentVersion = Math.max(0, Number(u?.replyKeyboardVersion) || 0);
+      if (currentVersion >= REPLY_KEYBOARD_VERSION) return;
+      const lang = normalizeLang(u?.lang || replyLang || "en");
+      replyLang = lang;
+      await send(t("worker.use_buttons", lang), {
+        reply_markup: ui.mainReply(lang)
+      });
+      u.replyKeyboardVersion = REPLY_KEYBOARD_VERSION;
+      await users.save(u);
+    }
 
     // медиахелперы
     const sendPhoto = bot.sendPhoto?.bind(bot);
@@ -454,6 +471,7 @@ export default {
         locations.setRoute(place);
       }
       await locations.show(u, intro, place);
+      await maybeRestoreReplyKeyboard(u, place);
     }
 
     const profileLangButtonText = (u) => {
@@ -542,9 +560,13 @@ export default {
           await edit(sourceMsg, statusText, kb);
           return true;
         }, { fallback: false });
-        if (edited) return;
+        if (edited) {
+          await maybeRestoreReplyKeyboard(u, "Profile");
+          return;
+        }
       }
       await sendWithInline(statusText, kb);
+      await maybeRestoreReplyKeyboard(u, "Profile");
     }
 
     const profileSourceToCallback = (srcToken) => {
@@ -855,6 +877,8 @@ export default {
             reply_markup: ui.mainReply(onboardingLang)
           });
         });
+        u.replyKeyboardVersion = REPLY_KEYBOARD_VERSION;
+        await users.save(u);
         return new Response("ok");
       }
 
@@ -1179,6 +1203,8 @@ export default {
               reply_markup: ui.mainReply(next)
             });
           });
+          u.replyKeyboardVersion = REPLY_KEYBOARD_VERSION;
+          await users.save(u);
           return new Response("ok");
         }
         await renderProfile(u, cb.message);

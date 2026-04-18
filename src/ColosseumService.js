@@ -166,6 +166,7 @@ export class ColosseumService {
       toastPickAttackFirst: this._tr(lang, "colosseum.toast_pick_attack_first"),
       toastInvalidDefense: this._tr(lang, "colosseum.toast_invalid_defense"),
       finishedWin: this._tr(lang, "colosseum.finished_win"),
+      finishedRewardWin: this._tr(lang, "colosseum.finished_reward_win"),
       finishedLose: this._tr(lang, "colosseum.finished_lose"),
       finishedDraw: this._tr(lang, "colosseum.finished_draw"),
       finishedScore: this._tr(lang, "colosseum.finished_score"),
@@ -1243,6 +1244,7 @@ export class ColosseumService {
       lines.push(s.finishedDraw);
     } else if (isWin) {
       lines.push(s.finishedWin);
+      lines.push(s.finishedRewardWin);
     } else {
       lines.push(s.finishedLose);
     }
