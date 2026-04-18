@@ -296,8 +296,9 @@ export const UK = {
   "worker.btn.back": "⬅️ Назад",
   "worker.btn.cancel": "⬅️ Скасувати",
 
-  "ui.reply.menu": "🧭 Меню",
   "ui.reply.square": "🏙️ Площа",
+  "ui.reply.city": "🏛️ Місто",
+  "ui.reply.earn": "💼 Заробіток",
   "ui.reply.bar": "🍺 Бар",
   "ui.reply.profile": "👤 Профіль",
   "ui.square.earn": "💼 Заробіток",

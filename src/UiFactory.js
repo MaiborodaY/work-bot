@@ -60,8 +60,9 @@ export class UiFactory {
     return {
       keyboard: [
         [
-          { text: this._t(l, "ui.reply.menu") },
           { text: this._t(l, "ui.reply.square") },
+          { text: this._t(l, "ui.reply.city") },
+          { text: this._t(l, "ui.reply.earn") },
           { text: this._t(l, "ui.reply.bar") }
         ],
         [

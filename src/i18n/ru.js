@@ -7,8 +7,9 @@ export const RU = {
   "worker.start.lang_pick_hint": "Это можно изменить позже в профиле.",
   "worker.start.lang_pick_required": "Сначала выбери язык.",
 
-  "ui.reply.menu": "🧭 Меню",
   "ui.reply.square": "🏙️ Площадь",
+  "ui.reply.city": "🏛️ Город",
+  "ui.reply.earn": "💼 Заработок",
   "ui.reply.bar": "🍺 Бар",
   "ui.reply.profile": "👤 Профиль",
 

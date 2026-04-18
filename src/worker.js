@@ -1,4 +1,4 @@
-import { CONFIG } from "./GameConfig.js";
+﻿import { CONFIG } from "./GameConfig.js";
 import { TelegramClient } from "./TelegramClient.js";
 import { UserStore } from "./UserStore.js";
 import { EconomyService } from "./EconomyService.js";
@@ -466,19 +466,26 @@ export default {
       return found ? found.label : code.toUpperCase();
     };
 
-    const menuLabelSet = new Set([
-      "Меню",
-      "🧭 Меню",
-      "Menu",
-      "🧭 Menu",
-      ...LANG_OPTIONS.map((x) => t("ui.reply.menu", x.code))
-    ]);
     const squareLabelSet = new Set([
       "РџР»РѕС‰Р°РґСЊ",
       "рџЏ™пёЏ РџР»РѕС‰Р°РґСЊ",
       "Square",
       "рџЏ™пёЏ Square",
       ...LANG_OPTIONS.map((x) => t("ui.reply.square", x.code))
+    ]);
+    const cityLabelSet = new Set([
+      "Город",
+      "🏛️ Город",
+      "City",
+      "🏛️ City",
+      ...LANG_OPTIONS.map((x) => t("ui.reply.city", x.code))
+    ]);
+    const earnLabelSet = new Set([
+      "Заработок",
+      "💼 Заработок",
+      "Earnings",
+      "💼 Earnings",
+      ...LANG_OPTIONS.map((x) => t("ui.reply.earn", x.code))
     ]);
     const barLabelSet = new Set([
       "Р‘Р°СЂ",
@@ -1023,13 +1030,18 @@ export default {
 
       const langNow = normalizeLang(u?.lang || "en");
 
-      if (menuLabelSet.has(text)) {
+      if (squareLabelSet.has(text)) {
         await goTo(u, "Square");
         return new Response("ok");
       }
 
-      if (squareLabelSet.has(text)) {
-        await goTo(u, "Square");
+      if (cityLabelSet.has(text)) {
+        await goTo(u, "City");
+        return new Response("ok");
+      }
+
+      if (earnLabelSet.has(text)) {
+        await goTo(u, "Earn");
         return new Response("ok");
       }
 
