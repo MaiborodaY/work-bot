@@ -112,6 +112,22 @@ test("admin_newbie reports funnel, source split, retention and detail lists", as
           stepsClaimed: { "1": "2026-04-15", "2": "2026-04-15" }
         },
         newbiePath: { step: 3, pending: true, completed: false }
+      }),
+      makeUser({
+        id: "legacy-no-open",
+        name: "Legacy No Open",
+        firstActiveDay: "2026-04-01",
+        lastActiveDay: "2026-04-12",
+        activeDays: ["2026-04-01", "2026-04-12"],
+        newbie: {
+          openedDay: "",
+          completedDay: "",
+          maxStepSeen: 0,
+          maxStepClaimed: 0,
+          stepsSeen: {},
+          stepsClaimed: {}
+        },
+        newbiePath: { step: 1, pending: false, completed: false }
       })
     ];
     const db = makeDb(users);

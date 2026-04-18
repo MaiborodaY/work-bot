@@ -1326,7 +1326,7 @@ export class AdminCommands {
             if (isDayStr(nb.stepsClaimed[String(row.idx)])) row.claimed += 1;
           }
 
-          if (!!u?.flags?.onboardingDone && u?.newbiePath?.completed !== true) {
+          if (nb.openedDay && !!u?.flags?.onboardingDone && u?.newbiePath?.completed !== true) {
             const stepIdx = Math.max(1, Math.floor(Number(u?.newbiePath?.step) || 1));
             const row = steps[stepIdx - 1] || null;
             if (row) {

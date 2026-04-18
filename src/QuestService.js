@@ -1590,6 +1590,7 @@ export class QuestService {
     const def = defs[idx];
     if (!def) return { ok: false };
 
+    this._recordNewbieStepSeen(u, currentStep);
     this._recordNewbieStepClaimed(u, currentStep);
     u.money = Math.max(0, toInt(u?.money, 0)) + Math.max(0, toInt(def.rewardMoney, 0));
     u.premium = Math.max(0, toInt(u?.premium, 0)) + Math.max(0, toInt(def.rewardGems, 0));

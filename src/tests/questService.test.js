@@ -129,6 +129,7 @@ test("newbie path: claiming step reward advances to next step and stores context
   assert.equal(u.newbiePath.pending, false);
   assert.equal(typeof u.newbiePath.ctx, "object");
   assert.equal(u.newbiePath.ctx.totalShiftsStart, 0);
+  assert.equal(u.stats?.newbie?.stepsSeen?.["1"], "2026-03-13");
   assert.equal(u.stats?.newbie?.stepsClaimed?.["1"], "2026-03-13");
   assert.equal(u.stats?.newbie?.lastStepClaimedDay, "2026-03-13");
   assert.equal(u.stats?.newbie?.maxStepClaimed, 1);
