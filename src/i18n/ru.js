@@ -16,7 +16,7 @@ export const RU = {
   "ui.square.earn": "💼 Заработок",
   "ui.square.progress": "📈 Прогресс",
   "ui.square.minigames": "🎮 Игра в Игре!",
-  "ui.square.city": "🏙️ Город",
+  "ui.square.city": "🏛️ Город",
   "ui.square.shop": "🛍️ Магазин",
 
   "ui.minigames.td": "🛡️ Защита башнями",
@@ -43,7 +43,7 @@ export const RU = {
   "ui.shophub.food": "🍔 Магазин еды",
   "ui.shophub.premium": "💎 Премиум",
 
-  "ui.back.city": "⬅️ Назад в город",
+  "ui.back.city": "⬅️ На площадь",
   "ui.back.square": "⬅️ На Площадь",
   "ui.back.earn": "⬅️ Назад к заработку",
   "ui.back.progress": "⬅️ Назад к прогрессу",
@@ -1001,6 +1001,7 @@ export const RU = {
   "colosseum.help_line6": "- Нельзя бить и защищать одну и ту же зону.",
   "colosseum.help_line7": "- Урон: голова 3, корпус 2, ноги 1.",
   "colosseum.help_line8": "- Побеждает тот, кто нанёс больше суммарного урона.",
+  "colosseum.help_line9": "- За каждую победу: награда 💎1.",
   "colosseum.notify_found": "Соперник в Колизее найден: {{name}}. Прими бой в течение 1 минуты.",
   "colosseum.notify_found_btn": "Открыть меню колизея",
   "colosseum.notify_start": "Бой начался. Раунд 1 из 3.",

@@ -184,6 +184,7 @@ export class ColosseumService {
       helpLine6: this._tr(lang, "colosseum.help_line6"),
       helpLine7: this._tr(lang, "colosseum.help_line7"),
       helpLine8: this._tr(lang, "colosseum.help_line8"),
+      helpLine9: this._tr(lang, "colosseum.help_line9"),
       notifyFound: this._tr(lang, "colosseum.notify_found"),
       notifyFoundBtn: this._tr(lang, "colosseum.notify_found_btn"),
       notifyStart: this._tr(lang, "colosseum.notify_start"),
@@ -1183,7 +1184,8 @@ export class ColosseumService {
       s.helpLine5,
       s.helpLine6,
       s.helpLine7,
-      s.helpLine8
+      s.helpLine8,
+      s.helpLine9
     ];
     return {
       caption: lines.join("\n"),
