@@ -5,6 +5,7 @@ import { dailyHandler } from "../handlers/daily.js";
 test("daily handler: newbie step 1 redirects back to newbie tasks after claim", async () => {
   const shows = [];
   const saves = [];
+  const questEvents = [];
   const ctx = {
     u: {
       lang: "ru",
@@ -29,6 +30,10 @@ test("daily handler: newbie step 1 redirects back to newbie tasks after claim", 
     clans: { async recordActiveAction() {} },
     users: { async save(u) { saves.push(u); } },
     quests: {
+      async onEvent(u, event) {
+        questEvents.push(event);
+        return { changed: true, events: [] };
+      },
       async ensureCycles() { return { changed: false }; },
       maybeCompleteNewbieStep(u) {
         u.newbiePath.pending = true;
@@ -39,6 +44,7 @@ test("daily handler: newbie step 1 redirects back to newbie tasks after claim", 
 
   await dailyHandler.handle(ctx);
 
+  assert.deepEqual(questEvents, ["daily_claim"]);
   assert.equal(saves.length, 1);
   assert.equal(ctx.u.newbiePath.pending, true);
   assert.equal(shows.length, 1);
@@ -47,6 +53,7 @@ test("daily handler: newbie step 1 redirects back to newbie tasks after claim", 
 
 test("daily handler: regular player stays on default daily claim flow", async () => {
   const shows = [];
+  const questEvents = [];
   const ctx = {
     u: {
       lang: "ru",
@@ -70,6 +77,10 @@ test("daily handler: regular player stays on default daily claim flow", async ()
     clans: { async recordActiveAction() {} },
     users: { async save() {} },
     quests: {
+      async onEvent(u, event) {
+        questEvents.push(event);
+        return { changed: true, events: [] };
+      },
       async ensureCycles() { return { changed: false }; },
       maybeCompleteNewbieStep() { return false; }
     }
@@ -77,6 +88,7 @@ test("daily handler: regular player stays on default daily claim flow", async ()
 
   await dailyHandler.handle(ctx);
 
+  assert.deepEqual(questEvents, ["daily_claim"]);
   assert.equal(shows.length, 1);
   assert.equal(shows[0].route, undefined);
 });

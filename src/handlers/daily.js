@@ -12,8 +12,8 @@ export const dailyHandler = {
     await answer(cb.id, "");
 
     const res = await daily.claim(u);
-    const syncNewbieStepIfNeeded = async () => {
-      let needSave = false;
+    const syncNewbieStepIfNeeded = async (initialNeedSave = false) => {
+      let needSave = !!initialNeedSave;
       if (quests?.ensureCycles) {
         const qRes = await quests.ensureCycles(u, { persist: false });
         needSave = needSave || !!qRes?.changed;
@@ -25,13 +25,20 @@ export const dailyHandler = {
     };
 
     if (res.ok) {
+      let questDirty = false;
+      if (quests?.onEvent) {
+        try {
+          const qRes = await quests.onEvent(u, "daily_claim", {}, { persist: false, notify: true });
+          questDirty = !!qRes?.changed;
+        } catch {}
+      }
       try {
         if (clans?.recordActiveAction) {
           await clans.recordActiveAction(u, 1, 1);
         }
       } catch {}
 
-      await syncNewbieStepIfNeeded();
+      await syncNewbieStepIfNeeded(questDirty);
       if (!!u?.flags?.onboardingDone && u?.newbiePath?.completed !== true) {
         await locations.show(u, tt("handler.daily.claim_ok", { amount: res.amount, streak: res.streak }), "BarNewbieTasks");
         return;
