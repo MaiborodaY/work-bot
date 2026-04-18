@@ -843,6 +843,11 @@ export default {
             [[{ text: t("loc.onboarding.start_first_shift", onboardingLang), callback_data: "start:onboarding:first_job" }]]
           );
         });
+        await safeCall("worker.start.restore_reply_keyboard", async () => {
+          await send(t("worker.use_buttons", onboardingLang), {
+            reply_markup: ui.mainReply(onboardingLang)
+          });
+        });
         return new Response("ok");
       }
 
@@ -1156,6 +1161,11 @@ export default {
               onboardingWelcome,
               [[{ text: t("loc.onboarding.start_first_shift", next), callback_data: "start:onboarding:first_job" }]]
             );
+          });
+          await safeCall("worker.start.restore_reply_keyboard_after_lang_pick", async () => {
+            await send(t("worker.use_buttons", next), {
+              reply_markup: ui.mainReply(next)
+            });
           });
           return new Response("ok");
         }
