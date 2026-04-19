@@ -115,6 +115,7 @@ Cloudflare Workers env vars used by gameplay/ops:
 - Retention/cohorts: `/admin_retention`
 - Funnel: `/admin_funnel`
 - Newbie path funnel/retention: `/admin_newbie`
+- Player levels snapshot/top distribution: `/admin_levels` (use `/admin_levels all` to include admins)
 - Quiz stats: `/admin_quiz`
 - New users list: `/admin_new_users`
 

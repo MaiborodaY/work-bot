@@ -2,6 +2,7 @@
 // Admin tools: legacy economy commands + broadcast workflow.
 import { CONFIG } from "./GameConfig.js";
 import { addDaysUtc, dayDiffUtc, dayStrUtc, hasActivityOnDay, isDayStr, markUsefulActivity } from "./PlayerStats.js";
+import { ProgressionService } from "./ProgressionService.js";
 
 const LABOUR_FREE_PLAYERS_KEY = "labour:free_players";
 
@@ -65,6 +66,7 @@ export class AdminCommands {
         "/admin_retention - cohorts retention (30d)\n" +
         "/admin_funnel - onboarding funnel (all-time)\n" +
         "/admin_newbie - newbie path funnel/retention\n" +
+        "/admin_levels - players levels snapshot\n" +
         "/admin_new_users [limit] - newest users list\n" +
         "/admin_quiz - quiz stats\n\n" +
         "<b>Channel</b>\n" +
@@ -385,6 +387,12 @@ export class AdminCommands {
     }
     if (/^\/admin_newbie(?:@\w+)?\s*$/i.test(input)) {
       await this._sendNewbieStats();
+      return true;
+    }
+    const mAdminLevels = input.match(/^\/admin_levels(?:@\w+)?(?:\s+(all))?\s*$/i);
+    if (mAdminLevels) {
+      const includeAdmins = String(mAdminLevels[1] || "").toLowerCase() === "all";
+      await this._sendLevelsStats({ includeAdmins });
       return true;
     }
     const mAdminNewUsers = input.match(/^\/admin_new_users(?:@\w+)?(?:\s+(\d+))?\s*$/i);
@@ -1091,6 +1099,150 @@ export class AdminCommands {
     const t = Math.max(0, Number(total || 0));
     if (t <= 0) return 0;
     return Math.round((p * 100) / t);
+  }
+
+  _fmtInt(v) {
+    const n = Math.max(0, Math.floor(Number(v) || 0));
+    return n.toLocaleString("en-US");
+  }
+
+  _bucketLabel(min, max) {
+    return `${min}-${max}`;
+  }
+
+  _medianInt(values) {
+    const arr = Array.isArray(values) ? values.slice().sort((a, b) => a - b) : [];
+    if (!arr.length) return 0;
+    const mid = Math.floor(arr.length / 2);
+    if (arr.length % 2 === 1) return arr[mid];
+    return Math.round((arr[mid - 1] + arr[mid]) / 2);
+  }
+
+  _percentileInt(values, q) {
+    const arr = Array.isArray(values) ? values.slice().sort((a, b) => a - b) : [];
+    if (!arr.length) return 0;
+    const qq = Math.max(0, Math.min(1, Number(q) || 0));
+    const idx = Math.max(0, Math.min(arr.length - 1, Math.ceil(qq * arr.length) - 1));
+    return Math.max(0, Math.floor(Number(arr[idx]) || 0));
+  }
+
+  async _sendLevelsStats({ includeAdmins = false } = {}) {
+    await this.send("Levels stats started...");
+    const prefix = "u:";
+    const today = dayStrUtc(Date.now());
+    let cursor = undefined;
+    let scannedUsers = 0;
+    let excludedAdmins = 0;
+    let active7d = 0;
+    let active30d = 0;
+    const rows = [];
+
+    while (true) {
+      const page = await this.db.list({ prefix, cursor });
+      const keys = Array.isArray(page?.keys) ? page.keys : [];
+      for (const k of keys) {
+        try {
+          const raw = await this.db.get(k.name);
+          if (!raw) continue;
+          const u = JSON.parse(raw);
+          const fallbackId = String(k.name || "").slice(prefix.length);
+          const id = String((u?.id ?? fallbackId) || "");
+          if (!id) continue;
+          if (!includeAdmins && this.isAdmin(id)) {
+            excludedAdmins += 1;
+            continue;
+          }
+          scannedUsers += 1;
+
+          const stats = (u?.stats && typeof u.stats === "object") ? u.stats : {};
+          const lastActiveDay = isDayStr(stats.lastActiveDay) ? String(stats.lastActiveDay) : "";
+          if (lastActiveDay) {
+            const age = dayDiffUtc(lastActiveDay, today);
+            if (age >= 0 && age <= 6) active7d += 1;
+            if (age >= 0 && age <= 29) active30d += 1;
+          }
+
+          const lvl = ProgressionService.getLevelInfo(u);
+          rows.push({
+            id,
+            name: String(u?.displayName || "").trim() || "(no name)",
+            level: Math.max(1, Math.floor(Number(lvl?.level) || 1)),
+            xp: Math.max(0, Math.floor(Number(lvl?.xp) || 0))
+          });
+        } catch {
+          // skip broken rows
+        }
+      }
+      if (!page || page.list_complete || !page.cursor) break;
+      cursor = page.cursor;
+    }
+
+    const levels = rows.map((r) => r.level);
+    const total = rows.length;
+    const sum = levels.reduce((acc, v) => acc + v, 0);
+    const avg = total > 0 ? (sum / total) : 0;
+    const median = this._medianInt(levels);
+    const p90 = this._percentileInt(levels, 0.9);
+    const maxLevel = levels.length ? Math.max(...levels) : 0;
+    const gte15 = levels.filter((v) => v >= 15).length;
+    const gte20 = levels.filter((v) => v >= 20).length;
+
+    const bucketDefs = [
+      [1, 5],
+      [6, 10],
+      [11, 15],
+      [16, 20],
+      [21, 30],
+      [31, 50]
+    ];
+    const bucketRows = bucketDefs.map(([min, max]) => ({
+      label: this._bucketLabel(min, max),
+      count: levels.filter((v) => v >= min && v <= max).length
+    }));
+
+    const top = rows
+      .slice()
+      .sort((a, b) => {
+        if (b.level !== a.level) return b.level - a.level;
+        if (b.xp !== a.xp) return b.xp - a.xp;
+        return String(a.id).localeCompare(String(b.id));
+      })
+      .slice(0, 15);
+
+    const lines = [
+      "<b>Player levels snapshot</b>",
+      "",
+      `Scope: ${includeAdmins ? "all users" : "non-admin users"}`,
+      `Scanned users (${includeAdmins ? "all" : "non-admin"}): ${this._fmtInt(scannedUsers)}`,
+      `Active last 7d: ${this._fmtInt(active7d)}`,
+      `Active last 30d: ${this._fmtInt(active30d)}`,
+      "",
+      `Avg level: ${avg.toFixed(1)}`,
+      `Median: ${this._fmtInt(median)} | P90: ${this._fmtInt(p90)} | Max: ${this._fmtInt(maxLevel)}`,
+      "",
+      "<b>Buckets</b>"
+    ];
+    for (const b of bucketRows) {
+      lines.push(`${this._escapeHtml(b.label)}: ${this._fmtInt(b.count)}`);
+    }
+    lines.push(
+      "",
+      `Users >=15: ${this._fmtInt(gte15)}`,
+      `Users >=20: ${this._fmtInt(gte20)}`,
+      ""
+    );
+    lines.push("<b>Top 15 by level</b>");
+    if (!top.length) {
+      lines.push("-");
+    } else {
+      let rank = 1;
+      for (const row of top) {
+        lines.push(`${rank}. ${this._escapeHtml(row.name)} - lvl ${this._fmtInt(row.level)} | XP ${this._fmtInt(row.xp)}`);
+        rank += 1;
+      }
+    }
+    if (!includeAdmins) lines.push("", `Excluded admins: ${this._fmtInt(excludedAdmins)}`);
+    await this.send(lines.join("\n"));
   }
 
   async _sendOnboardingFunnel() {

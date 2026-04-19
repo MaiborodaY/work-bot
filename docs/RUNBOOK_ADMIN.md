@@ -1,6 +1,6 @@
 # World of Life - Admin Runbook
 
-Last updated: 2026-04-14 (UTC)
+Last updated: 2026-04-19 (UTC)
 
 This file documents active admin commands and when to use them.
 Command parsing source: `src/AdminCommands.js`.
@@ -64,6 +64,13 @@ Command parsing source: `src/AdminCommands.js`.
 
 - `/admin_quiz`
   - Quiz engagement stats (selection/played/perfect totals).
+
+- `/admin_levels`
+  - Player levels snapshot: avg/median/P90/max, activity 7d/30d, buckets, top-15 by level.
+  - Excludes admins by default.
+
+- `/admin_levels all`
+  - Same report including admins.
 
 ## 5) Channel Posting
 
