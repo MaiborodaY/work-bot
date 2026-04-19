@@ -150,7 +150,7 @@ export class SyndicateService {
   _minLevel() { return Math.max(1, toInt(this._cfg()?.MIN_PLAYER_LEVEL, 10)); }
   _minBizOwned() { return Math.max(1, toInt(this._cfg()?.MIN_BUSINESS_OWNED, 1)); }
   _openTimeoutMs() { return Math.max(5 * 60 * 1000, toInt(this._cfg()?.OPEN_TIMEOUT_MS, 24 * 60 * 60 * 1000)); }
-  _acceptLockTtlSec() { return Math.max(3, toInt(this._cfg()?.ACCEPT_LOCK_TTL_SEC, 8)); }
+  _acceptLockTtlSec() { return Math.max(60, toInt(this._cfg()?.ACCEPT_LOCK_TTL_SEC, 60)); }
   _acceptLockSettleMs() { return Math.max(10, toInt(this._cfg()?.ACCEPT_LOCK_SETTLE_MS, 120)); }
   _nowWeekKey() { return isoWeekKey(this.now()); }
 
@@ -210,7 +210,8 @@ export class SyndicateService {
   async _saveJson(key, value, ttlSec = 0) {
     if (!this.db) return;
     if (ttlSec > 0) {
-      await this.db.put(String(key || ""), JSON.stringify(value), { expirationTtl: ttlSec });
+      const safeTtl = Math.max(60, Math.floor(Number(ttlSec) || 0));
+      await this.db.put(String(key || ""), JSON.stringify(value), { expirationTtl: safeTtl });
       return;
     }
     await this.db.put(String(key || ""), JSON.stringify(value));
