@@ -204,6 +204,57 @@ const SYNDICATE_STRINGS = {
   }
 };
 
+Object.assign(SYNDICATE_STRINGS.ru, {
+  helpLine1: "Доступ: с 10 уровня и при наличии хотя бы 1 бизнеса.",
+  helpLine2: "Совместная сделка на двоих: вы с партнёром вкладываете одинаковую сумму и ждёте таймер.",
+  helpLine3: "Оба получаете одинаковый исход.",
+  helpLine4: "✅ Успех — небольшой плюс (обычно).",
+  helpLine5: "🌟 Удача — крупный плюс (редко).",
+  helpLine6: "❌ Провал — теряете часть ставки (иногда).",
+  helpLine7: "Чем крупнее бизнес и выше тир (small → medium → large), тем больше и прибыль, и риск.",
+  helpLine8: "Партнёр ищется до 24 часов. Если не найден — деньги возвращаются полностью. До принятия можно отменить без потерь.",
+  helpLine9: "Medium открывается после 3 завершённых сделок в этом бизнесе, Large — после 10. Провалы тоже идут в прогресс.",
+  helpLine10: "Рейтинг по очкам за тир: small=1, medium=3, large=7. Отдельные топы недели и all-time."
+});
+
+Object.assign(SYNDICATE_STRINGS.uk, {
+  helpLine1: "Доступ: з 10 рівня та за наявності хоча б 1 бізнесу.",
+  helpLine2: "Спільна угода на двох: ти й партнер вкладаєте однакову суму та чекаєте таймер.",
+  helpLine3: "Обидва отримуєте однаковий результат.",
+  helpLine4: "✅ Успіх — невеликий плюс (зазвичай).",
+  helpLine5: "🌟 Удача — великий плюс (рідко).",
+  helpLine6: "❌ Провал — втрачаєте частину ставки (іноді).",
+  helpLine7: "Що більший бізнес і вищий тир (small → medium → large), то більші і прибуток, і ризик.",
+  helpLine8: "Партнера шукаємо до 24 годин. Якщо не знайдено — гроші повертаються повністю. До прийняття угоду можна скасувати без втрат.",
+  helpLine9: "Medium відкривається після 3 завершених угод у цьому бізнесі, Large — після 10. Провали теж зараховуються у прогрес.",
+  helpLine10: "Рейтинг за очками за тир: small=1, medium=3, large=7. Є окремі топи тижня та all-time."
+});
+
+Object.assign(SYNDICATE_STRINGS.en, {
+  helpLine1: "Access: level 10+ and at least 1 owned business.",
+  helpLine2: "A co-op deal for two: you and a partner put in the same stake and wait for the timer.",
+  helpLine3: "Both players get the same outcome.",
+  helpLine4: "✅ Success — small profit (usually).",
+  helpLine5: "🌟 Lucky — big profit (rare).",
+  helpLine6: "❌ Fail — you lose part of your stake (sometimes).",
+  helpLine7: "The bigger the business and the higher the tier (small → medium → large), the higher the payout — and the risk.",
+  helpLine8: "Finding a partner takes up to 24 hours. If nobody accepts, your money is fully refunded. You can cancel before acceptance with no loss.",
+  helpLine9: "Medium unlocks after 3 completed deals in that business, Large after 10. Fails also count toward progress.",
+  helpLine10: "Ranking uses tier points: small=1, medium=3, large=7. Weekly and all-time leaderboards are separate."
+});
+
+Object.assign(SYNDICATE_STRINGS.ru, {
+  btnOdds: "📊 Ставки и шансы"
+});
+
+Object.assign(SYNDICATE_STRINGS.uk, {
+  btnOdds: "📊 Ставки та шанси"
+});
+
+Object.assign(SYNDICATE_STRINGS.en, {
+  btnOdds: "📊 Stakes & odds"
+});
+
 export function getSyndicateStrings(source = "en") {
   const lang = normalizeLang(typeof source === "string" ? source : source?.lang);
   return SYNDICATE_STRINGS[lang] || SYNDICATE_STRINGS.en;

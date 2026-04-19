@@ -178,3 +178,51 @@ test("syndicate: open deal expires and refunds creator", async () => {
   assert.equal(expiredDeal.state, "expired");
 });
 
+test("syndicate: business view shows transparent tier odds and payouts", async () => {
+  const db = new FakeDb();
+  const users = new FakeUsers({
+    u1: makeUser("u1", "Alpha")
+  });
+  const service = new SyndicateService({
+    db,
+    users,
+    now: () => Date.UTC(2026, 3, 19, 10, 0, 0),
+    bot: { async sendWithInline() {} },
+    isAdmin: () => false
+  });
+
+  const u1 = await users.load("u1");
+  const view = await service.buildBusinessView(u1, "shawarma");
+  const caption = String(view?.caption || "");
+
+  assert.match(caption, /Small unlocked/i);
+  assert.match(caption, /80%\s*→\s*\+\$40/i);
+  assert.match(caption, /15%\s*→\s*\+\$75/i);
+  assert.match(caption, /5%\s*→\s*-\$50/i);
+});
+
+test("syndicate: odds view shows all configured businesses and rules notes", async () => {
+  const db = new FakeDb();
+  const users = new FakeUsers({
+    u1: makeUser("u1", "Alpha")
+  });
+  const service = new SyndicateService({
+    db,
+    users,
+    now: () => Date.UTC(2026, 3, 19, 10, 0, 0),
+    bot: { async sendWithInline() {} },
+    isAdmin: () => false
+  });
+
+  const u1 = await users.load("u1");
+  const view = await service.buildOddsView(u1);
+  const caption = String(view?.caption || "");
+
+  assert.match(caption, /Stakes & odds/i);
+  assert.match(caption, /Shawarma/i);
+  assert.match(caption, /Dental Clinic/i);
+  assert.match(caption, /Restaurant/i);
+  assert.match(caption, /Courier/i);
+  assert.match(caption, /Fitness/i);
+  assert.match(caption, /Small \/ Medium \/ Large differ only by stake size/i);
+});

@@ -170,6 +170,87 @@ export class SyndicateService {
     return `${sign}$${this._money(Math.abs(v))}`;
   }
 
+  _pctSigned(value) {
+    const v = toInt(value, 0);
+    const sign = v > 0 ? "+" : (v < 0 ? "-" : "");
+    return `${sign}${Math.abs(v)}%`;
+  }
+
+  _tierOutcomeNets(stake, returnPct = {}) {
+    const base = Math.max(0, toInt(stake, 0));
+    const netOf = (pct) => this._calcReturn(base, pct) - base;
+    return {
+      success: netOf(returnPct?.success),
+      lucky: netOf(returnPct?.lucky),
+      fail: netOf(returnPct?.fail)
+    };
+  }
+
+  _tierOpenLine(u, tier, stake, duration) {
+    const l = this._lang(u);
+    if (l === "ru") return `✅ ${tier} открыт — $${this._money(stake)} · ${duration}`;
+    if (l === "uk") return `✅ ${tier} відкрито — $${this._money(stake)} · ${duration}`;
+    return `✅ ${tier} unlocked — $${this._money(stake)} · ${duration}`;
+  }
+
+  _tierProgressLine(u, tier, have, need) {
+    const l = this._lang(u);
+    if (l === "ru") return `${tier}: ${this._money(have)}/${this._money(need)} сделок`;
+    if (l === "uk") return `${tier}: ${this._money(have)}/${this._money(need)} угод`;
+    return `${tier}: ${this._money(have)}/${this._money(need)} deals`;
+  }
+
+  _tierOutcomeLine(odds = {}, nets = {}) {
+    return `   🎲 ${Math.max(0, toInt(odds?.success, 0))}% → ${this._moneySigned(nets?.success)}   🌟 ${Math.max(0, toInt(odds?.lucky, 0))}% → ${this._moneySigned(nets?.lucky)}   ❌ ${Math.max(0, toInt(odds?.fail, 0))}% → ${this._moneySigned(nets?.fail)}`;
+  }
+
+  _oddsTitle(u) {
+    const l = this._lang(u);
+    if (l === "ru") return "📊 Ставки и шансы";
+    if (l === "uk") return "📊 Ставки та шанси";
+    return "📊 Stakes & odds";
+  }
+
+  _oddsReturnLine(u, returnPct = {}) {
+    const l = this._lang(u);
+    const success = this._pctSigned(returnPct?.success);
+    const lucky = this._pctSigned(returnPct?.lucky);
+    const fail = this._pctSigned(returnPct?.fail);
+    if (l === "ru") return `  Успех ${success}  Удача ${lucky}  Провал ${fail}`;
+    if (l === "uk") return `  Успіх ${success}  Удача ${lucky}  Провал ${fail}`;
+    return `  Success ${success}  Lucky ${lucky}  Fail ${fail}`;
+  }
+
+  _oddsChanceLine(u, odds = {}) {
+    const l = this._lang(u);
+    const success = `${Math.max(0, toInt(odds?.success, 0))}%`;
+    const lucky = `${Math.max(0, toInt(odds?.lucky, 0))}%`;
+    const fail = `${Math.max(0, toInt(odds?.fail, 0))}%`;
+    if (l === "ru") return `  Шансы: ${success} / ${lucky} / ${fail}`;
+    if (l === "uk") return `  Шанси: ${success} / ${lucky} / ${fail}`;
+    return `  Chances: ${success} / ${lucky} / ${fail}`;
+  }
+
+  _oddsNoteLines(u) {
+    const l = this._lang(u);
+    if (l === "ru") {
+      return [
+        "Ставки и возврат рассчитываются от твоего вклада.",
+        "Small / Medium / Large отличаются только размером ставки."
+      ];
+    }
+    if (l === "uk") {
+      return [
+        "Ставка і повернення рахуються від твого внеску.",
+        "Small / Medium / Large відрізняються лише розміром ставки."
+      ];
+    }
+    return [
+      "Stake and return are calculated from your own contribution.",
+      "Small / Medium / Large differ only by stake size."
+    ];
+  }
+
   _durationLabel(ms, lang = "en") {
     const l = this._lang(lang);
     const totalMin = Math.max(1, Math.ceil((Number(ms) || 0) / 60000));
@@ -843,6 +924,7 @@ export class SyndicateService {
     } else {
       lines.push(...statusRows);
     }
+    kb.push([{ text: String(s.btnOdds || "").trim() || this._oddsTitle(u), callback_data: "syn:odds" }]);
     kb.push([{ text: s.btnRatingWeek, callback_data: "syn:rating:week" }]);
     kb.push([{ text: s.btnRatingAll, callback_data: "syn:rating:all" }]);
     kb.push([{ text: s.btnHelp, callback_data: "syn:help" }]);
@@ -857,17 +939,50 @@ export class SyndicateService {
 
   async buildHelpView(u) {
     const s = this._s(u);
+    const helpLines = [
+      s.helpLine1,
+      s.helpLine2,
+      s.helpLine3,
+      s.helpLine4,
+      s.helpLine5,
+      s.helpLine6,
+      s.helpLine7,
+      s.helpLine8,
+      s.helpLine9,
+      s.helpLine10,
+      s.helpLine11,
+      s.helpLine12
+    ].filter((line) => String(line || "").trim().length > 0);
     return {
       caption: [
         s.helpTitle,
         "",
-        s.helpLine1,
-        s.helpLine2,
-        s.helpLine3,
-        s.helpLine4,
-        s.helpLine5,
-        s.helpLine6
+        ...helpLines
       ].join("\n"),
+      keyboard: [
+        [{ text: s.btnBackMain, callback_data: "syn:refresh" }]
+      ]
+    };
+  }
+
+  async buildOddsView(u) {
+    const s = this._s(u);
+    const lines = [this._oddsTitle(u), ""];
+    for (const bizId of this._bizIds()) {
+      const cfg = this._dealCfg(bizId);
+      if (!cfg) continue;
+      const emoji = String(CONFIG?.BUSINESS?.[String(bizId || "")]?.emoji || "🏢");
+      const bizTitle = getBusinessTitle(bizId, this._lang(u));
+      const duration = this._durationLabel(Math.max(0, toInt(cfg?.durationMs, 0)), u);
+      lines.push(`${emoji} ${bizTitle} · ${duration}`);
+      lines.push(this._oddsReturnLine(u, cfg?.returnPct || {}));
+      lines.push(this._oddsChanceLine(u, cfg?.oddsPct || {}));
+      lines.push("");
+    }
+    const notes = this._oddsNoteLines(u);
+    lines.push(...notes);
+    return {
+      caption: lines.join("\n"),
       keyboard: [
         [{ text: s.btnBackMain, callback_data: "syn:refresh" }]
       ]
@@ -1005,24 +1120,25 @@ export class SyndicateService {
     for (const tierId of this._tierIds()) {
       const unlocked = this._tierUnlocked(u, bizId, tierId);
       const need = this._tierUnlockCompleted(tierId);
+      const stake = Math.max(1, toInt(dealCfg?.stakes?.[tierId], 1));
+      const duration = this._durationLabel(Math.max(0, toInt(dealCfg?.durationMs, 0)), u);
+      const tier = this._tierLabel(tierId);
+      const odds = dealCfg?.oddsPct || {};
+      const nets = this._tierOutcomeNets(stake, dealCfg?.returnPct || {});
       if (unlocked) {
-        lines.push(this._fmt(s.tierUnlocked, { tier: this._tierLabel(tierId) }));
+        lines.push(this._tierOpenLine(u, tier, stake, duration));
+        lines.push(this._tierOutcomeLine(odds, nets));
         if (!activeDeal) {
-          const stake = Math.max(1, toInt(dealCfg?.stakes?.[tierId], 1));
           const targetCb = tierId === "large"
             ? `syn:createask:${bizId}:${tierId}`
             : `syn:create:${bizId}:${tierId}`;
           kb.push([{
-            text: this._fmt(s.btnCreateTier, { tier: this._tierLabel(tierId), stake: this._money(stake) }),
+            text: this._fmt(s.btnCreateTier, { tier, stake: this._money(stake) }),
             callback_data: targetCb
           }]);
         }
       } else {
-        lines.push(this._fmt(s.tierProgress, {
-          tier: this._tierLabel(tierId),
-          have: completed,
-          need: need
-        }));
+        lines.push(this._tierProgressLine(u, tier, completed, need));
       }
     }
 

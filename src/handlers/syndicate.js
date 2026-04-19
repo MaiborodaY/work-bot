@@ -6,6 +6,7 @@ export const syndicateHandler = {
     data === "syn:open" ||
     data === "syn:refresh" ||
     data === "syn:help" ||
+    data === "syn:odds" ||
     data === "syn:rating:week" ||
     data === "syn:rating:all" ||
     data.startsWith("syn:biz:") ||
@@ -58,6 +59,13 @@ export const syndicateHandler = {
     if (data === "syn:help") {
       await answer(cb.id);
       const view = await syndicate.buildHelpView(u);
+      await show(view);
+      return;
+    }
+
+    if (data === "syn:odds") {
+      await answer(cb.id);
+      const view = await syndicate.buildOddsView(u);
       await show(view);
       return;
     }
