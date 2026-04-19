@@ -1291,6 +1291,7 @@ export default {
       }
 
       if (data === "profile:level:claim") {
+        const lang = normalizeLang(u?.lang || "en");
         if (ProgressionService.ensureRewardBaseline(u)) {
           await users.save(u);
         }

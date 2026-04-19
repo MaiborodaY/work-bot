@@ -3,7 +3,7 @@ export const RU = {
   "profile.lang.button": "🌐 Язык: {{lang}}",
   "profile.lang.title": "Выбери язык интерфейса:",
   "profile.lang.changed": "Язык обновлён: {{lang}}",
-  "profile.level.reward_button": "🎁 Уровни {{fromLevel}}–{{toLevel}} · 💎{{gems}}",
+  "profile.level.reward_button": "🎁 Забрать награду за уровень · 💎{{gems}}",
   "profile.level.reward_claimed": "Награда за уровни {{fromLevel}}–{{toLevel}} получена: 💎{{gems}}",
   "profile.level.reward_none": "Сейчас награды за уровень нет.",
   "profile.level.up": "🎉 Новый уровень: {{level}}",
@@ -43,7 +43,7 @@ export const RU = {
   "ui.city.board": "🏆 Доска почёта",
   "ui.city.ratings": "🏆 Рейтинг",
   "ui.city.clans": "👥 Кланы",
-  "ui.city.syndicate": "🎯 Синдикат",
+  "ui.city.syndicate": "🤝 Синдикат",
   "ui.city.referral": "👥 Рефералы",
 
   "ui.shophub.food": "🍔 Магазин еды",

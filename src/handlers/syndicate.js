@@ -9,6 +9,8 @@ export const syndicateHandler = {
     data === "syn:rating:week" ||
     data === "syn:rating:all" ||
     data.startsWith("syn:biz:") ||
+    data.startsWith("syn:createask:") ||
+    data.startsWith("syn:createconfirm:") ||
     data.startsWith("syn:create:") ||
     data.startsWith("syn:accept:") ||
     data.startsWith("syn:cancel:") ||
@@ -91,6 +93,31 @@ export const syndicateHandler = {
       return;
     }
 
+    if (data.startsWith("syn:createask:")) {
+      await answer(cb.id);
+      const parts = data.split(":");
+      const bizId = String(parts[2] || "").trim();
+      const tierId = String(parts[3] || "").trim().toLowerCase();
+      const view = await syndicate.buildCreateConfirmView(u, bizId, tierId);
+      await show(view);
+      return;
+    }
+
+    if (data.startsWith("syn:createconfirm:")) {
+      const parts = data.split(":");
+      const bizId = String(parts[2] || "").trim();
+      const tierId = String(parts[3] || "").trim().toLowerCase();
+      const res = await syndicate.createDeal(u, bizId, tierId);
+      if (!res?.ok) {
+        await answer(cb.id, String(res?.error || "Error"));
+      } else {
+        await answer(cb.id, String(res?.toast || ""));
+      }
+      const view = await syndicate.buildBusinessView(u, bizId);
+      await show(view);
+      return;
+    }
+
     if (data.startsWith("syn:accept:")) {
       const dealId = String(data.split(":")[2] || "").trim();
       const res = await syndicate.acceptDeal(u, dealId);
@@ -131,4 +158,3 @@ export const syndicateHandler = {
     }
   }
 };
-

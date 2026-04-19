@@ -164,6 +164,12 @@ export class SyndicateService {
     return Math.max(0, toInt(value, 0)).toLocaleString("en-US");
   }
 
+  _moneySigned(value) {
+    const v = toInt(value, 0);
+    const sign = v > 0 ? "+" : (v < 0 ? "-" : "");
+    return `${sign}$${this._money(Math.abs(v))}`;
+  }
+
   _durationLabel(ms, lang = "en") {
     const l = this._lang(lang);
     const totalMin = Math.max(1, Math.ceil((Number(ms) || 0) / 60000));
@@ -466,10 +472,11 @@ export class SyndicateService {
     return Math.max(0, amount);
   }
 
-  _bizButtonLabel(u, bizId, openCount) {
+  _bizButtonLabel(u, bizId, openCount, state = "") {
     const emoji = String(CONFIG?.BUSINESS?.[String(bizId || "")]?.emoji || "🏢");
     const title = getBusinessTitle(bizId, this._lang(u));
-    const active = this._getActiveDealId(u, bizId) ? " • ●" : "";
+    const st = String(state || "").toLowerCase();
+    const active = st === "open" ? " • ⏳" : (st === "active" ? " • ⚡" : "");
     return `${emoji} ${title} [${Math.max(0, toInt(openCount, 0))}]${active}`;
   }
 
@@ -618,10 +625,15 @@ export class SyndicateService {
       biz: bizTitle,
       tier: this._tierLabel(deal?.snapshot?.tierId || ""),
       stake: this._money(stake),
-      ret: this._money(returned),
-      net: this._money(Math.max(0, net))
+      ret: this._money(returned)
     });
-    await this._sendInline(chatId, `${title}\n${line}`, [[{ text: s.btnOpenSyndicate, callback_data: "go:Syndicate" }]]);
+    let netLine = s.finishedNetFlat;
+    if (toInt(net, 0) > 0) {
+      netLine = this._fmt(s.finishedNetProfit, { amount: this._moneySigned(net) });
+    } else if (toInt(net, 0) < 0) {
+      netLine = this._fmt(s.finishedNetLoss, { amount: this._moneySigned(net) });
+    }
+    await this._sendInline(chatId, `${title}\n${line}\n${netLine}`, [[{ text: s.btnOpenSyndicate, callback_data: "go:Syndicate" }]]);
   }
 
   async _applyFinishedDealToUser(user, deal, outcome, returnedAmount) {
@@ -630,7 +642,7 @@ export class SyndicateService {
     this._setActiveDealId(user, deal.bizId, "");
     const stake = Math.max(0, toInt(deal?.snapshot?.stake, 0));
     const ret = Math.max(0, toInt(returnedAmount, 0));
-    const net = Math.max(0, ret - stake);
+    const net = toInt(ret, 0) - toInt(stake, 0);
     user.money = Math.max(0, toInt(user?.money, 0)) + ret;
     const tierId = String(deal?.snapshot?.tierId || "");
     const points = Math.max(0, toInt(deal?.snapshot?.tierPoints, this._tierPoints(tierId)));
@@ -693,8 +705,8 @@ export class SyndicateService {
     deal.result = {
       creatorReturn,
       partnerReturn,
-      creatorNet: Math.max(0, creatorReturn - stake),
-      partnerNet: Math.max(0, partnerReturn - stake)
+      creatorNet: toInt(creatorReturn, 0) - toInt(stake, 0),
+      partnerNet: toInt(partnerReturn, 0) - toInt(stake, 0)
     };
     await this._saveDeal(deal);
     await this._removeFromIndex(this._activeIndexKey(), String(deal.id || ""));
@@ -784,15 +796,52 @@ export class SyndicateService {
     if (changed) await this.users.save(u);
 
     const openByBiz = await this._openDealsByBiz(String(u?.id || ""));
-    const lines = [s.title, s.subtitle, "", s.yourBiz];
+    const stateByBiz = {};
+    const statusRows = [];
+    const nowTs = this.now();
+    let openDealsTotal = 0;
+    for (const bizId of owned) {
+      openDealsTotal += Array.isArray(openByBiz?.[bizId]) ? openByBiz[bizId].length : 0;
+      const dealId = this._getActiveDealId(u, bizId);
+      if (!dealId) continue;
+      const deal = await this._loadDeal(dealId);
+      const state = String(deal?.state || "");
+      if (state !== "open" && state !== "active") continue;
+      stateByBiz[bizId] = state;
+      const leftMs = state === "open"
+        ? Math.max(0, toInt(deal?.expiresAt, 0) - nowTs)
+        : Math.max(0, toInt(deal?.endAt, 0) - nowTs);
+      const left = this._durationLabel(leftMs, u);
+      const bizTitle = getBusinessTitle(bizId, this._lang(u));
+      const stateLine = state === "open"
+        ? this._fmt(s.statusOpenDeal, { left })
+        : this._fmt(s.statusActiveDeal, { left });
+      statusRows.push(`• ${bizTitle}: ${stateLine}`);
+    }
+
+    const lines = [
+      s.title,
+      s.subtitle,
+      "",
+      this._fmt(s.openDeals, { count: this._money(openDealsTotal) }),
+      "",
+      s.yourBiz
+    ];
     const kb = [];
     for (const bizId of owned) {
       const list = Array.isArray(openByBiz?.[bizId]) ? openByBiz[bizId] : [];
-      lines.push(`• ${this._bizButtonLabel(u, bizId, list.length)}`);
-      kb.push([{ text: this._bizButtonLabel(u, bizId, list.length), callback_data: `syn:biz:${bizId}` }]);
+      kb.push([{
+        text: this._bizButtonLabel(u, bizId, list.length, stateByBiz[bizId] || ""),
+        callback_data: `syn:biz:${bizId}`
+      }]);
     }
     lines.push("");
-    lines.push(`${s.yourStatus} ${s.statusNoDeal}`);
+    lines.push(s.yourStatus);
+    if (!statusRows.length) {
+      lines.push(s.statusNoDeal);
+    } else {
+      lines.push(...statusRows);
+    }
     kb.push([{ text: s.btnRatingWeek, callback_data: "syn:rating:week" }]);
     kb.push([{ text: s.btnRatingAll, callback_data: "syn:rating:all" }]);
     kb.push([{ text: s.btnHelp, callback_data: "syn:help" }]);
@@ -820,6 +869,51 @@ export class SyndicateService {
       ].join("\n"),
       keyboard: [
         [{ text: s.btnBackMain, callback_data: "syn:refresh" }]
+      ]
+    };
+  }
+
+  async buildCreateConfirmView(u, bizIdRaw, tierRaw) {
+    this._ensureUserState(u);
+    const s = this._s(u);
+    if (!this._hasAccess(u)) {
+      return {
+        caption: s.locked,
+        keyboard: [[{ text: s.btnBackMain, callback_data: "syn:refresh" }]]
+      };
+    }
+
+    const bizId = String(bizIdRaw || "").trim();
+    const tierId = String(tierRaw || "").trim().toLowerCase();
+    const cfg = this._dealCfg(bizId);
+    if (!cfg || !this._tierIds().includes(tierId) || !this._ownedBizIds(u).includes(bizId)) {
+      return {
+        caption: s.lockedReqBiz,
+        keyboard: [[{ text: s.btnBackMain, callback_data: "syn:refresh" }]]
+      };
+    }
+    if (!this._tierUnlocked(u, bizId, tierId)) {
+      return {
+        caption: s.createTierLocked,
+        keyboard: [[{ text: s.btnBackMain, callback_data: `syn:biz:${bizId}` }]]
+      };
+    }
+
+    const stake = this._money(Math.max(1, toInt(cfg?.stakes?.[tierId], 1)));
+    const duration = this._durationLabel(Math.max(0, toInt(cfg?.durationMs, 0)), u);
+    const bizTitle = getBusinessTitle(bizId, this._lang(u));
+    const tierTitle = this._tierLabel(tierId);
+    const lines = [
+      s.confirmCreateTitle,
+      this._fmt(s.confirmCreateBody, { biz: bizTitle, tier: tierTitle, stake, duration }),
+      "",
+      s.confirmCreateWarn
+    ];
+    return {
+      caption: lines.join("\n"),
+      keyboard: [
+        [{ text: s.btnConfirmCreate, callback_data: `syn:createconfirm:${bizId}:${tierId}` }],
+        [{ text: s.btnConfirmCancel, callback_data: `syn:biz:${bizId}` }]
       ]
     };
   }
@@ -857,10 +951,6 @@ export class SyndicateService {
       : this._fmt(s.ratingMeOut, { score: this._money(score) }));
 
     const keyboard = [
-      [
-        { text: s.btnRatingWeek, callback_data: "syn:rating:week" },
-        { text: s.btnRatingAll, callback_data: "syn:rating:all" }
-      ],
       [{ text: s.btnBackMain, callback_data: "syn:refresh" }]
     ];
     return { caption: lines.join("\n"), keyboard };
@@ -889,7 +979,7 @@ export class SyndicateService {
 
     const title = getBusinessTitle(bizId, this._lang(u));
     const type = this._typeLabel(bizId, u);
-    const lines = [`🎯 ${title} — ${type}`, ""];
+    const lines = [`🤝 ${title} — ${type}`, ""];
     const activeId = this._getActiveDealId(u, bizId);
     let activeDeal = null;
     if (activeId) activeDeal = await this._loadDeal(activeId);
@@ -918,9 +1008,12 @@ export class SyndicateService {
         lines.push(this._fmt(s.tierUnlocked, { tier: this._tierLabel(tierId) }));
         if (!activeDeal) {
           const stake = Math.max(1, toInt(dealCfg?.stakes?.[tierId], 1));
+          const targetCb = tierId === "large"
+            ? `syn:createask:${bizId}:${tierId}`
+            : `syn:create:${bizId}:${tierId}`;
           kb.push([{
             text: this._fmt(s.btnCreateTier, { tier: this._tierLabel(tierId), stake: this._money(stake) }),
-            callback_data: `syn:create:${bizId}:${tierId}`
+            callback_data: targetCb
           }]);
         }
       } else {
@@ -947,9 +1040,10 @@ export class SyndicateService {
         const creator = shortName(deal.createdBy, deal.createdName);
         const stake = this._money(deal?.snapshot?.stake || 0);
         const left = this._durationLabel(Math.max(0, toInt(deal.expiresAt, 0) - nowTs), u);
+        const duration = this._durationLabel(Math.max(0, toInt(deal?.snapshot?.durationMs, 0)), u);
         lines.push(`• ${creator} · $${stake} · ${left}`);
         kb.push([{
-          text: this._fmt(s.btnAcceptDeal, { stake, name: creator }),
+          text: this._fmt(s.btnAcceptDeal, { stake, duration, name: creator }),
           callback_data: `syn:accept:${deal.id}`
         }]);
       }
