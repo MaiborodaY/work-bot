@@ -188,20 +188,23 @@ export class SyndicateService {
 
   _tierOpenLine(u, tier, stake, duration) {
     const l = this._lang(u);
-    if (l === "ru") return `✅ ${tier} открыт — $${this._money(stake)} · ${duration}`;
-    if (l === "uk") return `✅ ${tier} відкрито — $${this._money(stake)} · ${duration}`;
-    return `✅ ${tier} unlocked — $${this._money(stake)} · ${duration}`;
+    if (l === "ru") return `🔓 ${tier} открыт — $${this._money(stake)} · ${duration}`;
+    if (l === "uk") return `🔓 ${tier} відкрито — $${this._money(stake)} · ${duration}`;
+    return `🔓 ${tier} unlocked — $${this._money(stake)} · ${duration}`;
   }
 
   _tierProgressLine(u, tier, have, need) {
     const l = this._lang(u);
-    if (l === "ru") return `${tier}: ${this._money(have)}/${this._money(need)} сделок`;
-    if (l === "uk") return `${tier}: ${this._money(have)}/${this._money(need)} угод`;
-    return `${tier}: ${this._money(have)}/${this._money(need)} deals`;
+    const done = Math.max(0, toInt(have, 0));
+    const target = Math.max(0, toInt(need, 0));
+    const left = Math.max(0, target - done);
+    if (l === "ru") return `🔒 ${tier} — сыграй ещё ${this._money(left)} сделок (${this._money(done)}/${this._money(target)})`;
+    if (l === "uk") return `🔒 ${tier} — зіграй ще ${this._money(left)} угод (${this._money(done)}/${this._money(target)})`;
+    return `🔒 ${tier} — play ${this._money(left)} more deals (${this._money(done)}/${this._money(target)})`;
   }
 
   _tierOutcomeLine(odds = {}, nets = {}) {
-    return `   🎲 ${Math.max(0, toInt(odds?.success, 0))}% → ${this._moneySigned(nets?.success)}   🌟 ${Math.max(0, toInt(odds?.lucky, 0))}% → ${this._moneySigned(nets?.lucky)}   ❌ ${Math.max(0, toInt(odds?.fail, 0))}% → ${this._moneySigned(nets?.fail)}`;
+    return `   ✅ ${Math.max(0, toInt(odds?.success, 0))}% → ${this._moneySigned(nets?.success)}   🌟 ${Math.max(0, toInt(odds?.lucky, 0))}% → ${this._moneySigned(nets?.lucky)}   ❌ ${Math.max(0, toInt(odds?.fail, 0))}% → ${this._moneySigned(nets?.fail)}`;
   }
 
   _oddsTitle(u) {
@@ -928,7 +931,6 @@ export class SyndicateService {
     kb.push([{ text: s.btnRatingWeek, callback_data: "syn:rating:week" }]);
     kb.push([{ text: s.btnRatingAll, callback_data: "syn:rating:all" }]);
     kb.push([{ text: s.btnHelp, callback_data: "syn:help" }]);
-    kb.push([{ text: s.btnRefresh, callback_data: "syn:refresh" }]);
     kb.push([{ text: s.btnBackCity, callback_data: "go:City" }]);
 
     return {
@@ -1166,7 +1168,6 @@ export class SyndicateService {
       }
     }
 
-    kb.push([{ text: s.btnRefresh, callback_data: `syn:biz:${bizId}` }]);
     kb.push([{ text: s.btnBackMain, callback_data: "syn:refresh" }]);
     return { caption: lines.join("\n"), keyboard: kb };
   }
