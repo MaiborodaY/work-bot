@@ -1,6 +1,7 @@
 import { CONFIG } from "./GameConfig.js";
 import { getBusinessTitle } from "./I18nCatalog.js";
 import { normalizeLang } from "./i18n/index.js";
+import { getSyndicateStrings } from "./i18n/syndicate.js";
 import { markUsefulActivity } from "./PlayerStats.js";
 import { ProgressionService } from "./ProgressionService.js";
 
@@ -71,188 +72,7 @@ export class SyndicateService {
   }
 
   _s(source = "en") {
-    const lang = this._lang(source);
-    if (lang === "ru") {
-      return {
-        title: "🎯 Синдикат",
-        subtitle: "Совместные сделки между владельцами одинакового бизнеса.",
-        locked: "🔒 Синдикат пока закрыт.",
-        lockedReqLevel: "Нужен уровень игрока: {{need}} (сейчас {{have}}).",
-        lockedReqBiz: "Нужно купить хотя бы 1 бизнес.",
-        yourBiz: "Твои бизнесы:",
-        openDeals: "Открытых сделок: {{count}}",
-        yourStatus: "Твой статус:",
-        statusNoDeal: "нет активной сделки",
-        statusOpenDeal: "ожидает партнёра (до {{left}})",
-        statusActiveDeal: "в работе, осталось {{left}}",
-        btnRatingWeek: "🏆 Рейтинг недели",
-        btnRatingAll: "📚 Рейтинг all-time",
-        btnHelp: "ℹ️ Как работает",
-        btnRefresh: "🔄 Обновить",
-        btnBackCity: "⬅️ Назад в город",
-        btnBackMain: "⬅️ В Синдикат",
-        btnCreateTier: "➕ Создать {{tier}} — ${{stake}}",
-        btnCancelOpen: "✖️ Отменить сделку",
-        btnAcceptDeal: "🤝 Принять: ${{stake}} · {{name}}",
-        noOpenDeals: "Пока нет открытых сделок других игроков.",
-        yourDealLine: "Твоя активная сделка: {{state}}",
-        tierProgress: "Прогресс {{tier}}: {{have}}/{{need}} сделок",
-        tierUnlocked: "✅ {{tier}} открыт",
-        sectionOpenDeals: "Открытые сделки других:",
-        sectionCreate: "Создать новую сделку:",
-        createNeedMoney: "Недостаточно денег.",
-        createHasDeal: "У тебя уже есть активная сделка по этому бизнесу.",
-        createTierLocked: "Этот тир пока закрыт.",
-        createOk: "Сделка создана. Ждём партнёра.",
-        cancelOk: "Сделка отменена. Деньги возвращены.",
-        cancelFail: "Эту сделку уже нельзя отменить.",
-        acceptNoMoney: "Недостаточно денег для принятия.",
-        acceptOwn: "Нельзя принять свою сделку.",
-        acceptHasDeal: "У тебя уже есть активная сделка по этому бизнесу.",
-        acceptRace: "Эту сделку уже успел принять другой игрок.",
-        acceptOk: "Сделка принята. Таймер запущен.",
-        expiredNotify: "ℹ️ По сделке в Синдикате партнёр не найден. Деньги возвращены.",
-        startedNotify: "✅ Партнёр найден. Сделка стартовала.",
-        finishedSuccess: "✅ Успешная сделка",
-        finishedLucky: "🌟 Удачная сделка",
-        finishedFail: "❌ Провал сделки",
-        finishedLine: "{{biz}} · {{tier}}\nВклад: ${{stake}}\nВозврат: ${{ret}}\nЧистая прибыль: ${{net}}",
-        btnOpenSyndicate: "🎯 Открыть Синдикат",
-        ratingWeekTitle: "🏆 Синдикат — неделя",
-        ratingAllTitle: "📚 Синдикат — all-time",
-        ratingEmpty: "Пока пусто.",
-        ratingMeIn: "Ты в топе: #{{place}} · {{score}} очк.",
-        ratingMeOut: "Ты вне топ-15 · {{score}} очк.",
-        ratingLine: "{{place}} {{name}} — {{score}} очк. · {{completed}} сделок",
-        helpTitle: "ℹ️ Как работает Синдикат",
-        helpLine1: "1) Выбери бизнес и создай сделку (small/medium/large).",
-        helpLine2: "2) Другой игрок с тем же бизнесом принимает её.",
-        helpLine3: "3) После таймера оба получают результат: успех / удача / провал.",
-        helpLine4: "4) Medium открывается после 3 завершённых сделок в этом бизнесе.",
-        helpLine5: "5) Large открывается после 10 завершённых сделок в этом бизнесе.",
-        helpLine6: "Рейтинг считается по очкам: small=1, medium=3, large=7."
-      };
-    }
-    if (lang === "uk") {
-      return {
-        title: "🎯 Синдикат",
-        subtitle: "Спільні угоди між власниками однакового бізнесу.",
-        locked: "🔒 Синдикат поки закрито.",
-        lockedReqLevel: "Потрібен рівень гравця: {{need}} (зараз {{have}}).",
-        lockedReqBiz: "Потрібно купити хоча б 1 бізнес.",
-        yourBiz: "Твої бізнеси:",
-        openDeals: "Відкритих угод: {{count}}",
-        yourStatus: "Твій статус:",
-        statusNoDeal: "немає активної угоди",
-        statusOpenDeal: "очікує партнера (до {{left}})",
-        statusActiveDeal: "в роботі, залишилось {{left}}",
-        btnRatingWeek: "🏆 Рейтинг тижня",
-        btnRatingAll: "📚 Рейтинг all-time",
-        btnHelp: "ℹ️ Як працює",
-        btnRefresh: "🔄 Оновити",
-        btnBackCity: "⬅️ Назад до міста",
-        btnBackMain: "⬅️ До Синдикату",
-        btnCreateTier: "➕ Створити {{tier}} — ${{stake}}",
-        btnCancelOpen: "✖️ Скасувати угоду",
-        btnAcceptDeal: "🤝 Прийняти: ${{stake}} · {{name}}",
-        noOpenDeals: "Поки немає відкритих угод інших гравців.",
-        yourDealLine: "Твоя активна угода: {{state}}",
-        tierProgress: "Прогрес {{tier}}: {{have}}/{{need}} угод",
-        tierUnlocked: "✅ {{tier}} відкрито",
-        sectionOpenDeals: "Відкриті угоди інших:",
-        sectionCreate: "Створити нову угоду:",
-        createNeedMoney: "Недостатньо коштів.",
-        createHasDeal: "У тебе вже є активна угода по цьому бізнесу.",
-        createTierLocked: "Цей тир поки закритий.",
-        createOk: "Угоду створено. Чекаємо партнера.",
-        cancelOk: "Угоду скасовано. Гроші повернуто.",
-        cancelFail: "Цю угоду вже не можна скасувати.",
-        acceptNoMoney: "Недостатньо коштів для прийняття.",
-        acceptOwn: "Не можна прийняти власну угоду.",
-        acceptHasDeal: "У тебе вже є активна угода по цьому бізнесу.",
-        acceptRace: "Цю угоду вже прийняв інший гравець.",
-        acceptOk: "Угоду прийнято. Таймер запущено.",
-        expiredNotify: "ℹ️ За угодою в Синдикаті партнера не знайдено. Гроші повернуто.",
-        startedNotify: "✅ Партнера знайдено. Угода стартувала.",
-        finishedSuccess: "✅ Успішна угода",
-        finishedLucky: "🌟 Вдала угода",
-        finishedFail: "❌ Провал угоди",
-        finishedLine: "{{biz}} · {{tier}}\nВклад: ${{stake}}\nПовернення: ${{ret}}\nЧистий прибуток: ${{net}}",
-        btnOpenSyndicate: "🎯 Відкрити Синдикат",
-        ratingWeekTitle: "🏆 Синдикат — тиждень",
-        ratingAllTitle: "📚 Синдикат — all-time",
-        ratingEmpty: "Поки порожньо.",
-        ratingMeIn: "Ти в топі: #{{place}} · {{score}} очк.",
-        ratingMeOut: "Ти поза топ-15 · {{score}} очк.",
-        ratingLine: "{{place}} {{name}} — {{score}} очк. · {{completed}} угод",
-        helpTitle: "ℹ️ Як працює Синдикат",
-        helpLine1: "1) Обери бізнес і створи угоду (small/medium/large).",
-        helpLine2: "2) Інший гравець з тим же бізнесом приймає її.",
-        helpLine3: "3) Після таймера обидва отримують результат: успіх / удача / провал.",
-        helpLine4: "4) Medium відкривається після 3 завершених угод у цьому бізнесі.",
-        helpLine5: "5) Large відкривається після 10 завершених угод у цьому бізнесі.",
-        helpLine6: "Рейтинг рахується за очками: small=1, medium=3, large=7."
-      };
-    }
-    return {
-      title: "🎯 Syndicate",
-      subtitle: "Co-op deals between owners of the same business.",
-      locked: "🔒 Syndicate is locked for now.",
-      lockedReqLevel: "Required player level: {{need}} (you have {{have}}).",
-      lockedReqBiz: "You need to own at least 1 business.",
-      yourBiz: "Your businesses:",
-      openDeals: "Open deals: {{count}}",
-      yourStatus: "Your status:",
-      statusNoDeal: "no active deal",
-      statusOpenDeal: "waiting for partner ({{left}} left)",
-      statusActiveDeal: "in progress ({{left}} left)",
-      btnRatingWeek: "🏆 Week rating",
-      btnRatingAll: "📚 All-time rating",
-      btnHelp: "ℹ️ How it works",
-      btnRefresh: "🔄 Refresh",
-      btnBackCity: "⬅️ Back to city",
-      btnBackMain: "⬅️ Back to syndicate",
-      btnCreateTier: "➕ Create {{tier}} — ${{stake}}",
-      btnCancelOpen: "✖️ Cancel deal",
-      btnAcceptDeal: "🤝 Accept: ${{stake}} · {{name}}",
-      noOpenDeals: "No open deals from other players yet.",
-      yourDealLine: "Your active deal: {{state}}",
-      tierProgress: "{{tier}} progress: {{have}}/{{need}} deals",
-      tierUnlocked: "✅ {{tier}} unlocked",
-      sectionOpenDeals: "Open deals from others:",
-      sectionCreate: "Create a new deal:",
-      createNeedMoney: "Not enough money.",
-      createHasDeal: "You already have an active deal for this business.",
-      createTierLocked: "This tier is still locked.",
-      createOk: "Deal created. Waiting for a partner.",
-      cancelOk: "Deal cancelled. Money refunded.",
-      cancelFail: "This deal cannot be cancelled anymore.",
-      acceptNoMoney: "Not enough money to accept.",
-      acceptOwn: "You cannot accept your own deal.",
-      acceptHasDeal: "You already have an active deal for this business.",
-      acceptRace: "Another player accepted this deal first.",
-      acceptOk: "Deal accepted. Timer started.",
-      expiredNotify: "ℹ️ No partner was found for your syndicate deal. Money refunded.",
-      startedNotify: "✅ Partner found. Deal started.",
-      finishedSuccess: "✅ Successful deal",
-      finishedLucky: "🌟 Lucky deal",
-      finishedFail: "❌ Failed deal",
-      finishedLine: "{{biz}} · {{tier}}\nStake: ${{stake}}\nReturn: ${{ret}}\nNet profit: ${{net}}",
-      btnOpenSyndicate: "🎯 Open Syndicate",
-      ratingWeekTitle: "🏆 Syndicate — week",
-      ratingAllTitle: "📚 Syndicate — all-time",
-      ratingEmpty: "No data yet.",
-      ratingMeIn: "You are in top: #{{place}} · {{score}} pts",
-      ratingMeOut: "You are outside top-15 · {{score}} pts",
-      ratingLine: "{{place}} {{name}} — {{score}} pts · {{completed}} deals",
-      helpTitle: "ℹ️ How Syndicate works",
-      helpLine1: "1) Choose business and create a deal (small/medium/large).",
-      helpLine2: "2) Another player with the same business accepts it.",
-      helpLine3: "3) After timer both get result: success / lucky / fail.",
-      helpLine4: "4) Medium unlocks after 3 completed deals in this business.",
-      helpLine5: "5) Large unlocks after 10 completed deals in this business.",
-      helpLine6: "Rating points: small=1, medium=3, large=7."
-    };
+    return getSyndicateStrings(source);
   }
 
   _bizIds() {
@@ -318,6 +138,7 @@ export class SyndicateService {
 
   _openIndexKey() { return "syndicate:open:v1"; }
   _activeIndexKey() { return "syndicate:active:v1"; }
+  _acceptLockKey(dealId) { return `syndicate:acceptlock:${String(dealId || "").trim()}:v1`; }
   _dealKey(dealId) { return `syndicate:deal:${String(dealId || "").trim()}`; }
   _ratingAllKey() { return "syndicate:rating:all:v1"; }
   _ratingWeekKey(weekKey) { return `syndicate:rating:week:${String(weekKey || "").trim()}:v1`; }
@@ -329,7 +150,15 @@ export class SyndicateService {
   _minLevel() { return Math.max(1, toInt(this._cfg()?.MIN_PLAYER_LEVEL, 10)); }
   _minBizOwned() { return Math.max(1, toInt(this._cfg()?.MIN_BUSINESS_OWNED, 1)); }
   _openTimeoutMs() { return Math.max(5 * 60 * 1000, toInt(this._cfg()?.OPEN_TIMEOUT_MS, 24 * 60 * 60 * 1000)); }
+  _acceptLockTtlSec() { return Math.max(3, toInt(this._cfg()?.ACCEPT_LOCK_TTL_SEC, 8)); }
+  _acceptLockSettleMs() { return Math.max(10, toInt(this._cfg()?.ACCEPT_LOCK_SETTLE_MS, 120)); }
   _nowWeekKey() { return isoWeekKey(this.now()); }
+
+  async _sleep(ms) {
+    const waitMs = Math.max(0, toInt(ms, 0));
+    if (!waitMs) return;
+    await new Promise((resolve) => setTimeout(resolve, waitMs));
+  }
 
   _money(value) {
     return Math.max(0, toInt(value, 0)).toLocaleString("en-US");
@@ -428,6 +257,29 @@ export class SyndicateService {
     const id = String(deal.id || "").trim();
     if (!id) return;
     await this._saveJson(this._dealKey(id), deal, this._dealTtlSec());
+  }
+
+  async _acquireAcceptLock(dealId, userId) {
+    const id = String(dealId || "").trim();
+    const uid = String(userId || "").trim();
+    if (!id || !uid) return "";
+    const token = `${uid}:${makeDealId(this.now())}`;
+    const key = this._acceptLockKey(id);
+    await this._saveJson(key, { token, uid, ts: this.now() }, this._acceptLockTtlSec());
+    await this._sleep(this._acceptLockSettleMs());
+    const check = await this._loadJson(key, null);
+    if (!check || String(check?.token || "") !== token) return "";
+    return token;
+  }
+
+  async _releaseAcceptLock(dealId, token) {
+    const id = String(dealId || "").trim();
+    const tkn = String(token || "").trim();
+    if (!id || !tkn || !this.db) return;
+    const key = this._acceptLockKey(id);
+    const check = await this._loadJson(key, null);
+    if (!check || String(check?.token || "") !== tkn) return;
+    await this.db.delete(key).catch(() => null);
   }
 
   _isAdminUserId(userId) {
@@ -924,6 +776,13 @@ export class SyndicateService {
       };
     }
 
+    let changed = false;
+    for (const bizId of owned) {
+      const synced = await this._syncActiveDealRef(u, bizId);
+      if (synced) changed = true;
+    }
+    if (changed) await this.users.save(u);
+
     const openByBiz = await this._openDealsByBiz(String(u?.id || ""));
     const lines = [s.title, s.subtitle, "", s.yourBiz];
     const kb = [];
@@ -1208,43 +1067,64 @@ export class SyndicateService {
     const stake = Math.max(1, toInt(deal?.snapshot?.stake, 1));
     if (Math.max(0, toInt(u?.money, 0)) < stake) return { ok: false, error: s.acceptNoMoney };
 
-    u.money = Math.max(0, toInt(u?.money, 0)) - stake;
-    this._setActiveDealId(u, deal.bizId, deal.id);
-    markUsefulActivity(u, this.now());
-    await this.users.save(u);
+    const lockToken = await this._acquireAcceptLock(dealId, u?.id);
+    if (!lockToken) return { ok: false, error: s.acceptRace };
 
-    const activeDeal = {
-      ...deal,
-      state: "active",
-      acceptedBy: String(u?.id || ""),
-      acceptedName: shortName(u?.id, u?.displayName),
-      acceptedAt: this.now(),
-      startAt: this.now(),
-      endAt: this.now() + Math.max(60 * 1000, toInt(deal?.snapshot?.durationMs, 60 * 1000))
-    };
-    await this._saveDeal(activeDeal);
+    try {
+      const current = await this._loadDeal(dealId);
+      if (!current || String(current.state || "") !== "open") return { ok: false, error: s.acceptRace };
+      if (String(current.createdBy || "") === String(u?.id || "")) return { ok: false, error: s.acceptOwn };
+      if (!this._dealCfg(current.bizId)) return { ok: false, error: s.acceptRace };
+      if (!this._ownedBizIds(u).includes(String(current.bizId || ""))) return { ok: false, error: s.lockedReqBiz };
 
-    const check = await this._loadDeal(dealId);
-    if (!check || String(check.state || "") !== "active" || String(check.acceptedBy || "") !== String(u?.id || "")) {
-      u.money = Math.max(0, toInt(u?.money, 0)) + stake;
-      this._setActiveDealId(u, deal.bizId, "");
+      const syncedCurrent = await this._syncActiveDealRef(u, current.bizId);
+      if (syncedCurrent) await this.users.save(u);
+      if (this._getActiveDealId(u, current.bizId)) return { ok: false, error: s.acceptHasDeal };
+
+      const currentStake = Math.max(1, toInt(current?.snapshot?.stake, 1));
+      if (Math.max(0, toInt(u?.money, 0)) < currentStake) return { ok: false, error: s.acceptNoMoney };
+
+      u.money = Math.max(0, toInt(u?.money, 0)) - currentStake;
+      this._setActiveDealId(u, current.bizId, current.id);
+      markUsefulActivity(u, this.now());
       await this.users.save(u);
-      return { ok: false, error: s.acceptRace };
-    }
 
-    await this._removeFromIndex(this._openIndexKey(), dealId);
-    await this._addToIndex(this._activeIndexKey(), dealId);
+      const activeDeal = {
+        ...current,
+        state: "active",
+        acceptedBy: String(u?.id || ""),
+        acceptedName: shortName(u?.id, u?.displayName),
+        acceptedAt: this.now(),
+        startAt: this.now(),
+        endAt: this.now() + Math.max(60 * 1000, toInt(current?.snapshot?.durationMs, 60 * 1000))
+      };
+      await this._saveDeal(activeDeal);
 
-    const creator = await this.users.load(String(check.createdBy || "")).catch(() => null);
-    if (creator) {
-      this._ensureUserState(creator);
-      this._setActiveDealId(creator, check.bizId, dealId);
-      await this.users.save(creator);
-      await this._notifyDealStarted(creator);
+      await this._sleep(this._acceptLockSettleMs());
+      const check = await this._loadDeal(dealId);
+      if (!check || String(check.state || "") !== "active" || String(check.acceptedBy || "") !== String(u?.id || "")) {
+        u.money = Math.max(0, toInt(u?.money, 0)) + currentStake;
+        this._setActiveDealId(u, current.bizId, "");
+        await this.users.save(u);
+        return { ok: false, error: s.acceptRace };
+      }
+
+      await this._removeFromIndex(this._openIndexKey(), dealId);
+      await this._addToIndex(this._activeIndexKey(), dealId);
+
+      const creator = await this.users.load(String(check.createdBy || "")).catch(() => null);
+      if (creator) {
+        this._ensureUserState(creator);
+        this._setActiveDealId(creator, check.bizId, dealId);
+        await this.users.save(creator);
+        await this._notifyDealStarted(creator);
+      }
+      await this._notifyDealStarted(u);
+      await this._incrementStats("accepted");
+      return { ok: true, toast: s.acceptOk };
+    } finally {
+      await this._releaseAcceptLock(dealId, lockToken);
     }
-    await this._notifyDealStarted(u);
-    await this._incrementStats("accepted");
-    return { ok: true, toast: s.acceptOk };
   }
 
   async _incrementStats(field) {
@@ -1371,4 +1251,3 @@ export class SyndicateService {
     };
   }
 }
-
