@@ -13,7 +13,7 @@ test("business handler: first business purchase returns newbie player to newbie 
       lang: "ru",
       money: 20000,
       flags: { onboardingDone: true },
-      newbiePath: { step: 8, pending: false, completed: false, ctx: {}, updatedAt: 0 },
+      newbiePath: { step: 9, pending: false, completed: false, ctx: {}, updatedAt: 0 },
       biz: { owned: [] }
     },
     users: {

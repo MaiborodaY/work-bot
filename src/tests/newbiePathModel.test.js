@@ -35,7 +35,7 @@ test("UserStore: old onboardingDone user gets newbie path completed by default",
   const u = await users.load("old-1", JSON.stringify(legacy));
 
   assert.equal(u.newbiePath.completed, true);
-  assert.equal(u.newbiePath.step, 9);
+  assert.equal(u.newbiePath.step, 10);
   assert.equal(u.newbiePath.pending, false);
 });
 

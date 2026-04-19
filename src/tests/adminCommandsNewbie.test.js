@@ -84,18 +84,18 @@ test("admin_newbie reports funnel, source split, retention and detail lists", as
         newbie: {
           openedDay: "2026-04-05",
           completedDay: "2026-04-07",
-          maxStepSeen: 8,
-          maxStepClaimed: 8,
+          maxStepSeen: 9,
+          maxStepClaimed: 9,
           stepsSeen: {
             "1": "2026-04-05", "2": "2026-04-05", "3": "2026-04-05", "4": "2026-04-05",
-            "5": "2026-04-05", "6": "2026-04-06", "7": "2026-04-06", "8": "2026-04-07"
+            "5": "2026-04-05", "6": "2026-04-06", "7": "2026-04-06", "8": "2026-04-07", "9": "2026-04-07"
           },
           stepsClaimed: {
             "1": "2026-04-05", "2": "2026-04-05", "3": "2026-04-05", "4": "2026-04-05",
-            "5": "2026-04-06", "6": "2026-04-06", "7": "2026-04-06", "8": "2026-04-07"
+            "5": "2026-04-06", "6": "2026-04-06", "7": "2026-04-06", "8": "2026-04-07", "9": "2026-04-07"
           }
         },
-        newbiePath: { step: 9, pending: false, completed: true }
+        newbiePath: { step: 10, pending: false, completed: true }
       }),
       makeUser({
         id: "org-1",

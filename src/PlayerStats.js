@@ -1,7 +1,7 @@
 const DAY_MS = 24 * 60 * 60 * 1000;
 const ACTIVE_DAYS_LIMIT = 45;
 const FARM_INCOME_DAYS_LIMIT = 35;
-const NEWBIE_STEP_KEYS = ["1","2","3","4","5","6","7","8"];
+const NEWBIE_STEP_KEYS = ["1","2","3","4","5","6","7","8","9"];
 
 export function dayStrUtc(ts = Date.now()) {
   const d = new Date(ts);

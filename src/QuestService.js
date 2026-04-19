@@ -1527,6 +1527,8 @@ export class QuestService {
         return !!ctx?.completedByEvent || !!(Array.isArray(u?.farm?.plots) && u.farm.plots.some((p) =>
           String(p?.cropId || "") === "carrot" && (String(p?.status || "") === "growing" || String(p?.status || "") === "ready")
         ));
+      case "energy_50":
+        return EnergyService.effectiveEnergyMax(u, this.now()) >= 50;
       case "buy_business":
         return this._hasAnyBusiness(u);
       default:

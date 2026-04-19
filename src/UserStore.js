@@ -767,8 +767,9 @@ export class UserStore {
 
     if (!u.newbiePath || typeof u.newbiePath !== "object") {
       const completedByDefault = !!u.flags.onboardingDone;
+      const completedStep = Math.max(1, (Array.isArray(CONFIG?.QUESTS?.NEWBIE_PATH) ? CONFIG.QUESTS.NEWBIE_PATH.length : 0) + 1);
       u.newbiePath = {
-        step: completedByDefault ? 9 : 1,
+        step: completedByDefault ? completedStep : 1,
         pending: false,
         completed: completedByDefault,
         ctx: null,

@@ -29,7 +29,7 @@ test("ensurePlayerStatsShape fills retention and funnel fields", () => {
   assert.equal(typeof u.stats.newbie.stepsSeen, "object");
   assert.equal(typeof u.stats.newbie.stepsClaimed, "object");
   assert.equal(typeof u.stats.newbie.stepsSeen["1"], "string");
-  assert.equal(typeof u.stats.newbie.stepsClaimed["8"], "string");
+  assert.equal(typeof u.stats.newbie.stepsClaimed["9"], "string");
 });
 
 test("markUsefulActivity sets firstActiveDay from createdAt and appends active day", () => {
@@ -80,8 +80,8 @@ test("markUsefulActivity is idempotent on same day", () => {
         lastStepClaimedDay: "",
         maxStepSeen: 0,
         maxStepClaimed: 0,
-        stepsSeen: { "1": "", "2": "", "3": "", "4": "", "5": "", "6": "", "7": "", "8": "" },
-        stepsClaimed: { "1": "", "2": "", "3": "", "4": "", "5": "", "6": "", "7": "", "8": "" }
+        stepsSeen: { "1": "", "2": "", "3": "", "4": "", "5": "", "6": "", "7": "", "8": "", "9": "" },
+        stepsClaimed: { "1": "", "2": "", "3": "", "4": "", "5": "", "6": "", "7": "", "8": "", "9": "" }
       }
     }
   };

@@ -5,7 +5,9 @@ const buildPlayerLevelXpTable = () => {
   const table = [0];
   let total = 0;
   for (let level = 2; level <= 50; level += 1) {
-    const gain = 100 + ((level - 2) * 25);
+    const gain = (level === 2)
+      ? 50
+      : (100 + ((level - 2) * 25));
     total += gain;
     table[level - 1] = total;
   }
@@ -150,6 +152,7 @@ export const CONFIG = {
       { id: "buy_pet", rewardMoney: 500, rewardGems: 0, targetRoute: "Pet" },
       { id: "gym_train", rewardMoney: 200, rewardGems: 0, targetRoute: "Gym" },
       { id: "plant_carrot", rewardMoney: 800, rewardGems: 2, targetRoute: "Farm" },
+      { id: "energy_50", rewardMoney: 400, rewardGems: 0, targetRoute: "Gym" },
       { id: "buy_business", rewardMoney: 1000, rewardGems: 5, targetRoute: "Business" }
     ],
     SUB_BONUS_REWARD_MONEY: 300,

@@ -1195,6 +1195,7 @@ export class AdminCommands {
       case "buy_pet": return "buy pet";
       case "gym_train": return "gym workout";
       case "plant_carrot": return "plant carrot";
+      case "energy_50": return "reach 50 energy";
       case "buy_business": return "first business";
       default: return String(stepId || "-");
     }
