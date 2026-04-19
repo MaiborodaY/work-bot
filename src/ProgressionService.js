@@ -6,7 +6,9 @@ function ensureProgressionShape(u) {
   if (!u.progression || typeof u.progression !== "object") {
     u.progression = {
       rewardLevelClaimed: 0,
-      rewardInitDone: false
+      rewardInitDone: false,
+      notifiedLevel: 0,
+      notifyInitDone: false
     };
     return true;
   }
@@ -23,6 +25,20 @@ function ensureProgressionShape(u) {
   }
   if (typeof u.progression.rewardInitDone !== "boolean") {
     u.progression.rewardInitDone = false;
+    dirty = true;
+  }
+  if (!Number.isFinite(Number(u.progression.notifiedLevel))) {
+    u.progression.notifiedLevel = 0;
+    dirty = true;
+  } else {
+    const fixedNotified = Math.max(0, Math.floor(Number(u.progression.notifiedLevel) || 0));
+    if (fixedNotified !== u.progression.notifiedLevel) {
+      u.progression.notifiedLevel = fixedNotified;
+      dirty = true;
+    }
+  }
+  if (typeof u.progression.notifyInitDone !== "boolean") {
+    u.progression.notifyInitDone = false;
     dirty = true;
   }
   return dirty;
@@ -43,6 +59,8 @@ export const ProgressionService = {
       (n(p.quizPerfectTotal) * 25) +
       (n(p.stockBuysTotal) * 4) +
       (n(p.employeesHiredTotal) * 20) +
+      (n(p.colosseumBattlesTotal) * 5) +
+      (n(p.colosseumWinsTotal) * 12) +
       (n(p.theftSuccessTotal) * 15) +
       (n(p.defensesSuccess) * 15) +
       (n(p.referralsDone) * 100) +
@@ -94,6 +112,22 @@ export const ProgressionService = {
     return true;
   },
 
+  ensureNotifyBaseline(u) {
+    let dirty = ensureProgressionShape(u);
+    if (u.progression.notifyInitDone) return dirty;
+    const info = this.getLevelInfo(u);
+    u.progression.notifiedLevel = Math.max(0, info.level);
+    u.progression.notifyInitDone = true;
+    return true;
+  },
+
+  ensureBaselines(u) {
+    let dirty = false;
+    dirty = this.ensureRewardBaseline(u) || dirty;
+    dirty = this.ensureNotifyBaseline(u) || dirty;
+    return dirty;
+  },
+
   getPendingReward(u) {
     ensureProgressionShape(u);
     const info = this.getLevelInfo(u);
@@ -120,6 +154,19 @@ export const ProgressionService = {
     u.progression.rewardLevelClaimed = pending.toLevel;
     u.progression.rewardInitDone = true;
     return { ok: true, ...pending };
+  },
+
+  consumeLevelUpNotification(u) {
+    ensureProgressionShape(u);
+    const info = this.getLevelInfo(u);
+    const notifiedLevel = Math.max(0, Math.floor(Number(u?.progression?.notifiedLevel) || 0));
+    if (info.level <= notifiedLevel) return null;
+    u.progression.notifiedLevel = info.level;
+    u.progression.notifyInitDone = true;
+    return {
+      level: info.level,
+      previousLevel: notifiedLevel,
+      pendingReward: this.getPendingReward(u)
+    };
   }
 };
-

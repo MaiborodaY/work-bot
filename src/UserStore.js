@@ -619,6 +619,8 @@ export class UserStore {
           farmHarvestedTypesMask: 0,
           quizPerfectTotal: 0,
           quizPerfectStreak: 0,
+          colosseumBattlesTotal: 0,
+          colosseumWinsTotal: 0,
           referralsDone: 0,
           clanJoinedOnce: false,
           clanCreatedOnce: false
@@ -655,6 +657,8 @@ export class UserStore {
         farmHarvestedTypesMask: 0,
         quizPerfectTotal: 0,
         quizPerfectStreak: 0,
+        colosseumBattlesTotal: 0,
+        colosseumWinsTotal: 0,
         referralsDone: 0
       };
       for (const [k, d] of Object.entries(progressDefaults)) {
@@ -786,7 +790,9 @@ export class UserStore {
     if (!u.progression || typeof u.progression !== "object") {
       u.progression = {
         rewardLevelClaimed: 0,
-        rewardInitDone: false
+        rewardInitDone: false,
+        notifiedLevel: 0,
+        notifyInitDone: false
       };
       dirty = true;
     } else {
@@ -797,6 +803,15 @@ export class UserStore {
       }
       if (typeof u.progression.rewardInitDone !== "boolean") {
         u.progression.rewardInitDone = false;
+        dirty = true;
+      }
+      const fixedNotifiedLevel = Math.max(0, Math.floor(Number(u.progression.notifiedLevel) || 0));
+      if (fixedNotifiedLevel !== u.progression.notifiedLevel) {
+        u.progression.notifiedLevel = fixedNotifiedLevel;
+        dirty = true;
+      }
+      if (typeof u.progression.notifyInitDone !== "boolean") {
+        u.progression.notifyInitDone = false;
         dirty = true;
       }
     }
@@ -877,7 +892,9 @@ export class UserStore {
       premium: 20,
       progression: {
         rewardLevelClaimed: 1,
-        rewardInitDone: true
+        rewardInitDone: true,
+        notifiedLevel: 1,
+        notifyInitDone: true
       },
       pet: null,
       newbiePath: {

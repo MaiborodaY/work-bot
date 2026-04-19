@@ -1,6 +1,6 @@
 # World of Life - Project Context (Agent Memory)
 
-Last updated: 2026-04-14 (UTC)
+Last updated: 2026-04-19 (UTC)
 
 This document is a compact source of truth for engineering context.
 Read this before implementing new features or hotfixes.
@@ -37,11 +37,28 @@ Key files:
 - Labour contracts are fixed-term and settled at contract end.
 - Colosseum:
   - unlocked from `effective max energy >= 50`,
-  - daily battle limit per player: `50`,
-  - weekly ranking and weekly rewards enabled.
+  - daily battle limit per player: `30`,
+  - each win gives `+1 gem`,
+  - weekly ranking and weekly rewards enabled,
+  - player XP must use all-time Colosseum counters, not weekly `weekWins`.
+- Player level / progression:
+  - cosmetic/progression-only for now (no gameplay bonuses),
+  - max level: `50`,
+  - shown in own profile and public profile,
+  - rewards are claim-based and only for levels reached after release,
+  - old players get retroactive level, but no retroactive gem payouts.
 - Farm:
   - separate economy loop,
   - net profit metrics are used in top/channels (seed cost is included).
+- Theft defense:
+  - business defense is now a 3-round battle,
+  - base reaction window is `10 minutes`,
+  - guard extends reaction window, but does not reduce success chance,
+  - successful owner defense gives `+1 gem`.
+- Persistent reply keyboard:
+  - bottom nav uses reply keyboard, not inline buttons,
+  - current buttons: `Площадь`, `Город`, `Заработок`, `Бар`, `Профиль`,
+  - `/start` restores it, and hub routes also restore it once if missing.
 
 Source of truth for balance/limits: `src/GameConfig.js` (avoid duplicating numbers in code and texts).
 
@@ -97,8 +114,13 @@ Cloudflare Workers env vars used by gameplay/ops:
 - Referrals and source tracking: `/admin_referrals`
 - Retention/cohorts: `/admin_retention`
 - Funnel: `/admin_funnel`
+- Newbie path funnel/retention: `/admin_newbie`
 - Quiz stats: `/admin_quiz`
 - New users list: `/admin_new_users`
+
+Analytics caveat:
+- `admin_newbie` step `active/pending` should be counted only for users who actually opened newbie path (`openedDay` exists).
+- `claimed` must never exceed `seen`; claim flow should record `seen` first.
 
 Use admin commands first before adding one-off scripts.
 

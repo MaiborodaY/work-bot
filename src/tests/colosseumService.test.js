@@ -40,6 +40,25 @@ class FakeUsers {
   }
 }
 
+class FakeAchievements {
+  constructor() {
+    this.events = [];
+  }
+
+  async onEvent(user, event) {
+    this.events.push({ userId: String(user?.id || ""), event: String(event || "") });
+    if (!user.achievements) user.achievements = { progress: {} };
+    if (!user.achievements.progress) user.achievements.progress = {};
+    if (event === "colosseum_battle_played") {
+      user.achievements.progress.colosseumBattlesTotal = Math.max(0, Number(user.achievements.progress.colosseumBattlesTotal || 0)) + 1;
+    }
+    if (event === "colosseum_win") {
+      user.achievements.progress.colosseumWinsTotal = Math.max(0, Number(user.achievements.progress.colosseumWinsTotal || 0)) + 1;
+    }
+    return { ok: true, changed: true };
+  }
+}
+
 function makeUser(id, name, energyMax = 120) {
   return {
     id: String(id),
@@ -49,6 +68,12 @@ function makeUser(id, name, energyMax = 120) {
     energy_max: energyMax,
     money: 0,
     premium: 0,
+    achievements: {
+      progress: {
+        colosseumBattlesTotal: 0,
+        colosseumWinsTotal: 0
+      }
+    },
     createdAt: Date.UTC(2026, 2, 30, 10, 0, 0),
     colosseum: {
       dayKey: "",
@@ -151,6 +176,7 @@ test("colosseum service: starting battle triggers quest event for both players",
     u1: makeUser("u1", "Alpha"),
     u2: makeUser("u2", "Bravo")
   });
+  const achievements = new FakeAchievements();
   const questCalls = [];
   const quests = {
     async onEvent(user, event) {
@@ -163,7 +189,8 @@ test("colosseum service: starting battle triggers quest event for both players",
     users,
     now: () => Date.UTC(2026, 2, 30, 12, 6, 0),
     bot: { async sendWithInline() {} },
-    quests
+    quests,
+    achievements
   });
 
   await service.joinQueue(await users.load("u1"));
@@ -178,6 +205,15 @@ test("colosseum service: starting battle triggers quest event for both players",
       { userId: "u2", event: "colosseum_battle_played" }
     ]
   );
+  assert.deepEqual(
+    achievements.events.sort((a, b) => String(a.userId).localeCompare(String(b.userId))),
+    [
+      { userId: "u1", event: "colosseum_battle_played" },
+      { userId: "u2", event: "colosseum_battle_played" }
+    ]
+  );
+  assert.equal((await users.load("u1")).achievements.progress.colosseumBattlesTotal, 1);
+  assert.equal((await users.load("u2")).achievements.progress.colosseumBattlesTotal, 1);
 });
 
 test("colosseum service: defense cannot be the same zone as selected attack", async () => {
@@ -287,6 +323,7 @@ test("colosseum service: surrender finalizes battle, clears state and updates we
 
 test("colosseum service: winner gets 1 gem after normal battle finish", async () => {
   const db = new FakeDb();
+  const achievements = new FakeAchievements();
   const users = new FakeUsers({
     u1: makeUser("u1", "Alpha"),
     u2: makeUser("u2", "Bravo")
@@ -296,7 +333,8 @@ test("colosseum service: winner gets 1 gem after normal battle finish", async ()
     db,
     users,
     now: () => nowTs,
-    bot: { async sendWithInline() {} }
+    bot: { async sendWithInline() {} },
+    achievements
   });
 
   await service.joinQueue(await users.load("u1"));
@@ -335,6 +373,8 @@ test("colosseum service: winner gets 1 gem after normal battle finish", async ()
   assert.equal(s2.colosseum.weekWins, 0);
   assert.equal(s1.premium, 1);
   assert.equal(s2.premium, 0);
+  assert.equal(s1.achievements.progress.colosseumWinsTotal, 1);
+  assert.equal(s2.achievements.progress.colosseumWinsTotal, 0);
 });
 
 test("colosseum service: finished winner view shows gem reward", async () => {

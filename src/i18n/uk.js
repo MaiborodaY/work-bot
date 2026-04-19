@@ -9,6 +9,8 @@ export const UK = {
   "profile.level.reward_button": "🎁 Рівні {{fromLevel}}–{{toLevel}} · 💎{{gems}}",
   "profile.level.reward_claimed": "Нагороду за рівні {{fromLevel}}–{{toLevel}} отримано: 💎{{gems}}",
   "profile.level.reward_none": "Зараз нагороди за рівень немає.",
+  "profile.level.up": "🎉 Новий рівень: {{level}}",
+  "profile.level.up_reward": "Доступна нагорода: 💎{{gems}}",
   "worker.start.lang_pick": "🌐 Обери мову перед стартом:",
   "worker.start.lang_pick_hint": "Це можна змінити пізніше у профілі.",
   "worker.start.lang_pick_required": "Спочатку обери мову.",

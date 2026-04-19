@@ -125,7 +125,7 @@ export default {
       });
       const pet = new PetService({ db: env.DB, users, now: () => Date.now(), bot, quests, achievements });
       const farm = new FarmService({ db: env.DB, users, now: () => Date.now(), bot, quests, achievements, social });
-      const colosseum = new ColosseumService({ db: env.DB, users, now: () => Date.now(), bot, isAdmin, quests });
+      const colosseum = new ColosseumService({ db: env.DB, users, now: () => Date.now(), bot, isAdmin, quests, achievements });
       const notifier = new NotificationService({
         users,
         bot,
@@ -224,7 +224,7 @@ export default {
     });
     const pet = new PetService({ db: env.DB, users, now, bot, quests, achievements });
     const farm = new FarmService({ db: env.DB, users, now, bot, quests, achievements, social });
-    const colosseum = new ColosseumService({ db: env.DB, users, now, bot, isAdmin, quests });
+    const colosseum = new ColosseumService({ db: env.DB, users, now, bot, isAdmin, quests, achievements });
     const referrals = new ReferralService({
       users,
       now,
@@ -537,7 +537,7 @@ export default {
     };
 
     async function renderProfile(u, sourceMsg = null) {
-      if (ProgressionService.ensureRewardBaseline(u)) {
+      if (ProgressionService.ensureBaselines(u)) {
         await users.save(u);
       }
       const clan = await safeCall("worker.profile.get_clan", async () => {
@@ -580,6 +580,20 @@ export default {
       }
       await sendWithInline(statusText, kb);
       await maybeRestoreReplyKeyboard(u, "Profile");
+    }
+
+    async function maybeSendLevelUpNotice(u, beforeLevel = 0) {
+      const current = ProgressionService.getLevelInfo(u);
+      if (current.level <= Math.max(0, Number(beforeLevel) || 0)) return;
+      const levelUp = ProgressionService.consumeLevelUpNotification(u);
+      if (!levelUp) return;
+      await users.save(u);
+      const lang = normalizeLang(u?.lang || "en");
+      const lines = [t("profile.level.up", lang, { level: levelUp.level })];
+      if (levelUp.pendingReward?.gems > 0) {
+        lines.push(t("profile.level.up_reward", lang, { gems: levelUp.pendingReward.gems }));
+      }
+      await send(lines.join("\n"));
     }
 
     const profileSourceToCallback = (srcToken) => {
@@ -1159,6 +1173,10 @@ export default {
 
       const data = cb.data || "";
       const u = await users.getOrCreate(cb.from.id);
+      if (ProgressionService.ensureBaselines(u)) {
+        await users.save(u);
+      }
+      const levelBeforeAction = ProgressionService.getLevelInfo(u).level;
 
       await safeCall("worker.callback.touch_daily_presence", async () => {
         await clans.touchDailyPresence(u);
@@ -1496,6 +1514,7 @@ export default {
       for (const h of handlers) {
         if (h.match(data)) {
           await h.handle(ctxObj);
+          await maybeSendLevelUpNotice(u, levelBeforeAction);
           return new Response("ok");
         }
       }
@@ -1542,7 +1561,7 @@ export default {
     });
     const pet = new PetService({ db: env.DB, users, now: () => Date.now(), bot, quests, achievements });
     const farm = new FarmService({ db: env.DB, users, now: () => Date.now(), bot, quests, achievements, social });
-    const colosseum = new ColosseumService({ db: env.DB, users, now: () => Date.now(), bot, isAdmin, quests });
+    const colosseum = new ColosseumService({ db: env.DB, users, now: () => Date.now(), bot, isAdmin, quests, achievements });
 
     const notifier = new NotificationService({
       users,

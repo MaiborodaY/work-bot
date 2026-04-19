@@ -9,6 +9,8 @@ export const EN = {
   "profile.level.reward_button": "🎁 Levels {{fromLevel}}–{{toLevel}} · 💎{{gems}}",
   "profile.level.reward_claimed": "Claimed level rewards {{fromLevel}}–{{toLevel}}: 💎{{gems}}",
   "profile.level.reward_none": "No level reward available right now.",
+  "profile.level.up": "🎉 New level: {{level}}",
+  "profile.level.up_reward": "Reward available: 💎{{gems}}",
   "worker.start.lang_pick": "🌐 Choose your language before we start:",
   "worker.start.lang_pick_hint": "You can change it later in your profile.",
   "worker.start.lang_pick_required": "Choose language first.",

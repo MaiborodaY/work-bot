@@ -70,13 +70,14 @@ function zoneDamage(zone) {
 }
 
 export class ColosseumService {
-  constructor({ db, users, now, bot = null, isAdmin = null, quests = null }) {
+  constructor({ db, users, now, bot = null, isAdmin = null, quests = null, achievements = null }) {
     this.db = db || users?.db || null;
     this.users = users || null;
     this.now = now || (() => Date.now());
     this.bot = bot || null;
     this.isAdmin = (typeof isAdmin === "function") ? isAdmin : (() => false);
     this.quests = quests || null;
+    this.achievements = achievements || null;
   }
 
   _cfg() {
@@ -1049,6 +1050,17 @@ export class ColosseumService {
       if (winnerId && String(u.id || "") === winnerId) {
         u.colosseum.weekWins = Math.max(0, toInt(u.colosseum.weekWins, 0)) + 1;
         u.premium = Math.max(0, toInt(u.premium, 0)) + 1;
+        if (this.achievements?.onEvent) {
+          try {
+            const aWin = await this.achievements.onEvent(
+              u,
+              "colosseum_win",
+              {},
+              { persist: false, notify: false, silent: true }
+            );
+            dirty = dirty || !!aWin?.changed;
+          } catch {}
+        }
         dirty = true;
       }
       dirty = markUsefulActivity(u, this.now()) || dirty;
@@ -1535,6 +1547,26 @@ export class ColosseumService {
           { persist: false, notify: true }
         );
         enemyDirty = enemyDirty || !!qEnemy?.changed;
+      } catch {}
+    }
+    if (this.achievements?.onEvent) {
+      try {
+        const aMe = await this.achievements.onEvent(
+          meFresh,
+          "colosseum_battle_played",
+          {},
+          { persist: false, notify: false, silent: true }
+        );
+        meDirty = meDirty || !!aMe?.changed;
+      } catch {}
+      try {
+        const aEnemy = await this.achievements.onEvent(
+          enemyFresh,
+          "colosseum_battle_played",
+          {},
+          { persist: false, notify: false, silent: true }
+        );
+        enemyDirty = enemyDirty || !!aEnemy?.changed;
       } catch {}
     }
     meDirty = markUsefulActivity(meFresh, this.now()) || meDirty;

@@ -68,7 +68,9 @@ export class AchievementService {
       gquizPerfectTotal: 0,
       gquizPerfectStreak: 0,
       gquizHardPerfectTotal: 0,
-      gymPassBoughtTotal: 0
+      gymPassBoughtTotal: 0,
+      colosseumBattlesTotal: 0,
+      colosseumWinsTotal: 0
     };
     for (const [k, d] of Object.entries(defaultsNum)) {
       if (typeof p[k] !== "number" || !Number.isFinite(p[k])) {
@@ -235,6 +237,14 @@ export class AchievementService {
       }
       case "gym_pass_buy": {
         changed = this._inc(u, "gymPassBoughtTotal", 1) || changed;
+        break;
+      }
+      case "colosseum_battle_played": {
+        changed = this._inc(u, "colosseumBattlesTotal", 1) || changed;
+        break;
+      }
+      case "colosseum_win": {
+        changed = this._inc(u, "colosseumWinsTotal", 1) || changed;
         break;
       }
       default:

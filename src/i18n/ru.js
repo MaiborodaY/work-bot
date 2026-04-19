@@ -6,6 +6,8 @@ export const RU = {
   "profile.level.reward_button": "🎁 Уровни {{fromLevel}}–{{toLevel}} · 💎{{gems}}",
   "profile.level.reward_claimed": "Награда за уровни {{fromLevel}}–{{toLevel}} получена: 💎{{gems}}",
   "profile.level.reward_none": "Сейчас награды за уровень нет.",
+  "profile.level.up": "🎉 Новый уровень: {{level}}",
+  "profile.level.up_reward": "Доступна награда: 💎{{gems}}",
   "worker.start.lang_pick": "🌐 Выбери язык перед стартом:",
   "worker.start.lang_pick_hint": "Это можно изменить позже в профиле.",
   "worker.start.lang_pick_required": "Сначала выбери язык.",
