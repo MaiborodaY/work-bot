@@ -198,7 +198,7 @@ test("newbie tasks view: pending state shows claim button", async () => {
 test("newbie path: completed state renders final screen", async () => {
   const qs = makeService();
   const u = makeUser({ withBusiness: false });
-  u.newbiePath = { step: 10, pending: false, completed: true, ctx: null, updatedAt: 0 };
+  u.newbiePath = { step: 11, pending: false, completed: true, ctx: null, updatedAt: 0 };
 
   const view = await qs.buildBarNewbieTasksView(u);
   const text = String(view?.caption || "");
@@ -210,7 +210,7 @@ test("newbie path: completed state renders final screen", async () => {
 test("newbie path: final claim records completed day", () => {
   const qs = makeService();
   const u = makeUser({ withBusiness: false });
-  u.newbiePath = { step: 9, pending: true, completed: false, ctx: {}, updatedAt: 0 };
+  u.newbiePath = { step: 10, pending: true, completed: false, ctx: {}, updatedAt: 0 };
   u.biz.owned = [{ id: "shawarma" }];
 
   const res = qs.claimNewbieStep(u);
@@ -218,7 +218,7 @@ test("newbie path: final claim records completed day", () => {
   assert.equal(res.ok, true);
   assert.equal(res.completed, true);
   assert.equal(u.newbiePath.completed, true);
-  assert.equal(u.stats?.newbie?.stepsClaimed?.["9"], "2026-03-13");
+  assert.equal(u.stats?.newbie?.stepsClaimed?.["10"], "2026-03-13");
   assert.equal(u.stats?.newbie?.completedDay, "2026-03-13");
 });
 
@@ -233,6 +233,24 @@ test("newbie path: energy_50 step completes when max energy reaches 50", () => {
     updatedAt: 0
   };
   u.energy_max = 50;
+
+  const changed = qs.maybeCompleteNewbieStep(u);
+
+  assert.equal(changed, true);
+  assert.equal(u.newbiePath.pending, true);
+});
+
+test("newbie path: money_10000 step completes on balance threshold", () => {
+  const qs = makeService();
+  const u = makeUser({ withBusiness: false });
+  u.newbiePath = {
+    step: 9,
+    pending: false,
+    completed: false,
+    ctx: { startedAt: Date.UTC(2026, 2, 13, 11, 0, 0), totalShiftsStart: 0, gymLevelStart: 0 },
+    updatedAt: 0
+  };
+  u.money = 10000;
 
   const changed = qs.maybeCompleteNewbieStep(u);
 

@@ -153,6 +153,7 @@ export const CONFIG = {
       { id: "gym_train", rewardMoney: 200, rewardGems: 0, targetRoute: "Gym" },
       { id: "plant_carrot", rewardMoney: 800, rewardGems: 2, targetRoute: "Farm" },
       { id: "energy_50", rewardMoney: 400, rewardGems: 0, targetRoute: "Gym" },
+      { id: "money_10000", rewardMoney: 700, rewardGems: 0, targetRoute: "Work" },
       { id: "buy_business", rewardMoney: 1000, rewardGems: 5, targetRoute: "Business" }
     ],
     SUB_BONUS_REWARD_MONEY: 300,

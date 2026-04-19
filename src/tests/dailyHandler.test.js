@@ -58,7 +58,7 @@ test("daily handler: regular player stays on default daily claim flow", async ()
     u: {
       lang: "ru",
       flags: { onboardingDone: true },
-      newbiePath: { step: 10, pending: false, completed: true, ctx: null, updatedAt: 0 },
+      newbiePath: { step: 11, pending: false, completed: true, ctx: null, updatedAt: 0 },
       bonus: { last: "", streak: 0 }
     },
     data: "daily:claim",
