@@ -43,6 +43,7 @@ export const RU = {
   "ui.city.board": "🏆 Доска почёта",
   "ui.city.ratings": "🏆 Рейтинг",
   "ui.city.clans": "👥 Кланы",
+  "ui.city.syndicate": "🎯 Синдикат",
   "ui.city.referral": "👥 Рефералы",
 
   "ui.shophub.food": "🍔 Магазин еды",

@@ -143,3 +143,8 @@ Minimum update set:
 4. Quest/Achievement hooks if relevant.
 5. Admin observability (if feature impacts retention/economy).
 6. Tests for the happy path and key edge case.
+
+## 10) Planned Feature Specs
+
+- Syndicate (MVP) design source:
+  - `docs/SYNDICATE_GAMEDESIGN_V1_2.md`

@@ -201,6 +201,27 @@ export const ACHIEVEMENTS = [
     title: { ru: "Урожайник", uk: "Врожайник", en: "Crop collector" },
     done: (u) => (p(u, "farmHarvestedTypesMask") & 7) === 7
   },
+  {
+    id: "syndicate_first_deal",
+    reward: 2,
+    events: ["syndicate_deal_completed", "retro"],
+    title: { ru: "Первая сделка Синдиката", uk: "Перша угода Синдикату", en: "First syndicate deal" },
+    done: (u) => p(u, "syndicateDealsTotal") >= 1
+  },
+  {
+    id: "syndicate_10_deals",
+    reward: 8,
+    events: ["syndicate_deal_completed", "retro"],
+    title: { ru: "Игрок Синдиката", uk: "Гравець Синдикату", en: "Syndicate trader" },
+    done: (u) => p(u, "syndicateDealsTotal") >= 10
+  },
+  {
+    id: "syndicate_all_biz",
+    reward: 15,
+    events: ["syndicate_deal_completed", "retro"],
+    title: { ru: "Мастер рынка", uk: "Майстер ринку", en: "Market master" },
+    done: (u) => (p(u, "syndicateBizMask") & 31) === 31
+  },
 
   {
     id: "quiz_first_perfect",

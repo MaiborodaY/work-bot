@@ -638,6 +638,58 @@ export const CONFIG = {
     RATING_TTL_SEC: 21 * 24 * 60 * 60
   },
 
+  SYNDICATE: {
+    MIN_PLAYER_LEVEL: 10,
+    MIN_BUSINESS_OWNED: 1,
+    OPEN_TIMEOUT_MS: 24 * 60 * 60 * 1000,
+    INDEX_TTL_SEC: 14 * 24 * 60 * 60,
+    DEAL_TTL_SEC: 30 * 24 * 60 * 60,
+    RATING_LIMIT: 15,
+    RATING_TTL_SEC: 35 * 24 * 60 * 60,
+    RATING_POINTS: {
+      small: 1,
+      medium: 3,
+      large: 7
+    },
+    TIER_UNLOCK_COMPLETED: {
+      small: 0,
+      medium: 3,
+      large: 10
+    },
+    DEALS: {
+      shawarma: {
+        durationMs: 12 * 60 * 60 * 1000,
+        stakes: { small: 500, medium: 2000, large: 5000 },
+        oddsPct: { success: 80, lucky: 15, fail: 5 },
+        returnPct: { success: 8, lucky: 15, fail: -10 }
+      },
+      stomatology: {
+        durationMs: 24 * 60 * 60 * 1000,
+        stakes: { small: 2500, medium: 7500, large: 15000 },
+        oddsPct: { success: 65, lucky: 20, fail: 15 },
+        returnPct: { success: 8, lucky: 20, fail: -20 }
+      },
+      restaurant: {
+        durationMs: 36 * 60 * 60 * 1000,
+        stakes: { small: 7500, medium: 20000, large: 50000 },
+        oddsPct: { success: 60, lucky: 25, fail: 15 },
+        returnPct: { success: 15, lucky: 30, fail: -20 }
+      },
+      courier_service: {
+        durationMs: 48 * 60 * 60 * 1000,
+        stakes: { small: 15000, medium: 40000, large: 100000 },
+        oddsPct: { success: 55, lucky: 25, fail: 20 },
+        returnPct: { success: 25, lucky: 50, fail: -25 }
+      },
+      fitness_club: {
+        durationMs: 72 * 60 * 60 * 1000,
+        stakes: { small: 40000, medium: 100000, large: 250000 },
+        oddsPct: { success: 50, lucky: 25, fail: 25 },
+        returnPct: { success: 40, lucky: 80, fail: -30 }
+      }
+    }
+  },
+
   ASSETS: ASSETS,
 
   NOTIFY: {

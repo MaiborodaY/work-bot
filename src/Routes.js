@@ -26,6 +26,7 @@ export const Routes = Object.freeze({
   CITY_BOARD: "CityBoard",
   CLAN: "Clan",
   RATINGS: "Ratings",
+  SYNDICATE: "Syndicate",
   THIEF: "Thief",
   REFERRAL: "Referral",
 });

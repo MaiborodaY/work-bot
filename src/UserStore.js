@@ -560,6 +560,77 @@ export class UserStore {
       }
     }
 
+    if (!u.syndicate || typeof u.syndicate !== "object") {
+      u.syndicate = {
+        weekKey: "",
+        completedWeek: 0,
+        completedTotal: 0,
+        weightedWeek: 0,
+        weightedTotal: 0,
+        netWeek: 0,
+        netTotal: 0,
+        outcomeWeek: { success: 0, lucky: 0, fail: 0 },
+        outcomeTotal: { success: 0, lucky: 0, fail: 0 },
+        byBiz: {},
+        activeDealByBiz: {}
+      };
+      dirty = true;
+    } else {
+      if (typeof u.syndicate.weekKey !== "string") { u.syndicate.weekKey = ""; dirty = true; }
+      const numFields = ["completedWeek", "completedTotal", "weightedWeek", "weightedTotal", "netWeek", "netTotal"];
+      for (const key of numFields) {
+        const fixed = Math.max(0, Math.floor(Number(u.syndicate[key]) || 0));
+        if (fixed !== u.syndicate[key]) {
+          u.syndicate[key] = fixed;
+          dirty = true;
+        }
+      }
+      if (!u.syndicate.outcomeWeek || typeof u.syndicate.outcomeWeek !== "object") {
+        u.syndicate.outcomeWeek = { success: 0, lucky: 0, fail: 0 };
+        dirty = true;
+      }
+      if (!u.syndicate.outcomeTotal || typeof u.syndicate.outcomeTotal !== "object") {
+        u.syndicate.outcomeTotal = { success: 0, lucky: 0, fail: 0 };
+        dirty = true;
+      }
+      for (const bucketName of ["outcomeWeek", "outcomeTotal"]) {
+        const bucket = u.syndicate[bucketName];
+        for (const key of ["success", "lucky", "fail"]) {
+          const fixed = Math.max(0, Math.floor(Number(bucket?.[key]) || 0));
+          if (fixed !== bucket[key]) {
+            bucket[key] = fixed;
+            dirty = true;
+          }
+        }
+      }
+      if (!u.syndicate.byBiz || typeof u.syndicate.byBiz !== "object") {
+        u.syndicate.byBiz = {};
+        dirty = true;
+      }
+      if (!u.syndicate.activeDealByBiz || typeof u.syndicate.activeDealByBiz !== "object") {
+        u.syndicate.activeDealByBiz = {};
+        dirty = true;
+      }
+      const syndicateBizIds = Object.keys(CONFIG?.SYNDICATE?.DEALS || {});
+      for (const bizId of syndicateBizIds) {
+        if (!u.syndicate.byBiz[bizId] || typeof u.syndicate.byBiz[bizId] !== "object") {
+          u.syndicate.byBiz[bizId] = { completed: 0, success: 0, lucky: 0, fail: 0 };
+          dirty = true;
+        }
+        for (const key of ["completed", "success", "lucky", "fail"]) {
+          const fixed = Math.max(0, Math.floor(Number(u.syndicate.byBiz[bizId][key]) || 0));
+          if (fixed !== u.syndicate.byBiz[bizId][key]) {
+            u.syndicate.byBiz[bizId][key] = fixed;
+            dirty = true;
+          }
+        }
+        if (typeof u.syndicate.activeDealByBiz[bizId] !== "string") {
+          u.syndicate.activeDealByBiz[bizId] = "";
+          dirty = true;
+        }
+      }
+    }
+
     if (!u.referral || typeof u.referral !== "object") {
       u.referral = {
         referredBy: "",
@@ -621,6 +692,8 @@ export class UserStore {
           quizPerfectStreak: 0,
           colosseumBattlesTotal: 0,
           colosseumWinsTotal: 0,
+          syndicateDealsTotal: 0,
+          syndicateBizMask: 0,
           referralsDone: 0,
           clanJoinedOnce: false,
           clanCreatedOnce: false
@@ -659,6 +732,8 @@ export class UserStore {
         quizPerfectStreak: 0,
         colosseumBattlesTotal: 0,
         colosseumWinsTotal: 0,
+        syndicateDealsTotal: 0,
+        syndicateBizMask: 0,
         referralsDone: 0
       };
       for (const [k, d] of Object.entries(progressDefaults)) {
@@ -928,6 +1003,31 @@ export class UserStore {
       clanCosmetic: null,
       employment: { active: false, ownerId: "", bizId: "", ownerPct: 0, contractEnd: 0, slotIndex: -1 },
       colosseum: { dayKey: "", battlesToday: 0, weekKey: "", weekWins: 0, activeBattleId: "", inQueue: false },
+      syndicate: {
+        weekKey: "",
+        completedWeek: 0,
+        completedTotal: 0,
+        weightedWeek: 0,
+        weightedTotal: 0,
+        netWeek: 0,
+        netTotal: 0,
+        outcomeWeek: { success: 0, lucky: 0, fail: 0 },
+        outcomeTotal: { success: 0, lucky: 0, fail: 0 },
+        byBiz: {
+          shawarma: { completed: 0, success: 0, lucky: 0, fail: 0 },
+          stomatology: { completed: 0, success: 0, lucky: 0, fail: 0 },
+          restaurant: { completed: 0, success: 0, lucky: 0, fail: 0 },
+          courier_service: { completed: 0, success: 0, lucky: 0, fail: 0 },
+          fitness_club: { completed: 0, success: 0, lucky: 0, fail: 0 }
+        },
+        activeDealByBiz: {
+          shawarma: "",
+          stomatology: "",
+          restaurant: "",
+          courier_service: "",
+          fitness_club: ""
+        }
+      },
       referral: {
         referredBy: "",
         rewarded: false,
@@ -954,6 +1054,10 @@ export class UserStore {
           farmHarvestTotal: 0,
           farmCornHarvest: 0,
           farmHarvestedTypesMask: 0,
+          colosseumBattlesTotal: 0,
+          colosseumWinsTotal: 0,
+          syndicateDealsTotal: 0,
+          syndicateBizMask: 0,
           quizPerfectTotal: 0,
           quizPerfectStreak: 0,
           referralsDone: 0,

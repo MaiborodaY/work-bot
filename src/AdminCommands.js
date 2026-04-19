@@ -14,7 +14,7 @@ export class AdminCommands {
    *  - isAdmin: (id: number|string) => boolean
    *  - botToken: Telegram bot token
    */
-  constructor({ users, send, isAdmin, botToken, ratings = null, quiz = null, generalQuiz = null, channel = null }) {
+  constructor({ users, send, isAdmin, botToken, ratings = null, quiz = null, generalQuiz = null, channel = null, syndicate = null }) {
     this.users = users;
     this.send = send;
     this.isAdmin = isAdmin;
@@ -24,6 +24,7 @@ export class AdminCommands {
     this.quiz = quiz || null;
     this.generalQuiz = generalQuiz || null;
     this.channel = channel || null;
+    this.syndicate = syndicate || null;
 
     this.K = {
       draft: (adminId) => `admin:broadcast:draft:${adminId}`,
@@ -67,6 +68,7 @@ export class AdminCommands {
         "/admin_funnel - onboarding funnel (all-time)\n" +
         "/admin_newbie - newbie path funnel/retention\n" +
         "/admin_levels - players levels snapshot\n" +
+        "/admin_syndicate - syndicate stats snapshot\n" +
         "/admin_new_users [limit] - newest users list\n" +
         "/admin_quiz - quiz stats\n\n" +
         "<b>Channel</b>\n" +
@@ -387,6 +389,10 @@ export class AdminCommands {
     }
     if (/^\/admin_newbie(?:@\w+)?\s*$/i.test(input)) {
       await this._sendNewbieStats();
+      return true;
+    }
+    if (/^\/admin_syndicate(?:@\w+)?\s*$/i.test(input)) {
+      await this._sendSyndicateStats();
       return true;
     }
     const mAdminLevels = input.match(/^\/admin_levels(?:@\w+)?(?:\s+(all))?\s*$/i);
@@ -1242,6 +1248,87 @@ export class AdminCommands {
       }
     }
     if (!includeAdmins) lines.push("", `Excluded admins: ${this._fmtInt(excludedAdmins)}`);
+    await this.send(lines.join("\n"));
+  }
+
+  async _sendSyndicateStats() {
+    await this.send("Syndicate stats started...");
+    if (!this.syndicate || typeof this.syndicate.getAdminStats !== "function") {
+      await this.send("Syndicate service unavailable.");
+      return;
+    }
+
+    const stats = await this.syndicate.getAdminStats();
+    const todayStats = (stats?.todayStats && typeof stats.todayStats === "object")
+      ? stats.todayStats
+      : null;
+    const topWeek = Array.isArray(stats?.topWeek) ? stats.topWeek.slice(0, 10) : [];
+    const topAll = Array.isArray(stats?.topAll) ? stats.topAll.slice(0, 10) : [];
+
+    const lines = [
+      "<b>Syndicate snapshot</b>",
+      "",
+      `Scanned users (non-admin): ${this._fmtInt(stats?.scannedUsers || 0)}`,
+      `Excluded admins: ${this._fmtInt(stats?.excludedAdmins || 0)}`,
+      `Users with access: ${this._fmtInt(stats?.withAccess || 0)}`,
+      `Participants (>=1 deal): ${this._fmtInt(stats?.participants || 0)}`,
+      `Completed deals (approx): ${this._fmtInt(stats?.totalCompletedDealsApprox || 0)}`,
+      `Net profit (approx): $${this._fmtInt(stats?.totalNetApprox || 0)}`,
+      "",
+      `Open deals now: ${this._fmtInt(stats?.openCount || 0)}`,
+      `Active deals now: ${this._fmtInt(stats?.activeCount || 0)}`,
+      `Deals scanned in KV: ${this._fmtInt(stats?.dealsScanned || 0)}`,
+      `Finished deals in KV: ${this._fmtInt(stats?.finishedDeals || 0)}`,
+      "",
+      "<b>Outcomes</b>",
+      `Success: ${this._fmtInt(stats?.outcomes?.success || 0)}`,
+      `Lucky: ${this._fmtInt(stats?.outcomes?.lucky || 0)}`,
+      `Fail: ${this._fmtInt(stats?.outcomes?.fail || 0)}`,
+      `Expired: ${this._fmtInt(stats?.outcomes?.expired || 0)}`,
+      `Cancelled: ${this._fmtInt(stats?.outcomes?.cancelled || 0)}`
+    ];
+
+    if (todayStats) {
+      lines.push(
+        "",
+        "<b>Today counters (UTC)</b>",
+        `Day: ${this._escapeHtml(String(todayStats?.day || "-"))}`,
+        `Created: ${this._fmtInt(todayStats?.created || 0)}`,
+        `Accepted: ${this._fmtInt(todayStats?.accepted || 0)}`,
+        `Cancelled: ${this._fmtInt(todayStats?.cancelled || 0)}`,
+        `Expired: ${this._fmtInt(todayStats?.expired || 0)}`,
+        `Finished: ${this._fmtInt(todayStats?.finished || 0)}`
+      );
+    }
+
+    lines.push("", "<b>Top 10 (week, weighted points)</b>");
+    if (!topWeek.length) {
+      lines.push("-");
+    } else {
+      let i = 1;
+      for (const row of topWeek) {
+        lines.push(
+          `${i}. ${this._escapeHtml(String(row?.name || "Player"))} - ${this._fmtInt(row?.score || 0)} pts · ` +
+          `${this._fmtInt(row?.completed || 0)} deals`
+        );
+        i += 1;
+      }
+    }
+
+    lines.push("", "<b>Top 10 (all-time, weighted points)</b>");
+    if (!topAll.length) {
+      lines.push("-");
+    } else {
+      let i = 1;
+      for (const row of topAll) {
+        lines.push(
+          `${i}. ${this._escapeHtml(String(row?.name || "Player"))} - ${this._fmtInt(row?.score || 0)} pts · ` +
+          `${this._fmtInt(row?.completed || 0)} deals`
+        );
+        i += 1;
+      }
+    }
+
     await this.send(lines.join("\n"));
   }
 

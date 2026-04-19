@@ -325,6 +325,7 @@ export const EN = {
   "ui.city.home": "🏠 Home & Rest",
   "ui.city.board": "🏆 Leaderboard",
   "ui.city.clans": "👥 Clans",
+  "ui.city.syndicate": "🎯 Syndicate",
   "ui.city.referral": "👥 Referrals",
   "ui.shophub.food": "🍔 Food Shop",
   "ui.shophub.premium": "💎 Premium",

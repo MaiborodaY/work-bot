@@ -70,7 +70,9 @@ export class AchievementService {
       gquizHardPerfectTotal: 0,
       gymPassBoughtTotal: 0,
       colosseumBattlesTotal: 0,
-      colosseumWinsTotal: 0
+      colosseumWinsTotal: 0,
+      syndicateDealsTotal: 0,
+      syndicateBizMask: 0
     };
     for (const [k, d] of Object.entries(defaultsNum)) {
       if (typeof p[k] !== "number" || !Number.isFinite(p[k])) {
@@ -247,6 +249,22 @@ export class AchievementService {
         changed = this._inc(u, "colosseumWinsTotal", 1) || changed;
         break;
       }
+      case "syndicate_deal_completed": {
+        changed = this._inc(u, "syndicateDealsTotal", 1) || changed;
+        const bitByBiz = {
+          shawarma: 1,
+          stomatology: 2,
+          restaurant: 4,
+          courier_service: 8,
+          fitness_club: 16
+        };
+        const bit = bitByBiz[String(ctx?.bizId || "")] || 0;
+        if (bit > 0) {
+          const prevMask = Math.max(0, Math.floor(n(u?.achievements?.progress?.syndicateBizMask)));
+          changed = this._set(u, "syndicateBizMask", prevMask | bit) || changed;
+        }
+        break;
+      }
       default:
         break;
     }
@@ -280,6 +298,7 @@ export class AchievementService {
     const s = String(id || "");
     if (s.startsWith("work_")) return "work";
     if (s.startsWith("biz_") || s.startsWith("labour_")) return "biz";
+    if (s.startsWith("syndicate_")) return "biz";
     if (s.startsWith("gym_") || s.startsWith("study_")) return "growth";
     if (s.startsWith("pet_")) return "pet";
     if (s.startsWith("farm_")) return "farm";
@@ -406,6 +425,9 @@ export class AchievementService {
     const defenses = Math.max(0, Math.floor(n(p.defensesSuccess)));
     const clanContracts = Math.max(0, Math.floor(n(p.clanContractsByUser)));
     const refs = this._rewardedReferrals(u);
+    const syndDeals = Math.max(0, Math.floor(n(p.syndicateDealsTotal)));
+    const syndMask = Math.max(0, Math.floor(n(p.syndicateBizMask)));
+    const syndBizCount = ((syndMask & 1) ? 1 : 0) + ((syndMask & 2) ? 1 : 0) + ((syndMask & 4) ? 1 : 0) + ((syndMask & 8) ? 1 : 0) + ((syndMask & 16) ? 1 : 0);
 
     if (id === "farm_first") {
       return `${farmHarvestTotal}/1`;
@@ -451,6 +473,9 @@ export class AchievementService {
       thief_streak_10: `${theftStreak}/10 подряд`,
       thief_defense_5: `${defenses}/5 защит`,
       clan_contracts_10: `${clanContracts}/10 контрактов`,
+      syndicate_first_deal: `${syndDeals}/1 сделок`,
+      syndicate_10_deals: `${syndDeals}/10 сделок`,
+      syndicate_all_biz: `${syndBizCount}/5 типов`,
       referrals_1: `${refs}/1 рефералов`,
       referrals_5: `${refs}/5 рефералов`
     };
@@ -485,6 +510,9 @@ export class AchievementService {
       thief_streak_10: `${theftStreak}/10 поспіль`,
       thief_defense_5: `${defenses}/5 захистів`,
       clan_contracts_10: `${clanContracts}/10 контрактів`,
+      syndicate_first_deal: `${syndDeals}/1 угод`,
+      syndicate_10_deals: `${syndDeals}/10 угод`,
+      syndicate_all_biz: `${syndBizCount}/5 типів`,
       referrals_1: `${refs}/1 рефералів`,
       referrals_5: `${refs}/5 рефералів`
     };
@@ -519,6 +547,9 @@ export class AchievementService {
       thief_streak_10: `${theftStreak}/10 streak`,
       thief_defense_5: `${defenses}/5 defenses`,
       clan_contracts_10: `${clanContracts}/10 contracts`,
+      syndicate_first_deal: `${syndDeals}/1 deals`,
+      syndicate_10_deals: `${syndDeals}/10 deals`,
+      syndicate_all_biz: `${syndBizCount}/5 types`,
       referrals_1: `${refs}/1 referrals`,
       referrals_5: `${refs}/5 referrals`
     };
