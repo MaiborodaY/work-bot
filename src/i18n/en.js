@@ -447,6 +447,7 @@ export const EN = {
   "ui.cityboard.topfarmweek": "🌱 Farm week",
   "ui.cityboard.topfarmday": "🌾 Farm day",
   "ui.cityboard.topbizday": "🏢 Business day",
+  "ui.cityboard.toptheftweek": "🌑 Theft week",
   "ui.cityboard.rename": "✏️ Change name",
   "ui.cityboard.day.empty": "🏅 Day Top\n\nEmpty for now. Earn and get here.",
   "ui.cityboard.day.title": "🏅 Day Top\n\nLeaders by earnings:",
@@ -465,6 +466,8 @@ export const EN = {
   "ui.cityboard.farmday.title": "🌾 Farm Top (day)\n\nBest farmers by today's net profit:",
   "ui.cityboard.bizday.empty": "🏢 Business Top (day)\n\nNo business income claimed yet today.",
   "ui.cityboard.bizday.title": "🏢 Business Top (day)\n\nMost collected from businesses today:",
+  "ui.cityboard.theftweek.empty": "🌑 Theft Top (week)\n\nNo successful thefts this week yet.",
+  "ui.cityboard.theftweek.title": "🌑 Theft Top (week)\n\nWho stole the most this week:",
 
   "loc.onboarding.to_gym": "Go to gym",
   "loc.onboarding.start_first_shift": "Start your first job",

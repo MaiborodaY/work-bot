@@ -11,6 +11,7 @@ export const socialHandler = {
   data === "city:topstrong" ||
   data === "city:toplucky" ||
   data === "city:topbizday" ||
+  data === "city:toptheftweek" ||
   data === "city:topfarmweek" ||
   data === "city:topfarmday" ||
   data === "city:topfarmall" ||
@@ -148,6 +149,28 @@ export const socialHandler = {
         place: "CityBoard",
         caption: ui.cityTopBizDayCaption(top, lang),
         keyboard: topProfileKb(top, "bizday", ui.cityTopDay(lang)),
+        policy: "auto",
+      });
+      locations.setSourceMessage(null);
+      return;
+    }
+
+    if (data === "city:toptheftweek") {
+      await answer(cb.id);
+      const raw = await social.getTheftWeekTop().catch(() => []);
+      const norm = (item) => {
+        const idStr = String(item.userId || "");
+        const looksLikeId = typeof item.name === "string" && /^[0-9]+$/.test(item.name.trim());
+        const empty = !item.name || !String(item.name).trim();
+        const masked = tt("loc.square.player_fallback_id", { id: idStr.slice(-4).padStart(4, "0") });
+        return { ...item, name: (empty || looksLikeId) ? masked : String(item.name).trim() };
+      };
+      const top = Array.isArray(raw) ? raw.map(norm) : [];
+      await locations.media.show({
+        sourceMsg: locations._sourceMsg,
+        place: "CityBoard",
+        caption: ui.cityTopTheftWeekCaption(top, lang),
+        keyboard: topProfileKb(top, "theftweek", ui.cityTopDay(lang)),
         policy: "auto",
       });
       locations.setSourceMessage(null);

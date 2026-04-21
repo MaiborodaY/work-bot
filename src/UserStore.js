@@ -453,7 +453,7 @@ export class UserStore {
 
     // Тёмный бизнес
     if (!u.thief || typeof u.thief !== "object") {
-      u.thief = { level: 0, activeAttackId: "", cooldowns: {}, totalStolen: 0 };
+      u.thief = { level: 0, activeAttackId: "", cooldowns: {}, totalStolen: 0, weekKey: "", weekStolen: 0 };
       dirty = true;
     } else {
       const maxLevel = Math.max(0, Number(CONFIG?.THIEF?.MAX_LEVEL) || 5);
@@ -487,6 +487,15 @@ export class UserStore {
       const totalStolen = Math.max(0, Math.floor(Number(u.thief.totalStolen) || 0));
       if (totalStolen !== Number(u.thief.totalStolen)) {
         u.thief.totalStolen = totalStolen;
+        dirty = true;
+      }
+      if (typeof u.thief.weekKey !== "string") {
+        u.thief.weekKey = "";
+        dirty = true;
+      }
+      const weekStolen = Math.max(0, Math.floor(Number(u.thief.weekStolen) || 0));
+      if (weekStolen !== Number(u.thief.weekStolen)) {
+        u.thief.weekStolen = weekStolen;
         dirty = true;
       }
     }
@@ -1037,7 +1046,7 @@ export class UserStore {
         startSource: "",
         startBoundAt: 0
       },
-      thief: { level: 0, activeAttackId: "", cooldowns: {}, totalStolen: 0 },
+      thief: { level: 0, activeAttackId: "", cooldowns: {}, totalStolen: 0, weekKey: "", weekStolen: 0 },
       achievements: {
         earned: {},
         progress: {

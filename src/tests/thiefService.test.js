@@ -72,6 +72,34 @@ test("thief service: upgrade level spends money", async () => {
   assert.equal(saved.money, 10000);
 });
 
+test("thief service: weekly stolen resets on week rollover", async () => {
+  const nowTs = Date.UTC(2026, 3, 22, 12, 0, 0);
+  const db = new FakeDb();
+  const users = new FakeUsers({
+    a1: {
+      id: "a1",
+      lang: "en",
+      money: 0,
+      thief: {
+        level: 1,
+        activeAttackId: "",
+        cooldowns: {},
+        totalStolen: 500,
+        weekKey: "202616",
+        weekStolen: 275
+      }
+    }
+  });
+  const service = new ThiefService({ db, users, now: () => nowTs, bot: null });
+  const u = await users.load("a1");
+
+  const changed = service._ensureThiefState(u);
+  assert.equal(changed, true);
+  assert.equal(u.thief.weekKey, "202617");
+  assert.equal(u.thief.weekStolen, 0);
+  assert.equal(u.thief.totalStolen, 500);
+});
+
 test("thief service: start attack fails when energy below double attack cost", async () => {
   const nowTs = Date.now();
   const db = new FakeDb();

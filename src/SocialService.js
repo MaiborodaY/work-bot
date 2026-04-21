@@ -137,6 +137,7 @@ export class SocialService {
         await this.db.put("agg:week", "0");
         await this.db.put("lb:week", "[]");          // ← очищаем недельный топ
         await this.db.put("lb:farm_week", "[]");
+        await this.db.put("lb:theft_week", "[]");
         await this.db.put("state:weekKey", curWeek);
       }
 
@@ -342,6 +343,18 @@ export class SocialService {
   async getWeeklyTop() {
     await this.ensurePeriod();
     const raw = (await this.db.get("lb:week")) || "[]";
+    return this._filterOutAdmins(JSON.parse(raw));
+  }
+
+  async maybeUpdateTheftWeekTop({ userId, displayName, total }) {
+    await this.ensurePeriod();
+    const safeTotal = Math.max(0, Number(total) || 0);
+    return this._updateFarmTopKey("lb:theft_week", { userId, displayName, total: safeTotal });
+  }
+
+  async getTheftWeekTop() {
+    await this.ensurePeriod();
+    const raw = (await this.db.get("lb:theft_week")) || "[]";
     return this._filterOutAdmins(JSON.parse(raw));
   }
 

@@ -179,6 +179,7 @@ export const RU = {
   "ui.cityboard.topfarmweek": "🌱 Ферма за неделю",
   "ui.cityboard.topfarmday": "🌾 Ферма за день",
   "ui.cityboard.topbizday": "🏢 Бизнес за день",
+  "ui.cityboard.toptheftweek": "🌑 Воровство (неделя)",
   "ui.cityboard.rename": "✏️ Сменить имя",
   "ui.cityboard.day.empty": "🏅 Топ дня\n\nПока пусто. Заработай и попадешь сюда.",
   "ui.cityboard.day.title": "🏅 Топ дня\n\nЛидеры по заработку:",
@@ -197,6 +198,8 @@ export const RU = {
   "ui.cityboard.farmday.title": "🌾 Топ фермы (день)\n\nЛучшие фермеры по чистой прибыли за сегодня:",
   "ui.cityboard.bizday.empty": "🏢 Топ бизнеса (день)\n\nСегодня ещё никто не собирал прибыль с бизнесов.",
   "ui.cityboard.bizday.title": "🏢 Топ бизнеса (день)\n\nКто больше всего собрал с бизнесов за сегодня:",
+  "ui.cityboard.theftweek.empty": "🌑 Топ воровства (неделя)\n\nНа этой неделе ещё нет удачных краж.",
+  "ui.cityboard.theftweek.title": "🌑 Топ воровства (неделя)\n\nКто больше всего украл за эту неделю:",
 
   "loc.onboarding.to_gym": "Перейти в зал",
   "loc.onboarding.start_first_shift": "Начать первую работу",

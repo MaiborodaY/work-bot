@@ -19,8 +19,18 @@ import {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+function isoWeekKey(ts) {
+  const d = new Date(Number(ts) || Date.now());
+  const dt = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  const dayNum = dt.getUTCDay() || 7;
+  dt.setUTCDate(dt.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(dt.getUTCFullYear(), 0, 1));
+  const week = Math.ceil((((dt - yearStart) / DAY_MS) + 1) / 7);
+  return `${dt.getUTCFullYear()}${String(week).padStart(2, "0")}`;
+}
+
 export class ThiefService {
-  constructor({ db, users, now, bot, achievements = null, ratings = null, quests = null }) {
+  constructor({ db, users, now, bot, achievements = null, ratings = null, quests = null, social = null }) {
     this.db = db;
     this.users = users;
     this.now = now || (() => Date.now());
@@ -28,6 +38,7 @@ export class ThiefService {
     this.achievements = achievements || null;
     this.ratings = ratings || null;
     this.quests = quests || null;
+    this.social = social || null;
   }
 
   _cfg() {
@@ -142,7 +153,7 @@ export class ThiefService {
     if (!u || typeof u !== "object") return false;
     let dirty = false;
     if (!u.thief || typeof u.thief !== "object") {
-      u.thief = { level: 0, activeAttackId: "", cooldowns: {}, totalStolen: 0 };
+      u.thief = { level: 0, activeAttackId: "", cooldowns: {}, totalStolen: 0, weekKey: "", weekStolen: 0 };
       return true;
     }
     const maxLevel = Math.max(0, Number(this._cfg().MAX_LEVEL) || 5);
@@ -163,6 +174,21 @@ export class ThiefService {
     const totalStolen = Math.max(0, Math.floor(Number(u.thief.totalStolen) || 0));
     if (totalStolen !== Number(u.thief.totalStolen)) {
       u.thief.totalStolen = totalStolen;
+      dirty = true;
+    }
+    const currentWeekKey = isoWeekKey(this.now());
+    if (typeof u.thief.weekKey !== "string") {
+      u.thief.weekKey = currentWeekKey;
+      dirty = true;
+    }
+    if (String(u.thief.weekKey || "") !== currentWeekKey) {
+      u.thief.weekKey = currentWeekKey;
+      u.thief.weekStolen = 0;
+      dirty = true;
+    }
+    const weekStolen = Math.max(0, Math.floor(Number(u.thief.weekStolen) || 0));
+    if (weekStolen !== Number(u.thief.weekStolen)) {
+      u.thief.weekStolen = weekStolen;
       dirty = true;
     }
     return dirty;
@@ -1816,6 +1842,7 @@ export class ThiefService {
       if (success) {
         attacker.money = Math.max(0, Math.floor(Number(attacker.money) || 0) + stolen);
         attacker.thief.totalStolen = Math.max(0, Math.floor(Number(attacker.thief.totalStolen) || 0) + Math.max(0, Math.floor(Number(stolen) || 0)));
+        attacker.thief.weekStolen = Math.max(0, Math.floor(Number(attacker.thief.weekStolen) || 0) + Math.max(0, Math.floor(Number(stolen) || 0)));
         if (this.achievements?.onEvent) {
           try {
             attackerAch = await this.achievements.onEvent(attacker, "thief_success", { amount: stolen, bizId }, { persist: false, notify: false });
@@ -1841,6 +1868,15 @@ export class ThiefService {
 
       await this.users.save(attacker);
       if (success && stolen > 0) await this._recordDailyStolen(attacker, stolen, todayUTC);
+      if (success && stolen > 0 && this.social?.maybeUpdateTheftWeekTop) {
+        try {
+          await this.social.maybeUpdateTheftWeekTop({
+            userId: attacker.id,
+            displayName: attacker.displayName,
+            total: Math.max(0, Math.floor(Number(attacker?.thief?.weekStolen) || 0))
+          });
+        } catch {}
+      }
       if (success && this.ratings?.updateUser) {
         try { await this.ratings.updateUser(attacker, ["thief"]); } catch {}
       }
