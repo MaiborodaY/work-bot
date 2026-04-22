@@ -634,12 +634,17 @@ export class ColosseumService {
     if (!battleIdRaw) return;
     const list = await this._loadOpenBattles();
     const has = list.includes(battleIdRaw);
+    let changed = false;
     if (include && !has) list.push(battleIdRaw);
+    if (include && !has) changed = true;
     if (!include && has) {
       const idx = list.indexOf(battleIdRaw);
       if (idx >= 0) list.splice(idx, 1);
+      changed = true;
     }
-    await this._saveOpenBattles(list);
+    if (changed) {
+      await this._saveOpenBattles(list);
+    }
   }
 
   _normalizeBattle(row) {
@@ -1109,27 +1114,32 @@ export class ColosseumService {
     const open = await this._loadOpenBattles();
     if (!open.length) return { processed: 0 };
     let processed = 0;
-    const keep = [];
+    const remove = [];
     for (const id of open) {
       const battle = await this._loadBattle(id);
-      if (!battle) continue;
+      if (!battle) {
+        remove.push(id);
+        continue;
+      }
       processed += 1;
       if (battle.status === "pending_accept") {
         const changed = await this._resolvePendingTimeout(battle);
-        if (!changed) keep.push(id);
+        if (changed || battle.status !== "pending_accept") remove.push(id);
         continue;
       }
       if (battle.status === "active_round") {
         const changed = await this._resolveActiveTimeout(battle);
-        if (!changed) keep.push(id);
+        if (changed && battle.status !== "active_round") remove.push(id);
         continue;
       }
       if (battle.status === "finished" || battle.status === "expired") {
+        remove.push(id);
         continue;
       }
-      keep.push(id);
     }
-    await this._saveOpenBattles(keep);
+    for (const id of remove) {
+      await this._setOpenBattle(id, false);
+    }
     return { processed };
   }
 
@@ -1289,7 +1299,24 @@ export class ColosseumService {
       return this.buildMainView(user);
     }
     await this.runTick().catch(() => {});
-    const battle = await this._loadBattle(bid);
+    let battle = await this._loadBattle(bid);
+    if (!battle || !this._battleBelongsTo(battle, user.id)) {
+      clearBattleStateOnFinish(user);
+      dirty = true;
+      await this._saveUserIfDirty(user, dirty);
+      return this.buildMainView(user);
+    }
+
+    if (battle.status === "pending_accept" || battle.status === "active_round") {
+      await this._setOpenBattle(battle.id, true).catch(() => {});
+    }
+    if (battle.status === "pending_accept" && this.now() >= battle.acceptDeadline) {
+      await this._resolvePendingTimeout(battle).catch(() => {});
+      battle = await this._loadBattle(bid);
+    } else if (battle.status === "active_round" && this.now() >= battle.roundDeadline) {
+      await this._resolveActiveTimeout(battle).catch(() => {});
+      battle = await this._loadBattle(bid);
+    }
     if (!battle || !this._battleBelongsTo(battle, user.id)) {
       clearBattleStateOnFinish(user);
       dirty = true;

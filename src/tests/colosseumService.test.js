@@ -514,3 +514,72 @@ test("colosseum service: weekly rewards are paid on rollover for top-5 including
   assert.equal(u1Again.money, 33000);
   assert.equal(u1Again.premium, 10);
 });
+
+test("colosseum service: timeout round advance keeps battle in open index", async () => {
+  const db = new FakeDb();
+  const users = new FakeUsers({
+    u1: makeUser("u1", "Alpha"),
+    u2: makeUser("u2", "Bravo")
+  });
+  let nowTs = Date.UTC(2026, 2, 30, 15, 0, 0);
+  const service = new ColosseumService({
+    db,
+    users,
+    now: () => nowTs,
+    bot: { async sendWithInline() {} }
+  });
+
+  await service.joinQueue(await users.load("u1"));
+  await service.joinQueue(await users.load("u2"));
+  await service.accept(await users.load("u1"));
+  await service.accept(await users.load("u2"));
+
+  const me = await users.load("u1");
+  const bid = String(me?.colosseum?.activeBattleId || "");
+  const before = await loadBattle(db, bid);
+  nowTs = Number(before.roundDeadline) + 1000;
+
+  await service.runTick();
+
+  const after = await loadBattle(db, bid);
+  assert.equal(after.status, "active_round");
+  assert.equal(after.currentRound, 2);
+  assert.ok(Number(after.roundDeadline) > nowTs);
+  const open = await loadOpenBattles(db);
+  assert.equal(open.includes(bid), true);
+});
+
+test("colosseum service: buildBattleView self-heals lost open index and resolves timeout", async () => {
+  const db = new FakeDb();
+  const users = new FakeUsers({
+    u1: makeUser("u1", "Alpha"),
+    u2: makeUser("u2", "Bravo")
+  });
+  let nowTs = Date.UTC(2026, 2, 30, 16, 0, 0);
+  const service = new ColosseumService({
+    db,
+    users,
+    now: () => nowTs,
+    bot: { async sendWithInline() {} }
+  });
+
+  await service.joinQueue(await users.load("u1"));
+  await service.joinQueue(await users.load("u2"));
+  await service.accept(await users.load("u1"));
+  await service.accept(await users.load("u2"));
+
+  const me = await users.load("u1");
+  const bid = String(me?.colosseum?.activeBattleId || "");
+  const before = await loadBattle(db, bid);
+  nowTs = Number(before.roundDeadline) + 1000;
+
+  await db.put("colosseum:open:v1", JSON.stringify([]));
+  await service.buildBattleView(await users.load("u1"));
+
+  const after = await loadBattle(db, bid);
+  assert.equal(after.status, "active_round");
+  assert.equal(after.currentRound, 2);
+  assert.ok(Number(after.roundDeadline) > nowTs);
+  const open = await loadOpenBattles(db);
+  assert.equal(open.includes(bid), true);
+});
