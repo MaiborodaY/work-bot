@@ -986,7 +986,7 @@ export class SyndicateService {
       ];
       return {
         caption: lines.join("\n"),
-        keyboard: [[{ text: s.btnBackCity, callback_data: "go:City" }]]
+        keyboard: [[{ text: s.btnBackCity, callback_data: "go:Earn" }]]
       };
     }
 

@@ -38,7 +38,7 @@ function getFishingStrings(lang) {
       spotOpenCount: "Ждут напарника: {{count}}",
       btnCreate: "🎣 Создать сессию",
       btnJoin: "➕ Присоединиться",
-      btnBack: "⬅️",
+      btnBack: "⬅️ Назад к заработку",
       btnBackMain: "⬅️ Назад",
       btnOpenFishing: "🎣 Рыбалка",
       btnChoiceHonest: "✅ Честно",
@@ -88,7 +88,7 @@ function getFishingStrings(lang) {
       spotOpenCount: "Чекають напарника: {{count}}",
       btnCreate: "🎣 Створити сесію",
       btnJoin: "➕ Приєднатися",
-      btnBack: "⬅️",
+      btnBack: "⬅️ Назад до заробітку",
       btnBackMain: "⬅️ Назад",
       btnOpenFishing: "🎣 Риболовля",
       btnChoiceHonest: "✅ Чесно",
@@ -138,7 +138,7 @@ function getFishingStrings(lang) {
       spotOpenCount: "Waiting for partner: {{count}}",
       btnCreate: "🎣 Create session",
       btnJoin: "➕ Join",
-      btnBack: "⬅️",
+      btnBack: "⬅️ Back to earnings",
       btnBackMain: "⬅️ Back",
       btnOpenFishing: "🎣 Fishing",
       btnChoiceHonest: "✅ Honest",
@@ -702,7 +702,7 @@ export class FishingService {
     if (!this._hasAccess(u)) {
       return {
         caption: [s.title, "", this._fmt(s.locked, { need: this._minPlayerLevel(), have: this._playerLevel(u) })].join("\n"),
-        keyboard: [[{ text: s.btnBack, callback_data: "go:City" }]]
+        keyboard: [[{ text: s.btnBack, callback_data: "go:Earn" }]]
       };
     }
 
@@ -745,7 +745,7 @@ export class FishingService {
       const label = unlocked ? `${cfg.emoji} ${title}` : `🔒 ${title}`;
       kb.push([{ text: label, callback_data: `fish:spot:${spotId}` }]);
     }
-    kb.push([{ text: s.btnBack, callback_data: "go:City" }]);
+    kb.push([{ text: s.btnBack, callback_data: "go:Earn" }]);
     return { caption: lines.join("\n"), keyboard: kb };
   }
 
