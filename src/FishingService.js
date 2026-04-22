@@ -58,6 +58,7 @@ function getFishingStrings(lang) {
       btnChoiceHonest: "✅ Честно",
       btnChoiceGreedy: "❌ Жадно",
       matchFoundTitle: "🎣 Напарник найден!",
+      choicePrompt: "Выбери как разделить улов:",
       fishingWith: "Рыбачишь с: {{name}}",
       repLabel: "📊 Его репутация: {{pct}}%",
       repVisual: "{{bar}}",
@@ -137,6 +138,7 @@ function getFishingStrings(lang) {
       btnChoiceHonest: "✅ Чесно",
       btnChoiceGreedy: "❌ Жадібно",
       matchFoundTitle: "🎣 Напарника знайдено!",
+      choicePrompt: "Обери як поділити улов:",
       fishingWith: "Рибалиш з: {{name}}",
       repLabel: "📊 Його репутація: {{pct}}%",
       repVisual: "{{bar}}",
@@ -216,6 +218,7 @@ function getFishingStrings(lang) {
       btnChoiceHonest: "✅ Honest",
       btnChoiceGreedy: "❌ Greedy",
       matchFoundTitle: "🎣 Partner found!",
+      choicePrompt: "Choose how to split the catch:",
       fishingWith: "Fishing with: {{name}}",
       repLabel: "📊 Their reputation: {{pct}}%",
       repVisual: "{{bar}}",
@@ -541,6 +544,7 @@ export class FishingService {
     }
     const histBlock = this._pairHistoryBlock(creatorUser, String(partnerUser?.id || ""), s);
     if (histBlock) lines.push("", histBlock);
+    lines.push("", s.choicePrompt);
     const sid = String(session.id || "");
     await this._sendInline(chatId, lines.join("\n"), [[
       { text: s.btnChoiceHonest, callback_data: `fish:choice:${sid}:C` },
@@ -1074,6 +1078,7 @@ export class FishingService {
     }
     const histBlock = this._pairHistoryBlock(u, String(partnerUser?.id || ""), s);
     if (histBlock) lines.push("", histBlock);
+    lines.push("", s.choicePrompt);
     return lines.join("\n");
   }
 
