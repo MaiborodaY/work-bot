@@ -602,6 +602,79 @@ export class SyndicateService {
     return `${emoji} ${title} [${Math.max(0, toInt(openCount, 0))}]${active}`;
   }
 
+  _dealPartnerNameForUser(deal, userIdRaw) {
+    const userId = String(userIdRaw || "").trim();
+    if (!deal || !userId) return "";
+    const creatorId = String(deal?.createdBy || "").trim();
+    const acceptedId = String(deal?.acceptedBy || "").trim();
+    if (userId === creatorId) {
+      return acceptedId ? shortName(acceptedId, deal?.acceptedName) : "";
+    }
+    if (userId === acceptedId) {
+      return creatorId ? shortName(creatorId, deal?.createdName) : "";
+    }
+    return "";
+  }
+
+  _statusWithPartner(u, stateLine, partnerName) {
+    const base = String(stateLine || "").trim();
+    const partner = String(partnerName || "").trim();
+    if (!base || !partner) return base;
+    const l = this._lang(u);
+    if (l === "ru") return `${base} · с ${partner}`;
+    if (l === "uk") return `${base} · з ${partner}`;
+    return `${base} · with ${partner}`;
+  }
+
+  _signedPct(pct) {
+    const p = toInt(pct, 0);
+    return `${p > 0 ? "+" : ""}${p}%`;
+  }
+
+  _outcomeLabel(u, outcomeRaw) {
+    const l = this._lang(u);
+    const outcome = String(outcomeRaw || "").toLowerCase();
+    if (l === "ru") {
+      if (outcome === "lucky") return "удача";
+      if (outcome === "fail") return "провал";
+      return "успех";
+    }
+    if (l === "uk") {
+      if (outcome === "lucky") return "удача";
+      if (outcome === "fail") return "провал";
+      return "успіх";
+    }
+    if (outcome === "lucky") return "lucky";
+    if (outcome === "fail") return "fail";
+    return "success";
+  }
+
+  _finishPartnerLine(u, partnerNameRaw) {
+    const partner = String(partnerNameRaw || "").trim();
+    if (!partner) return "";
+    const l = this._lang(u);
+    if (l === "ru") return `Партнёр: ${partner}`;
+    if (l === "uk") return `Партнер: ${partner}`;
+    return `Partner: ${partner}`;
+  }
+
+  _finishOutcomeLine(u, outcome, pct) {
+    const l = this._lang(u);
+    const label = this._outcomeLabel(u, outcome);
+    const pctText = this._signedPct(pct);
+    if (l === "ru") return `Исход: ${label} (${pctText})`;
+    if (l === "uk") return `Результат: ${label} (${pctText})`;
+    return `Outcome: ${label} (${pctText})`;
+  }
+
+  _finishFormulaLine(u, stake, pct, returned) {
+    const l = this._lang(u);
+    const factor = 100 + toInt(pct, 0);
+    if (l === "ru") return `Расчёт: $${this._money(stake)} x (${factor}%) = $${this._money(returned)}`;
+    if (l === "uk") return `Розрахунок: $${this._money(stake)} x (${factor}%) = $${this._money(returned)}`;
+    return `Formula: $${this._money(stake)} x (${factor}%) = $${this._money(returned)}`;
+  }
+
   async _openDealsByBiz(excludeUserId = "") {
     const index = await this._loadIndex(this._openIndexKey());
     const out = {};
@@ -749,13 +822,20 @@ export class SyndicateService {
       stake: this._money(stake),
       ret: this._money(returned)
     });
+    const pct = toInt(deal?.snapshot?.returnPct?.[String(outcome || "")], 0);
+    const partnerName = this._dealPartnerNameForUser(deal, user?.id);
     let netLine = s.finishedNetFlat;
     if (toInt(net, 0) > 0) {
       netLine = this._fmt(s.finishedNetProfit, { amount: this._moneySigned(net) });
     } else if (toInt(net, 0) < 0) {
       netLine = this._fmt(s.finishedNetLoss, { amount: this._moneySigned(net) });
     }
-    await this._sendInline(chatId, `${title}\n${line}\n${netLine}`, [[{ text: s.btnOpenSyndicate, callback_data: "go:Syndicate" }]]);
+    const details = [];
+    const partnerLine = this._finishPartnerLine(user, partnerName);
+    if (partnerLine) details.push(partnerLine);
+    details.push(this._finishOutcomeLine(user, outcome, pct));
+    details.push(this._finishFormulaLine(user, stake, pct, returned));
+    await this._sendInline(chatId, `${title}\n${line}\n${details.join("\n")}\n${netLine}`, [[{ text: s.btnOpenSyndicate, callback_data: "go:Syndicate" }]]);
   }
 
   async _applyFinishedDealToUser(user, deal, outcome, returnedAmount) {
@@ -938,7 +1018,9 @@ export class SyndicateService {
       const stateLine = state === "open"
         ? this._fmt(s.statusOpenDeal, { left })
         : this._fmt(s.statusActiveDeal, { left });
-      statusRows.push(`• ${bizTitle}: ${stateLine}`);
+      const partnerName = state === "active" ? this._dealPartnerNameForUser(deal, u?.id) : "";
+      const shownState = state === "active" ? this._statusWithPartner(u, stateLine, partnerName) : stateLine;
+      statusRows.push(`• ${bizTitle}: ${shownState}`);
     }
 
     const lines = [
@@ -1147,7 +1229,13 @@ export class SyndicateService {
       const stateLabel = String(activeDeal.state || "") === "open"
         ? this._fmt(s.statusOpenDeal, { left })
         : this._fmt(s.statusActiveDeal, { left });
-      lines.push(this._fmt(s.yourDealLine, { state: stateLabel }));
+      const partnerName = String(activeDeal.state || "") === "active"
+        ? this._dealPartnerNameForUser(activeDeal, u?.id)
+        : "";
+      const shownState = String(activeDeal.state || "") === "active"
+        ? this._statusWithPartner(u, stateLabel, partnerName)
+        : stateLabel;
+      lines.push(this._fmt(s.yourDealLine, { state: shownState }));
     } else {
       lines.push(this._fmt(s.yourDealLine, { state: s.statusNoDeal }));
     }

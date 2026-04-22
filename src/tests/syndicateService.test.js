@@ -258,3 +258,76 @@ test("syndicate: rating view appends clan tag to names", async () => {
   assert.match(caption, /Alpha \[Wolves\]/);
   assert.match(caption, /Bravo \[Dragons\]/);
 });
+
+test("syndicate: main status shows partner name for active deal", async () => {
+  const db = new FakeDb();
+  const users = new FakeUsers({
+    u1: makeUser("u1", "Alpha"),
+    u2: makeUser("u2", "Bravo")
+  });
+  let nowTs = Date.UTC(2026, 3, 19, 10, 0, 0);
+  const service = new SyndicateService({
+    db,
+    users,
+    now: () => nowTs,
+    bot: { async sendWithInline() {} },
+    isAdmin: () => false
+  });
+
+  await service.createDeal(await users.load("u1"), "shawarma", "small");
+  const dealId = String((await users.load("u1"))?.syndicate?.activeDealByBiz?.shawarma || "");
+  await service.acceptDeal(await users.load("u2"), dealId);
+
+  const view = await service.buildMainView(await users.load("u1"));
+  const caption = String(view?.caption || "");
+  assert.match(caption, /Alpha|Bravo/);
+  assert.match(caption, /с Bravo|with Bravo|з Bravo/);
+});
+
+
+test("syndicate: finished notification explains partner and formula", async () => {
+  const db = new FakeDb();
+  const users = new FakeUsers({
+    u1: makeUser("u1", "Alpha"),
+    u2: makeUser("u2", "Bravo")
+  });
+  const sent = [];
+  let nowTs = Date.UTC(2026, 3, 19, 10, 0, 0);
+  const service = new SyndicateService({
+    db,
+    users,
+    now: () => nowTs,
+    bot: {
+      async sendWithInline(chatId, text) {
+        sent.push({ chatId: String(chatId || ""), text: String(text || "") });
+      }
+    },
+    isAdmin: () => false
+  });
+
+  await service.createDeal(await users.load("u1"), "shawarma", "small");
+  const dealId = String((await users.load("u1"))?.syndicate?.activeDealByBiz?.shawarma || "");
+  await service.acceptDeal(await users.load("u2"), dealId);
+
+  const activeDeal = await service._loadDeal(dealId);
+  const realRandom = Math.random;
+  Math.random = () => 0.0;
+  try {
+    nowTs = Number(activeDeal.endAt) + 1;
+    await service.runTick();
+  } finally {
+    Math.random = realRandom;
+  }
+
+  const u1 = await users.load("u1");
+  const u2 = await users.load("u2");
+  const msg1 = sent.filter((x) => x.chatId === String(u1.chatId) && /Successful deal/i.test(x.text)).pop();
+  const msg2 = sent.filter((x) => x.chatId === String(u2.chatId) && /Successful deal/i.test(x.text)).pop();
+
+  assert.ok(msg1);
+  assert.ok(msg2);
+  assert.match(String(msg1?.text || ""), /Partner:\s*Bravo/i);
+  assert.match(String(msg2?.text || ""), /Partner:\s*Alpha/i);
+  assert.match(String(msg1?.text || ""), /Outcome:\s*success\s*\(\+\d+%\)/i);
+  assert.match(String(msg1?.text || ""), /Formula:\s*\$[0-9,]+\s*x\s*\(\d+%\)\s*=\s*\$[0-9,]+/i);
+});
