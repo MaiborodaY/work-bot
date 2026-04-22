@@ -44,6 +44,41 @@ export const socialHandler = {
       }
       return kb;
     };
+    const clanNameCache = new Map();
+    const readClanNameByUserId = async (userIdRaw) => {
+      const userId = String(userIdRaw || "").trim();
+      if (!userId) return "";
+      if (clanNameCache.has(userId)) return clanNameCache.get(userId) || "";
+      let clanName = "";
+      try {
+        const player = await users?.load?.(userId);
+        const clanId = String(player?.clan?.clanId || "").trim();
+        if (clanId && users?.db?.get) {
+          const rawClan = await users.db.get(`clan:item:${clanId}`).catch(() => null);
+          if (rawClan) {
+            const parsed = JSON.parse(rawClan);
+            clanName = String(parsed?.name || "").replace(/\s+/g, " ").trim();
+          }
+        }
+      } catch {}
+      clanNameCache.set(userId, clanName);
+      return clanName;
+    };
+    const normalizeTop = async (raw) => {
+      const arr = Array.isArray(raw) ? raw : [];
+      const out = [];
+      for (const item of arr) {
+        const userId = String(item?.userId ?? item?.id ?? "").trim();
+        const looksLikeId = typeof item?.name === "string" && /^[0-9]+$/.test(item.name.trim());
+        const empty = !item?.name || !String(item.name).trim();
+        const masked = tt("loc.square.player_fallback_id", { id: userId.slice(-4).padStart(4, "0") });
+        const baseName = (empty || looksLikeId) ? masked : String(item.name).trim();
+        const clanName = await readClanNameByUserId(userId);
+        const shownName = clanName ? `${baseName} [${clanName}]` : baseName;
+        out.push({ ...item, userId, name: shownName, clanName });
+      }
+      return out;
+    };
 
         // ===== ручная смена ника по кнопке в табло =====
         if (data === "social:name") {
@@ -69,7 +104,8 @@ export const socialHandler = {
 
     if (data === "city:toplucky") {
       await answer(cb.id);
-      const list = await social.getLuckyTop(15).catch(() => []);
+      const raw = await social.getLuckyTop(15).catch(() => []);
+      const list = await normalizeTop(raw);
       await locations.media.show({
         sourceMsg: locations._sourceMsg,
         place: "CityBoard",
@@ -114,14 +150,7 @@ export const socialHandler = {
     if (data === "city:topfarmweek") {
       await answer(cb.id);
       const raw = await social.getFarmWeekTop().catch(() => []);
-      const norm = (item) => {
-        const idStr = String(item.userId || "");
-        const looksLikeId = typeof item.name === "string" && /^[0-9]+$/.test(item.name.trim());
-        const empty = !item.name || !String(item.name).trim();
-        const masked = tt("loc.square.player_fallback_id", { id: idStr.slice(-4).padStart(4, "0") });
-        return { ...item, name: (empty || looksLikeId) ? masked : String(item.name).trim() };
-      };
-      const top = Array.isArray(raw) ? raw.map(norm) : [];
+      const top = await normalizeTop(raw);
       await locations.media.show({
         sourceMsg: locations._sourceMsg,
         place: "CityBoard",
@@ -136,14 +165,7 @@ export const socialHandler = {
     if (data === "city:topbizday") {
       await answer(cb.id);
       const raw = await social.getBizDayTop().catch(() => []);
-      const norm = (item) => {
-        const idStr = String(item.userId || "");
-        const looksLikeId = typeof item.name === "string" && /^[0-9]+$/.test(item.name.trim());
-        const empty = !item.name || !String(item.name).trim();
-        const masked = tt("loc.square.player_fallback_id", { id: idStr.slice(-4).padStart(4, "0") });
-        return { ...item, name: (empty || looksLikeId) ? masked : String(item.name).trim() };
-      };
-      const top = Array.isArray(raw) ? raw.map(norm) : [];
+      const top = await normalizeTop(raw);
       await locations.media.show({
         sourceMsg: locations._sourceMsg,
         place: "CityBoard",
@@ -158,14 +180,7 @@ export const socialHandler = {
     if (data === "city:toptheftweek") {
       await answer(cb.id);
       const raw = await social.getTheftWeekTop().catch(() => []);
-      const norm = (item) => {
-        const idStr = String(item.userId || "");
-        const looksLikeId = typeof item.name === "string" && /^[0-9]+$/.test(item.name.trim());
-        const empty = !item.name || !String(item.name).trim();
-        const masked = tt("loc.square.player_fallback_id", { id: idStr.slice(-4).padStart(4, "0") });
-        return { ...item, name: (empty || looksLikeId) ? masked : String(item.name).trim() };
-      };
-      const top = Array.isArray(raw) ? raw.map(norm) : [];
+      const top = await normalizeTop(raw);
       await locations.media.show({
         sourceMsg: locations._sourceMsg,
         place: "CityBoard",
@@ -180,14 +195,7 @@ export const socialHandler = {
     if (data === "city:topfarmday" || data === "city:topfarmall") {
       await answer(cb.id);
       const raw = await social.getFarmDayTop().catch(() => []);
-      const norm = (item) => {
-        const idStr = String(item.userId || "");
-        const looksLikeId = typeof item.name === "string" && /^[0-9]+$/.test(item.name.trim());
-        const empty = !item.name || !String(item.name).trim();
-        const masked = tt("loc.square.player_fallback_id", { id: idStr.slice(-4).padStart(4, "0") });
-        return { ...item, name: (empty || looksLikeId) ? masked : String(item.name).trim() };
-      };
-      const top = Array.isArray(raw) ? raw.map(norm) : [];
+      const top = await normalizeTop(raw);
       await locations.media.show({
         sourceMsg: locations._sourceMsg,
         place: "CityBoard",
@@ -216,14 +224,7 @@ export const socialHandler = {
     if (data === "city:topday") {
       await answer(cb.id);
       const raw = await social.getDailyTop(); // [{userId,name,total}]
-      const norm = (item) => {
-        const idStr = String(item.userId || "");
-        const looksLikeId = typeof item.name === "string" && /^[0-9]+$/.test(item.name.trim());
-        const empty = !item.name || !String(item.name).trim();
-        const masked = tt("loc.square.player_fallback_id", { id: idStr.slice(-4).padStart(4, "0") });
-        return { ...item, name: (empty || looksLikeId) ? masked : String(item.name).trim() };
-      };
-      const top = Array.isArray(raw) ? raw.map(norm) : [];
+      const top = await normalizeTop(raw);
 
       await locations.media.show({
         sourceMsg: locations._sourceMsg,
@@ -239,14 +240,7 @@ export const socialHandler = {
     if (data === "city:topweek") {
       await answer(cb.id);
       const raw = await social.getWeeklyTop(); // [{userId,name,total}]
-      const norm = (item) => {
-        const idStr = String(item.userId || "");
-        const looksLikeId = typeof item.name === "string" && /^[0-9]+$/.test(item.name.trim());
-        const empty = !item.name || !String(item.name).trim();
-        const masked = tt("loc.square.player_fallback_id", { id: idStr.slice(-4).padStart(4, "0") });
-        return { ...item, name: (empty || looksLikeId) ? masked : String(item.name).trim() };
-      };
-      const top = Array.isArray(raw) ? raw.map(norm) : [];
+      const top = await normalizeTop(raw);
 
       await locations.media.show({
         sourceMsg: locations._sourceMsg,
@@ -262,17 +256,7 @@ export const socialHandler = {
     if (data === "city:topsmart") {
       await answer(cb.id);
       const raw = await social.getGeneralQuizDayTop().catch(() => []); // [{userId,name,total}]
-      const norm = (item) => {
-        const idStr = String(item.userId || "");
-        const looksLikeId = typeof item.name === "string" && /^[0-9]+$/.test(item.name.trim());
-        const empty = !item.name || !String(item.name).trim();
-        const masked = tt("loc.square.player_fallback_id", { id: idStr.slice(-4).padStart(4, "0") });
-        return {
-          ...item,
-          name: (empty || looksLikeId) ? masked : String(item.name).trim()
-        };
-      };
-      const top = Array.isArray(raw) ? raw.map(norm) : [];
+      const top = await normalizeTop(raw);
 
       await locations.media.show({
         sourceMsg: locations._sourceMsg,
@@ -309,14 +293,7 @@ export const socialHandler = {
     
       // читаем дневной топ по наёмникам (доход владельца: деньги + кристаллы)
       const raw = await social.getLabourDayTop().catch(() => []); // [{userId,name,money,gems}]
-      const norm = (item) => {
-        const idStr = String(item.userId || "");
-        const looksLikeId = typeof item.name === "string" && /^[0-9]+$/.test(item.name.trim());
-        const empty = !item.name || !String(item.name).trim();
-        const masked = tt("loc.square.player_fallback_id", { id: idStr.slice(-4).padStart(4, "0") });
-        return { ...item, name: (empty || looksLikeId) ? masked : String(item.name).trim() };
-      };
-      const top = Array.isArray(raw) ? raw.map(norm) : [];
+      const top = await normalizeTop(raw);
     
       await locations.media.show({
         sourceMsg: locations._sourceMsg,

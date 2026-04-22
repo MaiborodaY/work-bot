@@ -226,3 +226,35 @@ test("syndicate: odds view shows all configured businesses and rules notes", asy
   assert.match(caption, /Fitness/i);
   assert.match(caption, /Small \/ Medium \/ Large differ only by stake size/i);
 });
+
+test("syndicate: rating view appends clan tag to names", async () => {
+  const db = new FakeDb();
+  const users = new FakeUsers({
+    u1: makeUser("u1", "Alpha"),
+    u2: makeUser("u2", "Bravo")
+  });
+  const nowTs = Date.UTC(2026, 3, 19, 10, 0, 0);
+  const service = new SyndicateService({
+    db,
+    users,
+    now: () => nowTs,
+    bot: { async sendWithInline() {} },
+    isAdmin: () => false
+  });
+
+  const weekKey = service._nowWeekKey();
+  await db.put(service._ratingWeekKey(weekKey), JSON.stringify([
+    { userId: "u1", name: "Alpha", score: 7, completed: 3, net: 200, reachedAt: 1 },
+    { userId: "u2", name: "Bravo", score: 5, completed: 2, net: 100, reachedAt: 2 }
+  ]));
+  await db.put("u:u1", JSON.stringify({ id: "u1", clan: { clanId: "c1" } }));
+  await db.put("u:u2", JSON.stringify({ id: "u2", clan: { clanId: "c2" } }));
+  await db.put("clan:item:c1", JSON.stringify({ id: "c1", name: "Wolves" }));
+  await db.put("clan:item:c2", JSON.stringify({ id: "c2", name: "Dragons" }));
+
+  const view = await service.buildRatingView(await users.load("u1"), "week");
+  const caption = String(view?.caption || "");
+
+  assert.match(caption, /Alpha \[Wolves\]/);
+  assert.match(caption, /Bravo \[Dragons\]/);
+});

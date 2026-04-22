@@ -142,6 +142,7 @@ export class SyndicateService {
   _dealKey(dealId) { return `syndicate:deal:${String(dealId || "").trim()}`; }
   _ratingAllKey() { return "syndicate:rating:all:v1"; }
   _ratingWeekKey(weekKey) { return `syndicate:rating:week:${String(weekKey || "").trim()}:v1`; }
+  _clanKey(clanId) { return `clan:item:${String(clanId || "").trim()}`; }
   _statsKey() { return "syndicate:stats:v1"; }
   _dealTtlSec() { return Math.max(24 * 60 * 60, toInt(this._cfg()?.DEAL_TTL_SEC, 30 * 24 * 60 * 60)); }
   _indexTtlSec() { return Math.max(24 * 60 * 60, toInt(this._cfg()?.INDEX_TTL_SEC, 14 * 24 * 60 * 60)); }
@@ -153,6 +154,42 @@ export class SyndicateService {
   _acceptLockTtlSec() { return Math.max(60, toInt(this._cfg()?.ACCEPT_LOCK_TTL_SEC, 60)); }
   _acceptLockSettleMs() { return Math.max(10, toInt(this._cfg()?.ACCEPT_LOCK_SETTLE_MS, 120)); }
   _nowWeekKey() { return isoWeekKey(this.now()); }
+
+  async _readClanNameForUserId(userIdRaw) {
+    const userId = String(userIdRaw || "").trim();
+    if (!userId) return "";
+    const rawUser = await this._loadJson(`u:${userId}`, null);
+    const clanId = String(rawUser?.clan?.clanId || "").trim();
+    if (!clanId) return "";
+    const rawClan = await this._loadJson(this._clanKey(clanId), null);
+    return String(rawClan?.name || "").replace(/\s+/g, " ").trim();
+  }
+
+  _displayNameWithClan(row) {
+    const baseName = shortName(row?.userId, row?.name);
+    const clanName = String(row?.clanName || "").replace(/\s+/g, " ").trim();
+    return clanName ? `${baseName} [${clanName}]` : baseName;
+  }
+
+  async _decorateRatingWithClan(top) {
+    const arr = Array.isArray(top) ? top : [];
+    const cache = new Map();
+    const out = [];
+    for (const row of arr) {
+      const userId = String(row?.userId || "").trim();
+      if (!userId) continue;
+      let clanName = String(row?.clanName || "").replace(/\s+/g, " ").trim();
+      if (!clanName) {
+        if (cache.has(userId)) clanName = cache.get(userId) || "";
+        else {
+          clanName = await this._readClanNameForUserId(userId).catch(() => "");
+          cache.set(userId, clanName);
+        }
+      }
+      out.push({ ...row, clanName });
+    }
+    return out;
+  }
 
   async _sleep(ms) {
     const waitMs = Math.max(0, toInt(ms, 0));
@@ -1040,7 +1077,8 @@ export class SyndicateService {
     this._ensureUserState(u);
     const s = this._s(u);
     const p = String(period || "week") === "all" ? "all" : "week";
-    const top = await this._loadRating(p);
+    const topRaw = await this._loadRating(p);
+    const top = await this._decorateRatingWithClan(topRaw);
     const title = p === "all" ? s.ratingAllTitle : s.ratingWeekTitle;
     const lines = [title, ""];
     const medals = ["🥇", "🥈", "🥉"];
@@ -1052,7 +1090,7 @@ export class SyndicateService {
         const place = medals[i] || `${i + 1}.`;
         lines.push(this._fmt(s.ratingLine, {
           place,
-          name: shortName(row.userId, row.name),
+          name: this._displayNameWithClan(row),
           score: this._money(row.score),
           completed: this._money(row.completed)
         }));

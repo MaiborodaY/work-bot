@@ -43,6 +43,49 @@ export class RatingService {
     }
   }
 
+  _clanKey(clanId) {
+    return `clan:item:${String(clanId || "").trim()}`;
+  }
+
+  async _readClanNameForUserId(userIdRaw) {
+    const userId = String(userIdRaw || "").trim();
+    if (!userId || !this.db) return "";
+    const rawUser = await this.db.get(`u:${userId}`).catch(() => null);
+    const parsedUser = this._safeJson(rawUser, null);
+    const clanId = String(parsedUser?.clan?.clanId || "").trim();
+    if (!clanId) return "";
+    const rawClan = await this.db.get(this._clanKey(clanId)).catch(() => null);
+    const parsedClan = this._safeJson(rawClan, null);
+    return String(parsedClan?.name || "").replace(/\s+/g, " ").trim();
+  }
+
+  _displayNameWithClan(row, lang = "ru") {
+    const uid = String(row?.userId || "").trim();
+    const baseName = String(row?.name || "").trim() || this._name({ id: uid, displayName: "" }, lang);
+    const clanName = String(row?.clanName || "").replace(/\s+/g, " ").trim();
+    return clanName ? `${baseName} [${clanName}]` : baseName;
+  }
+
+  async _decorateTopWithClan(list) {
+    const top = Array.isArray(list) ? list : [];
+    const cache = new Map();
+    const out = [];
+    for (const row of top) {
+      const userId = String(row?.userId || "").trim();
+      if (!userId) continue;
+      let clanName = String(row?.clanName || "").replace(/\s+/g, " ").trim();
+      if (!clanName) {
+        if (cache.has(userId)) clanName = cache.get(userId) || "";
+        else {
+          clanName = await this._readClanNameForUserId(userId).catch(() => "");
+          cache.set(userId, clanName);
+        }
+      }
+      out.push({ ...row, clanName });
+    }
+    return out;
+  }
+
   _name(u, lang = "ru") {
     const s = String(u?.displayName || "").trim();
     if (s) return s;
@@ -112,6 +155,7 @@ export class RatingService {
       out.push({
         userId,
         name: String(x?.name || "").trim(),
+        clanName: String(x?.clanName || "").replace(/\s+/g, " ").trim(),
         score,
         reachedAt: Math.max(0, Math.floor(n(x?.reachedAt)))
       });
@@ -282,7 +326,8 @@ export class RatingService {
   async buildView(u, cat = "biz") {
     const lang = this._lang(u);
     const c = CATS.includes(String(cat)) ? String(cat) : "biz";
-    const top = await this.getTop(c);
+    const topRaw = await this.getTop(c);
+    const top = await this._decorateTopWithClan(topRaw);
     const lines = [this._title(lang), ""];
     const medals = ["🥇", "🥈", "🥉"];
 
@@ -292,7 +337,8 @@ export class RatingService {
       for (let i = 0; i < top.length; i++) {
         const x = top[i];
         const mark = medals[i] || `${i + 1}.`;
-        lines.push(`${mark} ${x.name} — ${this._metricLine(x.score, c, lang)}`);
+        const shownName = this._displayNameWithClan(x, lang);
+        lines.push(`${mark} ${shownName} — ${this._metricLine(x.score, c, lang)}`);
       }
     }
 
@@ -315,7 +361,7 @@ export class RatingService {
     ]];
 
     for (const x of top) {
-      kb.push([{ text: this._short(x.name), callback_data: `profile:view:${x.userId}:rating` }]);
+      kb.push([{ text: this._short(this._displayNameWithClan(x, lang)), callback_data: `profile:view:${x.userId}:rating` }]);
     }
 
     kb.push([{
