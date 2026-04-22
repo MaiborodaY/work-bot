@@ -5,11 +5,15 @@ export const fishingHandler = {
   match: (data) =>
     data === "fish:main" ||
     data === "fish:refresh" ||
+    data === "fish:help" ||
+    data === "fish:rating:week" ||
+    data === "fish:rating:all" ||
     data.startsWith("fish:spot:") ||
     data.startsWith("fish:create:") ||
     data.startsWith("fish:joinspot:") ||
     data.startsWith("fish:join:") ||
     data.startsWith("fish:choice:") ||
+    data.startsWith("fish:cancel:") ||
     data === "fish:noop",
 
   async handle(ctx) {
@@ -40,6 +44,21 @@ export const fishingHandler = {
     if (data === "fish:main" || data === "fish:refresh") {
       await answer(cb.id);
       const view = await fishing.buildMainView(u);
+      await show(view);
+      return;
+    }
+
+    if (data === "fish:help") {
+      await answer(cb.id);
+      const view = fishing.buildHelpView(u);
+      await show(view);
+      return;
+    }
+
+    if (data === "fish:rating:week" || data === "fish:rating:all") {
+      await answer(cb.id);
+      const period = data.endsWith(":all") ? "all" : "week";
+      const view = await fishing.buildRatingView(u, period);
       await show(view);
       return;
     }
@@ -117,6 +136,23 @@ export const fishingHandler = {
         };
         await show(view);
       }
+      return;
+    }
+
+    if (data.startsWith("fish:cancel:")) {
+      const sessionId = String(data.split(":")[2] || "").trim();
+      const session = await fishing._loadDeal(sessionId);
+      const spotId = String(session?.spotId || "");
+      const res = await fishing.cancelSession(u, sessionId);
+      if (!res?.ok) {
+        await answer(cb.id, String(res?.error || "Error"));
+      } else {
+        await answer(cb.id, String(res?.toast || ""));
+      }
+      const view = spotId
+        ? await fishing.buildSpotView(u, spotId)
+        : await fishing.buildMainView(u);
+      await show(view);
       return;
     }
 

@@ -16,6 +16,16 @@ function makeSessionId(nowTs) {
   return `fish_${a}_${b}`;
 }
 
+function isoWeekKey(ts) {
+  const d = new Date(Number(ts) || Date.now());
+  const dt = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  const dayNum = dt.getUTCDay() || 7;
+  dt.setUTCDate(dt.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(dt.getUTCFullYear(), 0, 1));
+  const week = Math.ceil((((dt - yearStart) / DAY_MS) + 1) / 7);
+  return `${dt.getUTCFullYear()}${String(week).padStart(2, "0")}`;
+}
+
 function shortName(id, displayName) {
   const name = String(displayName || "").trim();
   if (name) return name;
@@ -35,6 +45,9 @@ function getFishingStrings(lang) {
       spotLocked: "🔒 Доступно с уровня рыбака {{need}}",
       spotStake: "Ставка: ${{stake}}",
       spotDuration: "Длительность: {{duration}}",
+      payoutCC: "✅✅ Оба честны: +${{amount}} каждому",
+      payoutDC: "❌✅ Ты жадный: +${{amount}} тебе",
+      payoutDD: "❌❌ Оба жадных: $0",
       spotOpenCount: "Ждут напарника: {{count}}",
       btnCreate: "🎣 Создать сессию",
       btnJoin: "➕ Присоединиться",
@@ -73,7 +86,33 @@ function getFishingStrings(lang) {
       toastCreated: "Сессия создана, ищем напарника...",
       toastJoined: "Ты присоединился! Сделай свой выбор.",
       toastChosen: "Выбор сделан. Ждём окончания рыбалки.",
+      toastCancelled: "Сессия отменена. Ставка возвращена.",
+      btnCancel: "✖️ Отменить поиск",
+      btnHelp: "ℹ️ Как работает",
+      btnRatingWeek: "🏆 Рейтинг недели",
+      btnRatingAll: "📚 Рейтинг all-time",
+      ratingWeekTitle: "🏆 Рыбалка — неделя",
+      ratingAllTitle: "📚 Рыбалка — all-time",
+      ratingEmpty: "Пока пусто.",
+      ratingLine: "{{place}} {{name}} — {{score}} сессий",
+      ratingMeIn: "Ты в топе: #{{place}} · {{score}} сессий",
+      ratingMeOut: "Ты вне топа · {{score}} сессий",
+      errCancelFail: "Нельзя отменить: сессия уже активна или не найдена.",
       expiredNotify: "⏰ Напарник не нашёлся. Ставка возвращена.",
+      helpTitle: "ℹ️ Как работает Рыбалка",
+      helpLine1: "1) Выбери водоём и вложи ставку — она всегда возвращается.",
+      helpLine2: "2) Система анонимно найдёт тебе напарника.",
+      helpLine3: "3) Когда напарник найден — ты узнаешь кто это и делаешь выбор:",
+      helpLine4: "   ✅ Честно — делишь улов поровну.",
+      helpLine5: "   ❌ Жадно — пытаешься забрать больше.",
+      helpLine6: "4) Оба выбора скрыты до конца рыбалки.",
+      helpLine7: "5) Результат зависит от обоих:",
+      helpLine8: "   ✅✅ Оба честны → хороший улов каждому.",
+      helpLine9: "   ❌✅ Ты жадный, он честный → ты забираешь больше.",
+      helpLine10: "   ✅❌ Он жадный, ты честный → ты получаешь только ставку назад.",
+      helpLine11: "   ❌❌ Оба жадных → водоём истощён, оба с нулём.",
+      helpLine12: "6) Репутация партнёра видна в момент выбора — помни кто тебя подводил.",
+      helpLine13: "7) Новые водоёмы открываются с ростом уровня рыбака (5 и 20 сессий).",
     },
     uk: {
       title: "🎣 Риболовля",
@@ -85,6 +124,9 @@ function getFishingStrings(lang) {
       spotLocked: "🔒 Доступно з рівня рибалки {{need}}",
       spotStake: "Ставка: ${{stake}}",
       spotDuration: "Тривалість: {{duration}}",
+      payoutCC: "✅✅ Обидва чесні: +${{amount}} кожному",
+      payoutDC: "❌✅ Ти жадібний: +${{amount}} тобі",
+      payoutDD: "❌❌ Обидва жадібні: $0",
       spotOpenCount: "Чекають напарника: {{count}}",
       btnCreate: "🎣 Створити сесію",
       btnJoin: "➕ Приєднатися",
@@ -123,7 +165,33 @@ function getFishingStrings(lang) {
       toastCreated: "Сесію створено, шукаємо напарника...",
       toastJoined: "Ти приєднався! Зроби свій вибір.",
       toastChosen: "Вибір зроблено. Чекаємо закінчення риболовлі.",
+      toastCancelled: "Сесію скасовано. Ставку повернено.",
+      btnCancel: "✖️ Скасувати пошук",
+      btnHelp: "ℹ️ Як працює",
+      btnRatingWeek: "🏆 Рейтинг тижня",
+      btnRatingAll: "📚 Рейтинг all-time",
+      ratingWeekTitle: "🏆 Риболовля — тиждень",
+      ratingAllTitle: "📚 Риболовля — all-time",
+      ratingEmpty: "Поки порожньо.",
+      ratingLine: "{{place}} {{name}} — {{score}} сесій",
+      ratingMeIn: "Ти в топі: #{{place}} · {{score}} сесій",
+      ratingMeOut: "Ти поза топом · {{score}} сесій",
+      errCancelFail: "Не можна скасувати: сесія вже активна або не знайдена.",
       expiredNotify: "⏰ Напарника не знайшлось. Ставку повернено.",
+      helpTitle: "ℹ️ Як працює Риболовля",
+      helpLine1: "1) Обери водойму і внеси ставку — вона завжди повертається.",
+      helpLine2: "2) Система анонімно знайде тобі напарника.",
+      helpLine3: "3) Коли напарника знайдено — ти дізнаєшся хто це і робиш вибір:",
+      helpLine4: "   ✅ Чесно — ділиш улов порівну.",
+      helpLine5: "   ❌ Жадібно — намагаєшся забрати більше.",
+      helpLine6: "4) Обидва вибори приховані до кінця риболовлі.",
+      helpLine7: "5) Результат залежить від обох:",
+      helpLine8: "   ✅✅ Обидва чесні → гарний улов кожному.",
+      helpLine9: "   ❌✅ Ти жадібний, він чесний → ти забираєш більше.",
+      helpLine10: "   ✅❌ Він жадібний, ти чесний → ти отримуєш лише ставку назад.",
+      helpLine11: "   ❌❌ Обидва жадібні → водойму виснажено, обидва з нулем.",
+      helpLine12: "6) Репутація партнера видна у момент вибору — пам'ятай хто тебе підводив.",
+      helpLine13: "7) Нові водойми відкриваються зі зростанням рівня рибалки (5 і 20 сесій).",
     },
     en: {
       title: "🎣 Fishing",
@@ -135,6 +203,9 @@ function getFishingStrings(lang) {
       spotLocked: "🔒 Available from fisher level {{need}}",
       spotStake: "Stake: ${{stake}}",
       spotDuration: "Duration: {{duration}}",
+      payoutCC: "✅✅ Both honest: +${{amount}} each",
+      payoutDC: "❌✅ You greedy: +${{amount}} to you",
+      payoutDD: "❌❌ Both greedy: $0",
       spotOpenCount: "Waiting for partner: {{count}}",
       btnCreate: "🎣 Create session",
       btnJoin: "➕ Join",
@@ -173,7 +244,33 @@ function getFishingStrings(lang) {
       toastCreated: "Session created, looking for a partner...",
       toastJoined: "You joined! Make your choice.",
       toastChosen: "Choice made. Waiting for the session to end.",
+      toastCancelled: "Session cancelled. Stake returned.",
+      btnCancel: "✖️ Cancel search",
+      btnHelp: "ℹ️ How it works",
+      btnRatingWeek: "🏆 Weekly rating",
+      btnRatingAll: "📚 All-time rating",
+      ratingWeekTitle: "🏆 Fishing — this week",
+      ratingAllTitle: "📚 Fishing — all-time",
+      ratingEmpty: "Nothing yet.",
+      ratingLine: "{{place}} {{name}} — {{score}} sessions",
+      ratingMeIn: "You're in top: #{{place}} · {{score}} sessions",
+      ratingMeOut: "You're outside top · {{score}} sessions",
+      errCancelFail: "Cannot cancel: session is already active or not found.",
       expiredNotify: "⏰ No partner found. Stake returned.",
+      helpTitle: "ℹ️ How Fishing works",
+      helpLine1: "1) Pick a spot and put in your stake — it's always returned.",
+      helpLine2: "2) The system anonymously finds you a partner.",
+      helpLine3: "3) When matched — you see who it is and make your choice:",
+      helpLine4: "   ✅ Honest — split the catch evenly.",
+      helpLine5: "   ❌ Greedy — try to take more.",
+      helpLine6: "4) Both choices are hidden until the session ends.",
+      helpLine7: "5) The result depends on both players:",
+      helpLine8: "   ✅✅ Both honest → good catch for each.",
+      helpLine9: "   ❌✅ You greedy, partner honest → you take more.",
+      helpLine10: "   ✅❌ Partner greedy, you honest → you only get your stake back.",
+      helpLine11: "   ❌❌ Both greedy → lake depleted, both get nothing.",
+      helpLine12: "6) Partner's reputation is visible at choice time — remember who let you down.",
+      helpLine13: "7) New spots unlock as your fisher level grows (5 and 20 sessions).",
     }
   };
   const l = normalizeLang(lang);
@@ -259,10 +356,22 @@ export class FishingService {
     if (!u.fishing || typeof u.fishing !== "object") u.fishing = {};
     const f = u.fishing;
     if (typeof f.completedTotal !== "number") f.completedTotal = 0;
+    if (typeof f.completedWeek  !== "number") f.completedWeek  = 0;
+    if (typeof f.weekKey        !== "string")  f.weekKey        = "";
     if (!Array.isArray(f.recentOutcomes))      f.recentOutcomes = [];
     if (typeof f.ccStreak !== "number")         f.ccStreak = 0;
     if (typeof f.activeSession !== "string")    f.activeSession = "";
     if (!f.partnerHistory || typeof f.partnerHistory !== "object") f.partnerHistory = {};
+  }
+
+  _ensureWeekState(u) {
+    if (!u || typeof u !== "object") return;
+    this._ensureUserState(u);
+    const week = isoWeekKey(this.now());
+    if (u.fishing.weekKey !== week) {
+      u.fishing.weekKey = week;
+      u.fishing.completedWeek = 0;
+    }
   }
 
   // ── KV helpers ─────────────────────────────────────────────────────────────
@@ -472,10 +581,12 @@ export class FishingService {
   async _applySessionToUser(user, session, myChoice, theirChoice, partnerId) {
     if (!user || !session) return;
     this._ensureUserState(user);
+    this._ensureWeekState(user);
     const stake  = Math.max(0, toInt(session.stake, 0));
     const profit = this._calcProfit(session.spotId, myChoice, theirChoice);
     user.money = Math.max(0, toInt(user.money, 0)) + stake + profit;
     user.fishing.completedTotal += 1;
+    user.fishing.completedWeek  += 1;
     user.fishing.activeSession = "";
     this._addRecentOutcome(user, myChoice);
     this._addPartnerHistory(user, partnerId, myChoice, theirChoice);
@@ -494,6 +605,7 @@ export class FishingService {
     }
 
     await this.users.save(user);
+    await this._updateRatingForUser(user);
   }
 
   // ── Session lifecycle ──────────────────────────────────────────────────────
@@ -692,7 +804,146 @@ export class FishingService {
     return { ok: true, toast: s.toastChosen };
   }
 
+  // ── Rating ─────────────────────────────────────────────────────────────────
+
+  _ratingLimit()   { return 15; }
+  _ratingTtlSec()  { return 35 * 24 * 3600; }
+  _ratingWeekKey(weekKey) { return `fishing:rating:week:${String(weekKey)}`; }
+  _ratingAllKey()  { return "fishing:rating:all"; }
+  _nowWeekKey()    { return isoWeekKey(this.now()); }
+
+  _ratingSort(list) {
+    return (Array.isArray(list) ? list.slice() : []).sort((a, b) => {
+      const d = toInt(b?.score, 0) - toInt(a?.score, 0);
+      if (d !== 0) return d;
+      return toInt(a?.reachedAt, 0) - toInt(b?.reachedAt, 0);
+    });
+  }
+
+  async _loadRating(period) {
+    const key = period === "all" ? this._ratingAllKey() : this._ratingWeekKey(this._nowWeekKey());
+    const raw = await this._loadJson(key, []);
+    return this._ratingSort(Array.isArray(raw) ? raw : []).slice(0, this._ratingLimit());
+  }
+
+  async _saveRating(period, list) {
+    const key = period === "all" ? this._ratingAllKey() : this._ratingWeekKey(this._nowWeekKey());
+    await this._saveJson(key, this._ratingSort(list).slice(0, this._ratingLimit()), this._ratingTtlSec());
+  }
+
+  async _updateRatingForUser(u) {
+    if (!u || typeof u !== "object") return;
+    const uid = String(u?.id || "").trim();
+    if (!uid || this._isAdminUser(uid)) return;
+    const name = shortName(uid, u?.displayName);
+    const nowTs = this.now();
+    for (const period of ["week", "all"]) {
+      const score = period === "all"
+        ? Math.max(0, toInt(u.fishing.completedTotal, 0))
+        : Math.max(0, toInt(u.fishing.completedWeek, 0));
+      const list = await this._loadRating(period);
+      const idx = list.findIndex((x) => String(x?.userId || "") === uid);
+      if (score <= 0) {
+        if (idx >= 0) { list.splice(idx, 1); await this._saveRating(period, list); }
+        continue;
+      }
+      const entry = { userId: uid, name, score, reachedAt: nowTs };
+      if (idx >= 0) {
+        entry.reachedAt = toInt(list[idx]?.score, 0) === score ? toInt(list[idx].reachedAt, nowTs) : nowTs;
+        list[idx] = entry;
+      } else {
+        list.push(entry);
+      }
+      await this._saveRating(period, list);
+    }
+  }
+
+  _isAdminUser(userId) {
+    try { return !!this.isAdmin(String(userId || "")); } catch { return false; }
+  }
+
+  async buildRatingView(u, period = "week") {
+    this._ensureUserState(u);
+    const s = this._s(u);
+    const p = period === "all" ? "all" : "week";
+    const top = await this._loadRating(p);
+    const title = p === "all" ? s.ratingAllTitle : s.ratingWeekTitle;
+    const lines = [title, ""];
+    const medals = ["🥇", "🥈", "🥉"];
+    if (!top.length) {
+      lines.push(s.ratingEmpty);
+    } else {
+      for (let i = 0; i < top.length; i++) {
+        lines.push(this._fmt(s.ratingLine, {
+          place: medals[i] || `${i + 1}.`,
+          name: String(top[i]?.name || ""),
+          score: toInt(top[i]?.score, 0)
+        }));
+      }
+    }
+    const uid = String(u?.id || "");
+    const idx = top.findIndex((x) => String(x?.userId || "") === uid);
+    const myScore = p === "all"
+      ? toInt(u.fishing.completedTotal, 0)
+      : toInt(u.fishing.completedWeek, 0);
+    lines.push("");
+    lines.push(idx >= 0
+      ? this._fmt(s.ratingMeIn,  { place: idx + 1, score: myScore })
+      : this._fmt(s.ratingMeOut, { score: myScore }));
+
+    return {
+      caption: lines.join("\n"),
+      keyboard: [[{ text: s.btnBackMain, callback_data: "fish:main" }]]
+    };
+  }
+
+  async cancelSession(u, sessionIdRaw) {
+    this._ensureUserState(u);
+    const s = this._s(u);
+    const sessionId = String(sessionIdRaw || "").trim();
+    const session = await this._loadSession(sessionId);
+    if (!session || String(session.state || "") !== "open") {
+      return { ok: false, error: s.errCancelFail };
+    }
+    if (String(session.creatorId || "") !== String(u.id || "")) {
+      return { ok: false, error: s.errCancelFail };
+    }
+    const stake = Math.max(0, toInt(session.stake, 0));
+    u.money = Math.max(0, toInt(u.money, 0)) + stake;
+    u.fishing.activeSession = "";
+    session.state = "cancelled";
+    session.finishedAt = this.now();
+    await this.users.save(u);
+    await this._saveSession(session);
+    await this._removeFromIndex(this._openIndexKey(session.spotId), sessionId);
+    return { ok: true, toast: s.toastCancelled };
+  }
+
   // ── Views ──────────────────────────────────────────────────────────────────
+
+  buildHelpView(u) {
+    const s = this._s(u);
+    const lines = [
+      s.helpTitle, "",
+      s.helpLine1,
+      s.helpLine2,
+      s.helpLine3,
+      s.helpLine4,
+      s.helpLine5,
+      s.helpLine6,
+      s.helpLine7,
+      s.helpLine8,
+      s.helpLine9,
+      s.helpLine10,
+      s.helpLine11,
+      s.helpLine12,
+      s.helpLine13,
+    ];
+    return {
+      caption: lines.join("\n"),
+      keyboard: [[{ text: s.btnBackMain, callback_data: "fish:main" }]]
+    };
+  }
 
   async buildMainView(u) {
     this._ensureUserState(u);
@@ -745,6 +996,11 @@ export class FishingService {
       const label = unlocked ? `${cfg.emoji} ${title}` : `🔒 ${title}`;
       kb.push([{ text: label, callback_data: `fish:spot:${spotId}` }]);
     }
+    kb.push([
+      { text: s.btnRatingWeek, callback_data: "fish:rating:week" },
+      { text: s.btnRatingAll,  callback_data: "fish:rating:all"  }
+    ]);
+    kb.push([{ text: s.btnHelp, callback_data: "fish:help" }]);
     kb.push([{ text: s.btnBack, callback_data: "go:Earn" }]);
     return { caption: lines.join("\n"), keyboard: kb };
   }
@@ -772,15 +1028,22 @@ export class FishingService {
     lines.push(this._fmt(s.spotStake,    { stake:    this._money(cfg.stake) }));
     lines.push(this._fmt(s.spotDuration, { duration: this._durationLabel(toInt(cfg.durationMs, 0), lang) }));
     lines.push("");
-    lines.push(`CC: +$${this._money(p.CC)}  |  DC: +$${this._money(p.DC_greedy)}  |  DD: $0`);
+    lines.push(this._fmt(s.payoutCC, { amount: this._money(p.CC) }));
+    lines.push(this._fmt(s.payoutDC, { amount: this._money(p.DC_greedy) }));
+    lines.push(s.payoutDD);
 
     const openIds = await this._loadIndex(this._openIndexKey(spotId));
     const openCount = openIds.length;
     lines.push("", this._fmt(s.spotOpenCount, { count: openCount }));
 
     const kb = [];
-    const hasActive = !!String(u.fishing.activeSession || "");
-    if (!hasActive) {
+    const activeId = String(u.fishing.activeSession || "");
+    if (activeId) {
+      const activeSession = await this._loadSession(activeId);
+      if (activeSession && activeSession.state === "open" && activeSession.spotId === spotId) {
+        kb.push([{ text: s.btnCancel, callback_data: `fish:cancel:${activeId}` }]);
+      }
+    } else {
       kb.push([{ text: s.btnCreate, callback_data: `fish:create:${spotId}` }]);
       if (openCount > 0) {
         kb.push([{ text: s.btnJoin, callback_data: `fish:joinspot:${spotId}` }]);

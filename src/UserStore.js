@@ -643,6 +643,8 @@ export class UserStore {
     if (!u.fishing || typeof u.fishing !== "object") {
       u.fishing = {
         completedTotal: 0,
+        completedWeek: 0,
+        weekKey: "",
         recentOutcomes: [],
         ccStreak: 0,
         activeSession: "",
@@ -651,12 +653,13 @@ export class UserStore {
       dirty = true;
     } else {
       const f = u.fishing;
-      const numFields = ["completedTotal", "ccStreak"];
+      const numFields = ["completedTotal", "completedWeek", "ccStreak"];
       for (const key of numFields) {
         const fixed = Math.max(0, Math.floor(Number(f[key]) || 0));
         if (fixed !== f[key]) { f[key] = fixed; dirty = true; }
       }
-      if (typeof f.activeSession !== "string") { f.activeSession = ""; dirty = true; }
+      if (typeof f.weekKey        !== "string") { f.weekKey = ""; dirty = true; }
+      if (typeof f.activeSession  !== "string") { f.activeSession = ""; dirty = true; }
       if (!Array.isArray(f.recentOutcomes)) { f.recentOutcomes = []; dirty = true; }
       if (!f.partnerHistory || typeof f.partnerHistory !== "object") { f.partnerHistory = {}; dirty = true; }
     }
