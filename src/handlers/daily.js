@@ -26,12 +26,6 @@ export const dailyHandler = {
 
     if (res.ok) {
       let questDirty = false;
-      if (quests?.onEvent) {
-        try {
-          const qRes = await quests.onEvent(u, "daily_claim", {}, { persist: false, notify: true });
-          questDirty = !!qRes?.changed;
-        } catch {}
-      }
       try {
         if (clans?.recordActiveAction) {
           await clans.recordActiveAction(u, 1, 1);

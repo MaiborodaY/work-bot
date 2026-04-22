@@ -71,6 +71,23 @@ test("UiFactory: bar shows daily bonus button on newbie step 1", () => {
   assert.equal(buttons[0]?.callback_data, "daily:claim");
 });
 
+test("UiFactory: bar shows daily bonus button for regular player when not claimed today", () => {
+  const ui = new UiFactory();
+  const user = {
+    lang: "ru",
+    flags: { onboarding: false, onboardingDone: true },
+    newbiePath: { completed: true },
+    bonus: { last: "" },
+    bar: {},
+    study: { level: 0 },
+    subReward: { day: "" }
+  };
+
+  const kb = ui.bar(user, Date.UTC(2026, 2, 13, 12, 0, 0), "ru");
+  const buttons = kb.flat();
+  assert.equal(buttons.some((btn) => btn.callback_data === "daily:claim"), true);
+});
+
 test("UiFactory: bar hides newbie tasks button after completion", () => {
   const ui = new UiFactory();
   const user = {

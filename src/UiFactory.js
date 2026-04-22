@@ -180,14 +180,10 @@ export class UiFactory {
       return kb;
     }
 
-    const newbieStep = Math.max(1, Number(user?.newbiePath?.step) || 1);
-    const newbiePending = user?.newbiePath?.pending === true;
-    const showNewbieDailyBonus =
-      this._hasPendingNewbieTasks(user) &&
-      newbieStep === 1 &&
-      !newbiePending;
-
-    if (showNewbieDailyBonus) {
+    const today = new Date().toISOString().slice(0,10);
+    const bonusDay = String(user?.bonus?.last || "");
+    const showDailyBonus = bonusDay !== today;
+    if (showDailyBonus) {
       kb.push([{ text: this._t(l, "loc.daily_bonus"), callback_data: "daily:claim" }]);
     }
 
@@ -201,7 +197,6 @@ export class UiFactory {
       kb.push([{ text: this._t(l, "ui.bar.arcana"), callback_data: this._go(Routes.CASINO) }]);
     }
   
-    const today = new Date().toISOString().slice(0,10);
     const subDay = user?.subReward?.day || "";
     const showSubBtn = subDay !== today;
     if (showSubBtn) {
