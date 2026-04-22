@@ -330,10 +330,15 @@ export class FishingService {
       this._fmt(s.resultYourLine,    { choice: myChoice  === "C" ? s.choiceHonest : s.choiceGreedy }),
       ""
     ];
+    const stake = Math.max(0, toInt(session?.stake, 0));
     if (profit > 0) {
-      lines.push(this._fmt(s.resultProfit, { amount: this._money(profit) }));
+      lines.push(this._fmt(s.resultBreakdownProfit, {
+        stake:  this._money(stake),
+        profit: this._money(profit),
+        total:  this._money(stake + profit)
+      }));
     } else {
-      lines.push(s.resultZero);
+      lines.push(this._fmt(s.resultBreakdownZero, { stake: this._money(stake) }));
     }
     if (outcomeMsg) lines.push("", outcomeMsg);
     await this._sendInline(chatId, lines.join("\n"), [[{ text: s.btnOpenFishing, callback_data: "go:Fishing" }]]);
