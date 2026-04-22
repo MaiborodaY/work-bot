@@ -1,6 +1,7 @@
 import { CONFIG } from "./GameConfig.js";
 import { normalizeLang } from "./i18n/index.js";
 import { markUsefulActivity } from "./PlayerStats.js";
+import { ProgressionService } from "./ProgressionService.js";
 
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS  = 24 * HOUR_MS;
@@ -342,7 +343,10 @@ export class FishingService {
     return `${String(entry.emoji || "")} ${label}`.trim();
   }
 
-  _playerLevel(u) { return Math.max(1, toInt(u?.study?.level, 1)); }
+  _playerLevel(u) {
+    const info = ProgressionService.getLevelInfo(u);
+    return Math.max(1, toInt(info?.level, 1));
+  }
   _hasAccess(u)   { return this._playerLevel(u) >= this._minPlayerLevel(); }
   _spotUnlocked(u, spotId) {
     const cfg = this._spotCfg(spotId);
