@@ -345,6 +345,74 @@ export const ACHIEVEMENTS = [
     events: ["referral_rewarded", "retro"],
     title: { ru: "Вербовщик", uk: "Вербувальник", en: "Recruiter" },
     done: (u) => rewardedReferralCount(u) >= 5
+  },
+
+  {
+    id: "fishing_first_session",
+    reward: 1,
+    events: ["fishing_session_completed", "retro"],
+    title: { ru: "Первый заброс", uk: "Перший закид", en: "First cast" },
+    done: (u) => p(u, "fishingSessionsTotal") >= 1
+  },
+  {
+    id: "fishing_first_cc",
+    reward: 2,
+    events: ["fishing_cc_result", "retro"],
+    title: { ru: "Честные рыбаки", uk: "Чесні рибалки", en: "Honest fishers" },
+    done: (u) => p(u, "fishingCCTotal") >= 1
+  },
+  {
+    id: "fishing_lake",
+    reward: 2,
+    events: ["fishing_session_completed", "retro"],
+    title: { ru: "Загородная рыбалка", uk: "Заміська риболовля", en: "Country fishing" },
+    done: (u) => Math.max(0, Math.floor(Number(u?.fishing?.completedTotal) || 0)) >= 5
+  },
+  {
+    id: "fishing_river",
+    reward: 3,
+    events: ["fishing_session_completed", "retro"],
+    title: { ru: "Горная река", uk: "Гірська річка", en: "Mountain river" },
+    done: (u) => Math.max(0, Math.floor(Number(u?.fishing?.completedTotal) || 0)) >= 20
+  },
+  {
+    id: "fishing_10_sessions",
+    reward: 3,
+    events: ["fishing_session_completed", "retro"],
+    title: { ru: "Рыбак", uk: "Рибалка", en: "Fisher" },
+    done: (u) => p(u, "fishingSessionsTotal") >= 10
+  },
+  {
+    id: "fishing_50_sessions",
+    reward: 8,
+    events: ["fishing_session_completed", "retro"],
+    title: { ru: "Бывалый", uk: "Бувалий", en: "Seasoned" },
+    done: (u) => p(u, "fishingSessionsTotal") >= 50
+  },
+  {
+    id: "fishing_100_sessions",
+    reward: 15,
+    events: ["fishing_session_completed", "retro"],
+    title: { ru: "Легенда", uk: "Легенда", en: "Legend" },
+    done: (u) => p(u, "fishingSessionsTotal") >= 100
+  },
+  {
+    id: "fishing_partner_5x",
+    reward: 5,
+    events: ["fishing_session_completed", "retro"],
+    title: { ru: "Проверенный напарник", uk: "Перевірений напарник", en: "Trusted partner" },
+    done: (u) => {
+      const hist = u?.fishing?.partnerHistory;
+      if (!hist || typeof hist !== "object") return false;
+      return Object.values(hist).some((arr) => Array.isArray(arr) && arr.length >= 5);
+    }
+  },
+  {
+    id: "fishing_cc_streak_5",
+    reward: 10,
+    events: ["fishing_cc_result", "retro"],
+    title: { ru: "Честный улов", uk: "Чесний улов", en: "Honest catch" },
+    done: (u) => p(u, "fishingCCStreak") >= 5
   }
 ];
 

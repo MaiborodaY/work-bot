@@ -42,7 +42,7 @@ export class Locations {
    *  quests?:any
    * }} deps
    */
-  constructor({ media, ui, economy, formatters, pct, now, maybeFinishStudy, daily, fastForward, users, social, clans, stocks, labour, farm, pet, ratings, colosseum, syndicate, thief, referrals, quests }) {
+  constructor({ media, ui, economy, formatters, pct, now, maybeFinishStudy, daily, fastForward, users, social, clans, stocks, labour, farm, pet, ratings, colosseum, syndicate, fishing, thief, referrals, quests }) {
     this.media = media;
     this.ui = ui;
     this.economy = economy;
@@ -62,6 +62,7 @@ export class Locations {
     this.ratings = ratings || null;
     this.colosseum = colosseum || null;
     this.syndicate = syndicate || null;
+    this.fishing   = fishing   || null;
     this.thief = thief || null;
     this.referrals = referrals || null;
     this.quests = quests || null;
@@ -301,6 +302,23 @@ export class Locations {
         buildView: async () => {
           if (this.syndicate && typeof this.syndicate.buildMainView === "function") {
             return this.syndicate.buildMainView(user);
+          }
+          return null;
+        },
+        fallbackCaptionKey: "loc.city.caption",
+        fallbackBackTextKey: "ui.back.default",
+        fallbackBackCb: toGoCallback(Routes.CITY)
+      }),
+
+      [Routes.FISHING]: async () => this._renderServiceRoute({
+        user,
+        header,
+        routeName: Routes.FISHING,
+        place: Routes.FISHING,
+        policy: "auto",
+        buildView: async () => {
+          if (this.fishing && typeof this.fishing.buildMainView === "function") {
+            return this.fishing.buildMainView(user);
           }
           return null;
         },

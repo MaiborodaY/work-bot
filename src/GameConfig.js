@@ -690,6 +690,45 @@ export const CONFIG = {
     }
   },
 
+  FISHING: {
+    MIN_PLAYER_LEVEL: 5,
+    OPEN_TIMEOUT_MS: 24 * 60 * 60 * 1000,
+    SESSION_TTL_SEC: 7 * 24 * 60 * 60,
+    REPUTATION_WINDOW: 10,
+    NEWBIE_THRESHOLD: 5,
+    PARTNER_HISTORY_MAX: 20,
+    SPOTS: {
+      pond: {
+        emoji: "🏙",
+        stake: 300,
+        durationMs: 3 * 60 * 60 * 1000,
+        levelRequired: 1,
+        payouts: { CC: 600, DC_greedy: 1000, DC_honest: 0, DD: 0 }
+      },
+      lake: {
+        emoji: "🌲",
+        stake: 1000,
+        durationMs: 5 * 60 * 60 * 1000,
+        levelRequired: 2,
+        payouts: { CC: 2500, DC_greedy: 4000, DC_honest: 0, DD: 0 }
+      },
+      river: {
+        emoji: "⛰",
+        stake: 5000,
+        durationMs: 8 * 60 * 60 * 1000,
+        levelRequired: 3,
+        payouts: { CC: 12000, DC_greedy: 20000, DC_honest: 0, DD: 0 }
+      }
+    },
+    LEVELS: [
+      { level: 1, required: 0,   label: { ru: "Новичок", uk: "Новачок",  en: "Newbie"  }, emoji: "🐟" },
+      { level: 2, required: 5,   label: { ru: "Рыбак",   uk: "Рибалка",  en: "Fisher"  }, emoji: "🎣" },
+      { level: 3, required: 20,  label: { ru: "Мастер",  uk: "Майстер",  en: "Master"  }, emoji: "🏆" },
+      { level: 4, required: 50,  label: { ru: "Ветеран", uk: "Ветеран",  en: "Veteran" }, emoji: "🎖" },
+      { level: 5, required: 100, label: { ru: "Легенда", uk: "Легенда",  en: "Legend"  }, emoji: "🦈" }
+    ]
+  },
+
   ASSETS: ASSETS,
 
   NOTIFY: {

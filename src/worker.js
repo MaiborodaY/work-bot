@@ -26,6 +26,7 @@ import { QuizService } from "./QuizService.js";
 import { GeneralQuizService } from "./GeneralQuizService.js";
 import { ColosseumService } from "./ColosseumService.js";
 import { SyndicateService } from "./SyndicateService.js";
+import { FishingService } from "./FishingService.js";
 import { ASSETS, JOB_ASSETS } from "./Assets.js";
 import { normalizeLang, t } from "./i18n/index.js";
 import { safeCall } from "./SafeCall.js";
@@ -60,6 +61,7 @@ import { quizHandler } from "./handlers/quiz.js";
 import { generalQuizHandler } from "./handlers/generalQuiz.js";
 import { colosseumHandler } from "./handlers/colosseum.js";
 import { syndicateHandler } from "./handlers/syndicate.js";
+import { fishingHandler } from "./handlers/fishing.js";
 import { energyHandler } from "./handlers/energy.js";
 
 // платежи Stars
@@ -129,6 +131,7 @@ export default {
       const farm = new FarmService({ db: env.DB, users, now: () => Date.now(), bot, quests, achievements, social });
       const colosseum = new ColosseumService({ db: env.DB, users, now: () => Date.now(), bot, isAdmin, quests, achievements });
       const syndicate = new SyndicateService({ db: env.DB, users, now: () => Date.now(), bot, isAdmin, achievements });
+      const fishing   = new FishingService({ db: env.DB, users, now: () => Date.now(), bot, isAdmin, achievements });
       const notifier = new NotificationService({
         users,
         bot,
@@ -161,6 +164,9 @@ export default {
       });
       await safeCall("worker.cron.syndicate.tick", async () => {
         await syndicate.runTick();
+      });
+      await safeCall("worker.cron.fishing.tick", async () => {
+        await fishing.runTick();
       });
       await safeCall("worker.cron.social.ensure_period", async () => {
         await social.ensurePeriod();
@@ -232,6 +238,7 @@ export default {
     const farm = new FarmService({ db: env.DB, users, now, bot, quests, achievements, social });
     const colosseum = new ColosseumService({ db: env.DB, users, now, bot, isAdmin, quests, achievements });
     const syndicate = new SyndicateService({ db: env.DB, users, now, bot, isAdmin, achievements });
+    const fishing   = new FishingService({ db: env.DB, users, now, bot, isAdmin, achievements });
     const referrals = new ReferralService({
       users,
       now,
@@ -469,6 +476,7 @@ export default {
       ratings,
       colosseum,
       syndicate,
+      fishing,
       thief,
       referrals,
       quests
@@ -1463,6 +1471,7 @@ export default {
         ratings,
         colosseum,
         syndicate,
+        fishing,
         thief,
         referrals,
         achievements,
@@ -1484,6 +1493,7 @@ export default {
         clanHandler,
         colosseumHandler,
         syndicateHandler,
+        fishingHandler,
         thiefHandler,
         ratingsHandler,
         premiumShopHandler,
@@ -1572,6 +1582,7 @@ export default {
     const farm = new FarmService({ db: env.DB, users, now: () => Date.now(), bot, quests, achievements, social });
     const colosseum = new ColosseumService({ db: env.DB, users, now: () => Date.now(), bot, isAdmin, quests, achievements });
     const syndicate = new SyndicateService({ db: env.DB, users, now: () => Date.now(), bot, isAdmin, achievements });
+    const fishing   = new FishingService({ db: env.DB, users, now: () => Date.now(), bot, isAdmin, achievements });
 
     const notifier = new NotificationService({
       users,
@@ -1593,6 +1604,7 @@ export default {
       farm.dailyTick(),
       colosseum.runTick(),
       syndicate.runTick(),
+      fishing.runTick(),
       channel.runScheduled()
     ]));
   }

@@ -326,6 +326,7 @@ export const UK = {
   "ui.city.board": "🏆 Дошка пошани",
   "ui.city.clans": "👥 Клани",
   "ui.city.syndicate": "🤝 Синдикат",
+  "ui.earn.fishing": "🎣 Риболовля",
   "ui.city.referral": "👥 Реферали",
   "ui.shophub.food": "🍔 Магазин їжі",
   "ui.shophub.premium": "💎 Преміум",

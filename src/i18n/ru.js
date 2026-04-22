@@ -44,6 +44,7 @@ export const RU = {
   "ui.city.ratings": "🏆 Рейтинг",
   "ui.city.clans": "👥 Кланы",
   "ui.city.syndicate": "🤝 Синдикат",
+  "ui.earn.fishing": "🎣 Рыбалка",
   "ui.city.referral": "👥 Рефералы",
 
   "ui.shophub.food": "🍔 Магазин еды",

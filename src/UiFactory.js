@@ -114,6 +114,7 @@ export class UiFactory {
     kb.push(
       [{ text: this._t(l, "ui.earn.stocks"), callback_data: this._go(Routes.STOCKS) }],
       [{ text: this._t(l, "ui.city.syndicate"), callback_data: this._go(Routes.SYNDICATE) }],
+      [{ text: this._t(l, "ui.earn.fishing"),   callback_data: this._go(Routes.FISHING) }],
       [{ text: this._t(l, "ui.back.city"), callback_data: this._go(Routes.SQUARE) }],
     );
 

@@ -249,6 +249,16 @@ export class AchievementService {
         changed = this._inc(u, "colosseumWinsTotal", 1) || changed;
         break;
       }
+      case "fishing_session_completed": {
+        changed = this._inc(u, "fishingSessionsTotal", 1) || changed;
+        break;
+      }
+      case "fishing_cc_result": {
+        changed = this._inc(u, "fishingCCTotal", 1) || changed;
+        const streak = Math.max(0, Math.floor(Number(ctx?.ccStreak) || 0));
+        changed = this._set(u, "fishingCCStreak", streak) || changed;
+        break;
+      }
       case "syndicate_deal_completed": {
         changed = this._inc(u, "syndicateDealsTotal", 1) || changed;
         const bitByBiz = {
