@@ -10,6 +10,7 @@ Read this before implementing new features or hotfixes.
 - Do not change gameplay/UI/logic in the repo unless the user explicitly commands it (for example: "делай", "начинай кодить", "комит и пуш").
 - When the user asks a question or requests validation/ideas, propose options first and wait for an explicit "go" before editing code.
 - **Never run `git commit` or `git push` without an explicit command from the user** (e.g. "комит", "пуш", "комит и пуш"). Completing a task does not imply permission to commit or push.
+- **Never mention AI, Claude, or any assistant in commit messages, PR descriptions, or code comments.** Write commits as if authored by the development team.
 
 ## 1) Runtime and Storage
 
