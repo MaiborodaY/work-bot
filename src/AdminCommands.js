@@ -920,6 +920,10 @@ export class AdminCommands {
     return `${d}/${e} (${pct}%)`;
   }
 
+  _fmtRatioLine(part, total) {
+    return `${Math.max(0, Number(part || 0))}/${Math.max(0, Number(total || 0))} (${this._pct(part, total)}%)`;
+  }
+
   _cohortSource(refSnapshot) {
     const src = String(refSnapshot?.startSource || "").trim().toLowerCase();
     const payload = String(refSnapshot?.startPayload || "").trim().toLowerCase();
@@ -948,6 +952,10 @@ export class AdminCommands {
       ads: this._retentionCounters(),
       ref: this._retentionCounters(),
       organic: this._retentionCounters()
+    };
+    const newbieInCohort = {
+      started: this._retentionCounters(),
+      completed: this._retentionCounters()
     };
 
     // eslint-disable-next-line no-constant-condition
@@ -993,6 +1001,9 @@ export class AdminCommands {
           cohortCounts[cohort] += 1;
           overall.total += 1;
           byCohort[cohort].total += 1;
+          const nb = this._newbieStats(stats);
+          if (nb.openedDay) this._retentionIntoBucket(newbieInCohort.started, nb.openedDay, u, today);
+          if (nb.completedDay) this._retentionIntoBucket(newbieInCohort.completed, nb.completedDay, u, today);
 
           const checks = [
             { n: 1, e: "d1e", r: "d1r" },
@@ -1033,6 +1044,12 @@ export class AdminCommands {
       `ads_*: D1 ${this._fmtRetentionPair(byCohort.ads.d1r, byCohort.ads.d1e)} · D3 ${this._fmtRetentionPair(byCohort.ads.d3r, byCohort.ads.d3e)} · D7 ${this._fmtRetentionPair(byCohort.ads.d7r, byCohort.ads.d7e)}`,
       `ref_*: D1 ${this._fmtRetentionPair(byCohort.ref.d1r, byCohort.ref.d1e)} · D3 ${this._fmtRetentionPair(byCohort.ref.d3r, byCohort.ref.d3e)} · D7 ${this._fmtRetentionPair(byCohort.ref.d7r, byCohort.ref.d7e)}`,
       `organic: D1 ${this._fmtRetentionPair(byCohort.organic.d1r, byCohort.organic.d1e)} · D3 ${this._fmtRetentionPair(byCohort.organic.d3r, byCohort.organic.d3e)} · D7 ${this._fmtRetentionPair(byCohort.organic.d7r, byCohort.organic.d7e)}`,
+      "",
+      "<b>Newbie path inside this cohort</b>",
+      `Started path: ${this._fmtRatioLine(newbieInCohort.started.total, newPlayers)}`,
+      `Completed path: ${this._fmtRatioLine(newbieInCohort.completed.total, newPlayers)}`,
+      `After path start: D1 ${this._fmtRetentionPair(newbieInCohort.started.d1r, newbieInCohort.started.d1e)} В· D3 ${this._fmtRetentionPair(newbieInCohort.started.d3r, newbieInCohort.started.d3e)} В· D7 ${this._fmtRetentionPair(newbieInCohort.started.d7r, newbieInCohort.started.d7e)}`,
+      `After path complete: D1 ${this._fmtRetentionPair(newbieInCohort.completed.d1r, newbieInCohort.completed.d1e)} В· D3 ${this._fmtRetentionPair(newbieInCohort.completed.d3r, newbieInCohort.completed.d3e)} В· D7 ${this._fmtRetentionPair(newbieInCohort.completed.d7r, newbieInCohort.completed.d7e)}`,
       "",
       `Active today: ${activeToday}`,
       `Active last 7d: ${active7d}`,
@@ -1504,7 +1521,10 @@ export class AdminCommands {
       seen: 0,
       claimed: 0,
       activeNow: 0,
-      pendingNow: 0
+      pendingNow: 0,
+      stalled1d: 0,
+      stalled3d: 0,
+      stalled7d: 0
     }));
     const milestones = {
       started: this._retentionCounters(),
@@ -1570,11 +1590,14 @@ export class AdminCommands {
           if (nb.openedDay && !!u?.flags?.onboardingDone && u?.newbiePath?.completed !== true) {
             const stepIdx = Math.max(1, Math.floor(Number(u?.newbiePath?.step) || 1));
             const row = steps[stepIdx - 1] || null;
+            const inactiveDays = lastActiveDay ? Math.max(0, dayDiffUtc(lastActiveDay, today)) : 999;
             if (row) {
               if (u?.newbiePath?.pending) row.pendingNow += 1;
               else row.activeNow += 1;
+              if (inactiveDays >= 1) row.stalled1d += 1;
+              if (inactiveDays >= 3) row.stalled3d += 1;
+              if (inactiveDays >= 7) row.stalled7d += 1;
             }
-            const inactiveDays = lastActiveDay ? Math.max(0, dayDiffUtc(lastActiveDay, today)) : 999;
             stalled.push({
               id,
               name,
@@ -1625,7 +1648,36 @@ export class AdminCommands {
       "<b>Steps funnel</b>"
     ];
     for (const row of steps) {
-      lines.push(`${row.idx}. ${this._escapeHtml(row.label)} — seen ${row.seen} · claimed ${row.claimed} · active ${row.activeNow} · pending ${row.pendingNow}`);
+      lines.push(
+        `${row.idx}. ${this._escapeHtml(row.label)} — seen ${row.seen} · claimed ${row.claimed} · ` +
+        `active ${row.activeNow} · pending ${row.pendingNow} · ` +
+        `stalled 1d+ ${row.stalled1d} / 3d+ ${row.stalled3d} / 7d+ ${row.stalled7d}`
+      );
+    }
+    const topStuckSteps = steps
+      .slice()
+      .sort((a, b) => {
+        if (b.stalled3d !== a.stalled3d) return b.stalled3d - a.stalled3d;
+        if (b.stalled1d !== a.stalled1d) return b.stalled1d - a.stalled1d;
+        if (b.activeNow !== a.activeNow) return b.activeNow - a.activeNow;
+        return a.idx - b.idx;
+      })
+      .filter((row) => row.stalled1d > 0 || row.activeNow > 0 || row.pendingNow > 0)
+      .slice(0, 5);
+    lines.push(
+      "",
+      "<b>Top stuck steps</b>"
+    );
+    if (!topStuckSteps.length) {
+      lines.push("-");
+    } else {
+      for (const row of topStuckSteps) {
+        lines.push(
+          `${row.idx}. ${this._escapeHtml(row.label)} — ` +
+          `stalled 1d+ ${row.stalled1d} · 3d+ ${row.stalled3d} · 7d+ ${row.stalled7d} · ` +
+          `active ${row.activeNow} · pending ${row.pendingNow}`
+        );
+      }
     }
     lines.push(
       "",

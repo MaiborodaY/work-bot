@@ -149,9 +149,12 @@ test("admin_newbie reports funnel, source split, retention and detail lists", as
     assert.match(sent[1], /ads_\*: started 1 · completed 0 \(0%\)/);
     assert.match(sent[1], /ref_\*: started 1 · completed 1 \(100%\)/);
     assert.match(sent[1], /organic: started 1 · completed 0 \(0%\)/);
-    assert.match(sent[1], /1\. daily bonus — seen 3 · claimed 3 · active 0 · pending 0/);
-    assert.match(sent[1], /2\. flyers job — seen 3 · claimed 2 · active 1 · pending 0/);
-    assert.match(sent[1], /3\. start study — seen 2 · claimed 1 · active 0 · pending 1/);
+    assert.match(sent[1], /1\. daily bonus .* stalled 1d\+ 0 \/ 3d\+ 0 \/ 7d\+ 0/);
+    assert.match(sent[1], /2\. flyers job .* stalled 1d\+ 1 \/ 3d\+ 0 \/ 7d\+ 0/);
+    assert.match(sent[1], /3\. start study .* stalled 1d\+ 0 \/ 3d\+ 0 \/ 7d\+ 0/);
+    assert.match(sent[1], /Top stuck steps/);
+    assert.match(sent[1], /2\. flyers job — stalled 1d\+ 1 · 3d\+ 0 · 7d\+ 0 · active 1 · pending 0/);
+    assert.match(sent[1], /3\. start study — stalled 1d\+ 0 · 3d\+ 0 · 7d\+ 0 · active 0 · pending 1/);
     assert.match(sent[1], /Path started: D1 2\/2 \(100%\) · D3 2\/2 \(100%\) · D7 1\/1 \(100%\)/);
     assert.match(sent[1], /Step 3 claimed: D1 1\/1 \(100%\) · D3 1\/1 \(100%\) · D7 1\/1 \(100%\)/);
     assert.match(sent[1], /Step 5 claimed: D1 1\/1 \(100%\) · D3 1\/1 \(100%\) · D7 0\/1 \(0%\)/);
