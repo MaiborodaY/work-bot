@@ -590,9 +590,7 @@ export default {
       await maybeRestoreReplyKeyboard(u, "Profile");
     }
 
-    async function maybeSendLevelUpNotice(u, beforeLevel = 0) {
-      const current = ProgressionService.getLevelInfo(u);
-      if (current.level <= Math.max(0, Number(beforeLevel) || 0)) return;
+    async function maybeSendLevelUpNotice(u) {
       const levelUp = ProgressionService.consumeLevelUpNotification(u);
       if (!levelUp) return;
       await users.save(u);
@@ -1185,7 +1183,6 @@ export default {
       if (ProgressionService.ensureBaselines(u)) {
         await users.save(u);
       }
-      const levelBeforeAction = ProgressionService.getLevelInfo(u).level;
 
       await safeCall("worker.callback.touch_daily_presence", async () => {
         await clans.touchDailyPresence(u);
@@ -1526,7 +1523,7 @@ export default {
       for (const h of handlers) {
         if (h.match(data)) {
           await h.handle(ctxObj);
-          await maybeSendLevelUpNotice(u, levelBeforeAction);
+          await maybeSendLevelUpNotice(u);
           return new Response("ok");
         }
       }
