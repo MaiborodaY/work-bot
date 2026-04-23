@@ -30,6 +30,19 @@ export async function renderHomeRoute(ctx, user, { lang = "ru" } = {}) {
   ctx._route = Routes.HOME;
 }
 
+export async function renderHomeBedUpgradesRoute(ctx, user, { lang = "ru" } = {}) {
+  const caption = ctx.ui.homeBedUpgradesCaption(user, lang);
+  await ctx.media.show({
+    sourceMsg: ctx._sourceMsg,
+    place: Routes.HOME,
+    caption: caption + "\n\n" + ctx.formatters.balance(user),
+    keyboard: ctx.ui.homeBedUpgrades(user, { backTo: Routes.HOME }, lang),
+    policy: "auto",
+  });
+  ctx._sourceMsg = null;
+  ctx._route = Routes.HOME_BED_UPGRADES;
+}
+
 export async function renderShopRoute(ctx, user, { header = "", lang = "ru" } = {}) {
   const backToShop = (user?.nav?.backTo || null) || Routes.SHOP_HUB;
   await ctx.media.show({

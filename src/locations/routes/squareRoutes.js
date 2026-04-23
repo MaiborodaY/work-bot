@@ -2,7 +2,7 @@ import { CONFIG } from "../../GameConfig.js";
 import { Routes, toGoCallback } from "../../Routes.js";
 
 export async function clearBackToIfNeeded(ctx, user, route) {
-  if (route === Routes.SHOP || route === Routes.HOME || route === Routes.GYM) return;
+  if (route === Routes.SHOP || route === Routes.HOME || route === Routes.HOME_BED_UPGRADES || route === Routes.GYM) return;
   if (!user?.nav?.backTo) return;
   try {
     user.nav.backTo = null;

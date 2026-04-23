@@ -81,7 +81,12 @@ export const upgradesHandler = {
       if (isBed) purgeLowerBeds(u);
       await users.save(u);
 
-      await answer(cb.id, tt("handler.upgrades.buy_money_ok", { title, price: item.price }));
+      await answer(
+        cb.id,
+        isBed
+          ? tt("handler.upgrades.bed_upgraded_toast")
+          : tt("handler.upgrades.buy_money_ok", { title, price: item.price })
+      );
       await goTo(u, backRoute);
       return;
     }
@@ -102,7 +107,12 @@ export const upgradesHandler = {
       if (isBed) purgeLowerBeds(u);
       await users.save(u);
 
-      await answer(cb.id, tt("handler.upgrades.buy_gems_ok", { title, emoji: CONFIG.PREMIUM.emoji, need }));
+      await answer(
+        cb.id,
+        isBed
+          ? tt("handler.upgrades.bed_upgraded_toast")
+          : tt("handler.upgrades.buy_gems_ok", { title, emoji: CONFIG.PREMIUM.emoji, need })
+      );
       await goTo(u, backRoute);
       return;
     }
