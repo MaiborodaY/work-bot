@@ -5,6 +5,7 @@ import { normalizeLang, t } from "./i18n/index.js";
 import { getJobTitle, getShopTitle, getUpgradeDesc, getUpgradeTitle } from "./I18nCatalog.js";
 import { Routes, toGoCallback } from "./Routes.js";
 import { EnergyService } from "./EnergyService.js";
+import { ProgressionService } from "./ProgressionService.js";
 
 export class UiFactory {
   _lang(lang) {
@@ -370,15 +371,20 @@ export class UiFactory {
   // ---------- Магазин ----------
   shop(opts = {}, lang = "ru") {
     const l = this._lang(lang);
-    const items = Object.entries(CONFIG.SHOP).map(([k, v]) => {
-      const itemTitle = getShopTitle(k, l);
-      const label = (typeof v.price === "number")
-        ? this._t(l, "ui.shop.item_money", { title: itemTitle, price: v.price })
-        : (typeof v.price_premium === "number")
-          ? this._t(l, "ui.shop.item_gems", { title: itemTitle, gems: `${CONFIG.PREMIUM.emoji}${v.price_premium}` })
-          : this._t(l, "ui.shop.item", { title: itemTitle });
-      return [{ text: label, callback_data: `buy_${k}` }];
-    });
+    const user = opts?.user || null;
+    const playerLevel = user ? Math.max(1, ProgressionService.getLevelInfo(user)?.level || 1) : 99;
+    const LEVEL5_ITEMS = new Set(["sandwich", "lunch", "borscht"]);
+    const items = Object.entries(CONFIG.SHOP)
+      .filter(([k]) => playerLevel >= 5 || !LEVEL5_ITEMS.has(k))
+      .map(([k, v]) => {
+        const itemTitle = getShopTitle(k, l);
+        const label = (typeof v.price === "number")
+          ? this._t(l, "ui.shop.item_money", { title: itemTitle, price: v.price })
+          : (typeof v.price_premium === "number")
+            ? this._t(l, "ui.shop.item_gems", { title: itemTitle, gems: `${CONFIG.PREMIUM.emoji}${v.price_premium}` })
+            : this._t(l, "ui.shop.item", { title: itemTitle });
+        return [{ text: label, callback_data: `buy_${k}` }];
+      });
 
     const backTo   = opts?.backTo || null;
     const backText =

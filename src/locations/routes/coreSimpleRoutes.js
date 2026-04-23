@@ -36,7 +36,7 @@ export async function renderShopRoute(ctx, user, { header = "", lang = "ru" } = 
     sourceMsg: ctx._sourceMsg,
     place: Routes.SHOP,
     caption: header + ctx._t(user, "loc.shop.caption") + "\n\n" + ctx.formatters.balance(user),
-    keyboard: ctx.ui.shop({ backTo: backToShop }, lang),
+    keyboard: ctx.ui.shop({ backTo: backToShop, user }, lang),
     policy: "auto",
   });
   ctx._sourceMsg = null;
