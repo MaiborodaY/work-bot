@@ -89,13 +89,13 @@ export const farmHandler = {
     }
 
     if (data.startsWith("farm:plant:")) {
-      await answer(cb.id);
       const parts = data.split(":");
       const plotIndex = Number(parts[2] || 0);
       const cropId = String(parts[3] || "");
       const res = await farm.plant(u, plotIndex, cropId);
       if (!res.ok) {
         if (res.code === "not_enough_energy") {
+          await answer(cb.id);
           await showEnergyChoicePanel(ctx, {
             origin: Routes.FARM,
             need: Math.max(0, Number(res?.needEnergy) || 0)
@@ -108,6 +108,7 @@ export const farmHandler = {
         return;
       }
       const view = farm.buildPlantResultView(u, res);
+      const toastText = String(view?.caption || "").split("\n")[0].slice(0, 180);
       let newbieCompleted = false;
       if (quests?.markNewbieAction) {
         try {
@@ -117,11 +118,12 @@ export const farmHandler = {
       if (newbieCompleted && users?.save) {
         await users.save(u);
       }
+      await answer(cb.id, toastText || undefined);
       if (newbieCompleted) {
         await goTo(u, "BarNewbieTasks", view.caption);
         return;
       }
-      await show(view);
+      await goTo(u, "Farm");
       return;
     }
 

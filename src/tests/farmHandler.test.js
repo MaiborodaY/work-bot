@@ -6,6 +6,8 @@ import { Routes } from "../Routes.js";
 test("farm handler: planting carrot for newbie step returns to newbie tasks", async () => {
   const goes = [];
   const saves = [];
+  const answers = [];
+  const shows = [];
   const ctx = {
     data: "farm:plant:1:carrot",
     u: {
@@ -14,7 +16,9 @@ test("farm handler: planting carrot for newbie step returns to newbie tasks", as
       newbiePath: { step: 7, pending: false, completed: false, ctx: {}, updatedAt: 0 }
     },
     cb: { id: "1" },
-    async answer() {},
+    async answer(id, text) {
+      answers.push({ id, text });
+    },
     farm: {
       async plant() {
         return { ok: true, plotIndex: 1, cropId: "carrot", growMs: 3600000 };
@@ -27,7 +31,11 @@ test("farm handler: planting carrot for newbie step returns to newbie tasks", as
       }
     },
     locations: {
-      media: { async show() {} },
+      media: {
+        async show(payload) {
+          shows.push(payload);
+        }
+      },
       _sourceMsg: null,
       setSourceMessage() {}
     },
@@ -56,4 +64,66 @@ test("farm handler: planting carrot for newbie step returns to newbie tasks", as
   assert.equal(saves.length, 1);
   assert.equal(goes.length, 1);
   assert.equal(goes[0].route, Routes.BAR_NEWBIE_TASKS);
+  assert.equal(goes[0].intro, "carrot planted");
+  assert.equal(answers.length, 1);
+  assert.match(String(answers[0].text || ""), /carrot planted/i);
+  assert.equal(shows.length, 0);
+});
+
+test("farm handler: successful plant returns to Farm without intermediate result card", async () => {
+  const goes = [];
+  const answers = [];
+  const shows = [];
+  const ctx = {
+    data: "farm:plant:1:carrot",
+    u: {
+      lang: "en",
+      flags: { onboardingDone: true },
+      newbiePath: { step: 7, pending: false, completed: false, ctx: {}, updatedAt: 0 }
+    },
+    cb: { id: "2" },
+    async answer(id, text) {
+      answers.push({ id, text });
+    },
+    farm: {
+      async plant() {
+        return { ok: true, plotIndex: 1, cropId: "carrot", growMs: 3600000 };
+      },
+      buildPlantResultView() {
+        return { caption: "Carrot planted on plot 1.", keyboard: [] };
+      },
+      async buildPlantMenuView() {
+        return { caption: "menu", keyboard: [] };
+      }
+    },
+    locations: {
+      media: {
+        async show(payload) {
+          shows.push(payload);
+        }
+      },
+      _sourceMsg: null,
+      setSourceMessage() {}
+    },
+    async goTo(u, route, intro) {
+      goes.push({ u, route, intro });
+    },
+    quests: {
+      markNewbieAction() {
+        return false;
+      }
+    },
+    users: {
+      async save() {}
+    }
+  };
+
+  await farmHandler.handle(ctx);
+
+  assert.equal(goes.length, 1);
+  assert.equal(goes[0].route, Routes.FARM);
+  assert.equal(goes[0].intro, undefined);
+  assert.equal(answers.length, 1);
+  assert.match(String(answers[0].text || ""), /carrot planted/i);
+  assert.equal(shows.length, 0);
 });
