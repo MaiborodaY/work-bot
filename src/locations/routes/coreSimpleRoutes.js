@@ -22,6 +22,7 @@ export async function renderHomeRoute(ctx, user, { lang = "ru" } = {}) {
     place: Routes.HOME,
     caption: ctx._t(user, "loc.home.caption")
       + "\n\n" + ctx._t(user, "loc.home.hint")
+      + "\n\n" + ctx.ui.homeBedStatusCaption(user, lang)
       + "\n\n" + ctx.formatters.balance(user),
     keyboard: ctx.ui.home(user, { backTo }, lang),
     policy: "auto",

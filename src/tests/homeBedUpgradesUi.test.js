@@ -14,17 +14,26 @@ function makeUser(upgrades = []) {
   };
 }
 
-test("home ui: shows current bed bonus and bed-upgrades button", () => {
+test("home ui: keeps bed status out of keyboard and shows bed-upgrades button", () => {
   const ui = new UiFactory();
   const user = makeUser(["bed1"]);
 
   const kb = ui.home(user, { backTo: Routes.CITY }, "en");
-  const current = kb.find((row) => row?.[0]?.callback_data === "noop");
+  const currentButton = kb.find((row) => String(row?.[0]?.text || "").includes("Current bed"));
   const upgradeBtn = kb.find((row) => row?.[0]?.callback_data === `go:${Routes.HOME_BED_UPGRADES}`);
 
-  assert.ok(current);
-  assert.match(String(current[0].text || ""), /\+50%/i);
+  assert.equal(currentButton, undefined);
   assert.ok(upgradeBtn);
+});
+
+test("home bed status caption: shows current bed bonus", () => {
+  const ui = new UiFactory();
+  const user = makeUser(["bed1"]);
+
+  const caption = ui.homeBedStatusCaption(user, "en");
+
+  assert.match(caption, /Current bed/i);
+  assert.match(caption, /\+50%/i);
 });
 
 test("home bed upgrades ui: strict tier order and unified statuses", () => {
@@ -51,4 +60,3 @@ test("home bed upgrades ui: strict tier order and unified statuses", () => {
     assert.ok(String(bedRows[i]?.text || "").includes(expectedTitles[i]));
   }
 });
-

@@ -350,6 +350,19 @@ export class UiFactory {
     return this._t(lang, "ui.home.bed.effect0");
   }
 
+  homeBedStatusCaption(user, lang = null) {
+    const l = this._lang(lang || user?.lang);
+    const upgrades = Array.isArray(user?.upgrades) ? user.upgrades : [];
+    const owned = new Set(upgrades);
+    const currentKey = this._bedCurrentKey(owned);
+    const currentTitle = currentKey
+      ? (getUpgradeTitle(currentKey, l) || this._t(l, "ui.home.bed.current_fallback"))
+      : this._t(l, "ui.home.bed.none");
+    const currentBonus = this._bedEffectText(currentKey, l);
+
+    return this._t(l, "ui.home.bed.current", { title: currentTitle, bonus: currentBonus });
+  }
+
   home(user, opts = {}, lang = null) {
     const l = this._lang(lang || user?.lang);
     const upgrades = Array.isArray(user?.upgrades) ? user.upgrades : [];
@@ -373,13 +386,6 @@ export class UiFactory {
       .map(([k, v]) => [{ text: `${getShopTitle(k, l)} x${user.inv[k]} (+${v.heal}⚡)`, callback_data: `eat_${k}` }]);
     if (eatButtons.length) kb.push(...eatButtons);
 
-    const currentKey = this._bedCurrentKey(owned);
-    const currentTitle = currentKey
-      ? (getUpgradeTitle(currentKey, l) || this._t(l, "ui.home.bed.current_fallback"))
-      : this._t(l, "ui.home.bed.none");
-    const currentBonus = this._bedEffectText(currentKey, l);
-
-    kb.push([{ text: this._t(l, "ui.home.bed.current", { title: currentTitle, bonus: currentBonus }), callback_data: "noop" }]);
     kb.push([{ text: this._t(l, "ui.home.bed.upgrade_btn"), callback_data: this._go(Routes.HOME_BED_UPGRADES) }]);
 
     const petBtnText = l === "en"
@@ -394,16 +400,9 @@ export class UiFactory {
 
   homeBedUpgradesCaption(user, lang = null) {
     const l = this._lang(lang || user?.lang);
-    const upgrades = Array.isArray(user?.upgrades) ? user.upgrades : [];
-    const owned = new Set(upgrades);
-    const currentKey = this._bedCurrentKey(owned);
-    const currentTitle = currentKey
-      ? (getUpgradeTitle(currentKey, l) || this._t(l, "ui.home.bed.current_fallback"))
-      : this._t(l, "ui.home.bed.none");
-    const currentBonus = this._bedEffectText(currentKey, l);
     return this._t(l, "ui.home.bed.list.title")
       + "\n"
-      + this._t(l, "ui.home.bed.current", { title: currentTitle, bonus: currentBonus });
+      + this.homeBedStatusCaption(user, l);
   }
 
   homeBedUpgrades(user, opts = {}, lang = null) {

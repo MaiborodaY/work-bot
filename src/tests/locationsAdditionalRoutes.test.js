@@ -30,6 +30,7 @@ function createLocations({ nowTs = Date.now() } = {}) {
     upgrades: () => [[{ text: "upgrade", callback_data: "noop" }]],
     bar: () => [[{ text: "bar", callback_data: "noop" }]],
     home: () => [[{ text: "home", callback_data: "noop" }]],
+    homeBedStatusCaption: () => "current bed status",
     homeBedUpgradesCaption: () => "bed-upgrades",
     homeBedUpgrades: () => [[{ text: "bed", callback_data: "noop" }]],
     shop: () => [[{ text: "shop", callback_data: "noop" }]]
@@ -153,4 +154,17 @@ test("home bed upgrades route: renders home place with bed upgrades keyboard", a
   assert.equal(mediaCalls[0].policy, "auto");
   assert.match(String(mediaCalls[0].caption || ""), /bed-upgrades/i);
   assert.equal(mediaCalls[0]?.keyboard?.[0]?.[0]?.callback_data, "noop");
+});
+
+test("home route: renders bed status in caption", async () => {
+  const { locations, mediaCalls } = createLocations();
+  const u = baseUser();
+  u.displayName = "Tester";
+
+  await locations.show(u, null, Routes.HOME);
+
+  assert.equal(mediaCalls.length, 1);
+  assert.equal(mediaCalls[0].place, Routes.HOME);
+  assert.match(String(mediaCalls[0].caption || ""), /current bed status/i);
+  assert.equal(mediaCalls[0]?.keyboard?.[0]?.[0]?.text, "home");
 });
