@@ -36,11 +36,11 @@ export const CONFIG = {
   ENERGY_MAX: 5,
 
   JOBS: {
-    flyers:          { title: "Раздавать листовки", titleKey: "cfg.job.flyers.title", durationMs: 1 * 60_000,   pay: 7,   energy: 1 },
-    dishwasher:      { title: "Посудомойщик",       titleKey: "cfg.job.dishwasher.title", durationMs: 5 * 60_000,   pay: 20,  energy: 6 },
-    waiter:          { title: "Официант",           titleKey: "cfg.job.waiter.title", durationMs: 10 * 60_000,  pay: 38,  energy: 10 },
-    courier:         { title: "Курьер",             titleKey: "cfg.job.courier.title", durationMs: 30 * 60_000,  pay: 64,  energy: 18 },
-    loader:          { title: "Грузчик",            titleKey: "cfg.job.loader.title", durationMs: 60 * 60_000,  pay: 108, energy: 36 },
+    flyers:          { title: "Раздавать листовки", titleKey: "cfg.job.flyers.title", durationMs: 1 * 60_000,   pay: 11,  energy: 1 },
+    dishwasher:      { title: "Посудомойщик",       titleKey: "cfg.job.dishwasher.title", durationMs: 5 * 60_000,   pay: 30,  energy: 6 },
+    waiter:          { title: "Официант",           titleKey: "cfg.job.waiter.title", durationMs: 10 * 60_000,  pay: 57,  energy: 10 },
+    courier:         { title: "Курьер",             titleKey: "cfg.job.courier.title", durationMs: 30 * 60_000,  pay: 96,  energy: 18 },
+    loader:          { title: "Грузчик",            titleKey: "cfg.job.loader.title", durationMs: 60 * 60_000,  pay: 162, energy: 36 },
     shawarma_seller: { title: "Шаверма на вынос",   titleKey: "cfg.job.shawarma_seller.title", durationMs: 120 * 60_000, pay: 216, energy: 72 },
     dentist:         { title: "Стоматолог",         titleKey: "cfg.job.dentist.title", durationMs: 180 * 60_000, pay: 324, energy: 108 },
     qa_engineer:     { title: "QA engineer.",       titleKey: "cfg.job.qa_engineer.title", durationMs: 300 * 60_000, pay: 500, energy: 140 },

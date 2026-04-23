@@ -113,7 +113,7 @@ export class UiFactory {
     }
 
     const earnPlayerLevel = user ? Math.max(1, ProgressionService.getLevelInfo(user)?.level || 1) : 99;
-    if (earnPlayerLevel >= 3) {
+    if (earnPlayerLevel >= 2) {
       kb.push([{ text: this._t(l, "ui.earn.stocks"), callback_data: this._go(Routes.STOCKS) }]);
     }
     if (earnPlayerLevel >= 5) {
