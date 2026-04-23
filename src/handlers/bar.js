@@ -164,6 +164,17 @@ export const barHandler = {
       u.nav = (u.nav && typeof u.nav === "object") ? u.nav : {};
       u.nav.backTo = Routes.BAR_NEWBIE_TASKS;
       await users.save(u);
+      if (route === "GeneralQuiz" && ctx.generalQuiz) {
+        const view = await ctx.generalQuiz.buildOpenView(u);
+        await locations.media.show({
+          sourceMsg: null,
+          place: Routes.BAR,
+          caption: String(view?.caption || ""),
+          keyboard: Array.isArray(view?.keyboard) ? view.keyboard : [],
+          policy: "auto"
+        });
+        return;
+      }
       await ctx.goTo(u, route, null);
       return;
     }

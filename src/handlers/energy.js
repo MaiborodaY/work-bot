@@ -1,5 +1,6 @@
 import { Routes } from "../Routes.js";
 import { normalizeLang, t } from "../i18n/index.js";
+import { ProgressionService } from "../ProgressionService.js";
 
 const ENERGY_ORIGINS = new Set([
   Routes.WORK,
@@ -46,8 +47,9 @@ export async function showEnergyChoicePanel(ctx, { origin, need = 0 } = {}) {
     have: haveEnergy,
     origin: originText
   });
+  const playerLevel = Math.max(1, ProgressionService.getLevelInfo(u)?.level || 1);
   const keyboard = [
-    [{ text: tt("energy.choice.btn.home"), callback_data: `energy:to:home:${safeOrigin}` }],
+    ...(playerLevel >= 5 ? [[{ text: tt("energy.choice.btn.home"), callback_data: `energy:to:home:${safeOrigin}` }]] : []),
     [{ text: tt("energy.choice.btn.shop"), callback_data: `energy:to:shop:${safeOrigin}` }],
     [{ text: tt("energy.choice.btn.stay"), callback_data: `energy:stay:${safeOrigin}` }]
   ];

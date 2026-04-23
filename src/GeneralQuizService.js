@@ -65,6 +65,10 @@ export class GeneralQuizService {
     this.quests = quests || null;
   }
 
+  _backCb(u) {
+    return String(u?.nav?.backTo || "") === "BarNewbieTasks" ? "go:BarNewbieTasks" : "go:Bar";
+  }
+
   _lang(source) {
     if (typeof source === "string") return normalizeLang(source);
     return normalizeLang(source?.lang || "en");
@@ -501,7 +505,7 @@ export class GeneralQuizService {
       ];
       return {
         caption: lines.join("\n"),
-        keyboard: [[{ text: s.toBar, callback_data: "go:Bar" }]]
+        keyboard: [[{ text: s.toBar, callback_data: this._backCb(u) }]]
       };
     }
 
@@ -539,7 +543,7 @@ export class GeneralQuizService {
         [{ text: `${mediumLocked ? "[LOCK] " : ""}${s.pickMedium} - ${formatMoney(mediumTotal, lang)}`, callback_data: "gquiz:pick:medium" }],
         [{ text: `${hardLocked ? "[LOCK] " : ""}${s.pickHard} - ${formatMoney(hardTotal, lang)}`, callback_data: "gquiz:pick:hard" }]
       ];
-    keyboard.push([{ text: s.toBar, callback_data: "go:Bar" }]);
+    keyboard.push([{ text: s.toBar, callback_data: this._backCb(u) }]);
 
     return {
       caption: lines.filter((x) => String(x || "").trim().length > 0).join("\n"),
@@ -574,7 +578,7 @@ export class GeneralQuizService {
       text: q.options[orig],
       callback_data: `gquiz:answer:${shownIdx}`
     }]);
-    keyboard.push([{ text: s.toBar, callback_data: "go:Bar" }]);
+    keyboard.push([{ text: s.toBar, callback_data: this._backCb(u) }]);
     return { caption: lines.join("\n"), keyboard };
   }
   _buildAnswerView(u, payload) {
@@ -605,7 +609,7 @@ export class GeneralQuizService {
       lines.push(`${s.perfectBonus}: ${perfect && bonusMoney > 0 ? `+${formatMoney(bonusMoney, lang)}` : "+$0"}`);
       return {
         caption: lines.join("\n"),
-        keyboard: [[{ text: s.toBar, callback_data: "go:Bar" }]]
+        keyboard: [[{ text: s.toBar, callback_data: this._backCb(u) }]]
       };
     }
 
@@ -613,7 +617,7 @@ export class GeneralQuizService {
       caption: lines.join("\n"),
       keyboard: [
         [{ text: s.next, callback_data: "gquiz:next" }],
-        [{ text: s.toBar, callback_data: "go:Bar" }]
+        [{ text: s.toBar, callback_data: this._backCb(u) }]
       ]
     };
   }

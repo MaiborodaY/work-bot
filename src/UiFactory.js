@@ -112,11 +112,14 @@ export class UiFactory {
       kb.push([{ text: this._t(l, "ui.earn.labour"), callback_data: this._go(Routes.LABOUR) }]);
     }
 
+    const earnPlayerLevel = user ? Math.max(1, ProgressionService.getLevelInfo(user)?.level || 1) : 99;
+    if (earnPlayerLevel >= 5) {
+      kb.push([{ text: this._t(l, "ui.earn.stocks"),    callback_data: this._go(Routes.STOCKS) }]);
+      kb.push([{ text: this._t(l, "ui.city.syndicate"), callback_data: this._go(Routes.SYNDICATE) }]);
+    }
     kb.push(
-      [{ text: this._t(l, "ui.earn.stocks"), callback_data: this._go(Routes.STOCKS) }],
-      [{ text: this._t(l, "ui.city.syndicate"), callback_data: this._go(Routes.SYNDICATE) }],
-      [{ text: this._t(l, "ui.earn.fishing"),   callback_data: this._go(Routes.FISHING) }],
-      [{ text: this._t(l, "ui.back.city"), callback_data: this._go(Routes.SQUARE) }],
+      [{ text: this._t(l, "ui.earn.fishing"), callback_data: this._go(Routes.FISHING) }],
+      [{ text: this._t(l, "ui.back.city"),    callback_data: this._go(Routes.SQUARE) }],
     );
 
     return kb;
@@ -135,12 +138,13 @@ export class UiFactory {
     const lang = user ? (langMaybe || user?.lang || "ru") : String(userOrLang || "ru");
     const l = this._lang(lang);
 
+    const cityPlayerLevel = user ? Math.max(1, ProgressionService.getLevelInfo(user)?.level || 1) : 99;
     const kb = [
-      [{ text: this._t(l, "ui.city.home"), callback_data: this._go(Routes.HOME) }],
-      [{ text: this._t(l, "ui.city.board"), callback_data: this._go(Routes.CITY_BOARD) }],
+      [{ text: this._t(l, "ui.city.home"),    callback_data: this._go(Routes.HOME) }],
+      [{ text: this._t(l, "ui.city.board"),   callback_data: this._go(Routes.CITY_BOARD) }],
       [{ text: this._t(l, "ui.city.ratings"), callback_data: this._go(Routes.RATINGS) }],
-      [{ text: this._t(l, "ui.city.clans"), callback_data: this._go(Routes.CLAN) }],
-      [{ text: this._t(l, "ui.city.colosseum"), callback_data: this._go(Routes.COLOSSEUM) }],
+      [{ text: this._t(l, "ui.city.clans"),   callback_data: this._go(Routes.CLAN) }],
+      ...(cityPlayerLevel >= 5 ? [[{ text: this._t(l, "ui.city.colosseum"), callback_data: this._go(Routes.COLOSSEUM) }]] : []),
     ];
 
     // Hide theft menu for players without any purchased business (prevents early confusion).
@@ -260,7 +264,10 @@ export class UiFactory {
       user?.newbiePath?.pending !== true &&
       Number(user?.newbiePath?.step || 0) === 2
     );
-    const list = (user?.flags?.onboarding || newbieWorkOnly) ? entries.slice(0, 1) : entries;
+    const playerLevel = user ? Math.max(1, ProgressionService.getLevelInfo(user)?.level || 1) : 99;
+    const LEVEL5_JOBS = new Set(["loader", "shawarma_seller", "dentist", "qa_engineer", "farmer"]);
+    const allEntries = playerLevel >= 5 ? entries : entries.filter(([id]) => !LEVEL5_JOBS.has(id));
+    const list = (user?.flags?.onboarding || newbieWorkOnly) ? allEntries.slice(0, 1) : allEntries;
     for (const [id, j] of list) {
       const time = this._workTimeLabel(j.durationMs, l);
       const pay = this._workPayLabel(j);
