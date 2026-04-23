@@ -1851,6 +1851,8 @@ export class QuestService {
     const lines = [
       s.barTitle,
       "",
+      t("newbie.level_hint", this._lang(u)),
+      "",
       this._newbieTitle(u),
       t("newbie.progress", this._lang(u), {
         step,

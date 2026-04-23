@@ -194,7 +194,7 @@ export class UiFactory {
     }
 
     const barPlayerLevel = Math.max(1, ProgressionService.getLevelInfo(user)?.level || 1);
-    if (barPlayerLevel >= 3) {
+    if (barPlayerLevel >= 2) {
       kb.push([{ text: this._t(l, "ui.bar.tasks"), callback_data: "bar:tasks" }]);
     }
     if (this._hasPendingNewbieTasks(user)) {
@@ -270,8 +270,12 @@ export class UiFactory {
       Number(user?.newbiePath?.step || 0) === 2
     );
     const playerLevel = user ? Math.max(1, ProgressionService.getLevelInfo(user)?.level || 1) : 99;
-    const LEVEL5_JOBS = new Set(["loader", "shawarma_seller", "dentist", "qa_engineer", "farmer"]);
-    const allEntries = playerLevel >= 5 ? entries : entries.filter(([id]) => !LEVEL5_JOBS.has(id));
+    const LEVEL2_JOBS = new Set(["loader"]);
+    const LEVEL5_JOBS = new Set(["shawarma_seller", "dentist", "qa_engineer", "farmer"]);
+    const allEntries = entries.filter(([id]) =>
+      (playerLevel >= 5 || !LEVEL5_JOBS.has(id)) &&
+      (playerLevel >= 2 || !LEVEL2_JOBS.has(id))
+    );
     const list = (user?.flags?.onboarding || newbieWorkOnly) ? allEntries.slice(0, 1) : allEntries;
     for (const [id, j] of list) {
       const time = this._workTimeLabel(j.durationMs, l);
