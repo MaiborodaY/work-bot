@@ -506,7 +506,7 @@ export const UK = {
   "loc.work.onboarding_hint": "Обери першу роботу нижче. 💪 Після цього покажемо зал.",
   "loc.work.caption_intro": "🛠️ Роботи\nОбери роботу й чекай — гроші прийдуть самі.\nЧим довша робота, тим вища оплата.\nНавчання пришвидшує роботу, зал дає більше енергії.",
   "loc.work.shift_fallback": "Робота",
-  "loc.work.active_ready": "💰 Готово до виплати: {{title}} [$${{pay}}]",
+  "loc.work.active_ready": "💰 Готово до виплати: {{title}} [${{pay}}]",
   "loc.work.active_running": "⏳ Зміна триває: {{title}} (~{{mins}} хв)",
   "loc.work.active_tip": "💡 Порада: поки чекаєш, можна відкрити інші розділи.",
   "loc.work.active_tip_onboarding": "💡 Порада: натисни Завершити зараз, щоб не чекати (зараз це безкоштовно).",

@@ -245,7 +245,7 @@ export const RU = {
   "loc.work.onboarding_hint": "Выбери первую работу ниже. 💪 После награды покажем зал.",
   "loc.work.caption_intro": "🛠️ Работы\nВыбери работу и жди — деньги придут сами.\nЧем дольше работа, тем выше оплата.\nУчёба ускоряет работу, зал даёт больше энергии на неё.",
   "loc.work.shift_fallback": "Работа",
-  "loc.work.active_ready": "💰 Готово к выплате: {{title}} [$${{pay}}]",
+  "loc.work.active_ready": "💰 Готово к выплате: {{title}} [${{pay}}]",
   "loc.work.active_running": "⏳ Идет работа: {{title}} (~{{mins}} мин)",
   "loc.work.active_tip": "💡 Совет: можно открыть другие разделы.",
   "loc.work.active_tip_onboarding": "💡 Совет: нажми Завершить сейчас, чтобы не ждать (сейчас это бесплатно).",

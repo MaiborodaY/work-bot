@@ -506,7 +506,7 @@ export const EN = {
   "loc.work.onboarding_hint": "Pick your first job below. 💪 Then we will show gym.",
   "loc.work.caption_intro": "🛠️ Jobs\nPick a job and wait - money comes automatically.\nLonger job = higher payout.\nStudy speeds jobs up, gym gives more energy.",
   "loc.work.shift_fallback": "Job",
-  "loc.work.active_ready": "💰 Ready to claim: {{title}} [$${{pay}}]",
+  "loc.work.active_ready": "💰 Ready to claim: {{title}} [${{pay}}]",
   "loc.work.active_running": "⏳ Shift running: {{title}} (~{{mins}} min)",
   "loc.work.active_tip": "💡 Tip: you can open other sections while waiting.",
   "loc.work.active_tip_onboarding": "💡 Tip: press Finish now so you do not wait (it is free right now).",
