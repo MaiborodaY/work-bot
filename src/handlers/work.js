@@ -151,6 +151,7 @@ export const workHandler = {
       await safeCall("work.start.newbie_path", async () => {
         if (!!u?.flags?.onboardingDone && quests?.maybeCompleteNewbieStep) {
           newbieCompleted = !!quests.maybeCompleteNewbieStep(u);
+          if (!newbieCompleted && quests?.maybeCompleteNewbieStep2) newbieCompleted = !!quests.maybeCompleteNewbieStep2(u);
           if (newbieCompleted) {
             await users.save(u);
           }

@@ -896,6 +896,21 @@ export class UserStore {
       }
     }
 
+    if (!u.newbiePath2 || typeof u.newbiePath2 !== "object") {
+      u.newbiePath2 = { step: 1, pending: false, completed: false, ctx: null, updatedAt: 0 };
+      dirty = true;
+    } else {
+      const fixedStep2 = Math.max(1, Math.floor(Number(u.newbiePath2.step) || 1));
+      if (fixedStep2 !== u.newbiePath2.step) { u.newbiePath2.step = fixedStep2; dirty = true; }
+      if (typeof u.newbiePath2.pending   !== "boolean") { u.newbiePath2.pending   = false; dirty = true; }
+      if (typeof u.newbiePath2.completed !== "boolean") { u.newbiePath2.completed = false; dirty = true; }
+      if (u.newbiePath2.ctx !== null && typeof u.newbiePath2.ctx !== "object") { u.newbiePath2.ctx = null; dirty = true; }
+      if (typeof u.newbiePath2.updatedAt !== "number" || !Number.isFinite(u.newbiePath2.updatedAt)) {
+        u.newbiePath2.updatedAt = 0;
+        dirty = true;
+      }
+    }
+
     if (!u.progression || typeof u.progression !== "object") {
       u.progression = {
         rewardLevelClaimed: 0,

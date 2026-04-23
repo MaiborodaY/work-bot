@@ -56,12 +56,13 @@ function shuffleDeterministic(list, rng) {
 }
 
 export class GeneralQuizService {
-  constructor({ users, now, bot = null, social = null, achievements = null }) {
+  constructor({ users, now, bot = null, social = null, achievements = null, quests = null }) {
     this.users = users;
     this.now = now || (() => Date.now());
     this.bot = bot || null;
     this.social = social || null;
     this.achievements = achievements || null;
+    this.quests = quests || null;
   }
 
   _lang(source) {
@@ -714,6 +715,14 @@ export class GeneralQuizService {
       } catch {
         // achievements update should not break quiz flow
       }
+    }
+
+    if (finished && this.quests && typeof this.quests.maybeCompleteNewbieStep === "function") {
+      try {
+        const changed = this.quests.maybeCompleteNewbieStep(u);
+        const changed2 = this.quests.maybeCompleteNewbieStep2 ? this.quests.maybeCompleteNewbieStep2(u) : false;
+        if (changed || changed2) await this.users.save(u);
+      } catch {}
     }
 
     return {

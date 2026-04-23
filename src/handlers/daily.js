@@ -20,6 +20,7 @@ export const dailyHandler = {
       }
       if (quests?.maybeCompleteNewbieStep) {
         needSave = quests.maybeCompleteNewbieStep(u) || needSave;
+        needSave = (quests?.maybeCompleteNewbieStep2 ? quests.maybeCompleteNewbieStep2(u) : false) || needSave;
       }
       if (needSave) await users.save(u);
     };

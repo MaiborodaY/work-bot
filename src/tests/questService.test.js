@@ -157,7 +157,7 @@ test("newbie path: buy coffee step completes only from explicit shop buy event",
   const qs = makeService();
   const u = makeUser({ withBusiness: false });
   u.newbiePath = {
-    step: 4,
+    step: 6,
     pending: false,
     completed: false,
     ctx: { startedAt: Date.UTC(2026, 2, 13, 11, 0, 0), totalShiftsStart: 0, gymLevelStart: 0 },
@@ -222,11 +222,12 @@ test("newbie path: final claim records completed day", () => {
   assert.equal(u.stats?.newbie?.completedDay, "2026-03-13");
 });
 
-test("newbie path: energy_50 step completes when max energy reaches 50", () => {
+test("newbie path: energy_50 step completes in level 2 when max energy reaches 50", () => {
   const qs = makeService();
   const u = makeUser({ withBusiness: false });
-  u.newbiePath = {
-    step: 8,
+  u.newbiePath = { step: 10, pending: false, completed: true, ctx: null, updatedAt: 0 };
+  u.newbiePath2 = {
+    step: 1,
     pending: false,
     completed: false,
     ctx: { startedAt: Date.UTC(2026, 2, 13, 11, 0, 0), totalShiftsStart: 0, gymLevelStart: 0 },
@@ -234,10 +235,10 @@ test("newbie path: energy_50 step completes when max energy reaches 50", () => {
   };
   u.energy_max = 50;
 
-  const changed = qs.maybeCompleteNewbieStep(u);
+  const changed = qs.maybeCompleteNewbieStep2(u);
 
   assert.equal(changed, true);
-  assert.equal(u.newbiePath.pending, true);
+  assert.equal(u.newbiePath2.pending, true);
 });
 
 test("newbie path: money_10000 step completes on balance threshold", () => {
@@ -285,7 +286,7 @@ test("newbie path: plant carrot step completes only from carrot planting", () =>
   const qs = makeService();
   const u = makeUser({ withBusiness: false });
   u.newbiePath = {
-    step: 7,
+    step: 8,
     pending: false,
     completed: false,
     ctx: { startedAt: Date.UTC(2026, 2, 13, 11, 0, 0), totalShiftsStart: 0, gymLevelStart: 0 },

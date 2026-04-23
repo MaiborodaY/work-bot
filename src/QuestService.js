@@ -1498,7 +1498,8 @@ export class QuestService {
     return {
       startedAt: this.now(),
       totalShiftsStart: Math.max(0, toInt(u?.achievements?.progress?.totalShifts, 0)),
-      gymLevelStart: Math.max(0, toInt(u?.gym?.level, 0))
+      gymLevelStart: Math.max(0, toInt(u?.gym?.level, 0)),
+      gquizPlaysStart: Math.max(0, toInt(u?.achievements?.progress?.gquizPlayedTotal, 0))
     };
   }
 
@@ -1527,6 +1528,8 @@ export class QuestService {
         return !!ctx?.completedByEvent || !!(Array.isArray(u?.farm?.plots) && u.farm.plots.some((p) =>
           String(p?.cropId || "") === "carrot" && (String(p?.status || "") === "growing" || String(p?.status || "") === "ready")
         ));
+      case "gquiz_play":
+        return Math.max(0, toInt(u?.achievements?.progress?.gquizPlayedTotal, 0)) > Math.max(0, toInt(ctx.gquizPlaysStart, 0));
       case "energy_50":
         return EnergyService.effectiveEnergyMax(u, this.now()) >= 50;
       case "money_10000":
@@ -1617,6 +1620,100 @@ export class QuestService {
     const nextDef = defs[u.newbiePath.step - 1];
     u.newbiePath.ctx = nextDef ? this.initNewbieStepContext(u) : null;
     return { ok: true, completed: false, step: u.newbiePath.step };
+  }
+
+  // ── Newbie Path Level 2 ──────────────────────────────────────────────────
+
+  _newbiePath2Defs() {
+    return Array.isArray(this._cfg().NEWBIE_PATH_2) ? this._cfg().NEWBIE_PATH_2 : [];
+  }
+
+  _newbieFinalRewardMoney2() {
+    return Math.max(0, toInt(this._cfg().NEWBIE_FINAL_REWARD_MONEY_2, 0));
+  }
+
+  _newbieFinalRewardGems2() {
+    return Math.max(0, toInt(this._cfg().NEWBIE_FINAL_REWARD_GEMS_2, 0));
+  }
+
+  isNewbieLevel2Active(u) {
+    return !!u?.newbiePath?.completed && !u?.newbiePath2?.completed;
+  }
+
+  isNewbieLevel2Completed(u) {
+    return !!u?.newbiePath2?.completed;
+  }
+
+  _ensureNewbiePath2Model(u) {
+    if (!u || typeof u !== "object") return;
+    if (!u.newbiePath2 || typeof u.newbiePath2 !== "object") {
+      u.newbiePath2 = { step: 1, pending: false, completed: false, ctx: null, updatedAt: 0 };
+    }
+  }
+
+  _getNewbieStep2Def(u) {
+    this._ensureNewbiePath2Model(u);
+    const defs = this._newbiePath2Defs();
+    const step = Math.max(1, toInt(u?.newbiePath2?.step, 1));
+    return defs[step - 1] || null;
+  }
+
+  maybeCompleteNewbieStep2(u) {
+    this._ensureNewbiePath2Model(u);
+    if (!this.isNewbieLevel2Active(u)) return false;
+    if (u.newbiePath2.pending) return false;
+    const stepDef = this._getNewbieStep2Def(u);
+    if (!stepDef) return false;
+    const ctx = (u?.newbiePath2?.ctx && typeof u.newbiePath2.ctx === "object") ? u.newbiePath2.ctx : {};
+    if (!this.isNewbieStepComplete(u, stepDef.id, ctx)) return false;
+    u.newbiePath2.pending = true;
+    u.newbiePath2.updatedAt = this.now();
+    return true;
+  }
+
+  markNewbieAction2(u, action, ctx = {}) {
+    this._ensureNewbiePath2Model(u);
+    if (!this.isNewbieLevel2Active(u)) return false;
+    if (u.newbiePath2.pending) return false;
+    const stepDef = this._getNewbieStep2Def(u);
+    if (!stepDef) return false;
+    if (String(stepDef.id) === "plant_carrot" && String(action || "") === "farm_plant" && String(ctx?.cropId || "") === "carrot") {
+      u.newbiePath2.pending = true;
+      u.newbiePath2.ctx = { ...(u.newbiePath2.ctx || {}), completedByEvent: true, completedAt: this.now() };
+      u.newbiePath2.updatedAt = this.now();
+      return true;
+    }
+    if (String(stepDef.id) === "buy_coffee" && String(action || "") === "shop_buy" && String(ctx?.key || "") === "coffee") {
+      u.newbiePath2.pending = true;
+      u.newbiePath2.ctx = { ...(u.newbiePath2.ctx || {}), completedByEvent: true, completedAt: this.now() };
+      u.newbiePath2.updatedAt = this.now();
+      return true;
+    }
+    return false;
+  }
+
+  claimNewbieStep2(u) {
+    this._ensureNewbiePath2Model(u);
+    if (!u?.newbiePath2?.pending) return { ok: false };
+    const defs = this._newbiePath2Defs();
+    const idx = Math.max(0, toInt(u.newbiePath2.step, 1) - 1);
+    const def = defs[idx];
+    if (!def) return { ok: false };
+    u.money = Math.max(0, toInt(u?.money, 0)) + Math.max(0, toInt(def.rewardMoney, 0));
+    u.premium = Math.max(0, toInt(u?.premium, 0)) + Math.max(0, toInt(def.rewardGems, 0));
+    u.newbiePath2.step = idx + 2;
+    u.newbiePath2.pending = false;
+    u.newbiePath2.completed = u.newbiePath2.step > defs.length;
+    u.newbiePath2.ctx = null;
+    u.newbiePath2.updatedAt = this.now();
+    if (u.newbiePath2.completed) {
+      u.money += this._newbieFinalRewardMoney2();
+      u.premium += this._newbieFinalRewardGems2();
+      return { ok: true, completed: true };
+    }
+    const nextDef = defs[u.newbiePath2.step - 1];
+    u.newbiePath2.ctx = nextDef ? this.initNewbieStepContext(u) : null;
+    return { ok: true, completed: false, step: u.newbiePath2.step };
   }
 
   _newbieActionButton(u, stepDef) {

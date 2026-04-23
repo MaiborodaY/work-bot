@@ -75,6 +75,7 @@ export const petHandler = {
       try {
         if (!!u?.flags?.onboardingDone && quests?.maybeCompleteNewbieStep) {
           newbieCompleted = !!quests.maybeCompleteNewbieStep(u);
+          if (!newbieCompleted && quests?.maybeCompleteNewbieStep2) newbieCompleted = !!quests.maybeCompleteNewbieStep2(u);
           if (newbieCompleted) {
             await users.save(u);
           }
