@@ -86,6 +86,7 @@ export function buildQuizCatalog(cfg = CONFIG) {
   const sickAfter = f.sickAfterDays + 2;
   const healCheap = Math.max(1, f.healCost - 1);
   const healExpensive = f.healCost + 2;
+  const shawarmaWrongPrice = String(f.shawarmaPrice === 5000 ? 10000 : 5000);
 
   return [
     {
@@ -739,9 +740,9 @@ export function buildQuizCatalog(cfg = CONFIG) {
         en: "How much does the shawarma stand cost?"
       },
       options: {
-        ru: ["5000", String(f.shawarmaPrice), "25000", "50000"],
-        uk: ["5000", String(f.shawarmaPrice), "25000", "50000"],
-        en: ["5000", String(f.shawarmaPrice), "25000", "50000"]
+        ru: [shawarmaWrongPrice, String(f.shawarmaPrice), "25000", "50000"],
+        uk: [shawarmaWrongPrice, String(f.shawarmaPrice), "25000", "50000"],
+        en: [shawarmaWrongPrice, String(f.shawarmaPrice), "25000", "50000"]
       },
       correct: 1,
       explain: {

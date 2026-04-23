@@ -1453,7 +1453,7 @@ export class AdminCommands {
       case "gym_train": return "gym workout";
       case "plant_carrot": return "plant carrot";
       case "energy_50": return "reach 50 energy";
-      case "money_10000": return "save $10000";
+      case "money_10000": return "save $5000";
       case "buy_business": return "first business";
       default: return String(stepId || "-");
     }

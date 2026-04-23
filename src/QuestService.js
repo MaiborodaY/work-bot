@@ -1533,7 +1533,7 @@ export class QuestService {
       case "energy_50":
         return EnergyService.effectiveEnergyMax(u, this.now()) >= 50;
       case "money_10000":
-        return Math.max(0, toInt(u?.money, 0)) >= 10000;
+        return Math.max(0, toInt(u?.money, 0)) >= 5000;
       case "buy_business":
         return this._hasAnyBusiness(u);
       default:

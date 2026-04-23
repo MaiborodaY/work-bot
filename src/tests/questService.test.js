@@ -241,7 +241,7 @@ test("newbie path: energy_50 step completes in level 2 when max energy reaches 5
   assert.equal(u.newbiePath2.pending, true);
 });
 
-test("newbie path: money_10000 step completes on balance threshold", () => {
+test("newbie path: money_10000 step completes on $5000 balance threshold", () => {
   const qs = makeService();
   const u = makeUser({ withBusiness: false });
   u.newbiePath = {
@@ -251,7 +251,7 @@ test("newbie path: money_10000 step completes on balance threshold", () => {
     ctx: { startedAt: Date.UTC(2026, 2, 13, 11, 0, 0), totalShiftsStart: 0, gymLevelStart: 0 },
     updatedAt: 0
   };
-  u.money = 10000;
+  u.money = 5000;
 
   const changed = qs.maybeCompleteNewbieStep(u);
 
