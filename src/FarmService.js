@@ -1,6 +1,7 @@
 import { CONFIG } from "./GameConfig.js";
 import { normalizeLang } from "./i18n/index.js";
 import { markUsefulActivity } from "./PlayerStats.js";
+import { ProgressionService } from "./ProgressionService.js";
 
 function n(raw) {
   const v = Number(raw);
@@ -570,7 +571,10 @@ export class FarmService {
 
     const caption = this._fmt(s.plantMenuTitle, { num: target.index });
     const kb = [];
-    for (const cropId of this._cropIds()) {
+    const farmPlayerLevel = Math.max(1, ProgressionService.getLevelInfo(u)?.level || 1);
+    const LEVEL3_CROPS = new Set(["tomato", "corn"]);
+    const visibleCropIds = this._cropIds().filter((id) => farmPlayerLevel >= 3 || !LEVEL3_CROPS.has(id));
+    for (const cropId of visibleCropIds) {
       const crop = this._cropInfo(u, cropId);
       if (!crop) continue;
       kb.push([{

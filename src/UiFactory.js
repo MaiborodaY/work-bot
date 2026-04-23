@@ -193,11 +193,16 @@ export class UiFactory {
       kb.push([{ text: this._t(l, "loc.daily_bonus"), callback_data: "daily:claim" }]);
     }
 
-    kb.push([{ text: this._t(l, "ui.bar.tasks"), callback_data: "bar:tasks" }]);
+    const barPlayerLevel = Math.max(1, ProgressionService.getLevelInfo(user)?.level || 1);
+    if (barPlayerLevel >= 3) {
+      kb.push([{ text: this._t(l, "ui.bar.tasks"), callback_data: "bar:tasks" }]);
+    }
     if (this._hasPendingNewbieTasks(user)) {
       kb.push([{ text: this._t(l, "ui.bar.newbie_tasks"), callback_data: "bar:newbie" }]);
     }
-    kb.push([{ text: this._t(l, "ui.bar.quiz"), callback_data: "quiz:open" }]);
+    if (barPlayerLevel >= 5) {
+      kb.push([{ text: this._t(l, "ui.bar.quiz"), callback_data: "quiz:open" }]);
+    }
     kb.push([{ text: this._t(l, "ui.bar.quiz_general"), callback_data: "gquiz:open" }]);
     if (canOpenArcana) {
       kb.push([{ text: this._t(l, "ui.bar.arcana"), callback_data: this._go(Routes.CASINO) }]);
@@ -501,25 +506,28 @@ export class UiFactory {
       return out;
     }
 
-    if (passState.active) {
-      const leftMin = Math.max(1, Math.ceil(passState.leftMs / 60000));
-      const d = Math.floor(leftMin / (24 * 60));
-      const h = Math.floor((leftMin % (24 * 60)) / 60);
-      const m = leftMin % 60;
-      out.push([{
-        text: this._t(l, "ui.gym.pass_active", { bonus: passCfg.bonusEnergyMax, d, h, m }),
-        callback_data: "noop"
-      }]);
-    } else if (baseEnergyMax >= gymCap) {
-      out.push([{
-        text: this._t(l, "ui.gym.pass_buy", { bonus: passCfg.bonusEnergyMax, gems: passCfg.priceGems }),
-        callback_data: "gym:pass:buy"
-      }]);
-    } else {
-      out.push([{
-        text: this._t(l, "ui.gym.pass_locked", { need: gymCap, have: baseEnergyMax }),
-        callback_data: "noop"
-      }]);
+    const gymPlayerLevel = Math.max(1, ProgressionService.getLevelInfo(user)?.level || 1);
+    if (gymPlayerLevel >= 5) {
+      if (passState.active) {
+        const leftMin = Math.max(1, Math.ceil(passState.leftMs / 60000));
+        const d = Math.floor(leftMin / (24 * 60));
+        const h = Math.floor((leftMin % (24 * 60)) / 60);
+        const m = leftMin % 60;
+        out.push([{
+          text: this._t(l, "ui.gym.pass_active", { bonus: passCfg.bonusEnergyMax, d, h, m }),
+          callback_data: "noop"
+        }]);
+      } else if (baseEnergyMax >= gymCap) {
+        out.push([{
+          text: this._t(l, "ui.gym.pass_buy", { bonus: passCfg.bonusEnergyMax, gems: passCfg.priceGems }),
+          callback_data: "gym:pass:buy"
+        }]);
+      } else {
+        out.push([{
+          text: this._t(l, "ui.gym.pass_locked", { need: gymCap, have: baseEnergyMax }),
+          callback_data: "noop"
+        }]);
+      }
     }
 
     out.push([{ text: this._t(l, "ui.back.progress"), callback_data: this._go(Routes.PROGRESS) }]);
