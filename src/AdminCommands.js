@@ -1447,8 +1447,9 @@ export class AdminCommands {
       case "daily_bonus": return "daily bonus";
       case "work_job": return "flyers job";
       case "start_study": return "start study";
-      case "buy_coffee": return "buy coffee";
       case "buy_pet": return "buy pet";
+      case "gquiz_play": return "general quiz";
+      case "buy_coffee": return "buy coffee";
       case "gym_train": return "gym workout";
       case "plant_carrot": return "plant carrot";
       case "energy_50": return "reach 50 energy";
