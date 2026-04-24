@@ -74,6 +74,25 @@ Rules:
 - Prefer editing text in i18n dictionaries and config keys.
 - If output/terminal looks garbled, verify file bytes before replacing text.
 
+Operational guardrails:
+- Do not rewrite UTF-8 source files through PowerShell text pipelines like `Get-Content ... | Set-Content ...`.
+- Avoid using PowerShell string-based file rewrites for Cyrillic-heavy files (`UiFactory.js`, `worker.js`, `src/i18n/*.js`, docs).
+- Prefer IDE editing or patch-based edits for user-facing text.
+- If a file must be restored from git, use raw bytes / blob restore, not line-based shell output.
+
+Known safe patterns:
+1. Use editor/IDE with UTF-8 encoding.
+2. Use patch-based edits for small targeted changes.
+3. When restoring from git, prefer blob/byte copy instead of terminal text rendering.
+
+Known unsafe patterns:
+1. `Get-Content file | Set-Content file`
+2. Reading Cyrillic file content into PowerShell strings and writing it back
+3. Shell-generated mass rewrites of `src/i18n/*.js`
+
+Practical rule:
+- If the change touches Cyrillic-heavy files, avoid shell text transforms entirely unless there is no alternative.
+
 ## 4) Event-Driven Counters (Important)
 
 A lot of UX depends on event hooks.
