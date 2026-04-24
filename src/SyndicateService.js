@@ -1174,7 +1174,8 @@ export class SyndicateService {
           place,
           name: this._displayNameWithClan(row),
           score: this._money(row.score),
-          completed: this._money(row.completed)
+          completed: this._money(row.completed),
+          net: this._money(row.net)
         }));
       }
     }
@@ -1183,10 +1184,13 @@ export class SyndicateService {
     const score = p === "all"
       ? Math.max(0, toInt(u?.syndicate?.weightedTotal, 0))
       : Math.max(0, toInt(u?.syndicate?.weightedWeek, 0));
+    const net = p === "all"
+      ? Math.max(0, toInt(u?.syndicate?.netTotal, 0))
+      : Math.max(0, toInt(u?.syndicate?.netWeek, 0));
     lines.push("");
     lines.push(idx >= 0
-      ? this._fmt(s.ratingMeIn, { place: idx + 1, score: this._money(score) })
-      : this._fmt(s.ratingMeOut, { score: this._money(score) }));
+      ? this._fmt(s.ratingMeIn, { place: idx + 1, score: this._money(score), net: this._money(net) })
+      : this._fmt(s.ratingMeOut, { score: this._money(score), net: this._money(net) }));
 
     const keyboard = [
       [{ text: s.btnBackMain, callback_data: "syn:refresh" }]
