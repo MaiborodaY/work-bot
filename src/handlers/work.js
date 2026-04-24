@@ -8,6 +8,7 @@ import { safeCall } from "../SafeCall.js";
 import { Routes } from "../Routes.js";
 import { showEnergyChoicePanel } from "./energy.js";
 import { EnergyService } from "../EnergyService.js";
+import { InventoryService } from "../InventoryService.js";
 
 export async function applyWorkClaimSideEffects(ctx, pay, endAt) {
   const { clans, labour, referrals, u, logger } = ctx || {};
@@ -195,7 +196,20 @@ export const workHandler = {
       }
       await applyWorkClaimSideEffects({ clans, labour, referrals, u }, res.pay, res.endAt);
       await advanceOnboardingAfterClaimIfNeeded();
-      await answer(cb.id, tt("handler.work.claim_ok", { pay: res.pay }));
+      const rewardLines = [];
+      if (res?.guaranteedDrop?.itemId === "fertilizer") {
+        rewardLines.push(tt("handler.work.bonus_fertilizer", { qty: res.guaranteedDrop.qty || 1 }));
+      }
+      if (res?.bonusDrop && InventoryService.count(u, res.bonusDrop.itemId) > 0) {
+        rewardLines.push(tt("handler.work.bonus_mango_seed", { qty: res.bonusDrop.qty || 1 }));
+      }
+      const bonusLine = rewardLines.length ? `\n${rewardLines.join("\n")}` : "";
+      await answer(cb.id, `${tt("handler.work.claim_ok", { pay: res.pay })}${bonusLine}`);
+      if (rewardLines.length && typeof send === "function") {
+        for (const line of rewardLines) {
+          await send(line);
+        }
+      }
       await render();
       return;
     }
@@ -222,7 +236,20 @@ export const workHandler = {
       }
       await applyWorkClaimSideEffects({ clans, labour, referrals, u }, claim.pay, claim.endAt);
 
-      await answer(cb.id, tt("handler.work.skip_ok", { cost: res.cost, pay: claim.pay }));
+      const rewardLines = [];
+      if (claim?.guaranteedDrop?.itemId === "fertilizer") {
+        rewardLines.push(tt("handler.work.bonus_fertilizer", { qty: claim.guaranteedDrop.qty || 1 }));
+      }
+      if (claim?.bonusDrop) {
+        rewardLines.push(tt("handler.work.bonus_mango_seed", { qty: claim.bonusDrop.qty || 1 }));
+      }
+      const bonusLine = rewardLines.length ? `\n${rewardLines.join("\n")}` : "";
+      await answer(cb.id, `${tt("handler.work.skip_ok", { cost: res.cost, pay: claim.pay })}${bonusLine}`);
+      if (rewardLines.length && typeof send === "function") {
+        for (const line of rewardLines) {
+          await send(line);
+        }
+      }
       await render();
       return;
     }
@@ -254,7 +281,20 @@ export const workHandler = {
       await applyWorkClaimSideEffects({ clans, labour, referrals, u }, claim.pay, claim.endAt);
       await advanceOnboardingAfterClaimIfNeeded();
 
-      await answer(cb.id, tt("handler.work.skip_free_ok", { pay: claim.pay }));
+      const rewardLines = [];
+      if (claim?.guaranteedDrop?.itemId === "fertilizer") {
+        rewardLines.push(tt("handler.work.bonus_fertilizer", { qty: claim.guaranteedDrop.qty || 1 }));
+      }
+      if (claim?.bonusDrop) {
+        rewardLines.push(tt("handler.work.bonus_mango_seed", { qty: claim.bonusDrop.qty || 1 }));
+      }
+      const bonusLine = rewardLines.length ? `\n${rewardLines.join("\n")}` : "";
+      await answer(cb.id, `${tt("handler.work.skip_free_ok", { pay: claim.pay })}${bonusLine}`);
+      if (rewardLines.length && typeof send === "function") {
+        for (const line of rewardLines) {
+          await send(line);
+        }
+      }
       await render();
       return;
     }

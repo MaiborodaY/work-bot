@@ -82,3 +82,64 @@ test("job service: farmer claim pays rolled amount in range", async () => {
   assert.equal(saved.money, 3500);
   assert.equal(Array.isArray(saved.jobs.active) && saved.jobs.active.length, 0);
 });
+
+test("job service: farmer claim can award mango seed bonus", async () => {
+  let nowTs = Date.UTC(2026, 3, 16, 19, 0, 0);
+  const users = new FakeUsers({ u1: baseUser({ inv: {} }) });
+  const jobs = new JobService({ users, now: () => nowTs, random: () => 0.1 });
+  const startUser = await users.load("u1");
+  const started = await jobs.start(startUser, "farmer");
+  assert.equal(started.ok, true);
+
+  nowTs = started.inst.endAt + 1;
+  const claimUser = await users.load("u1");
+  const claim = await jobs.claim(claimUser);
+
+  assert.equal(claim.ok, true);
+  assert.equal(claim.guaranteedDrop?.itemId, "fertilizer");
+  assert.equal(claim.guaranteedDrop?.qty, 1);
+  assert.equal(claim.bonusDrop?.itemId, "mango_seed");
+  assert.equal(claim.bonusDrop?.qty, 1);
+  const saved = await users.load("u1");
+  assert.equal(saved.inv.mango_seed, 1);
+  assert.equal(saved.inv.fertilizer, 1);
+});
+
+test("job service: non-farmer jobs do not award mango seed", async () => {
+  let nowTs = Date.UTC(2026, 3, 16, 19, 0, 0);
+  const users = new FakeUsers({ u1: baseUser({ inv: {}, energy: 10, energy_max: 10 }) });
+  const jobs = new JobService({ users, now: () => nowTs, random: () => 0.1 });
+  const startUser = await users.load("u1");
+  const started = await jobs.start(startUser, "flyers");
+  assert.equal(started.ok, true);
+
+  nowTs = started.inst.endAt + 1;
+  const claimUser = await users.load("u1");
+  const claim = await jobs.claim(claimUser);
+
+  assert.equal(claim.ok, true);
+  assert.equal(claim.bonusDrop || null, null);
+  assert.equal(claim.guaranteedDrop || null, null);
+  const saved = await users.load("u1");
+  assert.equal(saved.inv?.mango_seed || 0, 0);
+  assert.equal(saved.inv?.fertilizer || 0, 0);
+});
+
+test("job service: farmer claim always awards fertilizer", async () => {
+  let nowTs = Date.UTC(2026, 3, 16, 19, 0, 0);
+  const users = new FakeUsers({ u1: baseUser({ inv: {} }) });
+  const jobs = new JobService({ users, now: () => nowTs, random: () => 0.95 });
+  const startUser = await users.load("u1");
+  const started = await jobs.start(startUser, "farmer");
+  assert.equal(started.ok, true);
+
+  nowTs = started.inst.endAt + 1;
+  const claimUser = await users.load("u1");
+  const claim = await jobs.claim(claimUser);
+
+  assert.equal(claim.ok, true);
+  assert.equal(claim.guaranteedDrop?.itemId, "fertilizer");
+  assert.equal(claim.bonusDrop || null, null);
+  const saved = await users.load("u1");
+  assert.equal(saved.inv.fertilizer, 1);
+});

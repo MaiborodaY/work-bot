@@ -40,6 +40,7 @@ import { workHandler } from "./handlers/work.js";
 import { studyHandler } from "./handlers/study.js";
 import { homeHandler } from "./handlers/home.js";
 import { shopHandler } from "./handlers/shop.js";
+import { inventoryHandler } from "./handlers/inventory.js";
 import { casinoHandler } from "./handlers/casino.js";
 import { gymHandler } from "./handlers/gym.js";
 import { navigationHandler } from "./handlers/navigation.js";
@@ -582,6 +583,7 @@ export default {
           callback_data: "profile:level:claim"
         }]] : []),
         [{ text: achievementsBtn, callback_data: "profile:achievements" }],
+        [{ text: t("ui.profile.inventory", lang), callback_data: "go:Inventory" }],
         [{ text: profileLangButtonText(u), callback_data: "profile:lang" }]
       ];
       if (sourceMsg) {
@@ -1513,6 +1515,7 @@ export default {
         studyHandler,
         homeHandler,
         shopHandler,
+        inventoryHandler,
         casinoHandler,
         gymHandler,
         upgradesHandler

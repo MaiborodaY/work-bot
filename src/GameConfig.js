@@ -44,7 +44,17 @@ export const CONFIG = {
     shawarma_seller: { title: "Шаверма на вынос",   titleKey: "cfg.job.shawarma_seller.title", durationMs: 120 * 60_000, pay: 216, energy: 72 },
     dentist:         { title: "Стоматолог",         titleKey: "cfg.job.dentist.title", durationMs: 180 * 60_000, pay: 324, energy: 108 },
     qa_engineer:     { title: "QA engineer.",       titleKey: "cfg.job.qa_engineer.title", durationMs: 300 * 60_000, pay: 500, energy: 140 },
-    farmer:          { title: "Farmer",             titleKey: "cfg.job.farmer.title", durationMs: 24 * 60 * 60_000, payMin: 1500, payMax: 3500, energy: 180, minEnergyMax: 180 },
+    farmer:          {
+      title: "Farmer",
+      titleKey: "cfg.job.farmer.title",
+      durationMs: 24 * 60 * 60_000,
+      payMin: 1500,
+      payMax: 3500,
+      energy: 180,
+      minEnergyMax: 180,
+      bonusDrop: { itemId: "mango_seed", chance: 0.5, qty: 1 },
+      guaranteedDrop: { itemId: "fertilizer", qty: 1 }
+    },
   },
 
   REST_RECOVER_MS: 5 * 60 * 1000,
@@ -504,7 +514,8 @@ export const CONFIG = {
     CROPS: {
       carrot: { emoji: "🥕", seedPrice: 250, growMs: 60 * 60_000, sellPrice: 400, plantEnergy: 8 },
       tomato: { emoji: "🍅", seedPrice: 700, growMs: 180 * 60_000, sellPrice: 1000, plantEnergy: 20 },
-      corn: { emoji: "🌽", seedPrice: 1800, growMs: 480 * 60_000, sellPrice: 2200, plantEnergy: 30 }
+      corn: { emoji: "🌽", seedPrice: 1800, growMs: 480 * 60_000, sellPrice: 2200, plantEnergy: 30 },
+      mango: { emoji: "🥭", seedPrice: 0, growMs: 12 * 60 * 60_000, sellPrice: 5000, plantEnergy: 30, requiresItemId: "mango_seed", requiresItemQty: 1 }
     },
     NOTIFY: {
       DUE_BUCKET_MS: 5 * 60_000,

@@ -6,6 +6,7 @@ import { getJobTitle, getShopTitle, getUpgradeDesc, getUpgradeTitle } from "./I1
 import { Routes, toGoCallback } from "./Routes.js";
 import { EnergyService } from "./EnergyService.js";
 import { ProgressionService } from "./ProgressionService.js";
+import { InventoryService } from "./InventoryService.js";
 
 export class UiFactory {
   _lang(lang) {
@@ -18,6 +19,18 @@ export class UiFactory {
 
   _go(route) {
     return toGoCallback(route);
+  }
+
+  _inventoryItemTitle(itemId, lang = "ru") {
+    const l = this._lang(lang);
+    const id = String(itemId || "");
+    if (id === "coffee") return l === "en" ? "\u2615 Coffee" : (l === "uk" ? "\u2615 Кава" : "\u2615 Кофе");
+    if (id === "sandwich") return l === "en" ? "\u{1F96A} Sandwich" : (l === "uk" ? "\u{1F96A} Сендвіч" : "\u{1F96A} Сэндвич");
+    if (id === "lunch") return l === "en" ? "\u{1F372} Business lunch" : (l === "uk" ? "\u{1F372} Бізнес-ланч" : "\u{1F372} Бизнес-ланч");
+    if (id === "borscht") return l === "en" ? "\u{1F963} Soup of the day" : (l === "uk" ? "\u{1F963} Борщ" : "\u{1F963} Борщ");
+    if (id === "mango_seed") return l === "en" ? "\u{1F96D} Mango seed" : (l === "uk" ? "\u{1F96D} Насіння манго" : "\u{1F96D} Семя манго");
+    if (id === "fertilizer") return l === "en" ? "\u{1F9EA} Fertilizer" : (l === "uk" ? "\u{1F9EA} Добриво" : "\u{1F9EA} Удобрение");
+    return getShopTitle(id, l) || id;
   }
 
   _workTimeLabel(durationMs, lang = "en") {
@@ -325,15 +338,54 @@ export class UiFactory {
 
 
   // ---------- Дом ----------
+  _bedKeys() {
+    return ["bed1", "bed2", "bed3"].filter((key) => !!CONFIG.UPGRADES[key]);
+  }
+
+  _bedTier(key) {
+    if (key === "bed3") return 3;
+    if (key === "bed2") return 2;
+    if (key === "bed1") return 1;
+    return 0;
+  }
+
+  _bedCurrentKey(owned, bedKeys = this._bedKeys()) {
+    for (let i = bedKeys.length - 1; i >= 0; i--) {
+      if (owned.has(bedKeys[i])) return bedKeys[i];
+    }
+    return null;
+  }
+
+  _bedEffectText(key, lang = "ru") {
+    if (key === "bed1") return this._t(lang, "ui.home.bed.effect1");
+    if (key === "bed2") return this._t(lang, "ui.home.bed.effect2");
+    if (key === "bed3") return this._t(lang, "ui.home.bed.effect3");
+    return this._t(lang, "ui.home.bed.effect0");
+  }
+
+  homeBedStatusCaption(user, lang = null) {
+    const l = this._lang(lang || user?.lang);
+    const upgrades = Array.isArray(user?.upgrades) ? user.upgrades : [];
+    const owned = new Set(upgrades);
+    const currentKey = this._bedCurrentKey(owned);
+    const currentTitle = currentKey
+      ? (getUpgradeTitle(currentKey, l) || this._t(l, "ui.home.bed.current_fallback"))
+      : this._t(l, "ui.home.bed.none");
+    const currentBonus = this._bedEffectText(currentKey, l);
+
+    return this._t(l, "ui.home.bed.current", { title: currentTitle, bonus: currentBonus });
+  }
+
   home(user, opts = {}, lang = null) {
     const l = this._lang(lang || user?.lang);
-    const owned = new Set(user.upgrades || []);
+    const upgrades = Array.isArray(user?.upgrades) ? user.upgrades : [];
+    const owned = new Set(upgrades);
     const kb = [];
 
-    const mult = user.upgrades.includes("bed3") ? 3
-    : user.upgrades.includes("bed2") ? 2
-    : user.upgrades.includes("bed1") ? 1.5
-    : 1;
+    const mult = owned.has("bed3") ? 3
+      : owned.has("bed2") ? 2
+      : owned.has("bed1") ? 1.5
+      : 1;
 
     if (!user.rest.active) {
       const approx = (mult === 1.5) ? "~1.5" : `${Math.round(1 * mult)}`;
@@ -342,57 +394,83 @@ export class UiFactory {
       kb.push([{ text: this._t(l, "ui.home.rest_stop", { mult }), callback_data: "rest:stop" }]);
     }
 
-
     const eatButtons = Object.entries(CONFIG.SHOP)
       .filter(([k, v]) => (user.inv[k] || 0) > 0 && typeof v.price === "number")
       .map(([k, v]) => [{ text: `${getShopTitle(k, l)} x${user.inv[k]} (+${v.heal}⚡)`, callback_data: `eat_${k}` }]);
     if (eatButtons.length) kb.push(...eatButtons);
 
-    const bedKeys = ["bed1", "bed2", "bed3"].filter(k => CONFIG.UPGRADES[k]);
-
-    let currentIdx = -1;
-    for (let i = bedKeys.length - 1; i >= 0; i--) {
-      if (owned.has(bedKeys[i])) { currentIdx = i; break; }
-    }
-    const currentKey   = currentIdx >= 0 ? bedKeys[currentIdx] : null;
-    const currentTitle = currentKey ? (getUpgradeTitle(currentKey, l) || this._t(l, "ui.home.bed.current_fallback")) : this._t(l, "ui.home.bed.none");
-    
-    kb.push([{ text: this._t(l, "ui.home.bed.current", { title: currentTitle, mult }), callback_data: "noop" }]);
-    
-    const nextKey = bedKeys[currentIdx + 1];
-    if (nextKey) {
-      const it = CONFIG.UPGRADES[nextKey];
-      const nextTitle = getUpgradeTitle(nextKey, l) || it.title;
-      const effect =
-        nextKey === "bed1" ? this._t(l, "ui.home.bed.effect1") :
-        nextKey === "bed2" ? this._t(l, "ui.home.bed.effect2") :
-        nextKey === "bed3" ? this._t(l, "ui.home.bed.effect3") : (it?.desc || "");
-      const row = [{ text: `${nextTitle} · ${effect} · $${it.price}`, callback_data: `upg:buy:${nextKey}` }];
-      if (typeof it.price_premium === "number") {
-        row.push({ text: `${CONFIG.PREMIUM.emoji}${it.price_premium}`, callback_data: `upg:buy_p:${nextKey}` });
-      }
-      kb.push(row);
-    } else {
-      kb.push([{ text: this._t(l, "ui.home.bed.all_bought"), callback_data: "noop" }]);
-    }
+    kb.push([{ text: this._t(l, "ui.home.bed.upgrade_btn"), callback_data: this._go(Routes.HOME_BED_UPGRADES) }]);
 
     const petBtnText = l === "en"
       ? "🐾 Pet"
       : (l === "uk" ? "🐾 Улюбленець" : "🐾 Питомец");
     kb.push([{ text: petBtnText, callback_data: this._go(Routes.PET) }]);
-    
+
     const back = (opts && typeof opts.backTo === "string" && opts.backTo) ? opts.backTo : Routes.CITY;
     kb.push([{ text: this._t(l, "ui.back.default"), callback_data: this._go(back) }]);
     return kb;
+  }
+
+  homeBedUpgradesCaption(user, lang = null) {
+    const l = this._lang(lang || user?.lang);
+    return this._t(l, "ui.home.bed.list.title")
+      + "\n"
+      + this.homeBedStatusCaption(user, l);
+  }
+
+  homeBedUpgrades(user, opts = {}, lang = null) {
+    const l = this._lang(lang || user?.lang);
+    const upgrades = Array.isArray(user?.upgrades) ? user.upgrades : [];
+    const owned = new Set(upgrades);
+    const bedKeys = this._bedKeys();
+    const currentKey = this._bedCurrentKey(owned, bedKeys);
+    const currentTier = this._bedTier(currentKey);
+    const rows = [];
+
+    for (const key of bedKeys) {
+      const item = CONFIG.UPGRADES[key];
+      if (!item) continue;
+      const tier = this._bedTier(key);
+      const title = getUpgradeTitle(key, l) || item.title || key;
+      const effect = this._bedEffectText(key, l) || getUpgradeDesc(key, l);
+      const price = `$${Math.max(0, Math.round(Number(item.price) || 0))}`;
+      const isBought = tier > 0 && tier <= currentTier;
+      const isAvailable = tier === currentTier + 1;
+      const status = isBought
+        ? this._t(l, "ui.home.bed.list.status.bought")
+        : (isAvailable
+          ? this._t(l, "ui.home.bed.list.status.available")
+          : this._t(l, "ui.home.bed.list.status.locked"));
+      const text = this._t(l, "ui.home.bed.list.row", { status, title, effect, price });
+
+      if (isAvailable) {
+        const row = [{ text, callback_data: `upg:buy:${key}` }];
+        if (typeof item.price_premium === "number") {
+          row.push({ text: `${CONFIG.PREMIUM.emoji}${item.price_premium}`, callback_data: `upg:buy_p:${key}` });
+        }
+        rows.push(row);
+      } else {
+        rows.push([{ text, callback_data: "noop" }]);
+      }
+    }
+
+    const back = (opts && typeof opts.backTo === "string" && opts.backTo) ? opts.backTo : Routes.HOME;
+    rows.push([{ text: this._t(l, "ui.back.default"), callback_data: this._go(back) }]);
+    return rows;
   }
 
   // ---------- Магазин ----------
   shop(opts = {}, lang = "ru") {
     const l = this._lang(lang);
     const user = opts?.user || null;
+    const mode = String(user?.settings?.shopBuyMode || "buy_use");
     const playerLevel = user ? Math.max(1, ProgressionService.getLevelInfo(user)?.level || 1) : 99;
     const LEVEL5_ITEMS = new Set(["sandwich", "lunch", "borscht"]);
-    const items = Object.entries(CONFIG.SHOP)
+    const toggleText = mode === "buy"
+      ? this._t(l, "ui.shop.mode.buy")
+      : this._t(l, "ui.shop.mode.buy_use");
+    const items = [[{ text: toggleText, callback_data: "shop:mode:toggle" }]];
+    items.push(...Object.entries(CONFIG.SHOP)
       .filter(([k]) => playerLevel >= 5 || !LEVEL5_ITEMS.has(k))
       .map(([k, v]) => {
         const itemTitle = getShopTitle(k, l);
@@ -402,7 +480,7 @@ export class UiFactory {
             ? this._t(l, "ui.shop.item_gems", { title: itemTitle, gems: `${CONFIG.PREMIUM.emoji}${v.price_premium}` })
             : this._t(l, "ui.shop.item", { title: itemTitle });
         return [{ text: label, callback_data: `buy_${k}` }];
-      });
+      }));
 
     const backTo   = opts?.backTo || null;
     const backText =
@@ -413,6 +491,45 @@ export class UiFactory {
     const backCb = this._go(backTo || Routes.SHOP_HUB);
     items.push([{ text: backText, callback_data: backCb }]);
     return items;
+  }
+
+  inventoryCaption(user, lang = null) {
+    const l = this._lang(lang || user?.lang);
+    const items = InventoryService.visibleItems(user);
+    if (!items.length) {
+      return this._t(l, "loc.inventory.empty");
+    }
+
+    const lines = [this._t(l, "loc.inventory.title"), ""];
+    for (const item of items) {
+      if (item.cfg && typeof item.cfg.heal === "number") {
+        lines.push(`${this._inventoryItemTitle(item.id, l)} x${item.qty} \u2014 +${item.cfg.heal} \u26A1`);
+      } else if (item.id === "mango_seed") {
+        const desc = l === "en" ? "for the farm" : (l === "uk" ? "для ферми" : "для фермы");
+        lines.push(`${this._inventoryItemTitle(item.id, l)} x${item.qty} \u2014 ${desc}`);
+      } else if (item.id === "fertilizer") {
+        const desc = l === "en" ? "instantly finishes growth" : (l === "uk" ? "миттєво завершує ріст" : "мгновенно завершает рост");
+        lines.push(`${this._inventoryItemTitle(item.id, l)} x${item.qty} \u2014 ${desc}`);
+      }
+    }
+    return lines.join("\n");
+  }
+
+  inventory(user, opts = {}, lang = null) {
+    const l = this._lang(lang || user?.lang);
+    const rows = [];
+    const items = InventoryService.usableItems(user);
+    for (const item of items) {
+      rows.push([{
+        text: this._t(l, "ui.inventory.use", { title: this._inventoryItemTitle(item.id, l) }),
+        callback_data: `inv:use:${item.id}`
+      }]);
+    }
+    rows.push([{
+      text: this._t(l, "ui.back.default"),
+      callback_data: opts?.backTo || "profile:back"
+    }]);
+    return rows;
   }
 
 

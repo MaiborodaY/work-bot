@@ -87,6 +87,24 @@ test("work route active: passes active state to ui.workV2", async () => {
   assert.equal(workV2Calls[0].opts.ready, false);
 });
 
+test("work route ready state: payout caption uses single dollar sign", async () => {
+  const nowTs = Date.now();
+  const { locations, mediaCalls } = createLocations({ nowTs });
+  const u = baseUser();
+  u.jobs.active = [{
+    typeId: "flyers",
+    title: "Flyers",
+    plannedPay: 11,
+    endAt: nowTs - 1
+  }];
+
+  await locations.show(u, null, Routes.WORK);
+
+  const caption = String(mediaCalls[0]?.caption || "");
+  assert.match(caption, /\[\$11\]/);
+  assert.doesNotMatch(caption, /\[\$\$11\]/);
+});
+
 test("work route onboarding go_gym: renders auto policy with Gym CTA", async () => {
   const { locations, mediaCalls, workV2Calls } = createLocations();
   const u = baseUser();

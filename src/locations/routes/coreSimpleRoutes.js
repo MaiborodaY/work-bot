@@ -22,12 +22,26 @@ export async function renderHomeRoute(ctx, user, { lang = "ru" } = {}) {
     place: Routes.HOME,
     caption: ctx._t(user, "loc.home.caption")
       + "\n\n" + ctx._t(user, "loc.home.hint")
+      + "\n\n" + ctx.ui.homeBedStatusCaption(user, lang)
       + "\n\n" + ctx.formatters.balance(user),
     keyboard: ctx.ui.home(user, { backTo }, lang),
     policy: "auto",
   });
   ctx._sourceMsg = null;
   ctx._route = Routes.HOME;
+}
+
+export async function renderHomeBedUpgradesRoute(ctx, user, { lang = "ru" } = {}) {
+  const caption = ctx.ui.homeBedUpgradesCaption(user, lang);
+  await ctx.media.show({
+    sourceMsg: ctx._sourceMsg,
+    place: Routes.HOME,
+    caption: caption + "\n\n" + ctx.formatters.balance(user),
+    keyboard: ctx.ui.homeBedUpgrades(user, { backTo: Routes.HOME }, lang),
+    policy: "auto",
+  });
+  ctx._sourceMsg = null;
+  ctx._route = Routes.HOME_BED_UPGRADES;
 }
 
 export async function renderShopRoute(ctx, user, { header = "", lang = "ru" } = {}) {
@@ -41,6 +55,18 @@ export async function renderShopRoute(ctx, user, { header = "", lang = "ru" } = 
   });
   ctx._sourceMsg = null;
   ctx._route = Routes.SHOP;
+}
+
+export async function renderInventoryRoute(ctx, user, { lang = "ru" } = {}) {
+  await ctx.media.show({
+    sourceMsg: ctx._sourceMsg,
+    place: Routes.INVENTORY,
+    caption: ctx.ui.inventoryCaption(user, lang),
+    keyboard: ctx.ui.inventory(user, { backTo: "profile:back" }, lang),
+    policy: "auto",
+  });
+  ctx._sourceMsg = null;
+  ctx._route = Routes.INVENTORY;
 }
 
 export async function renderCasinoRoute(ctx, user, { lang = "ru" } = {}) {

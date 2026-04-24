@@ -122,3 +122,21 @@ Command parsing source: `src/AdminCommands.js`.
 - Some stats are event-driven; if a metric looks stale, verify event hook exists.
 - Use preview/check commands before any force publish to channel.
 - Prefer existing patch/reindex commands over manual KV edits.
+
+## 9) Unicode Safety
+
+Known repo risk:
+- UTF-8 / Cyrillic text can be corrupted by shell-based rewrites on Windows PowerShell.
+
+Do:
+- edit text-heavy files in an editor/IDE with UTF-8;
+- prefer patch-based edits for small code/doc changes;
+- verify bytes before "fixing" apparently garbled text.
+
+Do not:
+- run `Get-Content ... | Set-Content ...` on source files;
+- mass-rewrite `src/i18n/*.js`, `src/UiFactory.js`, `src/worker.js`, or docs through PowerShell strings;
+- trust terminal mojibake as proof that file bytes are broken.
+
+Recovery note:
+- if Unicode corruption is suspected, restore file contents from git as raw bytes/blob data, then re-apply intended changes safely.
