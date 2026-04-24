@@ -119,6 +119,8 @@ export class FishingService {
     const f = u.fishing;
     if (typeof f.completedTotal !== "number") f.completedTotal = 0;
     if (typeof f.completedWeek  !== "number") f.completedWeek  = 0;
+    if (typeof f.moneyTotal     !== "number") f.moneyTotal     = 0;
+    if (typeof f.moneyWeek      !== "number") f.moneyWeek      = 0;
     if (typeof f.weekKey        !== "string")  f.weekKey        = "";
     if (!Array.isArray(f.recentOutcomes))      f.recentOutcomes = [];
     if (typeof f.ccStreak !== "number")         f.ccStreak = 0;
@@ -133,6 +135,7 @@ export class FishingService {
     if (u.fishing.weekKey !== week) {
       u.fishing.weekKey = week;
       u.fishing.completedWeek = 0;
+      u.fishing.moneyWeek = 0;
     }
   }
 
@@ -352,9 +355,12 @@ export class FishingService {
     this._ensureWeekState(user);
     const stake  = Math.max(0, toInt(session.stake, 0));
     const profit = this._calcProfit(session.spotId, myChoice, theirChoice);
-    user.money = Math.max(0, toInt(user.money, 0)) + stake + profit;
+    const earned = stake + profit;
+    user.money = Math.max(0, toInt(user.money, 0)) + earned;
     user.fishing.completedTotal += 1;
     user.fishing.completedWeek  += 1;
+    user.fishing.moneyTotal = toInt(user.fishing.moneyTotal, 0) + earned;
+    user.fishing.moneyWeek  = toInt(user.fishing.moneyWeek,  0) + earned;
     user.fishing.activeSession = "";
     this._addRecentOutcome(user, myChoice);
     this._addPartnerHistory(user, partnerId, myChoice, theirChoice);
@@ -609,13 +615,16 @@ export class FishingService {
       const score = period === "all"
         ? Math.max(0, toInt(u.fishing.completedTotal, 0))
         : Math.max(0, toInt(u.fishing.completedWeek, 0));
+      const money = period === "all"
+        ? Math.max(0, toInt(u.fishing.moneyTotal, 0))
+        : Math.max(0, toInt(u.fishing.moneyWeek, 0));
       const list = await this._loadRating(period);
       const idx = list.findIndex((x) => String(x?.userId || "") === uid);
       if (score <= 0) {
         if (idx >= 0) { list.splice(idx, 1); await this._saveRating(period, list); }
         continue;
       }
-      const entry = { userId: uid, name, score, reachedAt: nowTs };
+      const entry = { userId: uid, name, score, money, reachedAt: nowTs };
       if (idx >= 0) {
         entry.reachedAt = toInt(list[idx]?.score, 0) === score ? toInt(list[idx].reachedAt, nowTs) : nowTs;
         list[idx] = entry;
@@ -645,7 +654,8 @@ export class FishingService {
         lines.push(this._fmt(s.ratingLine, {
           place: medals[i] || `${i + 1}.`,
           name: String(top[i]?.name || ""),
-          score: toInt(top[i]?.score, 0)
+          score: toInt(top[i]?.score, 0),
+          money: toInt(top[i]?.money, 0)
         }));
       }
     }
@@ -654,10 +664,13 @@ export class FishingService {
     const myScore = p === "all"
       ? toInt(u.fishing.completedTotal, 0)
       : toInt(u.fishing.completedWeek, 0);
+    const myMoney = p === "all"
+      ? toInt(u.fishing.moneyTotal, 0)
+      : toInt(u.fishing.moneyWeek, 0);
     lines.push("");
     lines.push(idx >= 0
-      ? this._fmt(s.ratingMeIn,  { place: idx + 1, score: myScore })
-      : this._fmt(s.ratingMeOut, { score: myScore }));
+      ? this._fmt(s.ratingMeIn,  { place: idx + 1, score: myScore, money: myMoney })
+      : this._fmt(s.ratingMeOut, { score: myScore, money: myMoney }));
 
     return {
       caption: lines.join("\n"),

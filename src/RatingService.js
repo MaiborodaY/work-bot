@@ -1,6 +1,7 @@
 import { normalizeLang } from "./i18n/index.js";
 
 const CATS = ["biz", "ach", "thief"];
+const VIEW_CATS = ["biz", "ach", "thief", "fish"];
 
 function n(v) {
   const x = Number(v);
@@ -21,6 +22,7 @@ export class RatingService {
   }
 
   _key(cat) {
+    if (String(cat) === "fish") return "fishing:rating:all";
     return `rating:v1:${String(cat || "")}:top`;
   }
 
@@ -126,10 +128,15 @@ export class RatingService {
     return Math.max(0, Math.floor(n(u?.thief?.totalStolen || u?.achievements?.progress?.totalStolen)));
   }
 
+  _fishScore(u) {
+    return Math.max(0, Math.floor(n(u?.fishing?.completedTotal)));
+  }
+
   scoreFor(u, cat) {
     const c = String(cat || "biz");
     if (c === "ach") return this._achScore(u);
     if (c === "thief") return this._thiefScore(u);
+    if (c === "fish") return this._fishScore(u);
     return this._bizScore(u);
   }
 
@@ -177,7 +184,7 @@ export class RatingService {
 
   async getTop(cat) {
     if (!this.db) return [];
-    const c = CATS.includes(String(cat)) ? String(cat) : "biz";
+    const c = VIEW_CATS.includes(String(cat)) ? String(cat) : "biz";
     return this._load(c);
   }
 
@@ -276,9 +283,9 @@ export class RatingService {
   _tabLabel(cat, lang, active = false) {
     const l = this._lang(lang);
     const names = {
-      ru: { biz: "🏢 Бизнес", ach: "🎖️ Ачивки", thief: "🌑 Воры" },
-      uk: { biz: "🏢 Бізнес", ach: "🎖️ Досягнення", thief: "🌑 Злодії" },
-      en: { biz: "🏢 Business", ach: "🎖️ Achievements", thief: "🌑 Thieves" }
+      ru: { biz: "🏢 Бизнес", ach: "🎖️ Ачивки", thief: "🌑 Воры", fish: "🎣 Рыбаки" },
+      uk: { biz: "🏢 Бізнес", ach: "🎖️ Досягнення", thief: "🌑 Злодії", fish: "🎣 Рибалки" },
+      en: { biz: "🏢 Business", ach: "🎖️ Achievements", thief: "🌑 Thieves", fish: "🎣 Fishers" }
     };
     const base = (names[l] && names[l][cat]) || names.ru[cat] || cat;
     return active ? `${base} ✅` : base;
@@ -302,6 +309,11 @@ export class RatingService {
     const s = Math.max(0, Math.floor(n(score)));
     const l = this._lang(lang);
     if (cat === "thief") return `$${s}`;
+    if (cat === "fish") {
+      if (l === "en") return `${s} sessions`;
+      if (l === "uk") return `${s} сесій`;
+      return `${s} сессий`;
+    }
     if (l === "en") return `${s} pts`;
     if (l === "uk") return `${s} очок`;
     return `${s} очков`;
@@ -328,7 +340,7 @@ export class RatingService {
 
   async buildView(u, cat = "biz") {
     const lang = this._lang(u);
-    const c = CATS.includes(String(cat)) ? String(cat) : "biz";
+    const c = VIEW_CATS.includes(String(cat)) ? String(cat) : "biz";
     const topRaw = await this.getTop(c);
     const top = await this._decorateTopWithClan(topRaw);
     const lines = [this._title(lang), ""];
@@ -357,11 +369,16 @@ export class RatingService {
       lang
     }));
 
-    const kb = [[
-      { text: this._tabLabel("biz", lang, c === "biz"), callback_data: "rating:tab:biz" },
-      { text: this._tabLabel("ach", lang, c === "ach"), callback_data: "rating:tab:ach" },
-      { text: this._tabLabel("thief", lang, c === "thief"), callback_data: "rating:tab:thief" }
-    ]];
+    const kb = [
+      [
+        { text: this._tabLabel("biz", lang, c === "biz"), callback_data: "rating:tab:biz" },
+        { text: this._tabLabel("ach", lang, c === "ach"), callback_data: "rating:tab:ach" },
+        { text: this._tabLabel("thief", lang, c === "thief"), callback_data: "rating:tab:thief" }
+      ],
+      [
+        { text: this._tabLabel("fish", lang, c === "fish"), callback_data: "rating:tab:fish" }
+      ]
+    ];
 
     for (const x of top) {
       kb.push([{ text: this._short(this._displayNameWithClan(x, lang)), callback_data: `profile:view:${x.userId}:rating` }]);

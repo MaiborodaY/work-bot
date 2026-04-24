@@ -38,7 +38,7 @@ test("rating service: buildView appends clan tag to player names", async () => {
   const me = { id: "u1", displayName: "Alpha", lang: "en", biz: { owned: [] }, achievements: { earned: {} }, thief: { totalStolen: 0 } };
   const view = await service.buildView(me, "biz");
   const caption = String(view?.caption || "");
-  const profileButtonText = String(view?.keyboard?.[1]?.[0]?.text || "");
+  const profileButtonText = String(view?.keyboard?.[2]?.[0]?.text || "");
 
   assert.match(caption, /Alpha \[Wolves\]/);
   assert.match(caption, /Bravo \[Dragons\]/);
