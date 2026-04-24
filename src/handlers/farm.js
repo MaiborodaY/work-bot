@@ -55,7 +55,6 @@ export const farmHandler = {
     }
 
     if (data === "farm:harvest_all") {
-      await answer(cb.id);
       const res = await farm.harvestAll(u);
       if (!res.ok) {
         await answer(cb.id, res.error || tt("handler.common.unknown_command"));
@@ -63,7 +62,8 @@ export const farmHandler = {
         return;
       }
       const view = farm.buildHarvestAllResultView(u, res);
-      await show(view);
+      await answer(cb.id, String(view.caption || "").slice(0, 180));
+      await goTo(u, "Farm");
       return;
     }
 
@@ -142,7 +142,6 @@ export const farmHandler = {
     }
 
     if (data.startsWith("farm:harvest:")) {
-      await answer(cb.id);
       const plotIndex = Number(data.split(":")[2] || 0);
       const res = await farm.harvest(u, plotIndex);
       if (!res.ok) {
@@ -151,7 +150,8 @@ export const farmHandler = {
         return;
       }
       const view = farm.buildHarvestResultView(u, res);
-      await show(view);
+      await answer(cb.id, String(view.caption || "").slice(0, 180));
+      await goTo(u, "Farm");
     }
   }
 };
