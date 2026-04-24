@@ -8,6 +8,7 @@ import { safeCall } from "../SafeCall.js";
 import { Routes } from "../Routes.js";
 import { showEnergyChoicePanel } from "./energy.js";
 import { EnergyService } from "../EnergyService.js";
+import { InventoryService } from "../InventoryService.js";
 
 export async function applyWorkClaimSideEffects(ctx, pay, endAt) {
   const { clans, labour, referrals, u, logger } = ctx || {};
@@ -195,7 +196,10 @@ export const workHandler = {
       }
       await applyWorkClaimSideEffects({ clans, labour, referrals, u }, res.pay, res.endAt);
       await advanceOnboardingAfterClaimIfNeeded();
-      await answer(cb.id, tt("handler.work.claim_ok", { pay: res.pay }));
+      const bonusLine = res?.bonusDrop && InventoryService.count(u, res.bonusDrop.itemId) > 0
+        ? `\n${tt("handler.work.bonus_mango_seed", { qty: res.bonusDrop.qty || 1 })}`
+        : "";
+      await answer(cb.id, `${tt("handler.work.claim_ok", { pay: res.pay })}${bonusLine}`);
       await render();
       return;
     }
@@ -222,7 +226,10 @@ export const workHandler = {
       }
       await applyWorkClaimSideEffects({ clans, labour, referrals, u }, claim.pay, claim.endAt);
 
-      await answer(cb.id, tt("handler.work.skip_ok", { cost: res.cost, pay: claim.pay }));
+      const bonusLine = claim?.bonusDrop
+        ? `\n${tt("handler.work.bonus_mango_seed", { qty: claim.bonusDrop.qty || 1 })}`
+        : "";
+      await answer(cb.id, `${tt("handler.work.skip_ok", { cost: res.cost, pay: claim.pay })}${bonusLine}`);
       await render();
       return;
     }
@@ -254,7 +261,10 @@ export const workHandler = {
       await applyWorkClaimSideEffects({ clans, labour, referrals, u }, claim.pay, claim.endAt);
       await advanceOnboardingAfterClaimIfNeeded();
 
-      await answer(cb.id, tt("handler.work.skip_free_ok", { pay: claim.pay }));
+      const bonusLine = claim?.bonusDrop
+        ? `\n${tt("handler.work.bonus_mango_seed", { qty: claim.bonusDrop.qty || 1 })}`
+        : "";
+      await answer(cb.id, `${tt("handler.work.skip_free_ok", { pay: claim.pay })}${bonusLine}`);
       await render();
       return;
     }

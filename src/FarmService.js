@@ -2,6 +2,7 @@ import { CONFIG } from "./GameConfig.js";
 import { normalizeLang } from "./i18n/index.js";
 import { markUsefulActivity } from "./PlayerStats.js";
 import { ProgressionService } from "./ProgressionService.js";
+import { InventoryService } from "./InventoryService.js";
 
 function n(raw) {
   const v = Number(raw);
@@ -49,6 +50,7 @@ export class FarmService {
         cropCarrot: "Carrot",
         cropTomato: "Tomato",
         cropCorn: "Corn",
+        cropMango: "Mango",
         plotReady: "{{emoji}} Plot {{num}} — ready!",
         plotGrowing: "⏳ Plot {{num}} — {{emoji}} {{name}}\nReady in {{left}}",
         plotEmpty: "🟫 Plot {{num}} — empty",
@@ -60,12 +62,13 @@ export class FarmService {
         btnHelp: "ℹ️ How farm works",
         btnBackCity: "⬅️ Back",
         plantMenuTitle: "🟫 Plot {{num}} — empty\n\nWhat to plant?",
-        plantOption: "{{emoji}} {{name}} - ${{seed}} | {{time}} | {{energy}} energy",
+        plantOption: "{{emoji}} {{name}} - {{seed}} | {{time}} | {{energy}} energy",
         btnCancel: "⬅️ Cancel",
         plantOk: "🌱 {{emoji}} {{name}} planted on plot {{num}}.\nReady in {{time}}.",
         harvestOk: "{{emoji}} {{name}} harvested and sold!\n+${{money}}",
         buyPlotOk: "💳 Plot {{num}} purchased for ${{price}}.",
         errNoMoney: "Not enough money.",
+        errNoSeeds: "Need {{need}}x {{item}}.",
         errNoEnergy: "Need {{need}}⚡.",
         errPlotBusy: "This plot is already occupied.",
         errPlotOrder: "You can buy only the next plot in order.",
@@ -84,7 +87,7 @@ export class FarmService {
         helpPlotPriceLine: "Plot {{num}} — ${{price}}",
         helpCropsHeader: "🌾 Crops:",
         helpPlotsHeader: "🧱 Plot prices:",
-        helpCropLine: "{{emoji}} {{name}}: ${{seed}} | {{time}} | ${{sell}} (+${{profit}}) | {{energy}}⚡",
+        helpCropLine: "{{emoji}} {{name}}: {{seed}} | {{time}} | ${{sell}} (+${{profit}}) | {{energy}}⚡",
         helpPush: "Push: you'll get a notification when crop is ready.",
         helpRule: "Harvest does not disappear: it waits until you collect it.",
         timeMin: "min",
@@ -99,6 +102,7 @@ export class FarmService {
         cropCarrot: "Морква",
         cropTomato: "Помідор",
         cropCorn: "Кукурудза",
+        cropMango: "Манго",
         plotReady: "{{emoji}} Грядка {{num}} — готово!",
         plotGrowing: "⏳ Грядка {{num}} — {{emoji}} {{name}}\nГотово через {{left}}",
         plotEmpty: "🟫 Грядка {{num}} — порожня",
@@ -110,12 +114,13 @@ export class FarmService {
         btnHelp: "ℹ️ Як працює ферма",
         btnBackCity: "⬅️ Назад",
         plantMenuTitle: "🟫 Грядка {{num}} — порожня\n\nЩо посадити?",
-        plantOption: "{{emoji}} {{name}} - ${{seed}} | {{time}} | {{energy}}\u26A1",
+        plantOption: "{{emoji}} {{name}} - {{seed}} | {{time}} | {{energy}}\u26A1",
         btnCancel: "⬅️ Скасувати",
         plantOk: "🌱 {{emoji}} {{name}} посаджено на грядці {{num}}.\nБуде готово через {{time}}.",
         harvestOk: "{{emoji}} {{name}} зібрано і продано!\n+${{money}}",
         buyPlotOk: "💳 Грядку {{num}} куплено за ${{price}}.",
         errNoMoney: "Недостатньо коштів.",
+        errNoSeeds: "Потрібно {{need}}x {{item}}.",
         errNoEnergy: "Need {{need}}⚡.",
         errPlotBusy: "Ця грядка вже зайнята.",
         errPlotOrder: "Можна купити тільки наступну грядку по порядку.",
@@ -134,7 +139,7 @@ export class FarmService {
         helpPlotPriceLine: "Грядка {{num}} — ${{price}}",
         helpCropsHeader: "🌾 Культури:",
         helpPlotsHeader: "🧱 Ціни грядок:",
-        helpCropLine: "{{emoji}} {{name}}: ${{seed}} | {{time}} | ${{sell}} (+${{profit}}) | {{energy}}⚡",
+        helpCropLine: "{{emoji}} {{name}}: {{seed}} | {{time}} | ${{sell}} (+${{profit}}) | {{energy}}⚡",
         helpPush: "Пуш: коли врожай дозріє, прийде повідомлення.",
         helpRule: "Врожай не зникає — чекатиме, доки ти його не збереш.",
         timeMin: "хв",
@@ -148,6 +153,7 @@ export class FarmService {
       cropCarrot: "Морковь",
       cropTomato: "Помидор",
       cropCorn: "Кукуруза",
+      cropMango: "Манго",
       plotReady: "{{emoji}} Грядка {{num}} — готово!",
       plotGrowing: "⏳ Грядка {{num}} — {{emoji}} {{name}}\nГотово через {{left}}",
       plotEmpty: "🟫 Грядка {{num}} — пустая",
@@ -159,12 +165,13 @@ export class FarmService {
       btnHelp: "ℹ️ Как работает ферма",
       btnBackCity: "⬅️ Назад",
       plantMenuTitle: "🟫 Грядка {{num}} — пустая\n\nЧто посадить?",
-      plantOption: "{{emoji}} {{name}} - ${{seed}} | {{time}} | {{energy}}\u26A1",
+      plantOption: "{{emoji}} {{name}} - {{seed}} | {{time}} | {{energy}}\u26A1",
       btnCancel: "⬅️ Отмена",
       plantOk: "🌱 {{emoji}} {{name}} посажена на грядке {{num}}.\nГотово через {{time}}.",
       harvestOk: "{{emoji}} {{name}} собрана и продана!\n+${{money}}",
       buyPlotOk: "💳 Грядка {{num}} куплена за ${{price}}.",
       errNoMoney: "Недостаточно средств.",
+      errNoSeeds: "Нужно {{need}}x {{item}}.",
       errNoEnergy: "Need {{need}}⚡.",
       errPlotBusy: "Эта грядка уже занята.",
       errPlotOrder: "Можно купить только следующую грядку по порядку.",
@@ -183,7 +190,7 @@ export class FarmService {
       helpPlotPriceLine: "Грядка {{num}} — ${{price}}",
       helpCropsHeader: "🌾 Культуры:",
       helpPlotsHeader: "🧱 Цены грядок:",
-      helpCropLine: "{{emoji}} {{name}}: ${{seed}} | {{time}} | ${{sell}} (+${{profit}}) | {{energy}}⚡",
+      helpCropLine: "{{emoji}} {{name}}: {{seed}} | {{time}} | ${{sell}} (+${{profit}}) | {{energy}}⚡",
       helpPush: "Пуш: когда урожай созреет, придёт уведомление.",
       helpRule: "Урожай не пропадает — ждёт, пока ты его соберёшь.",
       timeMin: "мин",
@@ -248,10 +255,12 @@ export class FarmService {
     return {
       id,
       emoji: String(item.emoji || "🌱"),
-      seedPrice: Math.max(1, toInt(item.seedPrice, 1)),
+      seedPrice: Math.max(0, toInt(item.seedPrice, 0)),
       growMs: Math.max(60_000, toInt(item.growMs, 60_000)),
       sellPrice: Math.max(1, toInt(item.sellPrice, 1)),
-      plantEnergy: this._plantEnergyCost(id)
+      plantEnergy: this._plantEnergyCost(id),
+      requiresItemId: String(item.requiresItemId || "").trim(),
+      requiresItemQty: Math.max(1, toInt(item.requiresItemQty, 1))
     };
   }
 
@@ -268,12 +277,22 @@ export class FarmService {
     const names = {
       carrot: s.cropCarrot,
       tomato: s.cropTomato,
-      corn: s.cropCorn
+      corn: s.cropCorn,
+      mango: s.cropMango
     };
     return {
       ...crop,
       name: names[crop.id] || crop.id
     };
+  }
+
+  _cropSeedLabel(source, crop) {
+    if (crop?.requiresItemId === "mango_seed") {
+      const lang = this._lang(source);
+      const item = lang === "en" ? "mango seed" : (lang === "uk" ? "насіння манго" : "семя манго");
+      return `${crop.requiresItemQty}x ${item}`;
+    }
+    return `$${crop.seedPrice}`;
   }
 
   _isReady(plot, nowTs = this.now()) {
@@ -573,7 +592,10 @@ export class FarmService {
     const kb = [];
     const farmPlayerLevel = Math.max(1, ProgressionService.getLevelInfo(u)?.level || 1);
     const LEVEL3_CROPS = new Set(["tomato", "corn"]);
-    const visibleCropIds = this._cropIds().filter((id) => farmPlayerLevel >= 3 || !LEVEL3_CROPS.has(id));
+    const visibleCropIds = this._cropIds().filter((id) => {
+      if (id === "mango" && !InventoryService.has(u, "mango_seed", 1)) return false;
+      return farmPlayerLevel >= 3 || !LEVEL3_CROPS.has(id);
+    });
     for (const cropId of visibleCropIds) {
       const crop = this._cropInfo(u, cropId);
       if (!crop) continue;
@@ -581,7 +603,7 @@ export class FarmService {
         text: this._fmt(s.plantOption, {
           emoji: crop.emoji,
           name: crop.name,
-          seed: crop.seedPrice,
+          seed: this._cropSeedLabel(u, crop),
           time: this._durationLabel(u, crop.growMs),
           energy: crop.plantEnergy
         }),
@@ -620,7 +642,7 @@ export class FarmService {
       lines.push(this._fmt(s.helpCropLine, {
         emoji: crop.emoji,
         name: crop.name,
-        seed: crop.seedPrice,
+        seed: this._cropSeedLabel(u, crop),
         time,
         sell: crop.sellPrice,
         profit,
@@ -722,8 +744,17 @@ export class FarmService {
       return { ok: false, error: s.errPlotBusy };
     }
     const money = toInt(u?.money, 0);
-    if (money < crop.seedPrice) {
+    if (crop.seedPrice > 0 && money < crop.seedPrice) {
       return { ok: false, error: s.errNoMoney };
+    }
+    if (crop.requiresItemId && !InventoryService.has(u, crop.requiresItemId, crop.requiresItemQty)) {
+      const item = this._lang(u) === "en" ? "mango seed" : (this._lang(u) === "uk" ? "насіння манго" : "семя манго");
+      return {
+        ok: false,
+        code: "not_enough_seeds",
+        needSeeds: crop.requiresItemQty,
+        error: this._fmt(s.errNoSeeds, { need: crop.requiresItemQty, item })
+      };
     }
     const plantEnergyCost = Math.max(0, toInt(crop?.plantEnergy, this._plantEnergyCost(crop?.id)));
     const energy = toInt(u?.energy, 0);
@@ -738,6 +769,9 @@ export class FarmService {
 
     u.money = money - crop.seedPrice;
     u.energy = Math.max(0, energy - plantEnergyCost);
+    if (crop.requiresItemId) {
+      InventoryService.remove(u, crop.requiresItemId, crop.requiresItemQty);
+    }
     const nowTs = this.now();
     p.status = "growing";
     p.cropId = crop.id;

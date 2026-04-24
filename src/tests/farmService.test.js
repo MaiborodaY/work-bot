@@ -251,3 +251,41 @@ test("farm: harvestAll collects all ready plots with single save", async () => {
   assert.equal(achEvents, 2);
   assert.equal(saved, 1);
 });
+
+test("farm: mango plant requires mango seed", async () => {
+  const nowTs = Date.UTC(2026, 2, 21, 12, 0, 0);
+  const db = new MockDb();
+  const users = { db, async save() {} };
+  const svc = new FarmService({ db, users, now: () => nowTs });
+  const u = makeUser();
+
+  const res = await svc.plant(u, 1, "mango");
+
+  assert.equal(res.ok, false);
+  assert.equal(res.code, "not_enough_seeds");
+  assert.equal(u.farm.plots[0].status, "empty");
+});
+
+test("farm: planting mango spends one seed and harvest sells for 5000", async () => {
+  let nowTs = Date.UTC(2026, 2, 21, 12, 0, 0);
+  const db = new MockDb();
+  const users = { db, async save() {} };
+  const svc = new FarmService({ db, users, now: () => nowTs });
+  const u = makeUser();
+  u.money = 5000;
+  u.inv = { mango_seed: 1 };
+
+  const plantRes = await svc.plant(u, 1, "mango");
+
+  assert.equal(plantRes.ok, true);
+  assert.equal(u.inv.mango_seed || 0, 0);
+  assert.equal(u.farm.plots[0].cropId, "mango");
+  assert.equal(u.farm.plots[0].readyAt, nowTs + 12 * 60 * 60_000);
+
+  nowTs = u.farm.plots[0].readyAt + 1;
+  const harvestRes = await svc.harvest(u, 1);
+
+  assert.equal(harvestRes.ok, true);
+  assert.equal(harvestRes.sellPrice, 5000);
+  assert.equal(u.money, 10000);
+});

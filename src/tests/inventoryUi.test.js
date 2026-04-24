@@ -72,3 +72,17 @@ test("inventory ui: zero-count items are not shown", () => {
   assert.doesNotMatch(String(caption || ""), /Кофе/i);
   assert.match(String(caption || ""), /Сэндвич x2/i);
 });
+
+test("inventory ui: mango seed is rendered as material without use button", () => {
+  const ui = new UiFactory();
+  const user = makeUser({ mango_seed: 2 });
+
+  const caption = ui.inventoryCaption(user, "ru");
+  const kb = ui.inventory(user, {}, "ru");
+
+  assert.match(String(caption || ""), /Семя манго x2 — для фермы/i);
+  assert.equal(
+    kb.some((row) => String(row?.[0]?.text || "").includes("Манго")),
+    false
+  );
+});

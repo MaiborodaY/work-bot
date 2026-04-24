@@ -3,6 +3,7 @@ import { HomeService } from "./HomeService.js";
 import { EnergyService } from "./EnergyService.js";
 
 const USABLE_ITEM_IDS = ["coffee", "sandwich", "lunch", "borscht"];
+const MATERIAL_ITEM_IDS = ["mango_seed"];
 
 function toInt(raw, fallback = 0) {
   const n = Number(raw);
@@ -48,6 +49,10 @@ export class InventoryService {
     return USABLE_ITEM_IDS.includes(String(itemId || "").trim());
   }
 
+  static isMaterial(itemId) {
+    return MATERIAL_ITEM_IDS.includes(String(itemId || "").trim());
+  }
+
   static itemConfig(itemId) {
     const key = String(itemId || "").trim();
     return CONFIG?.SHOP?.[key] || null;
@@ -58,6 +63,17 @@ export class InventoryService {
     return USABLE_ITEM_IDS
       .map((id) => ({ id, qty: this.count(u, id), cfg: this.itemConfig(id) }))
       .filter((item) => item.qty > 0 && item.cfg && typeof item.cfg.heal === "number");
+  }
+
+  static materialItems(u) {
+    this.ensure(u);
+    return MATERIAL_ITEM_IDS
+      .map((id) => ({ id, qty: this.count(u, id) }))
+      .filter((item) => item.qty > 0);
+  }
+
+  static visibleItems(u) {
+    return [...this.usableItems(u), ...this.materialItems(u)];
   }
 
   static use(u, itemId) {

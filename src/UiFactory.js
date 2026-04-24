@@ -28,6 +28,7 @@ export class UiFactory {
     if (id === "sandwich") return l === "en" ? "\u{1F96A} Sandwich" : (l === "uk" ? "\u{1F96A} Сендвіч" : "\u{1F96A} Сэндвич");
     if (id === "lunch") return l === "en" ? "\u{1F372} Business lunch" : (l === "uk" ? "\u{1F372} Бізнес-ланч" : "\u{1F372} Бизнес-ланч");
     if (id === "borscht") return l === "en" ? "\u{1F963} Soup of the day" : (l === "uk" ? "\u{1F963} Борщ" : "\u{1F963} Борщ");
+    if (id === "mango_seed") return l === "en" ? "\u{1F96D} Mango seed" : (l === "uk" ? "\u{1F96D} Насіння манго" : "\u{1F96D} Семя манго");
     return getShopTitle(id, l) || id;
   }
 
@@ -493,14 +494,19 @@ export class UiFactory {
 
   inventoryCaption(user, lang = null) {
     const l = this._lang(lang || user?.lang);
-    const items = InventoryService.usableItems(user);
+    const items = InventoryService.visibleItems(user);
     if (!items.length) {
       return this._t(l, "loc.inventory.empty");
     }
 
     const lines = [this._t(l, "loc.inventory.title"), ""];
     for (const item of items) {
-      lines.push(`${this._inventoryItemTitle(item.id, l)} x${item.qty} \u2014 +${item.cfg.heal} \u26A1`);
+      if (item.cfg && typeof item.cfg.heal === "number") {
+        lines.push(`${this._inventoryItemTitle(item.id, l)} x${item.qty} \u2014 +${item.cfg.heal} \u26A1`);
+      } else if (item.id === "mango_seed") {
+        const desc = l === "en" ? "for the farm" : (l === "uk" ? "для ферми" : "для фермы");
+        lines.push(`${this._inventoryItemTitle(item.id, l)} x${item.qty} \u2014 ${desc}`);
+      }
     }
     return lines.join("\n");
   }

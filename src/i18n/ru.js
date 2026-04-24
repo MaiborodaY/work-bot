@@ -373,6 +373,7 @@ export const RU = {
   "handler.work.goto_shop_intro": "Купи что-то для энергии и вернемся к работе.",
   "handler.work.claim_failed": "Не удалось выдать выплату.",
   "handler.work.claim_ok": "Готово: +${{pay}}",
+  "handler.work.bonus_mango_seed": "🥭 Бонус: найдено семя манго x{{qty}}",
   "handler.work.skip_failed": "Не удалось завершить мгновенно.",
   "handler.work.skip_ok": "⏩ Мгновенно завершено (−💎{{cost}}). +${{pay}}",
   "handler.work.cancel_failed": "Не удалось отменить.",

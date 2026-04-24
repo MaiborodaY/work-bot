@@ -4,6 +4,7 @@ import { HomeService } from "./HomeService.js";
 import { NotifyDueIndex } from "./NotifyDueIndex.js";
 import { markFunnelStep, markUsefulActivity } from "./PlayerStats.js";
 import { EnergyService } from "./EnergyService.js";
+import { InventoryService } from "./InventoryService.js";
 
 export class JobService {
   constructor({ users, now, social, achievements = null, quests = null, random = Math.random }) {
@@ -54,6 +55,17 @@ export class JobService {
       return min + Math.floor((max - min + 1) * roll);
     }
     return Math.max(0, Math.round(Number(type?.pay) || 0));
+  }
+
+  _rollBonusDrop(type) {
+    const drop = type?.bonusDrop;
+    const itemId = String(drop?.itemId || "").trim();
+    const chance = Math.max(0, Math.min(1, Number(drop?.chance) || 0));
+    const qty = Math.max(1, Math.floor(Number(drop?.qty) || 1));
+    if (!itemId || chance <= 0) return null;
+    const roll = Math.min(0.999999, Math.max(0, Number(this.random()) || 0));
+    if (roll >= chance) return null;
+    return { itemId, qty };
   }
 
   async start(u, typeId) {
@@ -153,6 +165,10 @@ export class JobService {
     u.money = (u.money || 0) + pay;
     inst.claimed = true;
     u.jobs.active = [];
+    const bonusDrop = this._rollBonusDrop(CONFIG.JOBS?.[String(inst.typeId || "")]);
+    if (bonusDrop) {
+      InventoryService.add(u, bonusDrop.itemId, bonusDrop.qty);
+    }
     u.dayTotal  = (u.dayTotal  || 0) + pay;
     u.weekTotal = (u.weekTotal || 0) + pay;
     markFunnelStep(u, "didFirstClaim");
@@ -207,7 +223,7 @@ export class JobService {
       }
     } catch {}
 
-    return { ok: true, pay, endAt: shiftEndAt };
+    return { ok: true, pay, endAt: shiftEndAt, bonusDrop };
   }
 
   async cancel(u) {
