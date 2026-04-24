@@ -44,3 +44,28 @@ test("rating service: buildView appends clan tag to player names", async () => {
   assert.match(caption, /Bravo \[Dragons\]/);
   assert.match(profileButtonText, /Wolves/);
 });
+
+test("rating service: buildView hides admins from top", async () => {
+  const db = new FakeDb();
+  const key = "rating:v1:biz:top";
+  await db.put(key, JSON.stringify([
+    { userId: "admin1", name: "Admin", score: 999, reachedAt: 1 },
+    { userId: "u2", name: "Bravo", score: 2, reachedAt: 2 }
+  ]));
+
+  const service = new RatingService({
+    db,
+    users: { db },
+    now: () => Date.UTC(2026, 3, 22, 12, 0, 0),
+    isAdmin: (id) => String(id) === "admin1"
+  });
+
+  const me = { id: "u2", displayName: "Bravo", lang: "ru", biz: { owned: [] }, achievements: { earned: {} }, thief: { totalStolen: 0 } };
+  const view = await service.buildView(me, "biz");
+  const caption = String(view?.caption || "");
+  const profileButtons = (view?.keyboard || []).flat().map((x) => String(x?.callback_data || ""));
+
+  assert.doesNotMatch(caption, /Admin/);
+  assert.match(caption, /Bravo/);
+  assert.equal(profileButtons.includes("profile:view:admin1:rating"), false);
+});
