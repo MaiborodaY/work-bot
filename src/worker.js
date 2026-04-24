@@ -743,7 +743,8 @@ export default {
       quiz,
       generalQuiz,
       channel,
-      syndicate
+      syndicate,
+      fishing
     });
 
     // ===== Минимальная телеметрия оплаты =====

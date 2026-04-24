@@ -14,7 +14,7 @@ export class AdminCommands {
    *  - isAdmin: (id: number|string) => boolean
    *  - botToken: Telegram bot token
    */
-  constructor({ users, send, isAdmin, botToken, ratings = null, quiz = null, generalQuiz = null, channel = null, syndicate = null }) {
+  constructor({ users, send, isAdmin, botToken, ratings = null, quiz = null, generalQuiz = null, channel = null, syndicate = null, fishing = null }) {
     this.users = users;
     this.send = send;
     this.isAdmin = isAdmin;
@@ -25,6 +25,7 @@ export class AdminCommands {
     this.generalQuiz = generalQuiz || null;
     this.channel = channel || null;
     this.syndicate = syndicate || null;
+    this.fishing = fishing || null;
 
     this.K = {
       draft: (adminId) => `admin:broadcast:draft:${adminId}`,
@@ -69,6 +70,7 @@ export class AdminCommands {
         "/admin_newbie - newbie path funnel/retention\n" +
         "/admin_levels - players levels snapshot\n" +
         "/admin_syndicate - syndicate stats snapshot\n" +
+        "/admin_fishing - fishing outcomes & strategy stats\n" +
         "/admin_new_users [limit] - newest users list\n" +
         "/admin_quiz - quiz stats\n\n" +
         "<b>Channel</b>\n" +
@@ -393,6 +395,10 @@ export class AdminCommands {
     }
     if (/^\/admin_syndicate(?:@\w+)?\s*$/i.test(input)) {
       await this._sendSyndicateStats();
+      return true;
+    }
+    if (/^\/admin_fishing(?:@\w+)?\s*$/i.test(input)) {
+      await this._sendFishingStats();
       return true;
     }
     const mAdminLevels = input.match(/^\/admin_levels(?:@\w+)?(?:\s+(all))?\s*$/i);
@@ -1344,6 +1350,51 @@ export class AdminCommands {
         );
         i += 1;
       }
+    }
+
+    await this.send(lines.join("\n"));
+  }
+
+  async _sendFishingStats() {
+    await this.send("Fishing stats started...");
+    if (!this.fishing || typeof this.fishing.getAdminStats !== "function") {
+      await this.send("Fishing service unavailable.");
+      return;
+    }
+    const stats = await this.fishing.getAdminStats();
+    const g = stats.globalOutcomes || {};
+    const ti = (v) => { const x = Number(v); return Number.isFinite(x) ? Math.floor(x) : 0; };
+    const total = Math.max(1, ti(g.total));
+    const pct = (n) => `${Math.round(ti(n) / total * 100)}%`;
+
+    const lines = [
+      "<b>Fishing snapshot</b>",
+      "",
+      `Scanned users: ${this._fmtInt(stats.scannedUsers || 0)}`,
+      `Excluded admins: ${this._fmtInt(stats.excludedAdmins || 0)}`,
+      `Participants (≥1 session): ${this._fmtInt(stats.participants || 0)}`,
+      "",
+      "<b>Global outcomes (all-time sessions)</b>",
+      `Total sessions: ${this._fmtInt(total)}`,
+      `CC (both honest): ${this._fmtInt(g.CC || 0)} — ${pct(g.CC)}`,
+      `DC (creator greedy): ${this._fmtInt(g.DC || 0)} — ${pct(g.DC)}`,
+      `CD (partner greedy): ${this._fmtInt(g.CD || 0)} — ${pct(g.CD)}`,
+      `DD (both greedy): ${this._fmtInt(g.DD || 0)} — ${pct(g.DD)}`,
+      "",
+      "<b>Top 15 by profit (all-time)</b>"
+    ];
+
+    const top = Array.isArray(stats.topByProfit) ? stats.topByProfit : [];
+    if (!top.length) {
+      lines.push("-");
+    } else {
+      top.forEach((r, i) => {
+        const total = r.CC + r.DC + r.CD + r.DD || 1;
+        const cPct = Math.round((r.CC + r.CD) / total * 100);
+        lines.push(
+          `${i + 1}. ${this._escapeHtml(r.name)} — $${this._fmtInt(r.money)} · ${this._fmtInt(r.completed)} сес. · честных ${cPct}% (CC:${r.CC} DC:${r.DC} CD:${r.CD} DD:${r.DD})`
+        );
+      });
     }
 
     await this.send(lines.join("\n"));

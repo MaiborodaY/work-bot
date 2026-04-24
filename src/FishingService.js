@@ -126,6 +126,10 @@ export class FishingService {
     if (typeof f.ccStreak !== "number")         f.ccStreak = 0;
     if (typeof f.activeSession !== "string")    f.activeSession = "";
     if (!f.partnerHistory || typeof f.partnerHistory !== "object") f.partnerHistory = {};
+    if (!f.outcomes || typeof f.outcomes !== "object") f.outcomes = { CC: 0, DC: 0, CD: 0, DD: 0 };
+    for (const k of ["CC", "DC", "CD", "DD"]) {
+      if (typeof f.outcomes[k] !== "number") f.outcomes[k] = 0;
+    }
   }
 
   _ensureWeekState(u) {
@@ -144,6 +148,7 @@ export class FishingService {
   _sessionKey(id)      { return `fishing:session:${String(id)}`; }
   _openIndexKey(spotId){ return `fishing:open:${String(spotId)}`; }
   _activeIndexKey()    { return "fishing:active"; }
+  _globalStatsKey()    { return "fishing:stats:v1"; }
 
   async _loadJson(key, def) {
     try {
@@ -362,6 +367,8 @@ export class FishingService {
     user.fishing.moneyTotal = toInt(user.fishing.moneyTotal, 0) + profit;
     user.fishing.moneyWeek  = toInt(user.fishing.moneyWeek,  0) + profit;
     user.fishing.activeSession = "";
+    const outcomeKey = `${myChoice === "C" ? "C" : "D"}${theirChoice === "C" ? "C" : "D"}`;
+    user.fishing.outcomes[outcomeKey] = toInt(user.fishing.outcomes[outcomeKey], 0) + 1;
     this._addRecentOutcome(user, myChoice);
     this._addPartnerHistory(user, partnerId, myChoice, theirChoice);
     const isCC = myChoice === "C" && theirChoice === "C";
@@ -417,7 +424,18 @@ export class FishingService {
     };
     await this._saveSession(session);
     await this._removeFromIndex(this._activeIndexKey(), String(session.id));
+    await this._incrementGlobalStats(creatorChoice, partnerChoice).catch(() => {});
     return true;
+  }
+
+  async _incrementGlobalStats(creatorChoice, partnerChoice) {
+    const key = this._globalStatsKey();
+    const raw = await this._loadJson(key, {});
+    const stats = (raw && typeof raw === "object") ? raw : {};
+    const cc = String(creatorChoice === "C" ? "C" : "D") + String(partnerChoice === "C" ? "C" : "D");
+    stats[cc] = toInt(stats[cc], 0) + 1;
+    stats.total = toInt(stats.total, 0) + 1;
+    await this._saveJson(key, stats, 365 * 24 * 3600);
   }
 
   async _expireOpenSession(session) {
@@ -857,4 +875,52 @@ export class FishingService {
 
   // Expose for tests
   async _loadDeal(id) { return this._loadSession(id); }
+
+  async getAdminStats(opts = {}) {
+    const isAdmin = (id) => { try { return !!this.isAdmin(String(id || "")); } catch { return false; } };
+    const globalStats = await this._loadJson(this._globalStatsKey(), {});
+    const total = toInt(globalStats.total, 0);
+    const CC = toInt(globalStats.CC, 0);
+    const DC = toInt(globalStats.DC, 0);
+    const CD = toInt(globalStats.CD, 0);
+    const DD = toInt(globalStats.DD, 0);
+
+    let scannedUsers = 0, excludedAdmins = 0, participants = 0;
+    const players = [];
+
+    if (this.users?.db?.list) {
+      let cursor = null;
+      do {
+        const res = await this.users.db.list({ prefix: "u:", limit: 500, ...(cursor ? { cursor } : {}) }).catch(() => null);
+        if (!res) break;
+        for (const { name: key } of (res.keys || [])) {
+          const raw = await this.users.db.get(key).catch(() => null);
+          if (!raw) continue;
+          let u; try { u = JSON.parse(raw); } catch { continue; }
+          scannedUsers++;
+          if (isAdmin(u?.id)) { excludedAdmins++; continue; }
+          const completed = toInt(u?.fishing?.completedTotal, 0);
+          if (!completed) continue;
+          participants++;
+          const oc = u?.fishing?.outcomes || {};
+          players.push({
+            name: shortName(u?.id, u?.displayName),
+            completed,
+            money: toInt(u?.fishing?.moneyTotal, 0),
+            CC: toInt(oc.CC, 0), DC: toInt(oc.DC, 0),
+            CD: toInt(oc.CD, 0), DD: toInt(oc.DD, 0)
+          });
+        }
+        cursor = res.list_complete ? null : res.cursor;
+      } while (cursor);
+    }
+
+    players.sort((a, b) => b.money - a.money);
+
+    return {
+      scannedUsers, excludedAdmins, participants,
+      globalOutcomes: { CC, DC, CD, DD, total },
+      topByProfit: players.slice(0, 15)
+    };
+  }
 }
