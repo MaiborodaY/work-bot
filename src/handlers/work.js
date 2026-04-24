@@ -200,6 +200,9 @@ export const workHandler = {
         ? `\n${tt("handler.work.bonus_mango_seed", { qty: res.bonusDrop.qty || 1 })}`
         : "";
       await answer(cb.id, `${tt("handler.work.claim_ok", { pay: res.pay })}${bonusLine}`);
+      if (bonusLine && typeof send === "function") {
+        await send(tt("handler.work.bonus_mango_seed", { qty: res.bonusDrop.qty || 1 }));
+      }
       await render();
       return;
     }
@@ -230,6 +233,9 @@ export const workHandler = {
         ? `\n${tt("handler.work.bonus_mango_seed", { qty: claim.bonusDrop.qty || 1 })}`
         : "";
       await answer(cb.id, `${tt("handler.work.skip_ok", { cost: res.cost, pay: claim.pay })}${bonusLine}`);
+      if (bonusLine && typeof send === "function") {
+        await send(tt("handler.work.bonus_mango_seed", { qty: claim.bonusDrop.qty || 1 }));
+      }
       await render();
       return;
     }
@@ -265,6 +271,9 @@ export const workHandler = {
         ? `\n${tt("handler.work.bonus_mango_seed", { qty: claim.bonusDrop.qty || 1 })}`
         : "";
       await answer(cb.id, `${tt("handler.work.skip_free_ok", { pay: claim.pay })}${bonusLine}`);
+      if (bonusLine && typeof send === "function") {
+        await send(tt("handler.work.bonus_mango_seed", { qty: claim.bonusDrop.qty || 1 }));
+      }
       await render();
       return;
     }
