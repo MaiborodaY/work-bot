@@ -825,10 +825,10 @@ export class FishingService {
         kb.push([{ text: s.btnCancel, callback_data: `fish:cancel:${activeId}` }]);
       }
     } else {
-      kb.push([{ text: s.btnCreate, callback_data: `fish:create:${spotId}` }]);
       if (openCount > 0) {
         kb.push([{ text: s.btnJoin, callback_data: `fish:joinspot:${spotId}` }]);
       }
+      kb.push([{ text: s.btnCreate, callback_data: `fish:create:${spotId}` }]);
     }
     kb.push([{ text: s.btnBackMain, callback_data: "fish:main" }]);
     return { caption: lines.join("\n"), keyboard: kb };
