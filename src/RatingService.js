@@ -385,10 +385,6 @@ export class RatingService {
     }
 
     kb.push([{
-      text: lang === "en" ? "🔄 Refresh" : (lang === "uk" ? "🔄 Оновити" : "🔄 Обновить"),
-      callback_data: `rating:tab:${c}`
-    }]);
-    kb.push([{
       text: lang === "en" ? "⬅️ Back to city" : (lang === "uk" ? "⬅️ Назад до міста" : "⬅️ Назад в город"),
       callback_data: "go:City"
     }]);
