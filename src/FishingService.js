@@ -359,8 +359,8 @@ export class FishingService {
     user.money = Math.max(0, toInt(user.money, 0)) + earned;
     user.fishing.completedTotal += 1;
     user.fishing.completedWeek  += 1;
-    user.fishing.moneyTotal = toInt(user.fishing.moneyTotal, 0) + earned;
-    user.fishing.moneyWeek  = toInt(user.fishing.moneyWeek,  0) + earned;
+    user.fishing.moneyTotal = toInt(user.fishing.moneyTotal, 0) + profit;
+    user.fishing.moneyWeek  = toInt(user.fishing.moneyWeek,  0) + profit;
     user.fishing.activeSession = "";
     this._addRecentOutcome(user, myChoice);
     this._addPartnerHistory(user, partnerId, myChoice, theirChoice);
