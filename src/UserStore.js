@@ -40,7 +40,12 @@ export class UserStore {
     // ===== Нормализация актуальных полей =====
 
     // Инвентарь / апгрейды
-    if (!u.inv || typeof u.inv !== "object") { u.inv = { coffee: 0, sandwich: 0, lunch: 0 }; dirty = true; }
+    if (!u.inv || typeof u.inv !== "object") { u.inv = {}; dirty = true; }
+    if (!u.settings || typeof u.settings !== "object") { u.settings = {}; dirty = true; }
+    if (typeof u.settings.shopBuyMode !== "string" || !u.settings.shopBuyMode) {
+      u.settings.shopBuyMode = "buy_use";
+      dirty = true;
+    }
     if (!Array.isArray(u.upgrades)) { u.upgrades = []; dirty = true; }
 
     // Бонус дня
@@ -957,7 +962,8 @@ export class UserStore {
       energy: UserStore.START_ENERGY_MIN,
       energy_max: Math.max(Number(CONFIG.ENERGY_MAX) || 0, UserStore.START_ENERGY_MIN),
 
-      inv: { coffee: 0, sandwich: 0, lunch: 0 },
+      inv: {},
+      settings: { shopBuyMode: "buy_use" },
       upgrades: [],
 
       bonus: { last: "", streak: 0 },

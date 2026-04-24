@@ -11,7 +11,18 @@ export const EN = {
   "profile.level.reward_none": "No level reward available right now.",
   "profile.level.up": "🎉 New level: {{level}}",
   "profile.level.up_reward": "Reward available: 💎{{gems}}",
-  "worker.start.lang_pick": "🌐 Choose your language before we start:",
+  "ui.profile.inventory": "?? Inventory",
+  "loc.inventory.title": "?? Inventory",
+  "loc.inventory.empty": "Inventory is empty",
+  "ui.inventory.use": "Use {{title}}",
+  "ui.shop.mode.buy": "Mode: Buy",
+  "ui.shop.mode.buy_use": "Mode: Buy and use",
+  "handler.inventory.used": "Item used � ? {{energy}}/{{energyMax}}",
+  "handler.inventory.not_found": "Item not found.",
+  "handler.inventory.full_energy": "Energy is already full.",
+  "handler.shop.bought_to_inventory": "? Added to inventory: {{title}}",
+  "handler.shop.mode_changed_buy": "Purchase mode: Buy",
+  "handler.shop.mode_changed_buy_use": "Purchase mode: Buy and use",  "worker.start.lang_pick": "🌐 Choose your language before we start:",
   "worker.start.lang_pick_hint": "You can change it later in your profile.",
   "worker.start.lang_pick_required": "Choose language first.",
   "ui.city.ratings": "🏆 Rating",
@@ -948,3 +959,4 @@ export const EN = {
   "colosseum.zone_body": "body",
   "colosseum.zone_legs": "legs"
 };
+

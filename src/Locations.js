@@ -15,6 +15,7 @@ import {
   renderCityBoardRoute,
   renderGymRoute,
   renderHomeRoute,
+  renderInventoryRoute,
   renderShopRoute,
   renderUpgradesRoute
 } from "./locations/routes/coreSimpleRoutes.js";
@@ -533,6 +534,7 @@ export class Locations {
       [Routes.STUDY]: async () => this._renderStudyRoute(user, { header, lang }),
       [Routes.HOME]: async () => this._renderHomeRoute(user, { lang }),
       [Routes.HOME_BED_UPGRADES]: async () => this._renderHomeBedUpgradesRoute(user, { lang }),
+      [Routes.INVENTORY]: async () => this._renderInventoryRoute(user, { lang }),
       [Routes.SHOP]: async () => this._renderShopRoute(user, { header, lang }),
       [Routes.CASINO]: async () => this._renderCasinoRoute(user, { lang }),
       [Routes.BAR]: async () => this._renderBarRoute(user, { lang }),
@@ -571,6 +573,10 @@ export class Locations {
 
   async _renderShopRoute(user, opts = {}) {
     return renderShopRoute(this, user, opts);
+  }
+
+  async _renderInventoryRoute(user, opts = {}) {
+    return renderInventoryRoute(this, user, opts);
   }
 
   async _renderCasinoRoute(user, opts = {}) {

@@ -33,7 +33,9 @@ function createLocations({ nowTs = Date.now() } = {}) {
     homeBedStatusCaption: () => "current bed status",
     homeBedUpgradesCaption: () => "bed-upgrades",
     homeBedUpgrades: () => [[{ text: "bed", callback_data: "noop" }]],
-    shop: () => [[{ text: "shop", callback_data: "noop" }]]
+    shop: () => [[{ text: "shop", callback_data: "noop" }]],
+    inventoryCaption: () => "inventory caption",
+    inventory: () => [[{ text: "Использовать ☕ Кофе", callback_data: "inv:use:coffee" }], [{ text: "Назад", callback_data: "profile:back" }]]
   };
 
   const locations = new Locations({
@@ -167,4 +169,18 @@ test("home route: renders bed status in caption", async () => {
   assert.equal(mediaCalls[0].place, Routes.HOME);
   assert.match(String(mediaCalls[0].caption || ""), /current bed status/i);
   assert.equal(mediaCalls[0]?.keyboard?.[0]?.[0]?.text, "home");
+});
+
+test("inventory route: renders inventory caption and keyboard", async () => {
+  const { locations, mediaCalls } = createLocations();
+  const u = baseUser();
+  u.displayName = "Tester";
+  u.inv = { coffee: 3 };
+
+  await locations.show(u, null, "Inventory");
+
+  assert.equal(mediaCalls.length, 1);
+  assert.equal(mediaCalls[0].place, "Inventory");
+  assert.match(String(mediaCalls[0].caption || ""), /inventory caption/i);
+  assert.equal(mediaCalls[0]?.keyboard?.[0]?.[0]?.callback_data, "inv:use:coffee");
 });

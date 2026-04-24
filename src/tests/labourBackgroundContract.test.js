@@ -327,8 +327,8 @@ test("labour biz view: shows plan for bg contracts even when slot contractModel 
   const labour = new LabourService({ db, users, now: () => nowTs, bot: null });
 
   const view = await labour.buildBizView(await users.load(owner.id), "shawarma");
-  assert.match(view.caption, /Слот 1 .*план:/);
-  assert.match(view.caption, /Слот 2 .*план:/);
+  assert.match(view.caption, /1 .*[$]54 \+ 💎2/);
+  assert.match(view.caption, /2 .*[$]72 \+ 💎2/);
 });
 
 test("labour bg: expiry payout survives legacy string totals", async () => {

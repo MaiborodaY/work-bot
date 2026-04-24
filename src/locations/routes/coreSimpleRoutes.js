@@ -57,6 +57,18 @@ export async function renderShopRoute(ctx, user, { header = "", lang = "ru" } = 
   ctx._route = Routes.SHOP;
 }
 
+export async function renderInventoryRoute(ctx, user, { lang = "ru" } = {}) {
+  await ctx.media.show({
+    sourceMsg: ctx._sourceMsg,
+    place: Routes.INVENTORY,
+    caption: ctx.ui.inventoryCaption(user, lang),
+    keyboard: ctx.ui.inventory(user, { backTo: "profile:back" }, lang),
+    policy: "auto",
+  });
+  ctx._sourceMsg = null;
+  ctx._route = Routes.INVENTORY;
+}
+
 export async function renderCasinoRoute(ctx, user, { lang = "ru" } = {}) {
   const minStudy = Number(CONFIG?.CASINO?.MIN_STUDY_FOR_PAID ?? 5);
   const studyLevel = Math.max(0, Number(user?.study?.level) || 0);

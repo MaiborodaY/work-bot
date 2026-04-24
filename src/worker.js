@@ -1,4 +1,4 @@
-﻿import { CONFIG } from "./GameConfig.js";
+import { CONFIG } from "./GameConfig.js";
 import { TelegramClient } from "./TelegramClient.js";
 import { UserStore } from "./UserStore.js";
 import { EconomyService } from "./EconomyService.js";
@@ -40,6 +40,7 @@ import { workHandler } from "./handlers/work.js";
 import { studyHandler } from "./handlers/study.js";
 import { homeHandler } from "./handlers/home.js";
 import { shopHandler } from "./handlers/shop.js";
+import { inventoryHandler } from "./handlers/inventory.js";
 import { casinoHandler } from "./handlers/casino.js";
 import { gymHandler } from "./handlers/gym.js";
 import { navigationHandler } from "./handlers/navigation.js";
@@ -47,7 +48,7 @@ import { upgradesHandler } from "./handlers/upgrades.js";
 import { socialHandler } from "./handlers/social.js";
 import { dailyHandler } from "./handlers/daily.js";
 import { barHandler } from "./handlers/bar.js"; // ДОБАВИТЬ
-import { businessHandler } from "./handlers/business.js"; // ➕ НОВОЕ
+import { businessHandler } from "./handlers/business.js"; // ? НОВОЕ
 import { miniGamesHandler } from "./handlers/minigames.js";
 import { clanHandler } from "./handlers/clan.js";
 import { stocksHandler } from "./handlers/stocks.js";
@@ -85,9 +86,9 @@ const helpText = (lang) => t("worker.help", normalizeLang(lang || "en"));
 const privacyText = (lang) => t("worker.privacy", normalizeLang(lang || "en"), { url: PRIVACY_URL });
 
 const LANG_OPTIONS = [
-  { code: "ru", label: "🇷🇺 Русский" },
-  { code: "uk", label: "🇺🇦 Українська" },
-  { code: "en", label: "🇬🇧 English" }
+  { code: "ru", label: "???? Русский" },
+  { code: "uk", label: "???? Українська" },
+  { code: "en", label: "???? English" }
 ];
 
 export default {
@@ -510,16 +511,16 @@ export default {
     ]);
     const cityLabelSet = new Set([
       "Город",
-      "🏛️ Город",
+      "??? Город",
       "City",
-      "🏛️ City",
+      "??? City",
       ...LANG_OPTIONS.map((x) => t("ui.reply.city", x.code))
     ]);
     const earnLabelSet = new Set([
       "Заработок",
-      "💼 Заработок",
+      "?? Заработок",
       "Earnings",
-      "💼 Earnings",
+      "?? Earnings",
       ...LANG_OPTIONS.map((x) => t("ui.reply.earn", x.code))
     ]);
     const barLabelSet = new Set([
@@ -531,9 +532,9 @@ export default {
     ]);
     const profileLabelSet = new Set([
       "Профиль",
-      "👤 Профиль",
+      "?? Профиль",
       "Profile",
-      "👤 Profile",
+      "?? Profile",
       ...LANG_OPTIONS.map((x) => t("ui.reply.profile", x.code))
     ]);
 
@@ -545,7 +546,7 @@ export default {
     const buildLangPickerKeyboard = (lang, { prefix = "profile:lang:set:", withBack = false } = {}) => {
       const l = normalizeLang(lang || "en");
       const kb = LANG_OPTIONS.map((opt) => {
-        const mark = opt.code === l ? " ✅" : "";
+        const mark = opt.code === l ? " ?" : "";
         return [{ text: `${opt.label}${mark}`, callback_data: `${prefix}${opt.code}` }];
       });
       if (withBack) kb.push([{ text: t("worker.btn.back", l), callback_data: "profile:back" }]);
@@ -569,8 +570,8 @@ export default {
       const statusText = Formatters.status(u, { economy, now, pct, clanName, clanWeekKey, employmentLine });
       const lang = normalizeLang(u?.lang || "en");
       const achievementsBtn = lang === "en"
-        ? "🏆 Achievements"
-        : (lang === "uk" ? "🏆 Досягнення" : "🏆 Достижения");
+        ? "?? Achievements"
+        : (lang === "uk" ? "?? Досягнення" : "?? Достижения");
       const pendingLevelReward = ProgressionService.getPendingReward(u);
       const kb = [
         ...(pendingLevelReward ? [[{
@@ -582,6 +583,7 @@ export default {
           callback_data: "profile:level:claim"
         }]] : []),
         [{ text: achievementsBtn, callback_data: "profile:achievements" }],
+          [{ text: t("ui.profile.inventory", lang), callback_data: "go:Inventory" }],
         [{ text: profileLangButtonText(u), callback_data: "profile:lang" }]
       ];
       if (sourceMsg) {
@@ -668,36 +670,36 @@ export default {
       const lines = [];
       const targetLevelInfo = ProgressionService.getLevelInfo(target);
       if (lang === "en") {
-        lines.push(`👤 ${name}`);
+        lines.push(`?? ${name}`);
         lines.push("");
-        lines.push(`⭐ Level: ${targetLevelInfo.level}`);
-        lines.push(`💰 $${money} · ⚡ ${energy}/${energyMax}`);
-        lines.push(`🏢 Businesses: ${bizCount} · Slots: ${slotsCount}${clanName ? ` · 🤝 ${clanName}` : ""}`);
-        lines.push(`🎖️ Achievements: ${preview.totalDone} · 🌑 Stolen: $${stolen}`);
+        lines.push(`? Level: ${targetLevelInfo.level}`);
+        lines.push(`?? $${money} · ? ${energy}/${energyMax}`);
+        lines.push(`?? Businesses: ${bizCount} · Slots: ${slotsCount}${clanName ? ` · ?? ${clanName}` : ""}`);
+        lines.push(`??? Achievements: ${preview.totalDone} · ?? Stolen: $${stolen}`);
         lines.push("");
-        lines.push("🏆 Recent achievements:");
+        lines.push("?? Recent achievements:");
       } else if (lang === "uk") {
-        lines.push(`👤 ${name}`);
+        lines.push(`?? ${name}`);
         lines.push("");
-        lines.push(`⭐ Рівень: ${targetLevelInfo.level}`);
-        lines.push(`💰 $${money} · ⚡ ${energy}/${energyMax}`);
-        lines.push(`🏢 Бізнесів: ${bizCount} · Слотів: ${slotsCount}${clanName ? ` · 🤝 ${clanName}` : ""}`);
-        lines.push(`🎖️ Досягнень: ${preview.totalDone} · 🌑 Вкрадено: $${stolen}`);
+        lines.push(`? Рівень: ${targetLevelInfo.level}`);
+        lines.push(`?? $${money} · ? ${energy}/${energyMax}`);
+        lines.push(`?? Бізнесів: ${bizCount} · Слотів: ${slotsCount}${clanName ? ` · ?? ${clanName}` : ""}`);
+        lines.push(`??? Досягнень: ${preview.totalDone} · ?? Вкрадено: $${stolen}`);
         lines.push("");
-        lines.push("🏆 Останні досягнення:");
+        lines.push("?? Останні досягнення:");
       } else {
-        lines.push(`👤 ${name}`);
+        lines.push(`?? ${name}`);
         lines.push("");
-        lines.push(`⭐ Уровень: ${targetLevelInfo.level}`);
-        lines.push(`💰 $${money} · ⚡ ${energy}/${energyMax}`);
-        lines.push(`🏢 Бизнесов: ${bizCount} · Слотов: ${slotsCount}${clanName ? ` · 🤝 ${clanName}` : ""}`);
-        lines.push(`🎖️ Ачивок: ${preview.totalDone} · 🌑 Украдено: $${stolen}`);
+        lines.push(`? Уровень: ${targetLevelInfo.level}`);
+        lines.push(`?? $${money} · ? ${energy}/${energyMax}`);
+        lines.push(`?? Бизнесов: ${bizCount} · Слотов: ${slotsCount}${clanName ? ` · ?? ${clanName}` : ""}`);
+        lines.push(`??? Ачивок: ${preview.totalDone} · ?? Украдено: $${stolen}`);
         lines.push("");
-        lines.push("🏆 Последние достижения:");
+        lines.push("?? Последние достижения:");
       }
 
       if (hideMoneyInPublicProfile && lines.length >= 4) {
-        lines[3] = `⚡ ${energy}/${energyMax}`;
+        lines[3] = `? ${energy}/${energyMax}`;
       }
 
       if (preview.lines.length) {
@@ -715,8 +717,8 @@ export default {
 
       const backCb = profileSourceToCallback(sourceToken);
       const backText = lang === "en"
-        ? "⬅️ Back to rating"
-        : (lang === "uk" ? "⬅️ Назад до рейтингу" : "⬅️ Назад к рейтингу");
+        ? "?? Back to rating"
+        : (lang === "uk" ? "?? Назад до рейтингу" : "?? Назад к рейтингу");
       const kb = [[{ text: backText, callback_data: backCb }]];
 
       if (sourceMsg) {
@@ -826,7 +828,7 @@ export default {
         }
       });
 
-      // 🔹 Легаси: если ник пуст и НЕ ждём ручной ввод (от Social) — тихо автоподставим
+      // ?? Легаси: если ник пуст и НЕ ждём ручной ввод (от Social) — тихо автоподставим
       if (!u.displayName && !u.awaitingName) {
         let nameChanged = false;
         const from = update.message.from || {};
@@ -967,7 +969,7 @@ export default {
 
         const res = await clans.createClan(u, textMsg);
         if (!res.ok) {
-          await send(`⚠️ ${res.error || t("worker.clan.create_failed", normalizeLang(u?.lang || "en"))}`);
+          await send(`?? ${res.error || t("worker.clan.create_failed", normalizeLang(u?.lang || "en"))}`);
           return new Response("ok");
         }
 
@@ -997,7 +999,7 @@ export default {
         return new Response("ok");
       }
 
-      // успешная оплата Stars (с учётом бонусов пакета и First Purchase ×2)
+      // успешная оплата Stars (с учётом бонусов пакета и First Purchase ?2)
       if (update.message.successful_payment) {
         const sp = update.message.successful_payment;
         const chargeId =
@@ -1158,7 +1160,7 @@ export default {
         return new Response("ok");
       }
 
-      // 🔹 НОВОЕ: поддержка TD-игры
+      // ?? НОВОЕ: поддержка TD-игры
       if (
         cb.game_short_name &&
         cb.game_short_name === (env.TD_GAME_SHORT_NAME || "")
@@ -1351,7 +1353,7 @@ export default {
         return new Response("ok");
       }
 
-      // 🔹 Легаси: если ник пуст и не ждём ручной ввод — автоподстановка
+      // ?? Легаси: если ник пуст и не ждём ручной ввод — автоподстановка
       if (!u.displayName && !u.awaitingName) {
         let nameChanged = false;
         const from = cb.from || {};
@@ -1388,9 +1390,9 @@ export default {
         }
       }
 
-      // 🔒 Если ждём ник — разрешаем только навигацию go:* как «выход/отмена», иначе снова показываем промпт
+      // ?? Если ждём ник — разрешаем только навигацию go:* как «выход/отмена», иначе снова показываем промпт
       if (u.awaitingName) {
-        // ✔ Разрешённый выход: любые кнопки навигации (например, "⬅️ На Площадь" → go:Square)
+        // ? Разрешённый выход: любые кнопки навигации (например, "?? На Площадь" > go:Square)
         if (data && data.startsWith("go:")) {
           const target = data.split(":")[1] || "Square";
           u.awaitingName = false; // выходим из режима ввода
@@ -1400,7 +1402,7 @@ export default {
           return new Response("ok");
         }
 
-        // ✖ Любые другие нажатия — продолжаем просить ник
+        // ? Любые другие нажатия — продолжаем просить ник
         const ns = new NameService({ users });
         await ns.prompt(send, "", normalizeLang(u?.lang || "en"));
         return new Response("ok");
@@ -1512,6 +1514,7 @@ export default {
         stocksHandler,
         studyHandler,
         homeHandler,
+          inventoryHandler,
         shopHandler,
         casinoHandler,
         gymHandler,
@@ -1609,3 +1612,4 @@ export default {
     ]));
   }
 };
+

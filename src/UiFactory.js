@@ -6,6 +6,7 @@ import { getJobTitle, getShopTitle, getUpgradeDesc, getUpgradeTitle } from "./I1
 import { Routes, toGoCallback } from "./Routes.js";
 import { EnergyService } from "./EnergyService.js";
 import { ProgressionService } from "./ProgressionService.js";
+import { InventoryService } from "./InventoryService.js";
 
 export class UiFactory {
   _lang(lang) {
@@ -20,18 +21,28 @@ export class UiFactory {
     return toGoCallback(route);
   }
 
+
+  _inventoryItemTitle(itemId, lang = "ru") {
+    const l = this._lang(lang);
+    const id = String(itemId || "");
+    if (id === "coffee") return l === "en" ? "\u2615 Coffee" : (l === "uk" ? "\u2615 \u041a\u0430\u0432\u0430" : "\u2615 \u041a\u043e\u0444\u0435");
+    if (id === "sandwich") return l === "en" ? "\u{1F96A} Sandwich" : (l === "uk" ? "\u{1F96A} \u0421\u0435\u043d\u0434\u0432\u0456\u0447" : "\u{1F96A} \u0421\u044d\u043d\u0434\u0432\u0438\u0447");
+    if (id === "lunch") return l === "en" ? "\u{1F372} Business lunch" : (l === "uk" ? "\u{1F372} \u0411\u0456\u0437\u043d\u0435\u0441-\u043b\u0430\u043d\u0447" : "\u{1F372} \u0411\u0438\u0437\u043d\u0435\u0441-\u043b\u0430\u043d\u0447");
+    if (id === "borscht") return l === "en" ? "\u{1F963} Soup of the day" : (l === "uk" ? "\u{1F963} \u0411\u043e\u0440\u0449" : "\u{1F963} \u0411\u043e\u0440\u0449");
+    return getShopTitle(id, l) || id;
+  }
   _workTimeLabel(durationMs, lang = "en") {
     const l = this._lang(lang);
     const mins = Math.max(1, Math.round((Number(durationMs) || 0) / 60000));
     if (mins >= 24 * 60 && mins % (24 * 60) === 0) {
       const days = mins / (24 * 60);
-      return l === "en" ? `${days}d` : `${days} дн`;
+      return l === "en" ? `${days}d` : `${days} Р В Р’В Р СћРІР‚ВР В Р’В Р В РІР‚В¦`;
     }
     if (mins >= 60 && mins % 60 === 0) {
       const hours = mins / 60;
-      return l === "en" ? `${hours}h` : `${hours} ч`;
+      return l === "en" ? `${hours}h` : `${hours} Р В Р Р‹Р Р†Р вЂљР Р‹`;
     }
-    return l === "en" ? `${mins} min` : (l === "uk" ? `${mins} хв` : `${mins} мин`);
+    return l === "en" ? `${mins} min` : (l === "uk" ? `${mins} Р В Р Р‹Р Р†Р вЂљР’В¦Р В Р’В Р В РІР‚В ` : `${mins} Р В Р’В Р РЋР’ВР В Р’В Р РЋРІР‚ВР В Р’В Р В РІР‚В¦`);
   }
 
   _workPayLabel(job) {
@@ -229,7 +240,7 @@ export class UiFactory {
   
   
 
-// ---------- Работа ----------
+// ---------- Р В Р’В Р вЂ™Р’В Р В Р’В Р вЂ™Р’В°Р В Р’В Р вЂ™Р’В±Р В Р’В Р РЋРІР‚СћР В Р Р‹Р Р†Р вЂљРЎв„ўР В Р’В Р вЂ™Р’В° ----------
   workV2(user, options = {}, lang = null) {
     const l = this._lang(lang || user?.lang);
     const { active = null, ready = false } = options;
@@ -293,7 +304,7 @@ export class UiFactory {
     return kb;
   }
 
-  // ---------- Учеба ----------
+  // ---------- Р В Р’В Р В РІвЂљВ¬Р В Р Р‹Р Р†Р вЂљР Р‹Р В Р’В Р вЂ™Р’ВµР В Р’В Р вЂ™Р’В±Р В Р’В Р вЂ™Р’В° ----------
   studyIdle(effectsText, opts = {}, lang = "ru") {
     const l = this._lang(lang);
     const backTo = (opts && typeof opts.backTo === "string" && opts.backTo) ? opts.backTo : Routes.PROGRESS;
@@ -324,7 +335,7 @@ export class UiFactory {
   }
 
 
-  // ---------- Дом ----------
+  // ---------- Р В Р’В Р Р†Р вЂљРЎСљР В Р’В Р РЋРІР‚СћР В Р’В Р РЋР’В ----------
   _bedKeys() {
     return ["bed1", "bed2", "bed3"].filter((key) => !!CONFIG.UPGRADES[key]);
   }
@@ -383,14 +394,14 @@ export class UiFactory {
 
     const eatButtons = Object.entries(CONFIG.SHOP)
       .filter(([k, v]) => (user.inv[k] || 0) > 0 && typeof v.price === "number")
-      .map(([k, v]) => [{ text: `${getShopTitle(k, l)} x${user.inv[k]} (+${v.heal}⚡)`, callback_data: `eat_${k}` }]);
+      .map(([k, v]) => [{ text: `${getShopTitle(k, l)} x${user.inv[k]} (+${v.heal}Р В Р вЂ Р РЋРІвЂћСћР В Р вЂ№)`, callback_data: `eat_${k}` }]);
     if (eatButtons.length) kb.push(...eatButtons);
 
     kb.push([{ text: this._t(l, "ui.home.bed.upgrade_btn"), callback_data: this._go(Routes.HOME_BED_UPGRADES) }]);
 
     const petBtnText = l === "en"
-      ? "🐾 Pet"
-      : (l === "uk" ? "🐾 Улюбленець" : "🐾 Питомец");
+      ? "Р РЋР вЂљР РЋРЎСџР РЋРІР‚в„ўР РЋРІР‚Сћ Pet"
+      : (l === "uk" ? "Р РЋР вЂљР РЋРЎСџР РЋРІР‚в„ўР РЋРІР‚Сћ Р В Р’В Р В РІвЂљВ¬Р В Р’В Р вЂ™Р’В»Р В Р Р‹Р В РІР‚в„–Р В Р’В Р вЂ™Р’В±Р В Р’В Р вЂ™Р’В»Р В Р’В Р вЂ™Р’ВµР В Р’В Р В РІР‚В¦Р В Р’В Р вЂ™Р’ВµР В Р Р‹Р Р†Р вЂљР’В Р В Р Р‹Р В Р вЂ°" : "Р РЋР вЂљР РЋРЎСџР РЋРІР‚в„ўР РЋРІР‚Сћ Р В Р’В Р РЋРЎСџР В Р’В Р РЋРІР‚ВР В Р Р‹Р Р†Р вЂљРЎв„ўР В Р’В Р РЋРІР‚СћР В Р’В Р РЋР’ВР В Р’В Р вЂ™Р’ВµР В Р Р‹Р Р†Р вЂљР’В ");
     kb.push([{ text: petBtnText, callback_data: this._go(Routes.PET) }]);
 
     const back = (opts && typeof opts.backTo === "string" && opts.backTo) ? opts.backTo : Routes.CITY;
@@ -446,13 +457,20 @@ export class UiFactory {
     return rows;
   }
 
-  // ---------- Магазин ----------
+  // ---------- Р В Р’В Р РЋРЎв„ўР В Р’В Р вЂ™Р’В°Р В Р’В Р РЋРІР‚вЂњР В Р’В Р вЂ™Р’В°Р В Р’В Р вЂ™Р’В·Р В Р’В Р РЋРІР‚ВР В Р’В Р В РІР‚В¦ ----------
   shop(opts = {}, lang = "ru") {
     const l = this._lang(lang);
     const user = opts?.user || null;
+    const mode = String(user?.settings?.shopBuyMode || "buy_use");
     const playerLevel = user ? Math.max(1, ProgressionService.getLevelInfo(user)?.level || 1) : 99;
     const LEVEL5_ITEMS = new Set(["sandwich", "lunch", "borscht"]);
-    const items = Object.entries(CONFIG.SHOP)
+    const toggleText = mode === "buy"
+      ? this._t(l, "ui.shop.mode.buy")
+      : this._t(l, "ui.shop.mode.buy_use");
+    const items = [
+      [{ text: toggleText, callback_data: "shop:mode:toggle" }]
+    ];
+    items.push(...Object.entries(CONFIG.SHOP)
       .filter(([k]) => playerLevel >= 5 || !LEVEL5_ITEMS.has(k))
       .map(([k, v]) => {
         const itemTitle = getShopTitle(k, l);
@@ -462,7 +480,7 @@ export class UiFactory {
             ? this._t(l, "ui.shop.item_gems", { title: itemTitle, gems: `${CONFIG.PREMIUM.emoji}${v.price_premium}` })
             : this._t(l, "ui.shop.item", { title: itemTitle });
         return [{ text: label, callback_data: `buy_${k}` }];
-      });
+      }));
 
     const backTo   = opts?.backTo || null;
     const backText =
@@ -475,9 +493,40 @@ export class UiFactory {
     return items;
   }
 
+  inventoryCaption(user, lang = null) {
+    const l = this._lang(lang || user?.lang);
+    const items = InventoryService.usableItems(user);
+    if (!items.length) {
+      return this._t(l, "loc.inventory.empty");
+    }
+
+    const lines = [this._t(l, "loc.inventory.title"), ""];
+    for (const item of items) {
+      lines.push(`${this._inventoryItemTitle(item.id, l)} x${item.qty} \u2014 +${item.cfg.heal} \u26A1`);
+    }
+    return lines.join("\n");
+  }
+
+  inventory(user, opts = {}, lang = null) {
+    const l = this._lang(lang || user?.lang);
+    const rows = [];
+    const items = InventoryService.usableItems(user);
+    for (const item of items) {
+      rows.push([{
+        text: this._t(l, "ui.inventory.use", { title: this._inventoryItemTitle(item.id, l) }),
+        callback_data: `inv:use:${item.id}`
+      }]);
+    }
+    rows.push([{
+      text: l === "en" ? "Back" : (l === "uk" ? "Назад" : "Назад"),
+      callback_data: "profile:back"
+    }]);
+    return rows;
+  }
 
 
-  // ---------- Казино ----------
+
+  // ---------- Р В Р’В Р РЋРІвЂћСћР В Р’В Р вЂ™Р’В°Р В Р’В Р вЂ™Р’В·Р В Р’В Р РЋРІР‚ВР В Р’В Р В РІР‚В¦Р В Р’В Р РЋРІР‚Сћ ----------
   casinoMenu(user, lang = null) {
     const l = this._lang(lang || user?.lang);
     const minStudy = Number(CONFIG?.CASINO?.MIN_STUDY_FOR_PAID ?? 5);
@@ -514,7 +563,7 @@ export class UiFactory {
     return rows;
   }
 
-  // ===== Зал =====
+  // ===== Р В Р’В Р Р†Р вЂљРІР‚СњР В Р’В Р вЂ™Р’В°Р В Р’В Р вЂ™Р’В» =====
   gym(user, now = Date.now(), ffCost = null, lang = null) {
     const l = this._lang(lang || user?.lang);
     const onboarding = !!(user?.flags?.onboarding);
@@ -600,7 +649,7 @@ export class UiFactory {
     return out;
   }
 
-  // ---------- Улучшения ----------
+  // ---------- Р В Р’В Р В РІвЂљВ¬Р В Р’В Р вЂ™Р’В»Р В Р Р‹Р РЋРІР‚СљР В Р Р‹Р Р†Р вЂљР Р‹Р В Р Р‹Р Р†РІР‚С™Р’В¬Р В Р’В Р вЂ™Р’ВµР В Р’В Р В РІР‚В¦Р В Р’В Р РЋРІР‚ВР В Р Р‹Р В Р РЏ ----------
   upgradesCaption(user, lang = null) {
     const l = this._lang(lang || user?.lang);
     const owned = new Set(user.upgrades || []);
@@ -611,9 +660,9 @@ export class UiFactory {
       const it = CONFIG.UPGRADES[key];
       const title = getUpgradeTitle(key, l) || it.title;
       const desc = getUpgradeDesc(key, l) || it.desc;
-      const mark = owned.has(key) ? "✔" : "✖";
-      const alt = (typeof it.price_premium === "number") ? ` / ${CONFIG.PREMIUM?.emoji || "💎"}${it.price_premium}` : "";
-      lines.push(`${mark} ${title}: ${desc}${it.price ? ` · $${it.price}${alt}` : ""}`);
+      const mark = owned.has(key) ? "Р В Р вЂ Р РЋРЎв„ўР Р†Р вЂљРЎСљ" : "Р В Р вЂ Р РЋРЎв„ўР Р†Р вЂљРІР‚Сљ";
+      const alt = (typeof it.price_premium === "number") ? ` / ${CONFIG.PREMIUM?.emoji || "Р РЋР вЂљР РЋРЎСџР Р†Р вЂљРІвЂћСћР В РІР‚в„–"}${it.price_premium}` : "";
+      lines.push(`${mark} ${title}: ${desc}${it.price ? ` Р В РІР‚в„ўР вЂ™Р’В· $${it.price}${alt}` : ""}`);
     }
     return lines.join("\n");
   }
@@ -640,7 +689,7 @@ export class UiFactory {
     return rows;
   }
 
-  // ---------- Доска почета ----------
+  // ---------- Р В Р’В Р Р†Р вЂљРЎСљР В Р’В Р РЋРІР‚СћР В Р Р‹Р В РЎвЂњР В Р’В Р РЋРІР‚СњР В Р’В Р вЂ™Р’В° Р В Р’В Р РЋРІР‚вЂќР В Р’В Р РЋРІР‚СћР В Р Р‹Р Р†Р вЂљР Р‹Р В Р’В Р вЂ™Р’ВµР В Р Р‹Р Р†Р вЂљРЎв„ўР В Р’В Р вЂ™Р’В° ----------
   cityBoard(lang = "ru") {
     const l = this._lang(lang);
     return [
@@ -682,11 +731,11 @@ export class UiFactory {
     if (!Array.isArray(list) || !list.length) {
       return this._t(l, "ui.cityboard.day.empty");
     }
-    const medals = ["🥇","🥈","🥉"];
+    const medals = ["Р РЋР вЂљР РЋРЎСџР СћРЎвЂ™Р Р†Р вЂљР Р‹","Р РЋР вЂљР РЋРЎСџР СћРЎвЂ™Р Р†РІР‚С™Р’В¬","Р РЋР вЂљР РЋРЎСџР СћРЎвЂ™Р Р†Р вЂљР’В°"];
     const lines = [this._t(l, "ui.cityboard.day.title")];
     list.forEach((x, i) => {
       const m = medals[i] || `${i+1}.`;
-      lines.push(`${m} ${x.name} — $${x.total}`);
+      lines.push(`${m} ${x.name} Р В Р вЂ Р В РІР‚С™Р Р†Р вЂљРЎСљ $${x.total}`);
     });
     return lines.join("\n");
   }
@@ -695,11 +744,11 @@ export class UiFactory {
     if (!Array.isArray(list) || !list.length) {
       return this._t(l, "ui.cityboard.week.empty");
     }
-    const medals = ["🥇","🥈","🥉"];
+    const medals = ["Р РЋР вЂљР РЋРЎСџР СћРЎвЂ™Р Р†Р вЂљР Р‹","Р РЋР вЂљР РЋРЎСџР СћРЎвЂ™Р Р†РІР‚С™Р’В¬","Р РЋР вЂљР РЋРЎСџР СћРЎвЂ™Р Р†Р вЂљР’В°"];
     const lines = [this._t(l, "ui.cityboard.week.title")];
     list.forEach((x, i) => {
       const m = medals[i] || `${i+1}.`;
-      lines.push(`${m} ${x.name} — $${x.total}`);
+      lines.push(`${m} ${x.name} Р В Р вЂ Р В РІР‚С™Р Р†Р вЂљРЎСљ $${x.total}`);
     });
     return lines.join("\n");
   }
@@ -708,7 +757,7 @@ export class UiFactory {
     if (!Array.isArray(list) || !list.length) {
       return this._t(l, "ui.cityboard.smart.empty");
     }
-    const medals = ["🥇","🥈","🥉"];
+    const medals = ["Р РЋР вЂљР РЋРЎСџР СћРЎвЂ™Р Р†Р вЂљР Р‹","Р РЋР вЂљР РЋРЎСџР СћРЎвЂ™Р Р†РІР‚С™Р’В¬","Р РЋР вЂљР РЋРЎСџР СћРЎвЂ™Р Р†Р вЂљР’В°"];
     const lines = [this._t(l, "ui.cityboard.smart.title")];
     list.forEach((x, i) => {
       const m = medals[i] || `${i+1}.`;
@@ -722,13 +771,13 @@ export class UiFactory {
     if (!Array.isArray(list) || !list.length) {
       return this._t(l, "ui.cityboard.strong.empty");
     }
-    const medals = ["🥇","🥈","🥉"];
+    const medals = ["Р РЋР вЂљР РЋРЎСџР СћРЎвЂ™Р Р†Р вЂљР Р‹","Р РЋР вЂљР РЋРЎСџР СћРЎвЂ™Р Р†РІР‚С™Р’В¬","Р РЋР вЂљР РЋРЎСџР СћРЎвЂ™Р Р†Р вЂљР’В°"];
     const lines = [this._t(l, "ui.cityboard.strong.title")];
     list.forEach((x, i) => {
       const m = medals[i] || `${i+1}.`;
       const money = Math.max(0, Number(x?.money || 0));
       const gems = Math.max(0, Number(x?.gems || 0));
-      lines.push(`${m} ${x.name} — $${money} + ${CONFIG?.PREMIUM?.emoji || "💎"}${gems}`);
+      lines.push(`${m} ${x.name} Р В Р вЂ Р В РІР‚С™Р Р†Р вЂљРЎСљ $${money} + ${CONFIG?.PREMIUM?.emoji || "Р РЋР вЂљР РЋРЎСџР Р†Р вЂљРІвЂћСћР В РІР‚в„–"}${gems}`);
     });
     return lines.join("\n");
   }
@@ -745,12 +794,12 @@ export class UiFactory {
     if (!Array.isArray(list) || !list.length) {
       return this._t(l, "ui.cityboard.lucky.empty");
     }
-    const medals = ["🥇","🥈","🥉"];
+    const medals = ["Р РЋР вЂљР РЋРЎСџР СћРЎвЂ™Р Р†Р вЂљР Р‹","Р РЋР вЂљР РЋРЎСџР СћРЎвЂ™Р Р†РІР‚С™Р’В¬","Р РЋР вЂљР РЋРЎСџР СћРЎвЂ™Р Р†Р вЂљР’В°"];
     const lines = [this._t(l, "ui.cityboard.lucky.title")];
     list.forEach((x, i) => {
       const m = medals[i] || `${i+1}.`;
       const best = typeof x.best === "number" ? x.best : 0;
-      lines.push(`${m} ${x.name} — $${best}`);
+      lines.push(`${m} ${x.name} Р В Р вЂ Р В РІР‚С™Р Р†Р вЂљРЎСљ $${best}`);
     });
     return lines.join("\n");
   }
@@ -760,12 +809,12 @@ export class UiFactory {
     if (!Array.isArray(list) || !list.length) {
       return this._t(l, "ui.cityboard.farmweek.empty");
     }
-    const medals = ["🥇", "🥈", "🥉"];
+    const medals = ["Р РЋР вЂљР РЋРЎСџР СћРЎвЂ™Р Р†Р вЂљР Р‹", "Р РЋР вЂљР РЋРЎСџР СћРЎвЂ™Р Р†РІР‚С™Р’В¬", "Р РЋР вЂљР РЋРЎСџР СћРЎвЂ™Р Р†Р вЂљР’В°"];
     const lines = [this._t(l, "ui.cityboard.farmweek.title")];
     list.forEach((x, i) => {
       const m = medals[i] || `${i + 1}.`;
       const total = Math.max(0, Number(x?.total || x?.money || 0));
-      lines.push(`${m} ${x.name} — $${total}`);
+      lines.push(`${m} ${x.name} Р В Р вЂ Р В РІР‚С™Р Р†Р вЂљРЎСљ $${total}`);
     });
     return lines.join("\n");
   }
@@ -790,12 +839,12 @@ export class UiFactory {
     if (!Array.isArray(list) || !list.length) {
       return this._t(l, "ui.cityboard.farmday.empty");
     }
-    const medals = ["🥇", "🥈", "🥉"];
+    const medals = ["Р РЋР вЂљР РЋРЎСџР СћРЎвЂ™Р Р†Р вЂљР Р‹", "Р РЋР вЂљР РЋРЎСџР СћРЎвЂ™Р Р†РІР‚С™Р’В¬", "Р РЋР вЂљР РЋРЎСџР СћРЎвЂ™Р Р†Р вЂљР’В°"];
     const lines = [this._t(l, "ui.cityboard.farmday.title")];
     list.forEach((x, i) => {
       const m = medals[i] || `${i + 1}.`;
       const total = Math.max(0, Number(x?.total || x?.money || 0));
-      lines.push(`${m} ${x.name} — $${total}`);
+      lines.push(`${m} ${x.name} Р В Р вЂ Р В РІР‚С™Р Р†Р вЂљРЎСљ $${total}`);
     });
     return lines.join("\n");
   }
@@ -805,15 +854,16 @@ export class UiFactory {
     if (!Array.isArray(list) || !list.length) {
       return this._t(l, "ui.cityboard.theftweek.empty");
     }
-    const medals = ["🥇", "🥈", "🥉"];
+    const medals = ["Р РЋР вЂљР РЋРЎСџР СћРЎвЂ™Р Р†Р вЂљР Р‹", "Р РЋР вЂљР РЋРЎСџР СћРЎвЂ™Р Р†РІР‚С™Р’В¬", "Р РЋР вЂљР РЋРЎСџР СћРЎвЂ™Р Р†Р вЂљР’В°"];
     const lines = [this._t(l, "ui.cityboard.theftweek.title")];
     list.forEach((x, i) => {
       const m = medals[i] || `${i + 1}.`;
       const total = Math.max(0, Number(x?.total || x?.stolen || 0));
-      lines.push(`${m} ${x.name} — $${total}`);
+      lines.push(`${m} ${x.name} Р В Р вЂ Р В РІР‚С™Р Р†Р вЂљРЎСљ $${total}`);
     });
     return lines.join("\n");
   }
 
 }
+
 
