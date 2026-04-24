@@ -40,7 +40,7 @@ test("work handler: newbie work step blocks jobs other than flyers", async () =>
   assert.equal(goes[0].route, "Work");
 });
 
-test("work handler: sends chat message when farmer finds mango seed on claim", async () => {
+test("work handler: sends chat messages when farmer finds fertilizer and mango seed on claim", async () => {
   const originalRandom = Math.random;
   Math.random = () => 0.1;
   const answers = [];
@@ -101,8 +101,11 @@ test("work handler: sends chat message when farmer finds mango seed on claim", a
     assert.equal(goes.length, 1);
     assert.equal(goes[0].route, "Work");
     assert.ok(answers.some((x) => /семя манго/i.test(String(x.text || ""))));
+    assert.ok(answers.some((x) => /удобрение/i.test(String(x.text || ""))));
     assert.ok(sent.some((x) => /семя манго/i.test(x)));
+    assert.ok(sent.some((x) => /удобрение/i.test(x)));
     assert.equal(ctx.u.inv.mango_seed, 1);
+    assert.equal(ctx.u.inv.fertilizer, 1);
   } finally {
     Math.random = originalRandom;
   }

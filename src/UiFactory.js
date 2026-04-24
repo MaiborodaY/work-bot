@@ -29,6 +29,7 @@ export class UiFactory {
     if (id === "lunch") return l === "en" ? "\u{1F372} Business lunch" : (l === "uk" ? "\u{1F372} Бізнес-ланч" : "\u{1F372} Бизнес-ланч");
     if (id === "borscht") return l === "en" ? "\u{1F963} Soup of the day" : (l === "uk" ? "\u{1F963} Борщ" : "\u{1F963} Борщ");
     if (id === "mango_seed") return l === "en" ? "\u{1F96D} Mango seed" : (l === "uk" ? "\u{1F96D} Насіння манго" : "\u{1F96D} Семя манго");
+    if (id === "fertilizer") return l === "en" ? "\u{1F9EA} Fertilizer" : (l === "uk" ? "\u{1F9EA} Добриво" : "\u{1F9EA} Удобрение");
     return getShopTitle(id, l) || id;
   }
 
@@ -505,6 +506,9 @@ export class UiFactory {
         lines.push(`${this._inventoryItemTitle(item.id, l)} x${item.qty} \u2014 +${item.cfg.heal} \u26A1`);
       } else if (item.id === "mango_seed") {
         const desc = l === "en" ? "for the farm" : (l === "uk" ? "для ферми" : "для фермы");
+        lines.push(`${this._inventoryItemTitle(item.id, l)} x${item.qty} \u2014 ${desc}`);
+      } else if (item.id === "fertilizer") {
+        const desc = l === "en" ? "instantly finishes growth" : (l === "uk" ? "миттєво завершує ріст" : "мгновенно завершает рост");
         lines.push(`${this._inventoryItemTitle(item.id, l)} x${item.qty} \u2014 ${desc}`);
       }
     }

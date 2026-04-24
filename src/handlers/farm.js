@@ -8,6 +8,7 @@ export const farmHandler = {
     data === "farm:help" ||
     data === "farm:harvest_all" ||
     data.startsWith("farm:buy_plot:") ||
+    data.startsWith("farm:fertilize:") ||
     data.startsWith("farm:plant_menu:") ||
     data.startsWith("farm:plant:") ||
     data.startsWith("farm:harvest:"),
@@ -77,6 +78,19 @@ export const farmHandler = {
       }
       const view = farm.buildBuyPlotResultView(u, res);
       await show(view);
+      return;
+    }
+
+    if (data.startsWith("farm:fertilize:")) {
+      const plotIndex = Number(data.split(":")[2] || 0);
+      const res = await farm.fertilize(u, plotIndex);
+      if (!res.ok) {
+        await answer(cb.id, res.error || tt("handler.common.unknown_command"));
+        await goTo(u, "Farm");
+        return;
+      }
+      await answer(cb.id, String(res.message || "").slice(0, 180) || undefined);
+      await goTo(u, "Farm");
       return;
     }
 

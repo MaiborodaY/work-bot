@@ -58,6 +58,7 @@ export class FarmService {
         btnPlant: "🌱 Plant (plot {{num}})",
         btnBuyPlot: "💳 Buy plot {{num}} — ${{price}}",
         btnHarvest: "🧺 Harvest & sell {{emoji}} {{name}} — ${{price}}",
+        btnFertilize: "🧪 Fertilize plot {{num}}",
         btnRefresh: "🔄 Refresh",
         btnHelp: "ℹ️ How farm works",
         btnBackCity: "⬅️ Back",
@@ -69,6 +70,9 @@ export class FarmService {
         buyPlotOk: "💳 Plot {{num}} purchased for ${{price}}.",
         errNoMoney: "Not enough money.",
         errNoSeeds: "Need {{need}}x {{item}}.",
+        errNoFertilizer: "Need fertilizer.",
+        errFertilizeOnlyGrowing: "You can fertilize only a growing plot.",
+        fertilizeOk: "🧪 Fertilizer applied. Plot {{num}} is ready!",
         errNoEnergy: "Need {{need}}⚡.",
         errPlotBusy: "This plot is already occupied.",
         errPlotOrder: "You can buy only the next plot in order.",
@@ -110,6 +114,7 @@ export class FarmService {
         btnPlant: "🌱 Посадити (грядка {{num}})",
         btnBuyPlot: "💳 Купити грядку {{num}} — ${{price}}",
         btnHarvest: "🧺 Зібрати й продати {{emoji}} {{name}} — ${{price}}",
+        btnFertilize: "🧪 Удобрити грядку {{num}}",
         btnRefresh: "🔄 Оновити",
         btnHelp: "ℹ️ Як працює ферма",
         btnBackCity: "⬅️ Назад",
@@ -121,6 +126,9 @@ export class FarmService {
         buyPlotOk: "💳 Грядку {{num}} куплено за ${{price}}.",
         errNoMoney: "Недостатньо коштів.",
         errNoSeeds: "Потрібно {{need}}x {{item}}.",
+        errNoFertilizer: "Потрібне добриво.",
+        errFertilizeOnlyGrowing: "Удобрювати можна лише грядку, що росте.",
+        fertilizeOk: "🧪 Добриво застосовано. Грядка {{num}} готова!",
         errNoEnergy: "Need {{need}}⚡.",
         errPlotBusy: "Ця грядка вже зайнята.",
         errPlotOrder: "Можна купити тільки наступну грядку по порядку.",
@@ -161,6 +169,7 @@ export class FarmService {
       btnPlant: "🌱 Посадить (грядка {{num}})",
       btnBuyPlot: "💳 Купить грядку {{num}} — ${{price}}",
       btnHarvest: "🧺 Собрать и продать {{emoji}} {{name}} — ${{price}}",
+      btnFertilize: "🧪 Удобрить грядку {{num}}",
       btnRefresh: "🔄 Обновить",
       btnHelp: "ℹ️ Как работает ферма",
       btnBackCity: "⬅️ Назад",
@@ -172,6 +181,9 @@ export class FarmService {
       buyPlotOk: "💳 Грядка {{num}} куплена за ${{price}}.",
       errNoMoney: "Недостаточно средств.",
       errNoSeeds: "Нужно {{need}}x {{item}}.",
+      errNoFertilizer: "Нужно удобрение.",
+      errFertilizeOnlyGrowing: "Удобрять можно только растущую грядку.",
+      fertilizeOk: "🧪 Удобрение применено. Грядка {{num}} готова!",
       errNoEnergy: "Need {{need}}⚡.",
       errPlotBusy: "Эта грядка уже занята.",
       errPlotOrder: "Можно купить только следующую грядку по порядку.",
@@ -547,6 +559,9 @@ export class FarmService {
         } else {
           const left = this._leftLabel(u, toInt(p.readyAt, 0) - nowTs);
           lines.push(this._fmt(s.plotGrowing, { num: i, emoji: crop.emoji, name: crop.name, left }), "");
+          if (InventoryService.has(u, "fertilizer", 1)) {
+            kb.push([{ text: this._fmt(s.btnFertilize, { num: i }), callback_data: `farm:fertilize:${i}` }]);
+          }
         }
       } else {
         lines.push(this._fmt(s.plotEmpty, { num: i }), "");
@@ -794,6 +809,30 @@ export class FarmService {
       await this.quests.notifyEvents(u, qRes.events).catch(() => {});
     }
     return { ok: true, plotIndex: target.index, cropId: crop.id, growMs: crop.growMs };
+  }
+
+  async fertilize(u, plotIndex) {
+    this._normalizeModel(u);
+    const s = this._s(u);
+    const limit = this._plotLimit(u);
+    const target = this._plotByIndex(u, plotIndex);
+    if (!target.ok || target.index < 1 || target.index > limit) {
+      return { ok: false, error: s.errPlotInvalid };
+    }
+    const p = target.plot;
+    if (String(p.status || "") !== "growing" || this._isReady(p, this.now())) {
+      return { ok: false, error: s.errFertilizeOnlyGrowing };
+    }
+    if (!InventoryService.has(u, "fertilizer", 1)) {
+      return { ok: false, error: s.errNoFertilizer };
+    }
+
+    InventoryService.remove(u, "fertilizer", 1);
+    p.readyAt = this.now();
+    p.notifiedReady = false;
+    markUsefulActivity(u, this.now());
+    await this.users.save(u);
+    return { ok: true, plotIndex: target.index, message: this._fmt(s.fertilizeOk, { num: target.index }) };
   }
 
   async harvest(u, plotIndex) {

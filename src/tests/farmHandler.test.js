@@ -127,3 +127,38 @@ test("farm handler: successful plant returns to Farm without intermediate result
   assert.match(String(answers[0].text || ""), /carrot planted/i);
   assert.equal(shows.length, 0);
 });
+
+test("farm handler: fertilize returns to farm with short toast", async () => {
+  const goes = [];
+  const answers = [];
+  const ctx = {
+    data: "farm:fertilize:1",
+    u: { lang: "ru" },
+    cb: { id: "3" },
+    async answer(id, text) {
+      answers.push({ id, text });
+    },
+    farm: {
+      async fertilize() {
+        return { ok: true, plotIndex: 1, message: "🧪 Удобрение применено. Грядка 1 готова!" };
+      }
+    },
+    locations: {
+      media: { async show() {} },
+      _sourceMsg: null,
+      setSourceMessage() {}
+    },
+    async goTo(u, route, intro) {
+      goes.push({ u, route, intro });
+    },
+    quests: null,
+    users: null
+  };
+
+  await farmHandler.handle(ctx);
+
+  assert.equal(answers.length, 1);
+  assert.match(String(answers[0].text || ""), /удобрение применено/i);
+  assert.equal(goes.length, 1);
+  assert.equal(goes[0].route, Routes.FARM);
+});

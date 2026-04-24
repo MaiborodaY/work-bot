@@ -196,12 +196,19 @@ export const workHandler = {
       }
       await applyWorkClaimSideEffects({ clans, labour, referrals, u }, res.pay, res.endAt);
       await advanceOnboardingAfterClaimIfNeeded();
-      const bonusLine = res?.bonusDrop && InventoryService.count(u, res.bonusDrop.itemId) > 0
-        ? `\n${tt("handler.work.bonus_mango_seed", { qty: res.bonusDrop.qty || 1 })}`
-        : "";
+      const rewardLines = [];
+      if (res?.guaranteedDrop?.itemId === "fertilizer") {
+        rewardLines.push(tt("handler.work.bonus_fertilizer", { qty: res.guaranteedDrop.qty || 1 }));
+      }
+      if (res?.bonusDrop && InventoryService.count(u, res.bonusDrop.itemId) > 0) {
+        rewardLines.push(tt("handler.work.bonus_mango_seed", { qty: res.bonusDrop.qty || 1 }));
+      }
+      const bonusLine = rewardLines.length ? `\n${rewardLines.join("\n")}` : "";
       await answer(cb.id, `${tt("handler.work.claim_ok", { pay: res.pay })}${bonusLine}`);
-      if (bonusLine && typeof send === "function") {
-        await send(tt("handler.work.bonus_mango_seed", { qty: res.bonusDrop.qty || 1 }));
+      if (rewardLines.length && typeof send === "function") {
+        for (const line of rewardLines) {
+          await send(line);
+        }
       }
       await render();
       return;
@@ -229,12 +236,19 @@ export const workHandler = {
       }
       await applyWorkClaimSideEffects({ clans, labour, referrals, u }, claim.pay, claim.endAt);
 
-      const bonusLine = claim?.bonusDrop
-        ? `\n${tt("handler.work.bonus_mango_seed", { qty: claim.bonusDrop.qty || 1 })}`
-        : "";
+      const rewardLines = [];
+      if (claim?.guaranteedDrop?.itemId === "fertilizer") {
+        rewardLines.push(tt("handler.work.bonus_fertilizer", { qty: claim.guaranteedDrop.qty || 1 }));
+      }
+      if (claim?.bonusDrop) {
+        rewardLines.push(tt("handler.work.bonus_mango_seed", { qty: claim.bonusDrop.qty || 1 }));
+      }
+      const bonusLine = rewardLines.length ? `\n${rewardLines.join("\n")}` : "";
       await answer(cb.id, `${tt("handler.work.skip_ok", { cost: res.cost, pay: claim.pay })}${bonusLine}`);
-      if (bonusLine && typeof send === "function") {
-        await send(tt("handler.work.bonus_mango_seed", { qty: claim.bonusDrop.qty || 1 }));
+      if (rewardLines.length && typeof send === "function") {
+        for (const line of rewardLines) {
+          await send(line);
+        }
       }
       await render();
       return;
@@ -267,12 +281,19 @@ export const workHandler = {
       await applyWorkClaimSideEffects({ clans, labour, referrals, u }, claim.pay, claim.endAt);
       await advanceOnboardingAfterClaimIfNeeded();
 
-      const bonusLine = claim?.bonusDrop
-        ? `\n${tt("handler.work.bonus_mango_seed", { qty: claim.bonusDrop.qty || 1 })}`
-        : "";
+      const rewardLines = [];
+      if (claim?.guaranteedDrop?.itemId === "fertilizer") {
+        rewardLines.push(tt("handler.work.bonus_fertilizer", { qty: claim.guaranteedDrop.qty || 1 }));
+      }
+      if (claim?.bonusDrop) {
+        rewardLines.push(tt("handler.work.bonus_mango_seed", { qty: claim.bonusDrop.qty || 1 }));
+      }
+      const bonusLine = rewardLines.length ? `\n${rewardLines.join("\n")}` : "";
       await answer(cb.id, `${tt("handler.work.skip_free_ok", { pay: claim.pay })}${bonusLine}`);
-      if (bonusLine && typeof send === "function") {
-        await send(tt("handler.work.bonus_mango_seed", { qty: claim.bonusDrop.qty || 1 }));
+      if (rewardLines.length && typeof send === "function") {
+        for (const line of rewardLines) {
+          await send(line);
+        }
       }
       await render();
       return;

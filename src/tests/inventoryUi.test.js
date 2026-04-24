@@ -86,3 +86,17 @@ test("inventory ui: mango seed is rendered as material without use button", () =
     false
   );
 });
+
+test("inventory ui: fertilizer is rendered as material without use button", () => {
+  const ui = new UiFactory();
+  const user = makeUser({ fertilizer: 2 });
+
+  const caption = ui.inventoryCaption(user, "ru");
+  const kb = ui.inventory(user, {}, "ru");
+
+  assert.match(String(caption || ""), /Удобрение x2 — мгновенно завершает рост/i);
+  assert.equal(
+    kb.some((row) => String(row?.[0]?.text || "").includes("Удобрение")),
+    false
+  );
+});

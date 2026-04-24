@@ -44,7 +44,17 @@ export const CONFIG = {
     shawarma_seller: { title: "Шаверма на вынос",   titleKey: "cfg.job.shawarma_seller.title", durationMs: 120 * 60_000, pay: 216, energy: 72 },
     dentist:         { title: "Стоматолог",         titleKey: "cfg.job.dentist.title", durationMs: 180 * 60_000, pay: 324, energy: 108 },
     qa_engineer:     { title: "QA engineer.",       titleKey: "cfg.job.qa_engineer.title", durationMs: 300 * 60_000, pay: 500, energy: 140 },
-    farmer:          { title: "Farmer",             titleKey: "cfg.job.farmer.title", durationMs: 24 * 60 * 60_000, payMin: 1500, payMax: 3500, energy: 180, minEnergyMax: 180, bonusDrop: { itemId: "mango_seed", chance: 0.5, qty: 1 } },
+    farmer:          {
+      title: "Farmer",
+      titleKey: "cfg.job.farmer.title",
+      durationMs: 24 * 60 * 60_000,
+      payMin: 1500,
+      payMax: 3500,
+      energy: 180,
+      minEnergyMax: 180,
+      bonusDrop: { itemId: "mango_seed", chance: 0.5, qty: 1 },
+      guaranteedDrop: { itemId: "fertilizer", qty: 1 }
+    },
   },
 
   REST_RECOVER_MS: 5 * 60 * 1000,

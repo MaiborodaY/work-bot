@@ -3,7 +3,7 @@ import { HomeService } from "./HomeService.js";
 import { EnergyService } from "./EnergyService.js";
 
 const USABLE_ITEM_IDS = ["coffee", "sandwich", "lunch", "borscht"];
-const MATERIAL_ITEM_IDS = ["mango_seed"];
+const MATERIAL_ITEM_IDS = ["mango_seed", "fertilizer"];
 
 function toInt(raw, fallback = 0) {
   const n = Number(raw);

@@ -47,6 +47,7 @@ export const EN = {
   "energy.origin.farm": "Farm",
   "handler.farm.unavailable": "Uncle Vova's Farm is temporarily unavailable.",
   "handler.work.bonus_mango_seed": "🥭 Bonus: found mango seed x{{qty}}",
+  "handler.work.bonus_fertilizer": "🧪 Bonus: found fertilizer x{{qty}}",
   "cfg.job.flyers.title": "Hand out flyers",
   "cfg.job.dishwasher.title": "Dishwasher",
   "cfg.job.waiter.title": "Waiter",

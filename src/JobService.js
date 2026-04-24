@@ -68,6 +68,14 @@ export class JobService {
     return { itemId, qty };
   }
 
+  _guaranteedDrop(type) {
+    const drop = type?.guaranteedDrop;
+    const itemId = String(drop?.itemId || "").trim();
+    const qty = Math.max(1, Math.floor(Number(drop?.qty) || 1));
+    if (!itemId) return null;
+    return { itemId, qty };
+  }
+
   async start(u, typeId) {
     this._ensureJobs(u);
     const type = CONFIG.JOBS[typeId];
@@ -165,6 +173,10 @@ export class JobService {
     u.money = (u.money || 0) + pay;
     inst.claimed = true;
     u.jobs.active = [];
+    const guaranteedDrop = this._guaranteedDrop(CONFIG.JOBS?.[String(inst.typeId || "")]);
+    if (guaranteedDrop) {
+      InventoryService.add(u, guaranteedDrop.itemId, guaranteedDrop.qty);
+    }
     const bonusDrop = this._rollBonusDrop(CONFIG.JOBS?.[String(inst.typeId || "")]);
     if (bonusDrop) {
       InventoryService.add(u, bonusDrop.itemId, bonusDrop.qty);
@@ -223,7 +235,7 @@ export class JobService {
       }
     } catch {}
 
-    return { ok: true, pay, endAt: shiftEndAt, bonusDrop };
+    return { ok: true, pay, endAt: shiftEndAt, bonusDrop, guaranteedDrop };
   }
 
   async cancel(u) {
