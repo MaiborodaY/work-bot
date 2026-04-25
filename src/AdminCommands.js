@@ -7,6 +7,8 @@ import { ProgressionService } from "./ProgressionService.js";
 const LABOUR_FREE_PLAYERS_KEY = "labour:free_players";
 
 export class AdminCommands {
+  static BROADCAST_STALE_MS = 2 * 60 * 60 * 1000;
+
   /**
    * deps:
    *  - users: UserStore
@@ -84,6 +86,7 @@ export class AdminCommands {
         "/broadcast - start draft mode\n" +
         "/broadcast_test - send draft only to you\n" +
         "/broadcast_send - send draft to all users\n" +
+        "/broadcast_reset confirm - clear stuck active run\n" +
         "/broadcast_status - current run + recent history\n" +
         "/broadcast_cancel - clear draft/compose mode\n" +
         "/fileid - send photo with this caption to get file_id"
@@ -133,11 +136,16 @@ export class AdminCommands {
 
       const lines = [];
       if (active?.status === "running") {
-        lines.push("<b>Broadcast status: running</b>");
+        const state = this._broadcastRunState(active);
+        lines.push(`<b>Broadcast status: ${state.isStale ? "stale" : "running"}</b>`);
         lines.push(`Run: <code>${this._escapeHtml(active.runId || "-")}</code>`);
         lines.push(`Progress: ${Number(active.processed || 0)} / ${Number(active.total || 0)}`);
         lines.push(`Sent: ${Number(active.sent || 0)}, Failed: ${Number(active.failed || 0)}, Blocked: ${Number(active.blocked || 0)}`);
         lines.push(`Started: ${this._escapeHtml(active.startedAt || "-")}`);
+        if (state.isStale) {
+          lines.push(`Age: ${this._escapeHtml(state.ageLabel)}`);
+          lines.push("Reset required: /broadcast_reset confirm");
+        }
       } else {
         lines.push("<b>Broadcast status: idle</b>");
       }
@@ -182,6 +190,17 @@ export class AdminCommands {
     if (/^\/broadcast_send(?:@\w+)?\s*$/i.test(input)) {
       const active = await this._getJson(this.K.active, null);
       if (active?.status === "running") {
+        const state = this._broadcastRunState(active);
+        if (state.isStale) {
+          await this.send(
+            "A stale broadcast lock is blocking new send.\n" +
+            `Run: <code>${this._escapeHtml(active.runId || "-")}</code>\n` +
+            `Started: ${this._escapeHtml(active.startedAt || "-")}\n` +
+            `Age: ${this._escapeHtml(state.ageLabel)}\n` +
+            "Run /broadcast_reset confirm first."
+          );
+          return true;
+        }
         await this.send(
           "Another broadcast is already running.\n" +
           `Run: <code>${this._escapeHtml(active.runId || "-")}</code>`
@@ -219,6 +238,36 @@ export class AdminCommands {
       const runPromise = this._runBroadcast({ runId, draft, startedBy: fromId });
       if (typeof waitUntil === "function") waitUntil(runPromise);
       else await runPromise;
+      return true;
+    }
+
+    const mBroadcastReset = input.match(/^\/broadcast_reset(?:@\w+)?(?:\s+(confirm))?\s*$/i);
+    if (mBroadcastReset) {
+      const active = await this._getJson(this.K.active, null);
+      if (!active || active.status !== "running") {
+        await this.send("Broadcast reset skipped: no active run.");
+        return true;
+      }
+      const state = this._broadcastRunState(active);
+      const confirmed = String(mBroadcastReset[1] || "").toLowerCase() === "confirm";
+      if (!confirmed) {
+        await this.send(
+          "Broadcast reset is protected.\n" +
+          `Run: <code>${this._escapeHtml(active.runId || "-")}</code>\n` +
+          `State: ${state.isStale ? "stale" : "running"}\n` +
+          `Started: ${this._escapeHtml(active.startedAt || "-")}\n` +
+          `Age: ${this._escapeHtml(state.ageLabel)}\n` +
+          "Run: <code>/broadcast_reset confirm</code>"
+        );
+        return true;
+      }
+      const out = await this._resetBroadcastActive({ resetBy: fromId });
+      await this.send(
+        "<b>Broadcast reset done</b>\n" +
+        `Run: <code>${this._escapeHtml(out.runId || "-")}</code>\n` +
+        `Previous state: ${this._escapeHtml(out.previousState || "running")}\n` +
+        `Saved to history as: ${this._escapeHtml(out.savedStatus || "cancelled")}`
+      );
       return true;
     }
 
@@ -2345,6 +2394,52 @@ export class AdminCommands {
     } finally {
       await this._delete(this.K.active);
     }
+  }
+
+  _broadcastRunState(active, nowTs = Date.now()) {
+    const startedAtRaw = String(active?.startedAt || "").trim();
+    const startedMs = Date.parse(startedAtRaw);
+    const ageMs = Number.isFinite(startedMs) ? Math.max(0, nowTs - startedMs) : 0;
+    const staleMs = Math.max(1, Number(AdminCommands.BROADCAST_STALE_MS) || (2 * 60 * 60 * 1000));
+    return {
+      startedMs,
+      ageMs,
+      ageLabel: this._formatDuration(ageMs),
+      isStale: Number.isFinite(startedMs) && ageMs > staleMs
+    };
+  }
+
+  _formatDuration(ms) {
+    const totalSec = Math.max(0, Math.floor((Number(ms) || 0) / 1000));
+    const hours = Math.floor(totalSec / 3600);
+    const minutes = Math.floor((totalSec % 3600) / 60);
+    if (hours > 0) return `${hours}h ${minutes}m`;
+    const seconds = totalSec % 60;
+    if (minutes > 0) return `${minutes}m ${seconds}s`;
+    return `${seconds}s`;
+  }
+
+  async _resetBroadcastActive({ resetBy } = {}) {
+    const active = await this._getJson(this.K.active, null);
+    if (!active || active.status !== "running") {
+      return { ok: false, runId: "", previousState: "idle", savedStatus: "" };
+    }
+    const state = this._broadcastRunState(active);
+    const historyStatus = state.isStale ? "failed" : "cancelled";
+    await this._appendHistory({
+      ...active,
+      status: historyStatus,
+      endedAt: new Date().toISOString(),
+      lastError: state.isStale ? "manual stale broadcast reset" : "manual broadcast reset",
+      resetBy: String(resetBy || "")
+    });
+    await this._delete(this.K.active);
+    return {
+      ok: true,
+      runId: String(active.runId || ""),
+      previousState: state.isStale ? "stale" : "running",
+      savedStatus: historyStatus
+    };
   }
 
   async _collectRecipientChatIds() {

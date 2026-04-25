@@ -110,6 +110,12 @@ Command parsing source: `src/AdminCommands.js`.
 
 - `/broadcast_status`
   - Show current run and recent history.
+  - Detects stale stuck runs and tells when reset is required.
+
+- `/broadcast_reset confirm`
+  - Clear a stuck active broadcast run.
+  - If the run is stale, saves it to history as `failed`.
+  - If reset manually while still live, saves it to history as `cancelled`.
 
 - `/broadcast_cancel`
   - Clear draft/compose state.
