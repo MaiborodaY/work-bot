@@ -594,6 +594,7 @@ export const EN = {
   "fmt.casino.best_line": "🏅 Best single win: ${{best}}",
   "fmt.casino.day_line": "📊 Day: won {{won}} · spent {{lost}} · net {{net}}",
   "fmt.casino.week_line": "🗓️ Week: won {{won}} · spent {{lost}} · net {{net}}",
+  "fmt.casino.all_line": "📈 All time: won {{won}} · spent {{lost}} · net {{net}}",
   "fmt.casino.best_line_compact": "🏅 Best try: {{best}}",
   "handler.daily.claim_ok": "Daily bonus: +${{amount}} (streak: {{streak}})",
   "handler.daily.already_claimed": "Bonus is already claimed today. Come back tomorrow!",

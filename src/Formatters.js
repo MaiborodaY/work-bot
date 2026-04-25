@@ -269,8 +269,14 @@ export const Formatters = {
     const lineWeek = this._t(u, "fmt.casino.week_line", {
       won: fmt(wonW), lost: fmt(lostW), net: fmt(netW)
     }, l);
+    const wonAll  = st ? (st.wonAll  || 0) : 0;
+    const lostAll = st ? (st.lostAll || 0) : 0;
+    const netAll  = wonAll - lostAll;
+    const lineAll = this._t(u, "fmt.casino.all_line", {
+      won: fmt(wonAll), lost: fmt(lostAll), net: fmt(netAll)
+    }, l);
     const lineBest = `\n${this._t(u, "fmt.casino.best_line_compact", { best: fmt(best) }, l)}`;
 
-    return `${lineDay}\n${lineWeek}\n${lineBest}`;
+    return `${lineDay}\n${lineWeek}\n${lineAll}\n${lineBest}`;
   },
 };

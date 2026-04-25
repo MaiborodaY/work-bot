@@ -3,12 +3,47 @@ import { CONFIG } from "../GameConfig.js";
 import { Formatters } from "../Formatters.js";
 import { normalizeLang, t } from "../i18n/index.js";
 
+const CASINO_RATING_KEY = "casino:rating:all";
+const CASINO_RATING_LIMIT = 15;
+
+function casinoRatingSort(list) {
+  return list.slice().sort((a, b) => {
+    const d = (b.net || 0) - (a.net || 0);
+    return d !== 0 ? d : (a.reachedAt || 0) - (b.reachedAt || 0);
+  });
+}
+
+async function updateCasinoRating(db, u, nowTs) {
+  if (!db || !u?.id) return;
+  const uid = String(u.id);
+  const st = u?.casino?.stats;
+  if (!st) return;
+  const net  = (st.wonAll || 0) - (st.lostAll || 0);
+  const spent = st.lostAll || 0;
+  const name = String(u.displayName || uid).slice(0, 32);
+  const raw = await db.get(CASINO_RATING_KEY).catch(() => null);
+  let list = [];
+  try { list = JSON.parse(raw) || []; } catch {}
+  if (!Array.isArray(list)) list = [];
+  const idx = list.findIndex((x) => String(x.userId) === uid);
+  const entry = { userId: uid, name, net, spent, reachedAt: nowTs };
+  if (idx >= 0) {
+    entry.reachedAt = list[idx].net === net ? (list[idx].reachedAt || nowTs) : nowTs;
+    list[idx] = entry;
+  } else {
+    list.push(entry);
+  }
+  const sorted = casinoRatingSort(list).slice(0, CASINO_RATING_LIMIT + 20);
+  await db.put(CASINO_RATING_KEY, JSON.stringify(sorted)).catch(() => {});
+}
+
 export const casinoHandler = {
   match: (data) =>
     data.startsWith("casino_spin") ||
     data.startsWith("casino_allin") ||
     data === "casino_free" ||
-    data === "casino_info",
+    data === "casino_info" ||
+    data === "casino_top",
 
   async handle(ctx) {
     const { data, u, cb, answer, users, casino, now, env, social, clans, stocks, quests } = ctx; // goTo не используем здесь
@@ -66,7 +101,7 @@ const ensureStats = (u) => {
   const wk  = weekKeyUTC();
   if (!u.casino) u.casino = {};
   if (!u.casino.stats || typeof u.casino.stats !== "object") {
-    u.casino.stats = { day, won: 0, lost: 0, week: wk, wonW: 0, lostW: 0 };
+    u.casino.stats = { day, won: 0, lost: 0, week: wk, wonW: 0, lostW: 0, wonAll: 0, lostAll: 0 };
   }
   if (u.casino.stats.day !== day) {
     u.casino.stats.day  = day;
@@ -78,6 +113,8 @@ const ensureStats = (u) => {
     u.casino.stats.wonW  = 0;
     u.casino.stats.lostW = 0;
   }
+  if (typeof u.casino.stats.wonAll  !== "number") u.casino.stats.wonAll  = 0;
+  if (typeof u.casino.stats.lostAll !== "number") u.casino.stats.lostAll = 0;
   return u.casino.stats;
 };
 
@@ -202,13 +239,16 @@ if (win > prevBest) {
       
 // статистика (UTC): выигрыш всегда, проигрыш — только если не free (а тут платный)
 const st = ensureStats(u);
-st.won  = Math.max(0, (st.won  || 0)  + Math.max(0, win));
-st.wonW = Math.max(0, (st.wonW || 0)  + Math.max(0, win));
-st.lost  = Math.max(0, (st.lost  || 0)  + Math.max(0, bet));
-st.lostW = Math.max(0, (st.lostW || 0)  + Math.max(0, bet));
+st.won    = Math.max(0, (st.won    || 0) + Math.max(0, win));
+st.wonW   = Math.max(0, (st.wonW   || 0) + Math.max(0, win));
+st.wonAll = Math.max(0, (st.wonAll || 0) + Math.max(0, win));
+st.lost    = Math.max(0, (st.lost    || 0) + Math.max(0, bet));
+st.lostW   = Math.max(0, (st.lostW   || 0) + Math.max(0, bet));
+st.lostAll = Math.max(0, (st.lostAll || 0) + Math.max(0, bet));
 
 if (win > 0) u.money += win;
 await users.save(u);
+try { await updateCasinoRating(env.DB, u, now()); } catch {}
 try {
   if (clans?.recordFortuneSpin) {
     await clans.recordFortuneSpin(u, { bet, win });
@@ -258,6 +298,45 @@ try {
       await tgSend("sendMessage", {
         chat_id: chatId,
         text: t,
+        parse_mode: "HTML",
+        reply_markup: makeGridKeyboard({ allowPaid })
+      });
+      return;
+    }
+
+    // ---------- ТОП ИГРОКОВ ----------
+    if (data === "casino_top") {
+      await answer(cb.id);
+      const raw = await env.DB.get(CASINO_RATING_KEY).catch(() => null);
+      let list = [];
+      try { list = casinoRatingSort(JSON.parse(raw) || []); } catch {}
+      list = list.slice(0, CASINO_RATING_LIMIT);
+      const medals = ["🥇", "🥈", "🥉"];
+      const fmt = (n) => `$${Math.abs(Math.round(n)).toLocaleString("en-US")}`;
+      const sign = (n) => n >= 0 ? `+${fmt(n)}` : `-${fmt(n)}`;
+      const lines = [tt("ui.casino.top_title"), ""];
+      if (!list.length) {
+        lines.push(tt("ui.casino.top_empty"));
+      } else {
+        for (let i = 0; i < list.length; i++) {
+          const x = list[i];
+          const mark = medals[i] || `${i + 1}.`;
+          lines.push(`${mark} ${String(x.name || "?")} — ${sign(x.net || 0)} (${tt("ui.casino.top_spent")}: ${fmt(x.spent || 0)})`);
+        }
+      }
+      const uid = String(u?.id || "");
+      const me = list.find((x) => String(x.userId) === uid);
+      lines.push("");
+      if (me) {
+        lines.push(`👤 ${tt("ui.casino.top_you")}: ${sign(me.net || 0)} · ${tt("ui.casino.top_spent")}: ${fmt(me.spent || 0)}`);
+      } else {
+        const mySt = u?.casino?.stats;
+        const myNet = mySt ? ((mySt.wonAll || 0) - (mySt.lostAll || 0)) : 0;
+        lines.push(`👤 ${tt("ui.casino.top_you_out")}: ${sign(myNet)}`);
+      }
+      await tgSend("sendMessage", {
+        chat_id: chatId,
+        text: lines.join("\n"),
         parse_mode: "HTML",
         reply_markup: makeGridKeyboard({ allowPaid })
       });

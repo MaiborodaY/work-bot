@@ -565,9 +565,10 @@ export class UiFactory {
     }
     rows.push([{ text: this._t(l, "ui.casino.allin"), callback_data: "casino_allin:ask" }]);
     rows.push([
-      { text: this._t(l, "ui.casino.rules"), callback_data: "casino_info" },
-      { text: this._t(l, "ui.casino.to_bar"), callback_data: this._go(Routes.BAR) }
+      { text: this._t(l, "ui.casino.top_btn"), callback_data: "casino_top" },
+      { text: this._t(l, "ui.casino.rules"), callback_data: "casino_info" }
     ]);
+    rows.push([{ text: this._t(l, "ui.casino.to_bar"), callback_data: this._go(Routes.BAR) }]);
     return rows;
   }
 
