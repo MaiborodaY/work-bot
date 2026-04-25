@@ -9,6 +9,7 @@ const LABOUR_FREE_PLAYERS_KEY = "labour:free_players";
 
 export class AdminCommands {
   static BROADCAST_STALE_MS = 2 * 60 * 60 * 1000;
+  static BROADCAST_BATCH_SIZE = 50;
 
   /**
    * deps:
@@ -88,6 +89,7 @@ export class AdminCommands {
         "/broadcast - start draft mode\n" +
         "/broadcast_test - send draft only to you\n" +
         "/broadcast_send - send draft to all users\n" +
+        "/broadcast_resume_legacy confirm - resume old stuck broadcast without duplicates\n" +
         "/broadcast_reset confirm - clear stuck active run\n" +
         "/broadcast_status - current run + recent history\n" +
         "/broadcast_cancel - clear draft/compose mode\n" +
@@ -143,7 +145,11 @@ export class AdminCommands {
         lines.push(`Run: <code>${this._escapeHtml(active.runId || "-")}</code>`);
         lines.push(`Progress: ${Number(active.processed || 0)} / ${Number(active.total || 0)}`);
         lines.push(`Sent: ${Number(active.sent || 0)}, Failed: ${Number(active.failed || 0)}, Blocked: ${Number(active.blocked || 0)}`);
+        lines.push(`Batch: next ${Number(active.nextIndex || 0)}, size ${Number(active.batchSize || AdminCommands.BROADCAST_BATCH_SIZE)}`);
         lines.push(`Started: ${this._escapeHtml(active.startedAt || "-")}`);
+        if (!active.draft || !Array.isArray(active.recipients)) {
+          lines.push("Legacy run: /broadcast_resume_legacy confirm can prepare batch resume.");
+        }
         if (state.isStale) {
           lines.push(`Age: ${this._escapeHtml(state.ageLabel)}`);
           lines.push("Reset required: /broadcast_reset confirm");
@@ -217,13 +223,18 @@ export class AdminCommands {
       }
 
       const runId = `bc_${Date.now()}`;
+      const recipients = await this._collectRecipientChatIds();
       const initial = {
         runId,
         status: "running",
         startedAt: new Date().toISOString(),
         startedBy: String(fromId),
         type: draft.type,
-        total: 0,
+        draft,
+        recipients,
+        nextIndex: 0,
+        batchSize: AdminCommands.BROADCAST_BATCH_SIZE,
+        total: recipients.length,
         processed: 0,
         sent: 0,
         failed: 0,
@@ -237,7 +248,43 @@ export class AdminCommands {
         "Use /broadcast_status to check progress."
       );
 
-      const runPromise = this._runBroadcast({ runId, draft, startedBy: fromId });
+      const runPromise = this.runBroadcastBatch({ runId });
+      if (typeof waitUntil === "function") waitUntil(runPromise);
+      else await runPromise;
+      return true;
+    }
+
+    const mBroadcastResumeLegacy = input.match(/^\/broadcast_resume_legacy(?:@\w+)?(?:\s+(confirm))?\s*$/i);
+    if (mBroadcastResumeLegacy) {
+      const confirmed = String(mBroadcastResumeLegacy[1] || "").toLowerCase() === "confirm";
+      if (!confirmed) {
+        const active = await this._getJson(this.K.active, null);
+        await this.send(
+          "Legacy broadcast resume is protected.\n" +
+          `Run: <code>${this._escapeHtml(active?.runId || "-")}</code>\n` +
+          `Already processed: ${Number(active?.processed || 0)}\n` +
+          "Run: <code>/broadcast_resume_legacy confirm</code>"
+        );
+        return true;
+      }
+
+      const out = await this._resumeLegacyBroadcastActive({ resumedBy: fromId });
+      if (!out.ok) {
+        await this.send(
+          "Legacy broadcast resume skipped.\n" +
+          `Reason: ${this._escapeHtml(out.reason || "unknown")}`
+        );
+        return true;
+      }
+
+      await this.send(
+        "<b>Legacy broadcast resumed</b>\n" +
+        `Run: <code>${this._escapeHtml(out.runId || "-")}</code>\n` +
+        `Resume from: ${Number(out.nextIndex || 0)} / ${Number(out.total || 0)}\n` +
+        "Batch delivery will continue from the next unprocessed recipient."
+      );
+
+      const runPromise = this.runBroadcastBatch({ runId: out.runId });
       if (typeof waitUntil === "function") waitUntil(runPromise);
       else await runPromise;
       return true;
@@ -2360,23 +2407,28 @@ export class AdminCommands {
     return true;
   }
 
-  async _runBroadcast({ runId, draft, startedBy }) {
+  async runBroadcastBatch({ runId = "" } = {}) {
     const active = await this._getJson(this.K.active, null);
-    if (!active || active.runId !== runId || active.status !== "running") return;
+    if (!active || active.status !== "running") return { ok: false, status: "idle" };
+    if (runId && active.runId !== runId) return { ok: false, status: "run_mismatch" };
 
-    let processed = 0;
-    let sent = 0;
-    let failed = 0;
-    let blocked = 0;
-    let lastError = "";
+    const recipients = Array.isArray(active.recipients) ? active.recipients : [];
+    const draft = active.draft || null;
+    if (!draft || !recipients.length) return { ok: false, status: "missing_payload" };
+
+    let nextIndex = Math.max(0, Math.floor(Number(active.nextIndex) || 0));
+    let processed = Math.max(0, Math.floor(Number(active.processed) || 0));
+    let sent = Math.max(0, Math.floor(Number(active.sent) || 0));
+    let failed = Math.max(0, Math.floor(Number(active.failed) || 0));
+    let blocked = Math.max(0, Math.floor(Number(active.blocked) || 0));
+    let lastError = String(active.lastError || "");
+    const batchSize = Math.max(1, Math.min(100, Math.floor(Number(active.batchSize) || AdminCommands.BROADCAST_BATCH_SIZE)));
+    const total = recipients.length;
 
     try {
-      const recipients = await this._collectRecipientChatIds();
-      const total = recipients.length;
-      active.total = total;
-      await this._putJson(this.K.active, active);
-
-      for (const rcpt of recipients) {
+      const end = Math.min(total, nextIndex + batchSize);
+      for (; nextIndex < end; nextIndex += 1) {
+        const rcpt = recipients[nextIndex];
         const out = await this._sendDraft(rcpt, draft);
         processed += 1;
         if (out.ok) {
@@ -2387,33 +2439,35 @@ export class AdminCommands {
           if (out.error) lastError = out.error;
         }
 
-        if (processed % 25 === 0) {
-          await this._putJson(this.K.active, {
-            ...active,
-            processed,
-            sent,
-            failed,
-            blocked,
-            lastError
-          });
-        }
-
         // Gentle rate limit (about 25 msg/sec).
         await this._sleep(40);
       }
 
-      const done = {
+      const nextActive = {
         ...active,
-        status: "done",
-        endedAt: new Date().toISOString(),
+        total,
+        nextIndex,
         processed,
         sent,
         failed,
         blocked,
-        lastError,
-        startedBy: String(startedBy)
+        lastError
+      };
+
+      if (nextIndex < total) {
+        await this._putJson(this.K.active, nextActive);
+        return { ok: true, status: "running", processed, total, nextIndex };
+      }
+
+      const done = {
+        ...nextActive,
+        status: "done",
+        endedAt: new Date().toISOString(),
+        startedBy: String(active.startedBy || "")
       };
       await this._appendHistory(done);
+      await this._delete(this.K.active);
+      return { ok: true, status: "done", processed, total };
     } catch (e) {
       const crash = {
         ...active,
@@ -2424,12 +2478,61 @@ export class AdminCommands {
         failed: failed + 1,
         blocked,
         lastError: String(e?.message || e || "broadcast run error"),
-        startedBy: String(startedBy)
+        startedBy: String(active.startedBy || "")
       };
       await this._appendHistory(crash);
-    } finally {
       await this._delete(this.K.active);
+      return { ok: false, status: "failed", error: crash.lastError };
     }
+  }
+
+  async _resumeLegacyBroadcastActive({ resumedBy } = {}) {
+    const active = await this._getJson(this.K.active, null);
+    if (!active || active.status !== "running") {
+      return { ok: false, reason: "no active running broadcast" };
+    }
+
+    if (active.draft && Array.isArray(active.recipients)) {
+      return {
+        ok: true,
+        runId: String(active.runId || ""),
+        total: Number(active.total || active.recipients.length || 0),
+        nextIndex: Number(active.nextIndex || active.processed || 0)
+      };
+    }
+
+    const startedBy = String(active.startedBy || resumedBy || "");
+    const draft = active.draft
+      || (startedBy ? await this._getJson(this.K.draft(startedBy), null) : null)
+      || await this._getJson(this.K.draft(resumedBy), null);
+    if (!draft) {
+      return { ok: false, reason: "draft not found for legacy run" };
+    }
+
+    const recipients = await this._collectRecipientChatIds();
+    const processed = Math.max(0, Math.floor(Number(active.processed) || 0));
+    if (processed > recipients.length) {
+      return { ok: false, reason: "processed count is greater than current recipient list" };
+    }
+
+    const nextActive = {
+      ...active,
+      type: active.type || draft.type,
+      draft,
+      recipients,
+      nextIndex: processed,
+      batchSize: AdminCommands.BROADCAST_BATCH_SIZE,
+      total: recipients.length,
+      resumedAt: new Date().toISOString(),
+      resumedBy: String(resumedBy || "")
+    };
+    await this._putJson(this.K.active, nextActive);
+    return {
+      ok: true,
+      runId: String(nextActive.runId || ""),
+      total: recipients.length,
+      nextIndex: processed
+    };
   }
 
   _broadcastRunState(active, nowTs = Date.now()) {

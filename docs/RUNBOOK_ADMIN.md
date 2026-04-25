@@ -111,6 +111,11 @@ Command parsing source: `src/AdminCommands.js`.
 
 - `/broadcast_send`
   - Send draft to all users.
+  - Runs in batches. `/broadcast_status` shows progress; scheduled cron continues active batches.
+
+- `/broadcast_resume_legacy confirm`
+  - Resume an old stuck broadcast that was started before batch payloads were stored.
+  - Uses the saved processed counter as the next recipient index to avoid duplicate sends.
 
 - `/broadcast_status`
   - Show current run and recent history.

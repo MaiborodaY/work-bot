@@ -121,3 +121,101 @@ test("broadcast_reset confirm clears active run and writes history entry", async
     Date.now = realNow;
   }
 });
+
+test("broadcast_send stores recipients and completes through multiple batches", async () => {
+  const sent = [];
+  const recipients = Array.from({ length: 120 }, (_, i) => ({ id: i + 1, chatId: 1000 + i }));
+  const users = makeUsersAndDb(recipients, [[
+    "admin:broadcast:draft:admin-1",
+    { type: "text", text: "Hello batch", updatedAt: "2026-04-25T10:00:00.000Z" }
+  ]]);
+  const admin = new AdminCommands({
+    users,
+    send: async (text) => { sent.push(String(text)); },
+    isAdmin: (id) => String(id) === "admin-1",
+    botToken: "test-token"
+  });
+  const delivered = [];
+  admin._sleep = async () => {};
+  admin._sendDraft = async (chatId) => {
+    delivered.push(chatId);
+    return { ok: true };
+  };
+
+  const handled = await admin.tryHandle("/broadcast_send", { fromId: "admin-1" });
+
+  assert.equal(handled, true);
+  assert.equal(delivered.length, 50);
+  let active = JSON.parse(await users.db.get("admin:broadcast:active"));
+  assert.equal(active.total, 120);
+  assert.equal(active.processed, 50);
+  assert.equal(active.nextIndex, 50);
+  assert.equal(active.sent, 50);
+  assert.equal(active.recipients.length, 120);
+
+  await admin.runBroadcastBatch();
+  active = JSON.parse(await users.db.get("admin:broadcast:active"));
+  assert.equal(delivered.length, 100);
+  assert.equal(active.processed, 100);
+  assert.equal(active.nextIndex, 100);
+
+  await admin.runBroadcastBatch();
+  assert.equal(delivered.length, 120);
+  assert.equal(await users.db.get("admin:broadcast:active"), null);
+  const history = JSON.parse(await users.db.get("admin:broadcast:history"));
+  assert.equal(history[0].status, "done");
+  assert.equal(history[0].sent, 120);
+  assert.equal(history[0].total, 120);
+});
+
+test("broadcast_resume_legacy continues from processed index without duplicating earlier recipients", async () => {
+  const sent = [];
+  const recipients = Array.from({ length: 120 }, (_, i) => ({ id: i + 1, chatId: 1000 + i }));
+  const users = makeUsersAndDb(recipients, [
+    [
+      "admin:broadcast:active",
+      {
+        runId: "bc_1777108144067",
+        status: "running",
+        startedAt: "2026-04-25T09:09:04.067Z",
+        startedBy: "admin-1",
+        type: "text",
+        total: 765,
+        processed: 100,
+        sent: 57,
+        failed: 43,
+        blocked: 41
+      }
+    ],
+    [
+      "admin:broadcast:draft:admin-1",
+      { type: "text", text: "Legacy hello", updatedAt: "2026-04-25T09:00:00.000Z" }
+    ]
+  ]);
+  const admin = new AdminCommands({
+    users,
+    send: async (text) => { sent.push(String(text)); },
+    isAdmin: (id) => String(id) === "admin-1",
+    botToken: "test-token"
+  });
+  const delivered = [];
+  admin._sleep = async () => {};
+  admin._sendDraft = async (chatId) => {
+    delivered.push(chatId);
+    return { ok: true };
+  };
+
+  const handled = await admin.tryHandle("/broadcast_resume_legacy confirm", { fromId: "admin-1" });
+
+  assert.equal(handled, true);
+  assert.match(sent[0], /Legacy broadcast resumed/i);
+  assert.deepEqual(delivered, recipients.slice(100).map((u) => u.chatId));
+  assert.equal(await users.db.get("admin:broadcast:active"), null);
+  const history = JSON.parse(await users.db.get("admin:broadcast:history"));
+  assert.equal(history[0].runId, "bc_1777108144067");
+  assert.equal(history[0].status, "done");
+  assert.equal(history[0].processed, 120);
+  assert.equal(history[0].sent, 77);
+  assert.equal(history[0].failed, 43);
+  assert.equal(history[0].blocked, 41);
+});

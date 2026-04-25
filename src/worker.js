@@ -158,6 +158,12 @@ export default {
         social,
         debug: !!env.DEBUG
       });
+      const adminCron = new AdminCommands({
+        users,
+        send: async () => {},
+        isAdmin,
+        botToken: env.BOT_TOKEN
+      });
       await safeCall("worker.cron.stocks_daily_update", async () => {
         await stocks.runDailyUpdate();
       });
@@ -190,6 +196,9 @@ export default {
       });
       await safeCall("worker.cron.channel.run_scheduled", async () => {
         await channel.runScheduled();
+      });
+      await safeCall("worker.cron.broadcast.batch", async () => {
+        await adminCron.runBroadcastBatch();
       });
       await notifier.run();
       try {
@@ -1641,10 +1650,17 @@ export default {
       social,
       debug: !!env.DEBUG
     });
+    const adminCron = new AdminCommands({
+      users,
+      send: async () => {},
+      isAdmin,
+      botToken: env.BOT_TOKEN
+    });
     ctx.waitUntil(Promise.allSettled([
       social.ensurePeriod(),
       stocks.runDailyUpdate(),
       notifier.run(),
+      adminCron.runBroadcastBatch(),
       labour.runDueExpirations(),
       thief.resolveExpired(),
       thief.resolveProtectionExpirations(),
