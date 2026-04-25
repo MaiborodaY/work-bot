@@ -27,6 +27,10 @@ Command parsing source: `src/AdminCommands.js`.
 - `/setgem <userId> <amount>`
   - Set gems to exact value.
 
+- `/givegem_all <amount> confirm`
+  - Add gems to every user in KV, including admins.
+  - Protected command: without `confirm` it shows warning only and does not modify balances.
+
 - `/wipe <userId>`
   - Full profile reset for user (used for onboarding retests).
 

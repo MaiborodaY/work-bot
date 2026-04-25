@@ -56,6 +56,7 @@ export class AdminCommands {
         "/setmoney &lt;userId&gt; &lt;amount&gt; - set money\n" +
         "/givegem &lt;userId&gt; &lt;amount&gt; - add gems\n" +
         "/setgem &lt;userId&gt; &lt;amount&gt; - set gems\n" +
+        "/givegem_all &lt;amount&gt; confirm - add gems to all users\n" +
         "/wipe &lt;userId&gt; - full reset user profile\n\n" +
         "<b>Indexes &amp; Patches</b>\n" +
         "/labour_reindex - rebuild labour free index\n" +
@@ -343,6 +344,26 @@ export class AdminCommands {
         `SetGems: <code>${targetId}</code>\n` +
         `Balance: ${u.premium}`
       );
+      return true;
+    }
+
+    const mGiveGemAll = input.match(/^\/givegem_all(?:@\w+)?\s+(\d+)(?:\s+(confirm))?\s*$/i);
+    if (mGiveGemAll) {
+      const amount = Math.max(0, Number(mGiveGemAll[1]));
+      const confirmed = String(mGiveGemAll[2] || "").toLowerCase() === "confirm";
+      if (!Number.isFinite(amount) || amount <= 0) {
+        await this.send("Format: /givegem_all <amount> confirm");
+        return true;
+      }
+      if (!confirmed) {
+        await this.send(
+          "Bulk grant is protected.\n" +
+          `This will add 💎${amount} to every user, including admins.\n` +
+          `Run: <code>/givegem_all ${amount} confirm</code>`
+        );
+        return true;
+      }
+      await this._giveGemsToAllUsers(amount);
       return true;
     }
 
@@ -2161,6 +2182,46 @@ export class AdminCommands {
       `Already marked: ${alreadyMarked}\n` +
       `No today signal: ${skippedNoSignal}\n` +
       `Excluded admins: ${excludedAdmins}`
+    );
+  }
+
+  async _giveGemsToAllUsers(amount) {
+    await this.send(`Bulk gems grant started: 💎${this._fmtInt(amount)} for every user...`);
+    const prefix = "u:";
+    let cursor = undefined;
+    let scanned = 0;
+    let updated = 0;
+
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const page = await this.db.list({ prefix, cursor });
+      const keys = Array.isArray(page?.keys) ? page.keys : [];
+      for (const k of keys) {
+        try {
+          const raw = await this.db.get(k.name);
+          if (!raw) continue;
+          const u = JSON.parse(raw);
+          const fallbackId = String(k.name || "").slice(prefix.length);
+          const id = String((u?.id ?? fallbackId) || "");
+          if (!id) continue;
+          scanned += 1;
+          u.premium = Math.max(0, Number(u?.premium || 0)) + amount;
+          await this.users.save(u);
+          updated += 1;
+        } catch {
+          // skip invalid rows
+        }
+      }
+      if (!page || page.list_complete || !page.cursor) break;
+      cursor = page.cursor;
+    }
+
+    await this.send(
+      "<b>Bulk gems grant done</b>\n" +
+      `Amount per user: 💎${this._fmtInt(amount)}\n` +
+      `Scanned users: ${this._fmtInt(scanned)}\n` +
+      `Updated users: ${this._fmtInt(updated)}\n` +
+      `Total granted: 💎${this._fmtInt(updated * amount)}`
     );
   }
 
