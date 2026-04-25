@@ -97,6 +97,19 @@ export default {
 
     // ручной запуск нотификатора
     if (url.pathname === "/cron-run" && request.method === "GET") {
+      const _kvTotals = {};
+      const _countDb = (label) => {
+        const inc = (op) => { _kvTotals[label] = _kvTotals[label] || {}; _kvTotals[label][op] = (_kvTotals[label][op] || 0) + 1; };
+        return new Proxy(env.DB, {
+          get(target, prop) {
+            if (prop === "get")    return (...a) => { inc("R"); return target.get(...a); };
+            if (prop === "put")    return (...a) => { inc("W"); return target.put(...a); };
+            if (prop === "delete") return (...a) => { inc("D"); return target.delete(...a); };
+            if (prop === "list")   return (...a) => { inc("L"); return target.list(...a); };
+            return typeof target[prop] === "function" ? target[prop].bind(target) : target[prop];
+          }
+        });
+      };
       const bot = new TelegramClient(env.BOT_TOKEN);
       const users = new UserStore(env.DB);
       const economy = new EconomyService();
@@ -110,15 +123,15 @@ export default {
         ]
       );
       const isAdmin = (id) => __adminIdSet.has(String(id));
-      const ratings = new RatingService({ db: env.DB, users, now: () => Date.now(), isAdmin });
-      const achievements = new AchievementService({ users, db: env.DB, now: () => Date.now(), bot, ratings });
+      const ratings = new RatingService({ db: _countDb("ratings"), users, now: () => Date.now(), isAdmin });
+      const achievements = new AchievementService({ users, db: _countDb("achievements"), now: () => Date.now(), bot, ratings });
       const quests = new QuestService({ users, now: () => Date.now(), bot });
-      const social = new SocialService({ db: env.DB, users, now: () => Date.now(), economy, isAdmin });
-      const stocks = new StockService({ db: env.DB, users, now: () => Date.now(), achievements, quests });
-      const labour = new LabourService({ db: env.DB, users, now: () => Date.now(), bot, quests, social });
-      const thief = new ThiefService({ db: env.DB, users, now: () => Date.now(), bot, achievements, ratings, quests, social });
+      const social = new SocialService({ db: _countDb("social"), users, now: () => Date.now(), economy, isAdmin });
+      const stocks = new StockService({ db: _countDb("stocks"), users, now: () => Date.now(), achievements, quests });
+      const labour = new LabourService({ db: _countDb("labour"), users, now: () => Date.now(), bot, quests, social });
+      const thief = new ThiefService({ db: _countDb("thief"), users, now: () => Date.now(), bot, achievements, ratings, quests, social });
       const channel = new ChannelService({
-        db: env.DB,
+        db: _countDb("channel"),
         bot,
         social,
         ratings,
@@ -128,15 +141,15 @@ export default {
         channelId: env.CHANNEL_ID,
         playUrl: CONFIG?.CHANNEL?.PLAY_URL
       });
-      const pet = new PetService({ db: env.DB, users, now: () => Date.now(), bot, quests, achievements });
-      const farm = new FarmService({ db: env.DB, users, now: () => Date.now(), bot, quests, achievements, social });
-      const colosseum = new ColosseumService({ db: env.DB, users, now: () => Date.now(), bot, isAdmin, quests, achievements });
-      const syndicate = new SyndicateService({ db: env.DB, users, now: () => Date.now(), bot, isAdmin, achievements });
-      const fishing   = new FishingService({ db: env.DB, users, now: () => Date.now(), bot, isAdmin, achievements });
+      const pet = new PetService({ db: _countDb("pet"), users, now: () => Date.now(), bot, quests, achievements });
+      const farm = new FarmService({ db: _countDb("farm"), users, now: () => Date.now(), bot, quests, achievements, social });
+      const colosseum = new ColosseumService({ db: _countDb("colosseum"), users, now: () => Date.now(), bot, isAdmin, quests, achievements });
+      const syndicate = new SyndicateService({ db: _countDb("syndicate"), users, now: () => Date.now(), bot, isAdmin, achievements });
+      const fishing   = new FishingService({ db: _countDb("fishing"), users, now: () => Date.now(), bot, isAdmin, achievements });
       const notifier = new NotificationService({
         users,
         bot,
-        db: env.DB,
+        db: _countDb("notifier"),
         now: () => Date.now(),
         kvPrefix: "u:",
         economy,
@@ -176,6 +189,16 @@ export default {
         await channel.runScheduled();
       });
       await notifier.run();
+      try {
+        const summary = Object.entries(_kvTotals)
+          .map(([svc, c]) => `${svc}:R=${c.R||0},W=${c.W||0},L=${c.L||0},D=${c.D||0}`)
+          .join(" | ");
+        if (summary) console.log(`cron.kv_ops | ${summary}`);
+        await env.DB.put("cron:kv_stats:last", JSON.stringify({
+          ts: Date.now(),
+          totals: _kvTotals
+        }), { expirationTtl: 7 * 24 * 3600 });
+      } catch {}
       return new Response("ok");
     }
 

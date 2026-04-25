@@ -71,6 +71,7 @@ export class AdminCommands {
         "/admin_levels - players levels snapshot\n" +
         "/admin_syndicate - syndicate stats snapshot\n" +
         "/admin_fishing - fishing outcomes & strategy stats\n" +
+        "/admin_cron_stats - KV ops per service from last cron run\n" +
         "/admin_new_users [limit] - newest users list\n" +
         "/admin_quiz - quiz stats\n\n" +
         "<b>Channel</b>\n" +
@@ -399,6 +400,10 @@ export class AdminCommands {
     }
     if (/^\/admin_fishing(?:@\w+)?\s*$/i.test(input)) {
       await this._sendFishingStats();
+      return true;
+    }
+    if (/^\/admin_cron_stats(?:@\w+)?\s*$/i.test(input)) {
+      await this._sendCronStats();
       return true;
     }
     const mAdminLevels = input.match(/^\/admin_levels(?:@\w+)?(?:\s+(all))?\s*$/i);
@@ -1352,6 +1357,27 @@ export class AdminCommands {
       }
     }
 
+    await this.send(lines.join("\n"));
+  }
+
+  async _sendCronStats() {
+    const raw = await this.db.get("cron:kv_stats:last").catch(() => null);
+    if (!raw) {
+      await this.send("No cron stats yet. Run /cron-run first.");
+      return;
+    }
+    let data; try { data = JSON.parse(raw); } catch { await this.send("Failed to parse stats."); return; }
+    const ts = data.ts ? new Date(data.ts).toISOString().replace("T", " ").slice(0, 19) + " UTC" : "?";
+    const totals = data.totals || {};
+    const lines = [`<b>Cron KV ops — last run</b>`, `${ts}`, ""];
+    let totalR = 0, totalW = 0, totalL = 0, totalD = 0;
+    const rows = Object.entries(totals).sort((a, b) => (b[1].L||0) - (a[1].L||0));
+    for (const [svc, c] of rows) {
+      const R = c.R||0, W = c.W||0, L = c.L||0, D = c.D||0;
+      totalR += R; totalW += W; totalL += L; totalD += D;
+      lines.push(`<b>${svc}</b>: R=${R} W=${W} L=${L}${D ? ` D=${D}` : ""}`);
+    }
+    lines.push("", `<b>TOTAL</b>: R=${totalR} W=${totalW} L=${totalL} D=${totalD}`);
     await this.send(lines.join("\n"));
   }
 
