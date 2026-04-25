@@ -72,6 +72,7 @@ export class AdminCommands {
         "/admin_syndicate - syndicate stats snapshot\n" +
         "/admin_fishing - fishing outcomes & strategy stats\n" +
         "/admin_cron_stats - KV ops per service from last cron run\n" +
+        "/admin_reset_fishing_stats - reset all fishing counters (completedTotal, money, outcomes)\n" +
         "/admin_new_users [limit] - newest users list\n" +
         "/admin_quiz - quiz stats\n\n" +
         "<b>Channel</b>\n" +
@@ -404,6 +405,10 @@ export class AdminCommands {
     }
     if (/^\/admin_cron_stats(?:@\w+)?\s*$/i.test(input)) {
       await this._sendCronStats();
+      return true;
+    }
+    if (/^\/admin_reset_fishing_stats(?:@\w+)?\s*$/i.test(input)) {
+      await this._resetFishingStats();
       return true;
     }
     const mAdminLevels = input.match(/^\/admin_levels(?:@\w+)?(?:\s+(all))?\s*$/i);
@@ -1379,6 +1384,36 @@ export class AdminCommands {
     }
     lines.push("", `<b>TOTAL</b>: R=${totalR} W=${totalW} L=${totalL} D=${totalD}`);
     await this.send(lines.join("\n"));
+  }
+
+  async _resetFishingStats() {
+    await this.send("Resetting fishing stats...");
+    if (!this.db) { await this.send("DB unavailable."); return; }
+    let scanned = 0, updated = 0;
+    let cursor = undefined;
+    do {
+      const page = await this.db.list({ prefix: "u:", cursor }).catch(() => null);
+      if (!page) break;
+      cursor = page.list_complete ? undefined : page.cursor;
+      for (const { name: key } of page.keys || []) {
+        const raw = await this.db.get(key).catch(() => null);
+        if (!raw) continue;
+        let u; try { u = JSON.parse(raw); } catch { continue; }
+        scanned++;
+        if (!u.fishing || typeof u.fishing !== "object") continue;
+        const f = u.fishing;
+        f.completedTotal = 0;
+        f.completedWeek  = 0;
+        f.moneyTotal     = 0;
+        f.moneyWeek      = 0;
+        f.outcomes       = { CC: 0, DC: 0, CD: 0, DD: 0 };
+        await this.db.put(key, JSON.stringify(u)).catch(() => {});
+        updated++;
+      }
+    } while (cursor);
+    await this.db.delete("fishing:stats:v1").catch(() => {});
+    await this.db.delete("fishing:rating:all").catch(() => {});
+    await this.send(`Done. Scanned: ${scanned}, reset: ${updated}. Global stats and all-time rating cleared.`);
   }
 
   async _sendFishingStats() {
