@@ -31,6 +31,10 @@ Command parsing source: `src/AdminCommands.js`.
   - Add gems to every user in KV, including admins.
   - Protected command: without `confirm` it shows warning only and does not modify balances.
 
+- `/admin_study_ready <userId>`
+  - Test helper: make user's active study ready for cron auto-finish.
+  - Use `/cron-run` after this command to trigger the same background completion path as production cron.
+
 - `/wipe <userId>`
   - Full profile reset for user (used for onboarding retests).
 

@@ -3,6 +3,7 @@
 import { CONFIG } from "./GameConfig.js";
 import { addDaysUtc, dayDiffUtc, dayStrUtc, hasActivityOnDay, isDayStr, markUsefulActivity } from "./PlayerStats.js";
 import { ProgressionService } from "./ProgressionService.js";
+import { NotifyDueIndex } from "./NotifyDueIndex.js";
 
 const LABOUR_FREE_PLAYERS_KEY = "labour:free_players";
 
@@ -59,6 +60,7 @@ export class AdminCommands {
         "/givegem &lt;userId&gt; &lt;amount&gt; - add gems\n" +
         "/setgem &lt;userId&gt; &lt;amount&gt; - set gems\n" +
         "/givegem_all &lt;amount&gt; confirm - add gems to all users\n" +
+        "/admin_study_ready &lt;userId&gt; - make active study ready for cron auto-finish\n" +
         "/wipe &lt;userId&gt; - full reset user profile\n\n" +
         "<b>Indexes &amp; Patches</b>\n" +
         "/labour_reindex - rebuild labour free index\n" +
@@ -413,6 +415,40 @@ export class AdminCommands {
         return true;
       }
       await this._giveGemsToAllUsers(amount);
+      return true;
+    }
+
+    const mAdminStudyReady = input.match(/^\/admin_study_ready(?:@\w+)?\s+(\d+)\s*$/i);
+    if (mAdminStudyReady) {
+      const targetId = Number(mAdminStudyReady[1]);
+      if (!Number.isFinite(targetId)) {
+        await this.send("Format: /admin_study_ready <userId>");
+        return true;
+      }
+      const u = await this.users.getOrCreate(targetId);
+      if (!u?.study?.active) {
+        await this.send(
+          "Study ready skipped.\n" +
+          `User <code>${targetId}</code> has no active study.`
+        );
+        return true;
+      }
+      const nowTs = Date.now();
+      u.study.endAt = nowTs - 1000;
+      u.study.notified = false;
+      await this.users.save(u);
+      try {
+        if (this.db) {
+          const dueIndex = new NotifyDueIndex({ db: this.db, now: () => nowTs });
+          await dueIndex.markDue({ userId: u.id || targetId, activity: "study", endAt: u.study.endAt });
+        }
+      } catch {}
+      await this.send(
+        "Study marked ready for auto-finish.\n" +
+        `User: <code>${targetId}</code>\n` +
+        `Level now: ${Math.max(0, Number(u?.study?.level) || 0)}\n` +
+        "Next step: run <code>/cron-run</code> or wait for scheduled cron."
+      );
       return true;
     }
 
