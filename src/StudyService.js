@@ -96,38 +96,31 @@ export class StudyService {
   }
   
 
-  async maybeFinish(u, goTo = null) {
+  async maybeFinish(u, goTo = null, opts = {}) {
     if (!u?.study?.active) return false;
 
     const now = this.now();
     if (now < (u.study.endAt || 0)) return false;
 
-    const maxL  = (CONFIG.STUDY && CONFIG.STUDY.MAX_LEVEL) || 50;
-    const level = Math.max(0, u?.study?.level || 0);
-    u.study.level  = Math.min(maxL, level + 1);
-    u.study.active = false;
-    u.study.startAt = 0;
-    u.study.endAt   = 0;
+    const maxL = (CONFIG.STUDY && CONFIG.STUDY.MAX_LEVEL) || 50;
+    const fin = await this.finish(u);
+    if (!fin?.ok) return false;
 
-    await this.users.save(u);
-
-    // Апдейтим "Топ умников" (best-effort), как в других топах
-try {
-  if (this.social && typeof this.social.maybeUpdateSmartTop === "function") {
-    await this.social.maybeUpdateSmartTop({
-      userId: u.id,
-      displayName: u.displayName || String(u.id),
-      level: u.study.level
-    });
-  }
-} catch {}
+    // Let callers attach route-specific side effects, such as quests and achievements.
+    try {
+      if (typeof opts.onFinish === "function") {
+        await opts.onFinish(fin);
+      }
+    } catch {}
 
     const doneText = `🎓 Обучение завершено! Уровень: ${u.study.level}. (+1% к скорости работ, максимум ${maxL}%)`;
 
+    const finishText = typeof opts.message === "function" ? opts.message(fin) : doneText;
+
     if (typeof goTo === "function") {
-      await goTo(u, "Study", doneText);
+      await goTo(u, "Study", finishText);
     } else {
-      await this.send(doneText);
+      await this.send(finishText);
     }
     return true;
   }

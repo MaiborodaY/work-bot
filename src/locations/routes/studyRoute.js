@@ -26,6 +26,15 @@ export async function renderStudyRoute(ctx, user, { header = "", lang = "ru" } =
     return;
   }
 
+  if (user.study?.active && ctx.now() >= (user.study.endAt || 0) && typeof ctx.maybeFinishStudy === "function") {
+    const finished = await ctx.maybeFinishStudy(user);
+    if (finished) {
+      ctx._sourceMsg = null;
+      ctx._route = Routes.STUDY;
+      return;
+    }
+  }
+
   if (user.study?.active) {
     const startAt = user.study.startAt || 0;
     const endAt = user.study.endAt || 1;

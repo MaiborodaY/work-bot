@@ -153,6 +153,9 @@ export default {
         now: () => Date.now(),
         kvPrefix: "u:",
         economy,
+        achievements,
+        quests,
+        social,
         debug: !!env.DEBUG
       });
       await safeCall("worker.cron.stocks_daily_update", async () => {
@@ -484,7 +487,22 @@ export default {
       formatters: Formatters,
       pct,
       now,
-      maybeFinishStudy: (u) => study.maybeFinish(u, goTo),
+      maybeFinishStudy: (u) => study.maybeFinish(u, goTo, {
+        source: "auto",
+        message: (fin) => t("handler.study.finish_ok", normalizeLang(u?.lang || "ru"), { level: fin.level }),
+        onFinish: async (fin) => {
+          try {
+            if (achievements?.onEvent) {
+              await achievements.onEvent(u, "study_finish", { level: fin.level, source: "auto" });
+            }
+          } catch {}
+          try {
+            if (quests?.onEvent) {
+              await quests.onEvent(u, "study_finish", { level: fin.level, source: "auto" });
+            }
+          } catch {}
+        }
+      }),
       daily,
       // проброс автодогона тренировки
       // maybeFinishGym: (u, goToFn) => gym.maybeFinish(u, goToFn),
@@ -1618,6 +1636,9 @@ export default {
       now: () => Date.now(),
       kvPrefix: "u:",
       economy,
+      achievements,
+      quests,
+      social,
       debug: !!env.DEBUG
     });
     ctx.waitUntil(Promise.allSettled([

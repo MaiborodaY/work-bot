@@ -321,7 +321,6 @@ export class UiFactory {
     if (ready) {
       return [
         [{ text: this._t(l, "ui.progress.line", { progress }), callback_data: "noop" }],
-        [{ text: this._t(l, "ui.study.finish"), callback_data: "study:finish" }],
         [{ text: this._t(l, "ui.back.default"), callback_data: this._go(backTo) }],
       ];
     }

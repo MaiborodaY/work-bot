@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { Locations } from "../Locations.js";
 import { Routes } from "../Routes.js";
 
-function createLocations({ nowTs = Date.now() } = {}) {
+function createLocations({ nowTs = Date.now(), maybeFinishStudy = async () => false } = {}) {
   const mediaCalls = [];
 
   const media = {
@@ -52,7 +52,7 @@ function createLocations({ nowTs = Date.now() } = {}) {
     },
     pct: () => 0,
     now: () => nowTs,
-    maybeFinishStudy: async () => false
+    maybeFinishStudy
   });
 
   return { locations, mediaCalls };
@@ -85,6 +85,29 @@ test("study route idle: renders Study with auto policy", async () => {
   assert.equal(mediaCalls.length, 1);
   assert.equal(mediaCalls[0].place, Routes.STUDY);
   assert.equal(mediaCalls[0].policy, "auto");
+});
+
+test("study route ready: auto-finishes instead of rendering finish button", async () => {
+  let autoFinishCalls = 0;
+  const { locations, mediaCalls } = createLocations({
+    nowTs: 2000,
+    maybeFinishStudy: async (u) => {
+      autoFinishCalls += 1;
+      u.study.active = false;
+      u.study.level += 1;
+      return true;
+    }
+  });
+  const u = baseUser();
+  u.displayName = "Tester";
+  u.study = { level: 2, active: true, startAt: 1000, endAt: 1500 };
+
+  await locations.show(u, null, Routes.STUDY);
+
+  assert.equal(autoFinishCalls, 1);
+  assert.equal(u.study.active, false);
+  assert.equal(u.study.level, 3);
+  assert.equal(mediaCalls.length, 0);
 });
 
 test("casino route: shows standard casino menu when arcana is unlocked", async () => {

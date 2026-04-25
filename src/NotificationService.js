@@ -4,6 +4,7 @@ import { NotifyDueIndex } from "./NotifyDueIndex.js";
 import { normalizeLang, t } from "./i18n/index.js";
 import { getJobTitle } from "./I18nCatalog.js";
 import { EnergyService } from "./EnergyService.js";
+import { StudyService } from "./StudyService.js";
 
 const DUE_LOOKBACK_MINUTES = 15;
 const FALLBACK_SCAN_EVERY_HOURS = 6;
@@ -30,7 +31,7 @@ export class NotificationService {
    *   debug?: boolean                // подробные логи
    * }} deps
    */
-  constructor({ users, bot, db, now, kvPrefix, economy, debug }) {
+  constructor({ users, bot, db, now, kvPrefix, economy, debug, achievements = null, quests = null, social = null }) {
     this.users = users;
     this.bot = bot;
     this.db = db || (users && users.db) || null;
@@ -38,6 +39,10 @@ export class NotificationService {
     this.kvPrefix = kvPrefix;
     this.economy = economy; // не используется в новой схеме; оставляем для совместимости сигнатуры
     this.debug = !!debug;
+    this.achievements = achievements || null;
+    this.quests = quests || null;
+    this.social = social || null;
+    this.study = new StudyService({ users, send: async () => {}, now: this.now, social: this.social });
 
     this.dueIndex = (this.db && typeof this.db.list === "function")
       ? new NotifyDueIndex({ db: this.db, now: this.now })
@@ -90,12 +95,11 @@ export class NotificationService {
           }
         }
 
-        if (this._hasReadyStudy(u, now)) {
-          const textS = this._t(u, "notify.study.ready");
-          await this.bot.sendWithInline(u.chatId, textS, [[{ text: this._t(u, "notify.btn.go_study"), callback_data: "go:Study" }]]);
-          if (u.study && !u.study.notified) {
-            u.study.notified = true;
-            changed = true;
+        if (this._hasDueStudy(u, now)) {
+          const fin = await this._autoFinishStudy(u);
+          if (fin?.ok && u.chatId) {
+            const textS = this._t(u, "handler.study.finish_ok", { level: fin.level });
+            await this.bot.sendWithInline(u.chatId, textS, [[{ text: this._t(u, "notify.btn.go_study"), callback_data: "go:Study" }]]);
           }
         }
 
@@ -140,9 +144,14 @@ export class NotificationService {
 
   _hasReadyStudy(u, now) {
     const st = u?.study;
-    if (!st || st.active !== true) return false;
     if (!u.chatId) return false;
     if (st.notified) return false;
+    return this._hasDueStudy(u, now);
+  }
+
+  _hasDueStudy(u, now) {
+    const st = u?.study;
+    if (!st || st.active !== true) return false;
     if (!Number.isFinite(st.endAt)) return false;
     if (now < st.endAt) return false;
     return true;
@@ -161,6 +170,22 @@ export class NotificationService {
     if (!u?.chatId) return false;
     const state = EnergyService.gymPassState(u, now);
     return !!state.expiredNeedsNotify;
+  }
+
+  async _autoFinishStudy(u) {
+    const fin = await this.study.finish(u);
+    if (!fin?.ok) return fin;
+    try {
+      if (this.achievements?.onEvent) {
+        await this.achievements.onEvent(u, "study_finish", { level: fin.level, source: "cron" });
+      }
+    } catch {}
+    try {
+      if (this.quests?.onEvent) {
+        await this.quests.onEvent(u, "study_finish", { level: fin.level, source: "cron" });
+      }
+    } catch {}
+    return fin;
   }
 
   _isFallbackScanWindow(nowTs) {
@@ -212,7 +237,7 @@ export class NotificationService {
       }
 
       if (!u) continue;
-      if (this._hasReadyWork(u, nowTs) || this._hasReadyStudy(u, nowTs) || this._hasReadyGym(u, nowTs) || this._hasExpiredGymPassPending(u, nowTs)) {
+      if (this._hasReadyWork(u, nowTs) || this._hasDueStudy(u, nowTs) || this._hasReadyGym(u, nowTs) || this._hasExpiredGymPassPending(u, nowTs)) {
         out.push(u);
       }
     }
@@ -225,7 +250,7 @@ export class NotificationService {
       const out = [];
       const all = await this.users.listAll();
       for (const u of all) {
-        if (this._hasReadyWork(u, now) || this._hasReadyStudy(u, now) || this._hasReadyGym(u, now) || this._hasExpiredGymPassPending(u, now)) {
+        if (this._hasReadyWork(u, now) || this._hasDueStudy(u, now) || this._hasReadyGym(u, now) || this._hasExpiredGymPassPending(u, now)) {
           out.push(u);
         }
       }
@@ -274,7 +299,7 @@ export class NotificationService {
         if (!raw) continue;
         let u;
         try { u = JSON.parse(raw); } catch { continue; }
-        if (this._hasReadyWork(u, now) || this._hasReadyStudy(u, now) || this._hasReadyGym(u, now) || this._hasExpiredGymPassPending(u, now)) {
+        if (this._hasReadyWork(u, now) || this._hasDueStudy(u, now) || this._hasReadyGym(u, now) || this._hasExpiredGymPassPending(u, now)) {
           out.push(u);
         }
       }
