@@ -142,7 +142,7 @@ test("business supply handler: full progress shows and buys next order slot", as
   assert.equal(saves.length, 1);
   assert.match(answers.at(-1)?.text || "", /Order slot unlocked: 2/);
   assert.equal(mediaCalls.length, 1);
-  assert.match(mediaCalls[0].caption, /Order slots: 2\/3/);
+  assert.match(mediaCalls[0].caption, /Available orders: 2\/3/);
 });
 
 test("business supply handler: buy slot button appears only when progress is full", async () => {
@@ -157,7 +157,7 @@ test("business supply handler: buy slot button appears only when progress is ful
     ready.mediaCalls[0].keyboard.flat().some((btn) => btn.callback_data === "supply:buy_slot:shawarma"),
     true
   );
-  assert.match(ready.mediaCalls[0].caption, /New order slot is ready to buy: \$25000/);
+  assert.match(ready.mediaCalls[0].caption, /Orders completed to level up supplies: 5\/5/);
 
   const notReady = createCtx({
     u: {
@@ -170,7 +170,7 @@ test("business supply handler: buy slot button appears only when progress is ful
     notReady.mediaCalls[0].keyboard.flat().some((btn) => btn.callback_data === "supply:buy_slot:shawarma"),
     false
   );
-  assert.match(notReady.mediaCalls[0].caption, /Next slot progress: 4\/5/);
+  assert.match(notReady.mediaCalls[0].caption, /Orders completed to level up supplies: 4\/5/);
 });
 
 test("business supply handler: buy slot fails without enough money", async () => {

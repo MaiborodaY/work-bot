@@ -22,6 +22,7 @@ import { RatingService } from "./RatingService.js";
 import { QuestService } from "./QuestService.js";
 import { PetService } from "./PetService.js";
 import { FarmService } from "./FarmService.js";
+import { MarketService } from "./MarketService.js";
 import { QuizService } from "./QuizService.js";
 import { GeneralQuizService } from "./GeneralQuizService.js";
 import { ColosseumService } from "./ColosseumService.js";
@@ -59,6 +60,7 @@ import { referralHandler } from "./handlers/referral.js";
 import { ratingsHandler } from "./handlers/ratings.js";
 import { petHandler } from "./handlers/pet.js";
 import { farmHandler } from "./handlers/farm.js";
+import { marketHandler } from "./handlers/market.js";
 import { quizHandler } from "./handlers/quiz.js";
 import { generalQuizHandler } from "./handlers/generalQuiz.js";
 import { colosseumHandler } from "./handlers/colosseum.js";
@@ -273,6 +275,7 @@ export default {
     });
     const pet = new PetService({ db: env.DB, users, now, bot, quests, achievements });
     const farm = new FarmService({ db: env.DB, users, now, bot, quests, achievements, social });
+    const market = new MarketService({ users, now, social });
     const colosseum = new ColosseumService({ db: env.DB, users, now, bot, isAdmin, quests, achievements });
     const syndicate = new SyndicateService({ db: env.DB, users, now, bot, isAdmin, achievements });
     const fishing   = new FishingService({ db: env.DB, users, now, bot, isAdmin, achievements });
@@ -524,6 +527,7 @@ export default {
       stocks,
       labour,
       farm,
+      market,
       pet,
       ratings,
       colosseum,
@@ -1521,6 +1525,7 @@ export default {
         stocks,
         labour,
         farm,
+        market,
         pet,
         ratings,
         colosseum,
@@ -1563,6 +1568,7 @@ export default {
         businessSupplyHandler,
         labourHandler,
         farmHandler,
+        marketHandler,
         petHandler,
         stocksHandler,
         studyHandler,

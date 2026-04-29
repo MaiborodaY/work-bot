@@ -72,6 +72,7 @@ export class FarmService {
         errNoMoney: "Not enough money.",
         errNoSeeds: "Need {{need}}x {{item}}.",
         errNoFertilizer: "Need fertilizer.",
+        fertilizerStock: "Fertilizer: {{count}}",
         errFertilizeOnlyGrowing: "You can fertilize only a growing plot.",
         fertilizeOk: "🧪 Fertilizer applied. Plot {{num}} is ready!",
         errNoEnergy: "Not enough energy. Need {{need}}⚡.",
@@ -129,6 +130,7 @@ export class FarmService {
         errNoMoney: "Недостатньо коштів.",
         errNoSeeds: "Потрібно {{need}}x {{item}}.",
         errNoFertilizer: "Потрібне добриво.",
+        fertilizerStock: "Добриво: {{count}}",
         errFertilizeOnlyGrowing: "Удобрювати можна лише грядку, що росте.",
         fertilizeOk: "🧪 Добриво застосовано. Грядка {{num}} готова!",
         errNoEnergy: "Недостатньо енергії. Потрібно {{need}}⚡.",
@@ -185,6 +187,7 @@ export class FarmService {
       errNoMoney: "Недостаточно средств.",
       errNoSeeds: "Нужно {{need}}x {{item}}.",
       errNoFertilizer: "Нужно удобрение.",
+      fertilizerStock: "Удобрение: {{count}}",
       errFertilizeOnlyGrowing: "Удобрять можно только растущую грядку.",
       fertilizeOk: "🧪 Удобрение применено. Грядка {{num}} готова!",
       errNoEnergy: "Недостаточно энергии. Нужно {{need}}⚡.",
@@ -645,7 +648,7 @@ export class FarmService {
       lines.push(this._fmt(s.plotGrowing, { num: target.index, emoji: crop.emoji, name: crop.name, left }));
       lines.push("");
       lines.push(`$${crop.sellPrice} (+$${this._netProfit(crop.sellPrice, toInt(p.seedSpent, crop.seedPrice))})`);
-      lines.push(`Fertilizer: ${InventoryService.count(u, "fertilizer")}`);
+      lines.push(this._fmt(s.fertilizerStock, { count: InventoryService.count(u, "fertilizer") }));
       if (InventoryService.has(u, "fertilizer", 1)) {
         kb.push([{ text: this._fmt(s.btnFertilize, { num: target.index }), callback_data: `farm:fertilize:${target.index}` }]);
       }

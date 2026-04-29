@@ -74,3 +74,40 @@
 ### Куда дописывать дальше
 - В этот файл добавляем следующие разделы по другим механикам игры.
 - Формат сохраняем: `Что это` -> `Где в коде` -> `Флоу` -> `Экономика` -> `Риски/ограничения`.
+
+---
+
+## Functional: Farm Market (MVP)
+
+### What it is
+- New `Market` section in `Earnings` where players manually sell farm crops from inventory.
+- This is an alternative to instant sell from farm plots (`Harvest & sell`).
+
+### Where in code
+- Service: `src/MarketService.js`
+- Handler: `src/handlers/market.js`
+- Route: `src/Routes.js` (`Routes.MARKET`)
+- Navigation button: `src/UiFactory.js` (`ui.earn.market`)
+- Route rendering: `src/Locations.js` (`_buildServiceRouteRegistry`)
+- Wiring: `src/worker.js` (service init + handler in callback pipeline)
+- Texts: `src/i18n/ru.js`, `src/i18n/uk.js`, `src/i18n/en.js` (`market.*`)
+
+### Flow
+1. Player opens `Earnings -> Market`.
+2. Market lists crop items currently in inventory with quantity and total sell value.
+3. Player opens an item card and sells by quantity (`1/5/10/all`).
+4. After sell, money is credited immediately, and player returns to Market.
+
+### Economy + stats behavior
+- Sell price is taken from `CONFIG.FARM.CROPS[*].sellPrice`.
+- Net farm profit from market sell is counted as:
+  - `sellPrice - seedPrice` per unit.
+- Market sell updates the same farm net-profit stats used by farm top/rankings:
+  - `stats.farmMoneyTotal`
+  - `stats.farmMoneyWeek`
+  - `stats.farmIncomeDays`
+- If `SocialService.maybeUpdateFarmTop` is available, market sell pushes fresh farm top values.
+
+### Current limits
+- Only crop items from farm config are sellable (`crop_*` mapped to `FARM.CROPS`).
+- No partial pricing logic per tier/quality yet (single fixed sell price per crop from config).

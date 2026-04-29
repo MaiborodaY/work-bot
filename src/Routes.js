@@ -14,6 +14,7 @@ export const Routes = Object.freeze({
   HOME: "Home",
   HOME_BED_UPGRADES: "HomeBedUpgrades",
   FARM: "Farm",
+  MARKET: "Market",
   PET: "Pet",
   BAR: "Bar",
   BAR_TASKS: "BarTasks",

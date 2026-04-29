@@ -122,6 +122,7 @@ export class UiFactory {
       [{ text: this._t(l, "ui.earn.bar"), callback_data: this._go(Routes.BAR) }],
       [{ text: this._t(l, "ui.earn.business"), callback_data: this._go(Routes.BUSINESS) }],
       [{ text: this._t(l, "ui.earn.farm"), callback_data: this._go(Routes.FARM) }],
+      [{ text: this._t(l, "ui.earn.market"), callback_data: this._go(Routes.MARKET) }],
     ];
 
     if (user && this._hasAnyBusiness(user)) {
