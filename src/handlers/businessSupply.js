@@ -84,6 +84,7 @@ function buildCaption(u, entry, lang) {
   let statusKey = "business_supply.status_ready";
   if (vm.submitBlockCode === "daily_limit") statusKey = "business_supply.status_wait_claim";
   if (vm.submitBlockCode === "missing_ingredients") statusKey = "business_supply.status_collect_ingredients";
+  const showOrderBlock = vm.submitBlockCode !== "daily_limit";
   const currentBonus = Math.max(1, Number(vm?.multiplier || 1));
   const bonusLine = currentBonus > 1
     ? tt("business_supply.bonus_next", { mult: currentBonus })
@@ -95,9 +96,7 @@ function buildCaption(u, entry, lang) {
   return [
     tt("business_supply.title", { business }),
     "",
-    tt("business_supply.order_title"),
-    ...recipeLines,
-    "",
+    ...(showOrderBlock ? [tt("business_supply.order_title"), ...recipeLines, ""] : []),
     tt("business_supply.today", { done: vm.ordersToday, slots: vm.slots }),
     tt("business_supply.slots", { slots: vm.slots, max: vm.maxSlots }),
     bonusLine,

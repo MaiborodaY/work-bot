@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { businessSupplyHandler } from "../handlers/businessSupply.js";
 import { UiFactory } from "../UiFactory.js";
+import { getTodayUTC } from "../BusinessPayout.js";
 
 function createCtx(overrides = {}) {
   const answers = [];
@@ -189,4 +190,29 @@ test("business supply handler: buy slot fails without enough money", async () =>
   assert.equal(saves.length, 0);
   assert.match(answers.at(-1)?.text || "", /Not enough money/);
   assert.equal(mediaCalls.length, 1);
+});
+
+test("business supply handler: hides daily order block when today's order limit is reached", async () => {
+  const { ctx, mediaCalls } = createCtx({
+    data: "supply:open",
+    u: {
+      biz: {
+        owned: [{
+          id: "shawarma",
+          supply: {
+            unlocked: true,
+            slots: 1,
+            ordersToday: 1,
+            lastOrderDayUTC: getTodayUTC()
+          }
+        }]
+      }
+    }
+  });
+
+  await businessSupplyHandler.handle(ctx);
+
+  assert.equal(mediaCalls.length, 1);
+  assert.doesNotMatch(String(mediaCalls[0].caption || ""), /Daily order:/i);
+  assert.match(String(mediaCalls[0].caption || ""), /Claim shawarma payout first/i);
 });
