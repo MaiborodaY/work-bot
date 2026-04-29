@@ -58,6 +58,7 @@ export class FarmService {
         btnPlant: "🌱 Plant (plot {{num}})",
         btnBuyPlot: "💳 Buy plot {{num}} — ${{price}}",
         btnHarvest: "🧺 Harvest & sell {{emoji}} {{name}} — ${{price}}",
+        btnHarvestInv: "✋ Collect to inventory {{emoji}} {{name}}",
         btnFertilize: "🧪 Fertilize plot {{num}}",
         btnRefresh: "🔄 Refresh",
         btnHelp: "ℹ️ How farm works",
@@ -114,6 +115,7 @@ export class FarmService {
         btnPlant: "🌱 Посадити (грядка {{num}})",
         btnBuyPlot: "💳 Купити грядку {{num}} — ${{price}}",
         btnHarvest: "🧺 Зібрати й продати {{emoji}} {{name}} — ${{price}}",
+        btnHarvestInv: "✋ Зібрати в інвентар {{emoji}} {{name}}",
         btnFertilize: "🧪 Удобрити грядку {{num}}",
         btnRefresh: "🔄 Оновити",
         btnHelp: "ℹ️ Як працює ферма",
@@ -169,6 +171,7 @@ export class FarmService {
       btnPlant: "🌱 Посадить (грядка {{num}})",
       btnBuyPlot: "💳 Купить грядку {{num}} — ${{price}}",
       btnHarvest: "🧺 Собрать и продать {{emoji}} {{name}} — ${{price}}",
+      btnHarvestInv: "✋ Собрать в инвентарь {{emoji}} {{name}}",
       btnFertilize: "🧪 Удобрить грядку {{num}}",
       btnRefresh: "🔄 Обновить",
       btnHelp: "ℹ️ Как работает ферма",
@@ -634,7 +637,7 @@ export class FarmService {
         callback_data: `farm:harvest:${target.index}`
       }]);
       kb.push([{
-        text: `\u{1F392} ${crop.emoji} ${crop.name}`,
+        text: this._fmt(s.btnHarvestInv, { emoji: crop.emoji, name: crop.name }),
         callback_data: `farm:harvest_inv:${target.index}`
       }]);
     } else {

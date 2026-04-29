@@ -1,6 +1,7 @@
 import { BusinessSupplyService } from "../BusinessSupplyService.js";
 import { CONFIG } from "../GameConfig.js";
 import { getTodayUTC, normalizeBusinessEntry } from "../BusinessPayout.js";
+import { InventoryService } from "../InventoryService.js";
 import { getBusinessTitle } from "../I18nCatalog.js";
 import { normalizeLang, t } from "../i18n/index.js";
 import { Routes, toGoCallback } from "../Routes.js";
@@ -31,10 +32,14 @@ function findOwnedEntry(u, bizId = MVP_BIZ_ID) {
   return { idx, entry };
 }
 
-function formatRecipeLine(tt, itemId, qty) {
+function formatRecipeLine(tt, u, itemId, qty) {
+  const need = Math.max(0, Number(qty) || 0);
+  const haveRaw = InventoryService.count(u, String(itemId || ""));
+  const have = Math.max(0, Math.min(need, Number(haveRaw) || 0));
   return tt("business_supply.recipe_line", {
     item: tt(`business_supply.item.${String(itemId || "")}`),
-    qty
+    have,
+    qty: need
   });
 }
 
@@ -45,7 +50,7 @@ function buildCaption(u, entry, lang) {
     ? BusinessSupplyService.buildViewModel(u, entry, MVP_BIZ_ID, getTodayUTC())
     : null;
   const recipe = vm?.recipe || BusinessSupplyService.config(MVP_BIZ_ID)?.recipe || {};
-  const recipeLines = Object.entries(recipe).map(([itemId, qty]) => formatRecipeLine(tt, itemId, qty));
+  const recipeLines = Object.entries(recipe).map(([itemId, qty]) => formatRecipeLine(tt, u, itemId, qty));
   const nextMultiplier = Number(CONFIG?.BUSINESS_SUPPLY?.[MVP_BIZ_ID]?.multipliersByOrders?.[
     Math.max(1, Number(vm?.ordersToday || 0) + 1)
   ]) || 2;
@@ -79,11 +84,13 @@ function buildCaption(u, entry, lang) {
   let statusKey = "business_supply.status_ready";
   if (vm.submitBlockCode === "daily_limit") statusKey = "business_supply.status_wait_claim";
   if (vm.submitBlockCode === "missing_ingredients") statusKey = "business_supply.status_collect_ingredients";
-  const slotStatus = vm.progressTarget <= 0
-    ? tt("business_supply.slots_max")
-    : (vm.canBuySlot
-      ? tt("business_supply.next_slot_ready", { price: vm.nextSlotPrice })
-      : tt("business_supply.next_slot_progress", { progress: vm.progress, target: vm.progressTarget }));
+  const currentBonus = Math.max(1, Number(vm?.multiplier || 1));
+  const bonusLine = currentBonus > 1
+    ? tt("business_supply.bonus_next", { mult: currentBonus })
+    : tt("business_supply.bonus_none");
+  const progressLine = vm.progressTarget > 0
+    ? tt("business_supply.progress", { progress: vm.progress, target: vm.progressTarget })
+    : tt("business_supply.slots_max");
 
   return [
     tt("business_supply.title", { business }),
@@ -93,9 +100,8 @@ function buildCaption(u, entry, lang) {
     "",
     tt("business_supply.today", { done: vm.ordersToday, slots: vm.slots }),
     tt("business_supply.slots", { slots: vm.slots, max: vm.maxSlots }),
-    tt("business_supply.bonus_next", { mult: nextMultiplier }),
-    tt("business_supply.progress", { progress: vm.progress, target: vm.progressTarget || "-" }),
-    slotStatus,
+    bonusLine,
+    progressLine,
     "",
     tt(statusKey)
   ].join("\n");
@@ -122,7 +128,7 @@ function buildKeyboard(u, entry, lang) {
         callback_data: `supply:buy_slot:${MVP_BIZ_ID}`
       }]);
     }
-    rows.push([{ text: tt("business_supply.btn_to_business"), callback_data: `go:Biz_${MVP_BIZ_ID}` }]);
+    rows.push([{ text: tt("business_supply.btn_to_business"), callback_data: toGoCallback(Routes.FARM) }]);
   }
 
   rows.push([{ text: tt("ui.back.default"), callback_data: toGoCallback(Routes.EARN) }]);
