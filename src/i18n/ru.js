@@ -31,6 +31,7 @@ export const RU = {
   "ui.reply.profile": "👤 Профиль",
 
   "ui.square.earn": "💼 Заработок",
+  "ui.square.bar": "🍻 Бар",
   "ui.square.progress": "📈 Прогресс",
   "ui.square.minigames": "🎮 Игра в Игре!",
   "ui.square.city": "🏛️ Город",
@@ -557,7 +558,7 @@ export const RU = {
   "labour.btn.rehire": "🔄 Нанять снова {{name}} (слот {{slotNum}})",
   "labour.btn.help": "ℹ️ Как работают наёмники",
   "labour.btn.refresh": "🔄 Обновить",
-  "labour.btn.back_earn": "⬅️ Назад к заработку",
+  "labour.btn.back_earn": "⬅️ Назад",
   "labour.btn.back_to_businesses": "⬅️ К бизнесам",
   "labour.btn.back": "⬅️ Назад",
   "labour.err.slot_unavailable": "Для этого бизнеса слот недоступен.",

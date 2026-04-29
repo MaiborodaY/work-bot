@@ -52,10 +52,13 @@ function createCtx(overrides = {}) {
 test("business supply ui: business district shows supplies only after owning a business", () => {
   const ui = new UiFactory();
   const earnButtons = ui.earn({ lang: "en", biz: { owned: [{ id: "shawarma" }] } }, "en").flat();
+  const squareButtons = ui.square("en").flat();
   const emptyButtons = ui.businessDistrict({ lang: "en", biz: { owned: [] } }, "en").flat();
   const ownerButtons = ui.businessDistrict({ lang: "en", biz: { owned: [{ id: "shawarma" }] } }, "en").flat();
 
   assert.equal(earnButtons.some((btn) => btn.callback_data === "go:BusinessDistrict"), true);
+  assert.equal(earnButtons.some((btn) => btn.callback_data === "go:Bar"), false);
+  assert.equal(squareButtons.some((btn) => btn.callback_data === "go:Bar"), true);
   assert.equal(earnButtons.some((btn) => btn.callback_data === "supply:open"), false);
   assert.equal(emptyButtons.some((btn) => btn.callback_data === "supply:open"), false);
   assert.equal(ownerButtons.some((btn) => btn.callback_data === "supply:open"), true);

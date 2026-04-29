@@ -96,6 +96,7 @@ export class UiFactory {
     const l = this._lang(lang);
     return [
       [{ text: this._t(l, "ui.square.earn"), callback_data: this._go(Routes.EARN) }],
+      [{ text: this._t(l, "ui.square.bar"), callback_data: this._go(Routes.BAR) }],
       [{ text: this._t(l, "ui.square.progress"), callback_data: this._go(Routes.PROGRESS) }],
       [{ text: this._t(l, "ui.square.minigames"), callback_data: this._go(Routes.MINI_GAMES) }],
       [{ text: this._t(l, "ui.square.city"), callback_data: this._go(Routes.CITY) }],
@@ -119,7 +120,6 @@ export class UiFactory {
 
     const kb = [
       [{ text: this._t(l, "ui.earn.work"), callback_data: this._go(Routes.WORK) }],
-      [{ text: this._t(l, "ui.earn.bar"), callback_data: this._go(Routes.BAR) }],
       [{ text: this._t(l, "ui.earn.business_district"), callback_data: this._go(Routes.BUSINESS_DISTRICT) }],
       [{ text: this._t(l, "ui.earn.farm"), callback_data: this._go(Routes.FARM) }],
       [{ text: this._t(l, "ui.earn.market"), callback_data: this._go(Routes.MARKET) }],
