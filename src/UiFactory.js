@@ -215,7 +215,7 @@ export class UiFactory {
     // Onboarding: keep bar menu focused on newbie tasks only.
     if (user?.flags?.onboarding) {
       kb.push([{ text: this._t(l, "ui.bar.newbie_tasks"), callback_data: "bar:newbie" }]);
-      kb.push([{ text: this._t(l, "ui.back.earn"), callback_data: this._go(Routes.EARN) }]);
+      kb.push([{ text: this._t(l, "ui.back.default"), callback_data: this._go(Routes.SQUARE) }]);
       return kb;
     }
 
@@ -247,7 +247,7 @@ export class UiFactory {
       kb.push([{ text: this._t(l, "ui.bar.sub_reward"), callback_data: "bar:sub" }]);
     }
   
-    kb.push([{ text: this._t(l, "ui.back.earn"), callback_data: this._go(Routes.EARN) }]);
+    kb.push([{ text: this._t(l, "ui.back.default"), callback_data: this._go(Routes.SQUARE) }]);
     return kb;
   }
 
