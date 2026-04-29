@@ -2,6 +2,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { shopHandler } from "../handlers/shop.js";
 import { Routes } from "../Routes.js";
+import { getShopItemPricing } from "../ShopPricingService.js";
+
+const TEST_NOW = Date.UTC(2026, 3, 29, 12, 0, 0);
 
 function createShopCtx({
   data = "buy_coffee",
@@ -21,6 +24,7 @@ function createShopCtx({
     answers,
     ctx: {
       data,
+      now: () => TEST_NOW,
       u: {
         lang: "ru",
         money,
@@ -58,10 +62,11 @@ function createShopCtx({
 
 test("shop handler: buying coffee marks newbie coffee step as pending", async () => {
   const { saves, goes, ctx } = createShopCtx();
+  const price = getShopItemPricing("coffee", TEST_NOW).finalPrice;
 
   await shopHandler.handle(ctx);
 
-  assert.equal(ctx.u.money, 88);
+  assert.equal(ctx.u.money, 100 - price);
   assert.equal(ctx.u.newbiePath.pending, true);
   assert.equal(saves.length, 1);
   assert.equal(goes.length, 1);
@@ -70,10 +75,11 @@ test("shop handler: buying coffee marks newbie coffee step as pending", async ()
 
 test("shop handler: buy mode stores coffee in inventory", async () => {
   const { ctx, saves, goes } = createShopCtx({ shopBuyMode: "buy", energy: 20, energyMax: 20, inv: {} });
+  const price = getShopItemPricing("coffee", TEST_NOW).finalPrice;
 
   await shopHandler.handle(ctx);
 
-  assert.equal(ctx.u.money, 88);
+  assert.equal(ctx.u.money, 100 - price);
   assert.equal(ctx.u.energy, 20);
   assert.equal(ctx.u.inv.coffee, 1);
   assert.equal(saves.length, 1);
@@ -83,21 +89,23 @@ test("shop handler: buy mode stores coffee in inventory", async () => {
 
 test("shop handler: buy mode allows coffee purchase at full energy", async () => {
   const { ctx, answers } = createShopCtx({ shopBuyMode: "buy", energy: 20, energyMax: 20, inv: {} });
+  const price = getShopItemPricing("coffee", TEST_NOW).finalPrice;
 
   await shopHandler.handle(ctx);
 
   assert.equal(ctx.u.inv.coffee, 1);
-  assert.equal(ctx.u.money, 88);
+  assert.equal(ctx.u.money, 100 - price);
   assert.equal(answers.length, 0);
 });
 
 test("shop handler: buy_use mode applies coffee immediately", async () => {
   const { ctx } = createShopCtx({ shopBuyMode: "buy_use", energy: 0, energyMax: 20, inv: {} });
+  const price = getShopItemPricing("coffee", TEST_NOW).finalPrice;
 
   await shopHandler.handle(ctx);
 
   assert.equal(ctx.u.energy, 10);
-  assert.equal(ctx.u.money, 88);
+  assert.equal(ctx.u.money, 100 - price);
   assert.equal(ctx.u.inv.coffee || 0, 0);
 });
 
@@ -119,4 +127,22 @@ test("shop handler: mode toggle switches buy_use to buy", async () => {
 
   assert.equal(ctx.u.settings.shopBuyMode, "buy");
   assert.equal(saves.length, 1);
+});
+
+test("shop handler: buy mode uses daily deal final price", async () => {
+  const itemId = getShopItemPricing("coffee", TEST_NOW).deal.itemId;
+  const pricing = getShopItemPricing(itemId, TEST_NOW);
+  const { ctx } = createShopCtx({
+    data: `buy_${itemId}`,
+    money: pricing.basePrice,
+    shopBuyMode: "buy",
+    energy: 20,
+    energyMax: 20,
+    inv: {}
+  });
+
+  await shopHandler.handle(ctx);
+
+  assert.equal(ctx.u.money, pricing.basePrice - pricing.finalPrice);
+  assert.equal(ctx.u.inv[itemId], 1);
 });

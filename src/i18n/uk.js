@@ -61,7 +61,7 @@ export const UK = {
   "cfg.shop.coffee.title": "Кава (+10 енергії)",
   "cfg.shop.sandwich.title": "Сендвіч (+25 енергії)",
   "cfg.shop.lunch.title": "Бізнес-ланч (+50 енергії)",
-  "cfg.shop.borscht.title": "Суп дня (+100 енергії)",
+  "cfg.shop.borscht.title": "Суп дня (+80 енергії)",
   "cfg.shop.coke_zero.title": "Cola Zero (макс енергії)",
 
   "cfg.upg.coffee.title": "Кавомашина",
@@ -453,6 +453,7 @@ export const UK = {
   "ui.shop.item_money": "🛒 {{title}} · ${{price}}",
   "ui.shop.item_gems": "🛒 {{title}} · {{gems}}",
   "ui.shop.item": "🛒 {{title}}",
+  "ui.shop.daily_deal": "🔥 Товар дня: {{title}} -{{pct}}%\nСьогодні: ${{final}} замість ${{base}}",
   "ui.casino.rules": "ℹ️ Правила",
   "ui.casino.to_bar": "⬅️ До бару",
   "ui.casino.spin_for": "🌀 за ${{price}}",

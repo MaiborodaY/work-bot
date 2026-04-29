@@ -46,10 +46,11 @@ export async function renderHomeBedUpgradesRoute(ctx, user, { lang = "ru" } = {}
 
 export async function renderShopRoute(ctx, user, { header = "", lang = "ru" } = {}) {
   const backToShop = (user?.nav?.backTo || null) || Routes.SHOP_HUB;
+  const dealLine = ctx.ui.shopDailyDealCaption(lang);
   await ctx.media.show({
     sourceMsg: ctx._sourceMsg,
     place: Routes.SHOP,
-    caption: header + ctx._t(user, "loc.shop.caption") + "\n\n" + ctx.formatters.balance(user),
+    caption: header + ctx._t(user, "loc.shop.caption") + "\n\n" + dealLine + "\n\n" + ctx.formatters.balance(user),
     keyboard: ctx.ui.shop({ backTo: backToShop, user }, lang),
     policy: "auto",
   });

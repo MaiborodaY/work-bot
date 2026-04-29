@@ -60,10 +60,10 @@ export const CONFIG = {
   REST_RECOVER_MS: 5 * 60 * 1000,
 
   SHOP: {
-    coffee:    { title: "Кофе (+10 энергии)",          titleKey: "cfg.shop.coffee.title", price: 12,  heal: 10 },
-    sandwich:  { title: "Сэндвич (+25 энергии)",       titleKey: "cfg.shop.sandwich.title", price: 30,  heal: 25 },
-    lunch:     { title: "Бизнес-ланч (+50 энергии)",   titleKey: "cfg.shop.lunch.title", price: 60,  heal: 50 },
-    borscht:   { title: "Суп дня (+100 энергии)",      titleKey: "cfg.shop.borscht.title", price: 120, heal: 100 },
+    coffee:    { title: "Кофе (+10 энергии)",          titleKey: "cfg.shop.coffee.title", price: 100, heal: 10 },
+    sandwich:  { title: "Сэндвич (+25 энергии)",       titleKey: "cfg.shop.sandwich.title", price: 220, heal: 25 },
+    lunch:     { title: "Бизнес-ланч (+50 энергии)",   titleKey: "cfg.shop.lunch.title", price: 400, heal: 50 },
+    borscht:   { title: "Суп дня (+80 энергии)",       titleKey: "cfg.shop.borscht.title", price: 600, heal: 80 },
     coke_zero: { title: "Cola Zero (max энергии)",     titleKey: "cfg.shop.coke_zero.title", price_premium: 2 }
   },
 

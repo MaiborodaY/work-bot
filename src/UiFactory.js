@@ -7,6 +7,7 @@ import { Routes, toGoCallback } from "./Routes.js";
 import { EnergyService } from "./EnergyService.js";
 import { ProgressionService } from "./ProgressionService.js";
 import { InventoryService } from "./InventoryService.js";
+import { getDailyShopDeal, getShopItemPricing } from "./ShopPricingService.js";
 
 export class UiFactory {
   _lang(lang) {
@@ -459,9 +460,24 @@ export class UiFactory {
   }
 
   // ---------- Магазин ----------
+  shopDailyDealCaption(lang = "ru", nowTs = Date.now()) {
+    const l = this._lang(lang);
+    const deal = getDailyShopDeal(nowTs);
+    const pricing = getShopItemPricing(deal.itemId, nowTs);
+    const title = getShopTitle(deal.itemId, l);
+    if (!title || !pricing.basePrice) return "";
+    return this._t(l, "ui.shop.daily_deal", {
+      title,
+      pct: pricing.discountPercent,
+      final: pricing.finalPrice,
+      base: pricing.basePrice
+    });
+  }
+
   shop(opts = {}, lang = "ru") {
     const l = this._lang(lang);
     const user = opts?.user || null;
+    const nowTs = typeof opts?.now === "number" ? opts.now : Date.now();
     const mode = String(user?.settings?.shopBuyMode || "buy_use");
     const playerLevel = user ? Math.max(1, ProgressionService.getLevelInfo(user)?.level || 1) : 99;
     const LEVEL5_ITEMS = new Set(["sandwich", "lunch", "borscht"]);
@@ -473,8 +489,12 @@ export class UiFactory {
       .filter(([k]) => playerLevel >= 5 || !LEVEL5_ITEMS.has(k))
       .map(([k, v]) => {
         const itemTitle = getShopTitle(k, l);
+        const pricing = getShopItemPricing(k, nowTs);
+        const moneyLabel = pricing.isDailyDeal
+          ? `\u{1F525} ${itemTitle} · $${pricing.finalPrice} (-${pricing.discountPercent}%, $${pricing.basePrice})`
+          : this._t(l, "ui.shop.item_money", { title: itemTitle, price: pricing.finalPrice });
         const label = (typeof v.price === "number")
-          ? this._t(l, "ui.shop.item_money", { title: itemTitle, price: v.price })
+          ? moneyLabel
           : (typeof v.price_premium === "number")
             ? this._t(l, "ui.shop.item_gems", { title: itemTitle, gems: `${CONFIG.PREMIUM.emoji}${v.price_premium}` })
             : this._t(l, "ui.shop.item", { title: itemTitle });

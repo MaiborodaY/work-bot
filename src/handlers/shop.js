@@ -5,6 +5,7 @@ import { normalizeLang, t } from "../i18n/index.js";
 import { getShopTitle } from "../I18nCatalog.js";
 import { Routes } from "../Routes.js";
 import { InventoryService } from "../InventoryService.js";
+import { getShopItemPricing } from "../ShopPricingService.js";
 
 export const shopHandler = {
   match: (data) => String(data || "").startsWith("buy_") || data === "shop:mode:toggle",
@@ -33,6 +34,9 @@ export const shopHandler = {
     const itemTitle = getShopTitle(key, lang) || it.title;
 
     if (typeof it.price === "number") {
+      const nowTs = typeof ctx.now === "function" ? ctx.now() : Date.now();
+      const pricing = getShopItemPricing(key, nowTs);
+      const price = pricing.finalPrice;
       const effectiveEnergyMax = EnergyService.effectiveEnergyMax(u);
       const buyMode = String(u?.settings?.shopBuyMode || "buy_use");
       const buyToInventory = buyMode === "buy" && InventoryService.isUsable(key);
@@ -41,12 +45,12 @@ export const shopHandler = {
         await answer(cb.id, tt("handler.shop.energy_full_skip"));
         return;
       }
-      if ((u.money || 0) < it.price) {
+      if ((u.money || 0) < price) {
         await answer(cb.id, tt("handler.shop.not_enough_money"));
         return;
       }
 
-      u.money -= it.price;
+      u.money -= price;
       if (buyToInventory) {
         InventoryService.add(u, key, 1);
       } else {

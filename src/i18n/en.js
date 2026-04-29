@@ -61,7 +61,7 @@ export const EN = {
   "cfg.shop.coffee.title": "Coffee (+10 energy)",
   "cfg.shop.sandwich.title": "Sandwich (+25 energy)",
   "cfg.shop.lunch.title": "Business lunch (+50 energy)",
-  "cfg.shop.borscht.title": "Soup of the day (+100 energy)",
+  "cfg.shop.borscht.title": "Soup of the day (+80 energy)",
   "cfg.shop.coke_zero.title": "Cola Zero (max energy)",
 
   "cfg.upg.coffee.title": "Coffee machine",
@@ -453,6 +453,7 @@ export const EN = {
   "ui.shop.item_money": "🛒 {{title}} · ${{price}}",
   "ui.shop.item_gems": "🛒 {{title}} · {{gems}}",
   "ui.shop.item": "🛒 {{title}}",
+  "ui.shop.daily_deal": "🔥 Deal of the day: {{title}} -{{pct}}%\nToday: ${{final}} instead of ${{base}}",
   "ui.casino.rules": "ℹ️ Rules",
   "ui.casino.to_bar": "⬅️ To bar",
   "ui.casino.spin_for": "🌀 for ${{price}}",

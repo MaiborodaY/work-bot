@@ -179,6 +179,7 @@ export const RU = {
   "ui.shop.item_money": "🛒 {{title}} · ${{price}}",
   "ui.shop.item_gems": "🛒 {{title}} · {{gems}}",
   "ui.shop.item": "🛒 {{title}}",
+  "ui.shop.daily_deal": "🔥 Товар дня: {{title}} -{{pct}}%\nСегодня: ${{final}} вместо ${{base}}",
 
   "ui.casino.rules": "ℹ️ Правила",
   "ui.casino.to_bar": "⬅️ В бар",
@@ -322,7 +323,7 @@ export const RU = {
   "cfg.shop.coffee.title": "Кофе (+10 энергии)",
   "cfg.shop.sandwich.title": "Сэндвич (+25 энергии)",
   "cfg.shop.lunch.title": "Бизнес-ланч (+50 энергии)",
-  "cfg.shop.borscht.title": "Суп дня (+100 энергии)",
+  "cfg.shop.borscht.title": "Суп дня (+80 энергии)",
   "cfg.shop.coke_zero.title": "Cola Zero (max энергии)",
 
   "cfg.upg.coffee.title": "Кофемашина",

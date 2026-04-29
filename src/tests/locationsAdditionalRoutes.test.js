@@ -33,6 +33,7 @@ function createLocations({ nowTs = Date.now(), maybeFinishStudy = async () => fa
     homeBedStatusCaption: () => "current bed status",
     homeBedUpgradesCaption: () => "bed-upgrades",
     homeBedUpgrades: () => [[{ text: "bed", callback_data: "noop" }]],
+    shopDailyDealCaption: () => "deal",
     shop: () => [[{ text: "shop", callback_data: "noop" }]],
     inventoryCaption: () => "inventory caption",
     inventory: () => [[{ text: "Использовать ☕ Кофе", callback_data: "inv:use:coffee" }], [{ text: "Назад", callback_data: "profile:back" }]]
