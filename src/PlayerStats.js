@@ -1,6 +1,8 @@
 const DAY_MS = 24 * 60 * 60 * 1000;
 const ACTIVE_DAYS_LIMIT = 45;
 const FARM_INCOME_DAYS_LIMIT = 35;
+const MARKET_DAYS_LIMIT = 45;
+const SUPPLY_DAYS_LIMIT = 45;
 const NEWBIE_STEP_KEYS = ["1","2","3","4","5","6","7","8","9","10"];
 
 export function dayStrUtc(ts = Date.now()) {
@@ -101,7 +103,15 @@ export function ensurePlayerStatsShape(u) {
     "bizClaimDayTotal",
     "gquizDayEarned",
     "labourDayMoney",
-    "labourDayGems"
+    "labourDayGems",
+    "marketSalesTotal",
+    "marketGrossTotal",
+    "marketNetTotal",
+    "marketUnitsTotal",
+    "supplyOrdersTotal",
+    "supplyUnlocksTotal",
+    "supplySlotsBoughtTotal",
+    "supplySpentTotal"
   ];
   for (const f of numFields) {
     if (typeof s[f] !== "number" || !Number.isFinite(s[f])) {
@@ -162,6 +172,80 @@ export function ensurePlayerStatsShape(u) {
     })
   ) {
     s.farmIncomeDays = normalizedFarmIncomeDays;
+    changed = true;
+  }
+
+  const rawMarketDays = Array.isArray(s.marketDays) ? s.marketDays : [];
+  const marketByDay = new Map();
+  for (const row of rawMarketDays) {
+    const day = String(row?.day || "");
+    if (!isDayStr(day)) continue;
+    const prev = marketByDay.get(day) || { sales: 0, gross: 0, net: 0, units: 0 };
+    prev.sales += Math.max(0, Math.floor(Number(row?.sales) || 0));
+    prev.gross += Math.max(0, Math.floor(Number(row?.gross) || 0));
+    prev.net += Math.max(0, Math.floor(Number(row?.net) || 0));
+    prev.units += Math.max(0, Math.floor(Number(row?.units) || 0));
+    marketByDay.set(day, prev);
+  }
+  const normalizedMarketDays = [...marketByDay.entries()]
+    .sort((a, b) => String(a[0]).localeCompare(String(b[0])))
+    .slice(-MARKET_DAYS_LIMIT)
+    .map(([day, row]) => ({ day, sales: row.sales, gross: row.gross, net: row.net, units: row.units }));
+  if (
+    !Array.isArray(s.marketDays) ||
+    normalizedMarketDays.length !== rawMarketDays.length ||
+    normalizedMarketDays.some((row, i) => {
+      const prev = rawMarketDays[i] || {};
+      return (
+        String(prev?.day || "") !== row.day ||
+        Math.max(0, Math.floor(Number(prev?.sales) || 0)) !== row.sales ||
+        Math.max(0, Math.floor(Number(prev?.gross) || 0)) !== row.gross ||
+        Math.max(0, Math.floor(Number(prev?.net) || 0)) !== row.net ||
+        Math.max(0, Math.floor(Number(prev?.units) || 0)) !== row.units
+      );
+    })
+  ) {
+    s.marketDays = normalizedMarketDays;
+    changed = true;
+  }
+
+  const rawSupplyDays = Array.isArray(s.supplyDays) ? s.supplyDays : [];
+  const supplyByDay = new Map();
+  for (const row of rawSupplyDays) {
+    const day = String(row?.day || "");
+    if (!isDayStr(day)) continue;
+    const prev = supplyByDay.get(day) || { orders: 0, unlocks: 0, slotsBought: 0, spent: 0 };
+    prev.orders += Math.max(0, Math.floor(Number(row?.orders) || 0));
+    prev.unlocks += Math.max(0, Math.floor(Number(row?.unlocks) || 0));
+    prev.slotsBought += Math.max(0, Math.floor(Number(row?.slotsBought) || 0));
+    prev.spent += Math.max(0, Math.floor(Number(row?.spent) || 0));
+    supplyByDay.set(day, prev);
+  }
+  const normalizedSupplyDays = [...supplyByDay.entries()]
+    .sort((a, b) => String(a[0]).localeCompare(String(b[0])))
+    .slice(-SUPPLY_DAYS_LIMIT)
+    .map(([day, row]) => ({
+      day,
+      orders: row.orders,
+      unlocks: row.unlocks,
+      slotsBought: row.slotsBought,
+      spent: row.spent
+    }));
+  if (
+    !Array.isArray(s.supplyDays) ||
+    normalizedSupplyDays.length !== rawSupplyDays.length ||
+    normalizedSupplyDays.some((row, i) => {
+      const prev = rawSupplyDays[i] || {};
+      return (
+        String(prev?.day || "") !== row.day ||
+        Math.max(0, Math.floor(Number(prev?.orders) || 0)) !== row.orders ||
+        Math.max(0, Math.floor(Number(prev?.unlocks) || 0)) !== row.unlocks ||
+        Math.max(0, Math.floor(Number(prev?.slotsBought) || 0)) !== row.slotsBought ||
+        Math.max(0, Math.floor(Number(prev?.spent) || 0)) !== row.spent
+      );
+    })
+  ) {
+    s.supplyDays = normalizedSupplyDays;
     changed = true;
   }
 
@@ -262,4 +346,73 @@ export function hasActivityOnDay(u, day) {
   const days = Array.isArray(s.activeDays) ? s.activeDays : [];
   if (days.includes(target)) return true;
   return String(s.lastActiveDay || "") === target;
+}
+
+function _upsertDayBucket(rows, day, patch, limit = 45) {
+  const source = Array.isArray(rows) ? rows : [];
+  const map = new Map();
+  for (const row of source) {
+    const d = String(row?.day || "");
+    if (!isDayStr(d)) continue;
+    map.set(d, { ...(map.get(d) || {}), ...row, day: d });
+  }
+  const prev = map.get(day) || { day };
+  const next = { ...prev };
+  for (const [k, v] of Object.entries(patch || {})) {
+    if (k === "day") continue;
+    next[k] = Math.max(0, Math.floor(Number(prev?.[k] || 0)) + Math.max(0, Math.floor(Number(v) || 0)));
+  }
+  map.set(day, next);
+  return [...map.entries()]
+    .sort((a, b) => String(a[0]).localeCompare(String(b[0])))
+    .slice(-Math.max(1, Math.floor(Number(limit) || 45)))
+    .map(([, row]) => row);
+}
+
+export function recordMarketStats(u, { gross = 0, net = 0, units = 0, nowTs = Date.now() } = {}) {
+  ensurePlayerStatsShape(u);
+  const day = dayStrUtc(nowTs);
+  const addGross = Math.max(0, Math.floor(Number(gross) || 0));
+  const addNet = Math.max(0, Math.floor(Number(net) || 0));
+  const addUnits = Math.max(0, Math.floor(Number(units) || 0));
+  if (addGross <= 0 && addNet <= 0 && addUnits <= 0) return false;
+
+  u.stats.marketSalesTotal = Math.max(0, Math.floor(Number(u?.stats?.marketSalesTotal || 0))) + 1;
+  u.stats.marketGrossTotal = Math.max(0, Math.floor(Number(u?.stats?.marketGrossTotal || 0))) + addGross;
+  u.stats.marketNetTotal = Math.max(0, Math.floor(Number(u?.stats?.marketNetTotal || 0))) + addNet;
+  u.stats.marketUnitsTotal = Math.max(0, Math.floor(Number(u?.stats?.marketUnitsTotal || 0))) + addUnits;
+
+  u.stats.marketDays = _upsertDayBucket(
+    u?.stats?.marketDays,
+    day,
+    { sales: 1, gross: addGross, net: addNet, units: addUnits },
+    MARKET_DAYS_LIMIT
+  );
+  return true;
+}
+
+export function recordSupplyStats(
+  u,
+  { orders = 0, unlocks = 0, slotsBought = 0, spent = 0, nowTs = Date.now() } = {}
+) {
+  ensurePlayerStatsShape(u);
+  const day = dayStrUtc(nowTs);
+  const addOrders = Math.max(0, Math.floor(Number(orders) || 0));
+  const addUnlocks = Math.max(0, Math.floor(Number(unlocks) || 0));
+  const addSlots = Math.max(0, Math.floor(Number(slotsBought) || 0));
+  const addSpent = Math.max(0, Math.floor(Number(spent) || 0));
+  if (addOrders <= 0 && addUnlocks <= 0 && addSlots <= 0 && addSpent <= 0) return false;
+
+  u.stats.supplyOrdersTotal = Math.max(0, Math.floor(Number(u?.stats?.supplyOrdersTotal || 0))) + addOrders;
+  u.stats.supplyUnlocksTotal = Math.max(0, Math.floor(Number(u?.stats?.supplyUnlocksTotal || 0))) + addUnlocks;
+  u.stats.supplySlotsBoughtTotal = Math.max(0, Math.floor(Number(u?.stats?.supplySlotsBoughtTotal || 0))) + addSlots;
+  u.stats.supplySpentTotal = Math.max(0, Math.floor(Number(u?.stats?.supplySpentTotal || 0))) + addSpent;
+
+  u.stats.supplyDays = _upsertDayBucket(
+    u?.stats?.supplyDays,
+    day,
+    { orders: addOrders, unlocks: addUnlocks, slotsBought: addSlots, spent: addSpent },
+    SUPPLY_DAYS_LIMIT
+  );
+  return true;
 }

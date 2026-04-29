@@ -1,6 +1,6 @@
 import { CONFIG } from "./GameConfig.js";
 import { InventoryService } from "./InventoryService.js";
-import { markUsefulActivity } from "./PlayerStats.js";
+import { markUsefulActivity, recordMarketStats } from "./PlayerStats.js";
 import { normalizeLang, t } from "./i18n/index.js";
 
 function toInt(value, fallback = 0) {
@@ -289,6 +289,7 @@ export class MarketService {
     InventoryService.remove(u, itemId, qty);
     u.money = Math.max(0, toInt(u?.money, 0)) + moneyGain;
     await this._applyFarmProfit(u, netProfit, this.now());
+    recordMarketStats(u, { gross: moneyGain, net: netProfit, units: qty, nowTs: this.now() });
     markUsefulActivity(u, this.now());
     await this.users.save(u);
 
@@ -322,4 +323,3 @@ export class MarketService {
     return this.sell(u, itemId, have);
   }
 }
-

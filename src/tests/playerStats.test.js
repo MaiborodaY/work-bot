@@ -4,7 +4,9 @@ import {
   ensurePlayerStatsShape,
   hasActivityOnDay,
   markFunnelStep,
-  markUsefulActivity
+  markUsefulActivity,
+  recordMarketStats,
+  recordSupplyStats
 } from "../PlayerStats.js";
 
 test("ensurePlayerStatsShape fills retention and funnel fields", () => {
@@ -68,11 +70,21 @@ test("markUsefulActivity is idempotent on same day", () => {
       gquizDayEarned: 0,
       labourDayMoney: 0,
       labourDayGems: 0,
+      marketSalesTotal: 0,
+      marketGrossTotal: 0,
+      marketNetTotal: 0,
+      marketUnitsTotal: 0,
+      supplyOrdersTotal: 0,
+      supplyUnlocksTotal: 0,
+      supplySlotsBoughtTotal: 0,
+      supplySpentTotal: 0,
       farmWeekKey: "",
       bizClaimDayKey: "",
       gquizDayKey: "",
       labourDayKey: "",
       farmIncomeDays: [],
+      marketDays: [],
+      supplyDays: [],
       newbie: {
         openedDay: "",
         completedDay: "",
@@ -110,4 +122,23 @@ test("hasActivityOnDay reads activeDays and falls back to lastActiveDay", () => 
   assert.equal(hasActivityOnDay(u, "2026-03-10"), true);
   assert.equal(hasActivityOnDay(u, "2026-03-11"), true);
   assert.equal(hasActivityOnDay(u, "2026-03-12"), false);
+});
+
+test("recordMarketStats and recordSupplyStats append day buckets and totals", () => {
+  const u = { id: "u6", stats: {} };
+  const ts = Date.UTC(2026, 3, 30, 11, 0, 0);
+  const mChanged = recordMarketStats(u, { gross: 400, net: 150, units: 1, nowTs: ts });
+  const sChanged = recordSupplyStats(u, { orders: 1, unlocks: 0, slotsBought: 0, spent: 0, nowTs: ts });
+
+  assert.equal(mChanged, true);
+  assert.equal(sChanged, true);
+  assert.equal(u.stats.marketSalesTotal, 1);
+  assert.equal(u.stats.marketGrossTotal, 400);
+  assert.equal(u.stats.marketNetTotal, 150);
+  assert.equal(u.stats.marketUnitsTotal, 1);
+  assert.equal(u.stats.supplyOrdersTotal, 1);
+  assert.ok(Array.isArray(u.stats.marketDays));
+  assert.ok(Array.isArray(u.stats.supplyDays));
+  assert.equal(u.stats.marketDays[0].day, "2026-04-30");
+  assert.equal(u.stats.supplyDays[0].day, "2026-04-30");
 });

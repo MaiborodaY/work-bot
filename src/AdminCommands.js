@@ -75,6 +75,8 @@ export class AdminCommands {
         "/admin_funnel - onboarding funnel (all-time)\n" +
         "/admin_newbie - newbie path funnel/retention\n" +
         "/admin_levels - players levels snapshot\n" +
+        "/admin_market [today|7d|30d|all] - market stats by period\n" +
+        "/admin_supply [today|7d|30d|all] - business supply stats by period\n" +
         "/admin_syndicate - syndicate stats snapshot\n" +
         "/admin_fishing - fishing outcomes & strategy stats\n" +
         "/admin_cron_stats - KV ops per service from last cron run\n" +
@@ -564,6 +566,18 @@ export class AdminCommands {
     if (mAdminLevels) {
       const includeAdmins = String(mAdminLevels[1] || "").toLowerCase() === "all";
       await this._sendLevelsStats({ includeAdmins });
+      return true;
+    }
+    const mAdminMarket = input.match(/^\/admin_market(?:@\w+)?(?:\s+(today|7d|30d|all))?\s*$/i);
+    if (mAdminMarket) {
+      const periodArg = String(mAdminMarket[1] || "").toLowerCase();
+      await this._sendMarketStats(periodArg || "");
+      return true;
+    }
+    const mAdminSupply = input.match(/^\/admin_supply(?:@\w+)?(?:\s+(today|7d|30d|all))?\s*$/i);
+    if (mAdminSupply) {
+      const periodArg = String(mAdminSupply[1] || "").toLowerCase();
+      await this._sendSupplyStats(periodArg || "");
       return true;
     }
     const mAdminNewUsers = input.match(/^\/admin_new_users(?:@\w+)?(?:\s+(\d+))?\s*$/i);
@@ -1294,6 +1308,63 @@ export class AdminCommands {
     return n.toLocaleString("en-US");
   }
 
+  _statsPeriods(today = dayStrUtc(Date.now())) {
+    return [
+      { key: "today", label: "Today (UTC)", start: today, end: today },
+      { key: "7d", label: "Last 7 days", start: addDaysUtc(today, -6), end: today },
+      { key: "30d", label: "Last 30 days", start: addDaysUtc(today, -29), end: today }
+    ];
+  }
+
+  _pickPeriods(periodKey = "", today = dayStrUtc(Date.now())) {
+    const all = this._statsPeriods(today);
+    const key = String(periodKey || "").trim().toLowerCase();
+    if (!key) return all;
+    if (key === "all") return [{ key: "all", label: "All time", start: "", end: "" }];
+    const found = all.find((it) => it.key === key);
+    return found ? [found] : all;
+  }
+
+  _dayInPeriod(day, period) {
+    if (!isDayStr(day)) return false;
+    if (!period?.start || !period?.end) return true;
+    return String(day) >= String(period.start) && String(day) <= String(period.end);
+  }
+
+  _sumMarketDays(u, period) {
+    const rows = Array.isArray(u?.stats?.marketDays) ? u.stats.marketDays : [];
+    let sales = 0;
+    let gross = 0;
+    let net = 0;
+    let units = 0;
+    for (const row of rows) {
+      const day = String(row?.day || "");
+      if (!this._dayInPeriod(day, period)) continue;
+      sales += Math.max(0, Math.floor(Number(row?.sales) || 0));
+      gross += Math.max(0, Math.floor(Number(row?.gross) || 0));
+      net += Math.max(0, Math.floor(Number(row?.net) || 0));
+      units += Math.max(0, Math.floor(Number(row?.units) || 0));
+    }
+    return { sales, gross, net, units };
+  }
+
+  _sumSupplyDays(u, period) {
+    const rows = Array.isArray(u?.stats?.supplyDays) ? u.stats.supplyDays : [];
+    let orders = 0;
+    let unlocks = 0;
+    let slotsBought = 0;
+    let spent = 0;
+    for (const row of rows) {
+      const day = String(row?.day || "");
+      if (!this._dayInPeriod(day, period)) continue;
+      orders += Math.max(0, Math.floor(Number(row?.orders) || 0));
+      unlocks += Math.max(0, Math.floor(Number(row?.unlocks) || 0));
+      slotsBought += Math.max(0, Math.floor(Number(row?.slotsBought) || 0));
+      spent += Math.max(0, Math.floor(Number(row?.spent) || 0));
+    }
+    return { orders, unlocks, slotsBought, spent };
+  }
+
   _bucketLabel(min, max) {
     return `${min}-${max}`;
   }
@@ -1430,6 +1501,253 @@ export class AdminCommands {
       }
     }
     if (!includeAdmins) lines.push("", `Excluded admins: ${this._fmtInt(excludedAdmins)}`);
+    await this.send(lines.join("\n"));
+  }
+
+  _sumLegacyFarmIncomeDays(u, period) {
+    const rows = Array.isArray(u?.stats?.farmIncomeDays) ? u.stats.farmIncomeDays : [];
+    let net = 0;
+    for (const row of rows) {
+      const day = String(row?.day || "");
+      if (!this._dayInPeriod(day, period)) continue;
+      net += Math.max(0, Math.floor(Number(row?.amount) || 0));
+    }
+    return net;
+  }
+
+  async _sendMarketStats(periodArg = "") {
+    await this.send("Market stats started...");
+    const prefix = "u:";
+    const today = dayStrUtc(Date.now());
+    const periods = this._pickPeriods(periodArg, today);
+    let cursor = undefined;
+    let scannedUsers = 0;
+    let excludedAdmins = 0;
+
+    const summaryByPeriod = new Map(
+      periods.map((p) => [p.key, {
+        users: 0,
+        sales: 0,
+        gross: 0,
+        net: 0,
+        units: 0,
+        topRows: []
+      }])
+    );
+
+    while (true) {
+      const page = await this.db.list({ prefix, cursor });
+      const keys = Array.isArray(page?.keys) ? page.keys : [];
+      for (const k of keys) {
+        try {
+          const raw = await this.db.get(k.name);
+          if (!raw) continue;
+          const u = JSON.parse(raw);
+          const fallbackId = String(k.name || "").slice(prefix.length);
+          const id = String((u?.id ?? fallbackId) || "");
+          if (!id) continue;
+          if (this.isAdmin(id)) {
+            excludedAdmins += 1;
+            continue;
+          }
+          scannedUsers += 1;
+          const name = String(u?.displayName || "").trim() || "Player";
+
+          for (const period of periods) {
+            let row;
+            if (period.key === "all") {
+              const sales = Math.max(0, Math.floor(Number(u?.stats?.marketSalesTotal || 0)));
+              const gross = Math.max(0, Math.floor(Number(u?.stats?.marketGrossTotal || 0)));
+              const legacyNet = Math.max(0, Math.floor(Number(u?.stats?.farmMoneyTotal || 0)));
+              const marketNet = Math.max(0, Math.floor(Number(u?.stats?.marketNetTotal || 0)));
+              const units = Math.max(
+                Math.floor(Number(u?.stats?.marketUnitsTotal || 0)),
+                Math.floor(Number(u?.stats?.farmHarvestCount || 0)),
+                0
+              );
+              row = { sales, gross, net: Math.max(legacyNet, marketNet), units };
+            } else {
+              row = this._sumMarketDays(u, period);
+              if (row.net <= 0) {
+                row.net = this._sumLegacyFarmIncomeDays(u, period);
+              }
+            }
+            const hasAny = row.sales > 0 || row.gross > 0 || row.net > 0 || row.units > 0;
+            if (!hasAny) continue;
+            const summary = summaryByPeriod.get(period.key);
+            summary.users += 1;
+            summary.sales += row.sales;
+            summary.gross += row.gross;
+            summary.net += row.net;
+            summary.units += row.units;
+            summary.topRows.push({ id, name, net: row.net, gross: row.gross, sales: row.sales, units: row.units });
+          }
+        } catch {
+          // skip bad rows
+        }
+      }
+      if (!page || page.list_complete || !page.cursor) break;
+      cursor = page.cursor;
+    }
+
+    const lines = [
+      "<b>Market analytics</b>",
+      "",
+      `Scanned users (non-admin): ${this._fmtInt(scannedUsers)}`,
+      `Excluded admins: ${this._fmtInt(excludedAdmins)}`
+    ];
+
+    for (const period of periods) {
+      const summary = summaryByPeriod.get(period.key);
+      const top = (summary?.topRows || [])
+        .slice()
+        .sort((a, b) => {
+          if (b.net !== a.net) return b.net - a.net;
+          if (b.gross !== a.gross) return b.gross - a.gross;
+          return String(a.id).localeCompare(String(b.id));
+        })
+        .slice(0, 10);
+      lines.push(
+        "",
+        `<b>${this._escapeHtml(period.label)}</b>`,
+        `Users with market activity: ${this._fmtInt(summary?.users || 0)}`,
+        `Transactions: ${this._fmtInt(summary?.sales || 0)}`,
+        `Gross sold: $${this._fmtInt(summary?.gross || 0)}`,
+        `Net profit: $${this._fmtInt(summary?.net || 0)}`,
+        `Units sold: ${this._fmtInt(summary?.units || 0)}`,
+        "Top 10 by net profit:"
+      );
+      if (!top.length) {
+        lines.push("-");
+      } else {
+        for (let i = 0; i < top.length; i += 1) {
+          const row = top[i];
+          lines.push(
+            `${i + 1}. ${this._escapeHtml(row.name)} - net $${this._fmtInt(row.net)} · gross $${this._fmtInt(row.gross)} · tx ${this._fmtInt(row.sales)}`
+          );
+        }
+      }
+    }
+
+    lines.push(
+      "",
+      "Note: period breakdown for gross/tx/units is tracked from this release; older data may include net only."
+    );
+    await this.send(lines.join("\n"));
+  }
+
+  async _sendSupplyStats(periodArg = "") {
+    await this.send("Supply stats started...");
+    const prefix = "u:";
+    const today = dayStrUtc(Date.now());
+    const periods = this._pickPeriods(periodArg, today);
+    let cursor = undefined;
+    let scannedUsers = 0;
+    let excludedAdmins = 0;
+
+    const summaryByPeriod = new Map(
+      periods.map((p) => [p.key, {
+        users: 0,
+        orders: 0,
+        unlocks: 0,
+        slotsBought: 0,
+        spent: 0,
+        topRows: []
+      }])
+    );
+
+    while (true) {
+      const page = await this.db.list({ prefix, cursor });
+      const keys = Array.isArray(page?.keys) ? page.keys : [];
+      for (const k of keys) {
+        try {
+          const raw = await this.db.get(k.name);
+          if (!raw) continue;
+          const u = JSON.parse(raw);
+          const fallbackId = String(k.name || "").slice(prefix.length);
+          const id = String((u?.id ??fallbackId) || "");
+          if (!id) continue;
+          if (this.isAdmin(id)) {
+            excludedAdmins += 1;
+            continue;
+          }
+          scannedUsers += 1;
+          const name = String(u?.displayName || "").trim() || "Player";
+
+          for (const period of periods) {
+            let row;
+            if (period.key === "all") {
+              row = {
+                orders: Math.max(0, Math.floor(Number(u?.stats?.supplyOrdersTotal || 0))),
+                unlocks: Math.max(0, Math.floor(Number(u?.stats?.supplyUnlocksTotal || 0))),
+                slotsBought: Math.max(0, Math.floor(Number(u?.stats?.supplySlotsBoughtTotal || 0))),
+                spent: Math.max(0, Math.floor(Number(u?.stats?.supplySpentTotal || 0)))
+              };
+            } else {
+              row = this._sumSupplyDays(u, period);
+            }
+            const hasAny = row.orders > 0 || row.unlocks > 0 || row.slotsBought > 0 || row.spent > 0;
+            if (!hasAny) continue;
+            const summary = summaryByPeriod.get(period.key);
+            summary.users += 1;
+            summary.orders += row.orders;
+            summary.unlocks += row.unlocks;
+            summary.slotsBought += row.slotsBought;
+            summary.spent += row.spent;
+            summary.topRows.push({ id, name, ...row });
+          }
+        } catch {
+          // skip bad rows
+        }
+      }
+      if (!page || page.list_complete || !page.cursor) break;
+      cursor = page.cursor;
+    }
+
+    const lines = [
+      "<b>Business supply analytics</b>",
+      "",
+      `Scanned users (non-admin): ${this._fmtInt(scannedUsers)}`,
+      `Excluded admins: ${this._fmtInt(excludedAdmins)}`
+    ];
+
+    for (const period of periods) {
+      const summary = summaryByPeriod.get(period.key);
+      const top = (summary?.topRows || [])
+        .slice()
+        .sort((a, b) => {
+          if (b.orders !== a.orders) return b.orders - a.orders;
+          if (b.unlocks !== a.unlocks) return b.unlocks - a.unlocks;
+          if (b.slotsBought !== a.slotsBought) return b.slotsBought - a.slotsBought;
+          return String(a.id).localeCompare(String(b.id));
+        })
+        .slice(0, 10);
+      lines.push(
+        "",
+        `<b>${this._escapeHtml(period.label)}</b>`,
+        `Users with supply activity: ${this._fmtInt(summary?.users || 0)}`,
+        `Orders submitted: ${this._fmtInt(summary?.orders || 0)}`,
+        `Supply unlocks: ${this._fmtInt(summary?.unlocks || 0)}`,
+        `Slots bought: ${this._fmtInt(summary?.slotsBought || 0)}`,
+        `Money spent: $${this._fmtInt(summary?.spent || 0)}`,
+        "Top 10 by orders:"
+      );
+      if (!top.length) {
+        lines.push("-");
+      } else {
+        for (let i = 0; i < top.length; i += 1) {
+          const row = top[i];
+          lines.push(
+            `${i + 1}. ${this._escapeHtml(row.name)} - orders ${this._fmtInt(row.orders)} · unlocks ${this._fmtInt(row.unlocks)} · slots ${this._fmtInt(row.slotsBought)}`
+          );
+        }
+      }
+    }
+
+    lines.push(
+      "",
+      "Note: period breakdown is tracked from this release."
+    );
     await this.send(lines.join("\n"));
   }
 

@@ -1,6 +1,6 @@
 # World of Life - Project Context (Agent Memory)
 
-Last updated: 2026-04-19 (UTC)
+Last updated: 2026-04-30 (UTC)
 
 This document is a compact source of truth for engineering context.
 Read this before implementing new features or hotfixes.
@@ -137,6 +137,8 @@ Cloudflare Workers env vars used by gameplay/ops:
 - Funnel: `/admin_funnel`
 - Newbie path funnel/retention: `/admin_newbie`
 - Player levels snapshot/top distribution: `/admin_levels` (use `/admin_levels all` to include admins)
+- Market analytics (today/7d/30d/all): `/admin_market`
+- Business supply analytics (today/7d/30d/all): `/admin_supply`
 - Quiz stats: `/admin_quiz`
 - New users list: `/admin_new_users`
 
@@ -145,6 +147,10 @@ Analytics caveat:
 - `claimed` must never exceed `seen`; claim flow should record `seen` first.
 
 Use admin commands first before adding one-off scripts.
+
+Tracking caveat:
+- `admin_market` and `admin_supply` period rows are accurate from 2026-04-30 rollout onward.
+- Older history may be partial (especially supply period splits).
 
 ## 8) Safe Change Checklist
 

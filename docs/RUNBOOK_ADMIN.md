@@ -1,6 +1,6 @@
 # World of Life - Admin Runbook
 
-Last updated: 2026-04-19 (UTC)
+Last updated: 2026-04-30 (UTC)
 
 This file documents active admin commands and when to use them.
 Command parsing source: `src/AdminCommands.js`.
@@ -80,6 +80,16 @@ Command parsing source: `src/AdminCommands.js`.
 - `/admin_levels all`
   - Same report including admins.
 
+- `/admin_market [today|7d|30d|all]`
+  - Market (farm sales) analytics by period:
+  - transactions, gross sold, net profit, units sold, top-10 by net.
+  - If period is omitted, prints `today + 7d + 30d`.
+
+- `/admin_supply [today|7d|30d|all]`
+  - Business supply analytics by period:
+  - orders submitted, unlocks, slots bought, money spent, top-10 by orders.
+  - If period is omitted, prints `today + 7d + 30d`.
+
 ## 5) Channel Posting
 
 - Required env var: `CHANNEL_ID` (numeric `-100...`). Resolve via `/admin_channel_check`.
@@ -139,6 +149,7 @@ Command parsing source: `src/AdminCommands.js`.
 
 - Most reports are UTC-based.
 - Some stats are event-driven; if a metric looks stale, verify event hook exists.
+- Period breakdown for new market/supply analytics is exact from 2026-04-30 release forward.
 - Use preview/check commands before any force publish to channel.
 - Prefer existing patch/reindex commands over manual KV edits.
 

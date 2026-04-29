@@ -3,6 +3,7 @@ import { CONFIG } from "../GameConfig.js";
 import { getTodayUTC, normalizeBusinessEntry } from "../BusinessPayout.js";
 import { InventoryService } from "../InventoryService.js";
 import { getBusinessTitle } from "../I18nCatalog.js";
+import { recordSupplyStats } from "../PlayerStats.js";
 import { normalizeLang, t } from "../i18n/index.js";
 import { Routes, toGoCallback } from "../Routes.js";
 
@@ -193,6 +194,7 @@ export const businessSupplyHandler = {
         await showSupplies(ctx);
         return;
       }
+      recordSupplyStats(u, { unlocks: 1, spent: Math.max(0, Number(res?.price) || 0), nowTs: Date.now() });
       await users.save(u);
       await answer(cb.id, tt("business_supply.toast_unlocked"));
       await showSupplies(ctx);
@@ -206,6 +208,7 @@ export const businessSupplyHandler = {
         await showSupplies(ctx);
         return;
       }
+      recordSupplyStats(u, { orders: 1, nowTs: Date.now() });
       await users.save(u);
       await answer(cb.id, tt("business_supply.toast_submitted"));
       await send(tt("business_supply.notify_submitted", {
@@ -227,6 +230,7 @@ export const businessSupplyHandler = {
         await showSupplies(ctx);
         return;
       }
+      recordSupplyStats(u, { slotsBought: 1, spent: Math.max(0, Number(res?.price) || 0), nowTs: Date.now() });
       await users.save(u);
       await answer(cb.id, tt("business_supply.toast_slot_bought", { slots: res.slots }));
       await showSupplies(ctx);
