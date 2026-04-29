@@ -12,6 +12,7 @@ function makeLocations(overrides = {}) {
   };
   const ui = {
     earn: () => [[{ text: "earn", callback_data: "noop" }]],
+    businessDistrict: () => [[{ text: "district", callback_data: "noop" }]],
     city: () => [[{ text: "city", callback_data: "noop" }]],
     miniGames: () => [[{ text: "mini", callback_data: "noop" }]],
     progress: () => [[{ text: "progress", callback_data: "noop" }]],
@@ -60,6 +61,16 @@ test("locations static route: City uses static registry", async () => {
   assert.equal(calls[0].place, Routes.SQUARE);
   assert.equal(calls[0].policy, "photo");
   assert.deepEqual(calls[0].keyboard, [[{ text: "city", callback_data: "noop" }]]);
+});
+
+test("locations static route: Business district uses static registry", async () => {
+  const { locations, calls } = makeLocations();
+  await locations.show(makeUser(), null, Routes.BUSINESS_DISTRICT);
+
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].place, Routes.SQUARE);
+  assert.equal(calls[0].policy, "photo");
+  assert.deepEqual(calls[0].keyboard, [[{ text: "district", callback_data: "noop" }]]);
 });
 
 test("locations static route: MiniGames uses static registry", async () => {

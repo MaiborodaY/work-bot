@@ -41,6 +41,7 @@ export const RU = {
 
   "ui.earn.work": "🛠️ Работы",
   "ui.earn.bar": "🍻 Бар",
+  "ui.earn.business_district": "🏬 Бизнес-район",
   "ui.earn.business": "🏢 Бизнес",
   "ui.earn.farm": "🌱 Ферма дяди Вовы",
   "ui.earn.labour": "👔 Наёмники",
@@ -253,6 +254,7 @@ export const RU = {
   "loc.hint.default": "🏙️ Город не спит. Иди работай или загляни в Бар.",
 
   "loc.earn.caption": "💼 Заработок: выберите, как хотите получить деньги.",
+  "loc.business_district.caption": "🏬 Бизнес-район: бизнесы, наёмники и поставки для бизнеса.",
   "loc.stocks.unavailable": "📈 Биржа временно недоступна.",
   "loc.stocks.clan_required": "📈 Биржа доступна после вступления в клан.\n\nСначала вступи в клан или создай свой в разделе Город → Кланы.",
   "loc.labour.unavailable": "👔 Наёмники временно недоступны.",

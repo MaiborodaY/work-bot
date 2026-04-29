@@ -49,11 +49,14 @@ function createCtx(overrides = {}) {
   return { ctx, answers, saves, sends, mediaCalls };
 }
 
-test("business supply ui: earn menu shows supplies only after owning a business", () => {
+test("business supply ui: business district shows supplies only after owning a business", () => {
   const ui = new UiFactory();
-  const emptyButtons = ui.earn({ lang: "en", biz: { owned: [] } }, "en").flat();
-  const ownerButtons = ui.earn({ lang: "en", biz: { owned: [{ id: "shawarma" }] } }, "en").flat();
+  const earnButtons = ui.earn({ lang: "en", biz: { owned: [{ id: "shawarma" }] } }, "en").flat();
+  const emptyButtons = ui.businessDistrict({ lang: "en", biz: { owned: [] } }, "en").flat();
+  const ownerButtons = ui.businessDistrict({ lang: "en", biz: { owned: [{ id: "shawarma" }] } }, "en").flat();
 
+  assert.equal(earnButtons.some((btn) => btn.callback_data === "go:BusinessDistrict"), true);
+  assert.equal(earnButtons.some((btn) => btn.callback_data === "supply:open"), false);
   assert.equal(emptyButtons.some((btn) => btn.callback_data === "supply:open"), false);
   assert.equal(ownerButtons.some((btn) => btn.callback_data === "supply:open"), true);
 });
@@ -66,6 +69,10 @@ test("business supply handler: open locked supplies shows unlock CTA", async () 
   assert.equal(mediaCalls.length, 1);
   assert.match(mediaCalls[0].caption, /Business supplies/);
   assert.match(mediaCalls[0].caption, /Unlock price: \$10000/);
+  assert.equal(
+    mediaCalls[0].keyboard.flat().some((btn) => btn.callback_data === "go:BusinessDistrict"),
+    true
+  );
   assert.equal(
     mediaCalls[0].keyboard.flat().some((btn) => btn.callback_data === "supply:unlock:shawarma"),
     true

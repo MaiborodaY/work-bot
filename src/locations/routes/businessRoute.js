@@ -11,7 +11,7 @@ import { getBusinessNote, getBusinessTitle } from "../../I18nCatalog.js";
 import { Routes, toGoCallback } from "../../Routes.js";
 
 export async function renderBusinessRoute(ctx, user, { header = "", lang = "ru", route = Routes.BUSINESS } = {}) {
-  const backTo = (user?.nav?.backTo || null) || Routes.EARN;
+  const backTo = (user?.nav?.backTo || null) || Routes.BUSINESS_DISTRICT;
   let activeDefenseLoaded = false;
   let activeDefense = null;
   const getActiveDefense = async () => {

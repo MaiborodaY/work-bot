@@ -75,6 +75,10 @@ test("core route registry: Business route renders business menu", async () => {
   assert.equal(mediaCalls.length, 1);
   assert.equal(mediaCalls[0].place, Routes.BUSINESS);
   assert.equal(mediaCalls[0].policy, "photo");
+  assert.equal(
+    mediaCalls[0].keyboard.flat().some((btn) => btn.callback_data === "go:BusinessDistrict"),
+    true
+  );
 });
 
 test("core route dynamic: Biz_* route renders business card", async () => {

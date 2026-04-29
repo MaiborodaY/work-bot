@@ -202,7 +202,7 @@ export class Locations {
               caption: this._t(user, "labour.view.need_business"),
               keyboard: [
                 [{ text: this._t(user, "ui.earn.business"), callback_data: toGoCallback(Routes.BUSINESS) }],
-                [{ text: this._t(user, "ui.back.earn"), callback_data: toGoCallback(Routes.EARN) }],
+                [{ text: this._t(user, "ui.back.earn"), callback_data: toGoCallback(Routes.BUSINESS_DISTRICT) }],
               ],
             };
           }
@@ -213,7 +213,7 @@ export class Locations {
         },
         fallbackCaptionKey: "loc.labour.unavailable",
         fallbackBackTextKey: "ui.back.earn",
-        fallbackBackCb: toGoCallback(Routes.EARN)
+        fallbackBackCb: toGoCallback(Routes.BUSINESS_DISTRICT)
       }),
       [Routes.FARM]: async () => this._renderServiceRoute({
         user,
@@ -405,6 +405,14 @@ export class Locations {
         place: Routes.SQUARE,
         caption: (header || "") + this._t(user, "loc.earn.caption"),
         keyboard: this.ui.earn(user, lang),
+        policy: "photo",
+      }),
+
+      [Routes.BUSINESS_DISTRICT]: async () => this._renderStaticRoute({
+        routeName: Routes.BUSINESS_DISTRICT,
+        place: Routes.SQUARE,
+        caption: (header || "") + this._t(user, "loc.business_district.caption"),
+        keyboard: this.ui.businessDistrict(user, lang),
         policy: "photo",
       }),
 

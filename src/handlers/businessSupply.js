@@ -130,7 +130,7 @@ function buildKeyboard(u, entry, lang) {
     rows.push([{ text: tt("business_supply.btn_to_business"), callback_data: toGoCallback(Routes.FARM) }]);
   }
 
-  rows.push([{ text: tt("ui.back.default"), callback_data: toGoCallback(Routes.EARN) }]);
+  rows.push([{ text: tt("ui.back.default"), callback_data: toGoCallback(Routes.BUSINESS_DISTRICT) }]);
   return rows;
 }
 

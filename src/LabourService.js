@@ -1470,7 +1470,7 @@ export class LabourService {
 
     kb.push([{ text: this._t(langSource, "labour.btn.help"), callback_data: "labour:help" }]);
     kb.push([{ text: this._t(langSource, "labour.btn.refresh"), callback_data: "go:Labour" }]);
-    kb.push([{ text: this._t(langSource, "labour.btn.back_earn"), callback_data: "go:Earn" }]);
+    kb.push([{ text: this._t(langSource, "labour.btn.back_earn"), callback_data: "go:BusinessDistrict" }]);
     return { caption: lines.join("\n").trim(), keyboard: kb };
   }
 

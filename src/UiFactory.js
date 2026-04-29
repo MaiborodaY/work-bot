@@ -120,20 +120,10 @@ export class UiFactory {
     const kb = [
       [{ text: this._t(l, "ui.earn.work"), callback_data: this._go(Routes.WORK) }],
       [{ text: this._t(l, "ui.earn.bar"), callback_data: this._go(Routes.BAR) }],
-      [{ text: this._t(l, "ui.earn.business"), callback_data: this._go(Routes.BUSINESS) }],
+      [{ text: this._t(l, "ui.earn.business_district"), callback_data: this._go(Routes.BUSINESS_DISTRICT) }],
       [{ text: this._t(l, "ui.earn.farm"), callback_data: this._go(Routes.FARM) }],
       [{ text: this._t(l, "ui.earn.market"), callback_data: this._go(Routes.MARKET) }],
     ];
-
-    if (user && this._hasAnyBusiness(user)) {
-      kb.push([{ text: this._t(l, "ui.earn.business_supply"), callback_data: "supply:open" }]);
-    }
-
-    // Hide hires menu for players without any purchased business (prevents early confusion).
-    // If user isn't provided (legacy call sites), keep showing the button to avoid behavior change.
-    if (!user || this._hasAnyBusiness(user)) {
-      kb.push([{ text: this._t(l, "ui.earn.labour"), callback_data: this._go(Routes.LABOUR) }]);
-    }
 
     const earnPlayerLevel = user ? Math.max(1, ProgressionService.getLevelInfo(user)?.level || 1) : 99;
     if (earnPlayerLevel >= 2) {
@@ -147,6 +137,24 @@ export class UiFactory {
       [{ text: this._t(l, "ui.back.city"),    callback_data: this._go(Routes.SQUARE) }],
     );
 
+    return kb;
+  }
+
+  businessDistrict(userOrLang = "ru", langMaybe = "ru") {
+    const user = (userOrLang && typeof userOrLang === "object") ? userOrLang : null;
+    const lang = user ? (langMaybe || user?.lang || "ru") : String(userOrLang || "ru");
+    const l = this._lang(lang);
+
+    const kb = [
+      [{ text: this._t(l, "ui.earn.business"), callback_data: this._go(Routes.BUSINESS) }],
+    ];
+
+    if (user && this._hasAnyBusiness(user)) {
+      kb.push([{ text: this._t(l, "ui.earn.labour"), callback_data: this._go(Routes.LABOUR) }]);
+      kb.push([{ text: this._t(l, "ui.earn.business_supply"), callback_data: "supply:open" }]);
+    }
+
+    kb.push([{ text: this._t(l, "ui.back.earn"), callback_data: this._go(Routes.EARN) }]);
     return kb;
   }
   progress(lang = "ru") {
