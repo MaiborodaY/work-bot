@@ -9,6 +9,7 @@ export const farmHandler = {
     data === "farm:harvest_all" ||
     data.startsWith("farm:buy_plot:") ||
     data.startsWith("farm:fertilize:") ||
+    data.startsWith("farm:plot:") ||
     data.startsWith("farm:plant_menu:") ||
     data.startsWith("farm:plant:") ||
     data.startsWith("farm:harvest:"),
@@ -90,14 +91,23 @@ export const farmHandler = {
         return;
       }
       await answer(cb.id, String(res.message || "").slice(0, 180) || undefined);
-      await goTo(u, "Farm");
+      const view = await farm.buildPlotMenuView(u, plotIndex);
+      await show(view);
+      return;
+    }
+
+    if (data.startsWith("farm:plot:")) {
+      await answer(cb.id);
+      const plotIndex = Number(data.split(":")[2] || 0);
+      const view = await farm.buildPlotMenuView(u, plotIndex);
+      await show(view);
       return;
     }
 
     if (data.startsWith("farm:plant_menu:")) {
       await answer(cb.id);
       const plotIndex = Number(data.split(":")[2] || 0);
-      const view = await farm.buildPlantMenuView(u, plotIndex);
+      const view = await farm.buildPlotMenuView(u, plotIndex);
       await show(view);
       return;
     }
@@ -117,7 +127,7 @@ export const farmHandler = {
           return;
         }
         await answer(cb.id, res.error || tt("handler.common.unknown_command"));
-        const view = await farm.buildPlantMenuView(u, plotIndex);
+        const view = await farm.buildPlotMenuView(u, plotIndex);
         await show(view);
         return;
       }

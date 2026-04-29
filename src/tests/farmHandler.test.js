@@ -128,9 +128,10 @@ test("farm handler: successful plant returns to Farm without intermediate result
   assert.equal(shows.length, 0);
 });
 
-test("farm handler: fertilize returns to farm with short toast", async () => {
+test("farm handler: fertilize returns to plot menu with short toast", async () => {
   const goes = [];
   const answers = [];
+  const shows = [];
   const ctx = {
     data: "farm:fertilize:1",
     u: { lang: "ru" },
@@ -141,10 +142,17 @@ test("farm handler: fertilize returns to farm with short toast", async () => {
     farm: {
       async fertilize() {
         return { ok: true, plotIndex: 1, message: "🧪 Удобрение применено. Грядка 1 готова!" };
+      },
+      async buildPlotMenuView() {
+        return { caption: "plot menu ready", keyboard: [] };
       }
     },
     locations: {
-      media: { async show() {} },
+      media: {
+        async show(payload) {
+          shows.push(payload);
+        }
+      },
       _sourceMsg: null,
       setSourceMessage() {}
     },
@@ -159,6 +167,7 @@ test("farm handler: fertilize returns to farm with short toast", async () => {
 
   assert.equal(answers.length, 1);
   assert.match(String(answers[0].text || ""), /удобрение применено/i);
-  assert.equal(goes.length, 1);
-  assert.equal(goes[0].route, Routes.FARM);
+  assert.equal(goes.length, 0);
+  assert.equal(shows.length, 1);
+  assert.equal(shows[0].caption, "plot menu ready");
 });

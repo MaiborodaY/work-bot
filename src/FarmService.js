@@ -507,6 +507,25 @@ export class FarmService {
     return `🧺 Собрано и продано ${toInt(count, 0)} грядок.\n+$${toInt(money, 0)}`;
   }
 
+  _firstLine(text) {
+    return String(text || "").split("\n")[0].trim();
+  }
+
+  _plotButtonText(source, plotIndex, plot, crop = null, nowTs = this.now()) {
+    const s = this._s(source);
+    const idx = toInt(plotIndex, 1);
+    if (plot && String(plot.status || "") === "growing" && crop) {
+      const template = this._isReady(plot, nowTs) ? s.plotReady : s.plotGrowing;
+      return this._firstLine(this._fmt(template, {
+        emoji: crop.emoji,
+        num: idx,
+        name: crop.name,
+        left: this._leftLabel(source, toInt(plot.readyAt, 0) - nowTs)
+      }));
+    }
+    return this._firstLine(this._fmt(s.plotEmpty, { num: idx }));
+  }
+
   _plotByIndex(u, plotIndex) {
     const idxRaw = Number(plotIndex);
     if (!Number.isFinite(idxRaw)) return { ok: false, index: -1, plot: null };
@@ -545,27 +564,22 @@ export class FarmService {
         const crop = this._cropInfo(u, p.cropId);
         if (!crop) {
           lines.push(this._fmt(s.plotEmpty, { num: i }), "");
-          kb.push([{ text: this._fmt(s.btnPlant, { num: i }), callback_data: `farm:plant_menu:${i}` }]);
+          kb.push([{ text: this._plotButtonText(u, i, null, null, nowTs), callback_data: `farm:plot:${i}` }]);
           continue;
         }
         if (this._isReady(p, nowTs)) {
           readyCount += 1;
           readyTotalMoney += crop.sellPrice;
           lines.push(this._fmt(s.plotReady, { emoji: crop.emoji, num: i }), "");
-          kb.push([{
-            text: this._fmt(s.btnHarvest, { emoji: crop.emoji, name: crop.name.toLowerCase(), price: crop.sellPrice }),
-            callback_data: `farm:harvest:${i}`
-          }]);
+          kb.push([{ text: this._plotButtonText(u, i, p, crop, nowTs), callback_data: `farm:plot:${i}` }]);
         } else {
           const left = this._leftLabel(u, toInt(p.readyAt, 0) - nowTs);
           lines.push(this._fmt(s.plotGrowing, { num: i, emoji: crop.emoji, name: crop.name, left }), "");
-          if (InventoryService.has(u, "fertilizer", 1)) {
-            kb.push([{ text: this._fmt(s.btnFertilize, { num: i }), callback_data: `farm:fertilize:${i}` }]);
-          }
+          kb.push([{ text: this._plotButtonText(u, i, p, crop, nowTs), callback_data: `farm:plot:${i}` }]);
         }
       } else {
         lines.push(this._fmt(s.plotEmpty, { num: i }), "");
-        kb.push([{ text: this._fmt(s.btnPlant, { num: i }), callback_data: `farm:plant_menu:${i}` }]);
+        kb.push([{ text: this._plotButtonText(u, i, p, null, nowTs), callback_data: `farm:plot:${i}` }]);
       }
     }
 
@@ -584,6 +598,54 @@ export class FarmService {
       caption: lines.join("\n").trim(),
       keyboard: kb
     };
+  }
+
+  async buildPlotMenuView(u, plotIndex) {
+    this._normalizeModel(u);
+    const s = this._s(u);
+    const limit = this._plotLimit(u);
+    const target = this._plotByIndex(u, plotIndex);
+    if (!target.ok || target.index < 1 || target.index > limit) {
+      return {
+        caption: `${s.title}\n\n${s.errPlotInvalid}`,
+        keyboard: [[{ text: s.btnBackCity, callback_data: "go:Farm" }]]
+      };
+    }
+
+    const p = target.plot;
+    if (String(p.status || "") !== "growing") {
+      return this.buildPlantMenuView(u, target.index);
+    }
+
+    const crop = this._cropInfo(u, p.cropId);
+    if (!crop) {
+      return this.buildPlantMenuView(u, target.index);
+    }
+
+    const nowTs = this.now();
+    const lines = [];
+    const kb = [];
+    if (this._isReady(p, nowTs)) {
+      lines.push(this._fmt(s.plotReady, { emoji: crop.emoji, num: target.index }));
+      lines.push("");
+      lines.push(`$${crop.sellPrice}`);
+      kb.push([{
+        text: this._fmt(s.btnHarvest, { emoji: crop.emoji, name: crop.name.toLowerCase(), price: crop.sellPrice }),
+        callback_data: `farm:harvest:${target.index}`
+      }]);
+    } else {
+      const left = this._leftLabel(u, toInt(p.readyAt, 0) - nowTs);
+      lines.push(this._fmt(s.plotGrowing, { num: target.index, emoji: crop.emoji, name: crop.name, left }));
+      lines.push("");
+      lines.push(`$${crop.sellPrice} (+$${this._netProfit(crop.sellPrice, toInt(p.seedSpent, crop.seedPrice))})`);
+      lines.push(`Fertilizer: ${InventoryService.count(u, "fertilizer")}`);
+      if (InventoryService.has(u, "fertilizer", 1)) {
+        kb.push([{ text: this._fmt(s.btnFertilize, { num: target.index }), callback_data: `farm:fertilize:${target.index}` }]);
+      }
+    }
+
+    kb.push([{ text: s.btnCancel, callback_data: "go:Farm" }]);
+    return { caption: lines.join("\n").trim(), keyboard: kb };
   }
 
   async buildPlantMenuView(u, plotIndex) {

@@ -206,6 +206,84 @@ test("farm: main view shows harvest-all button when 2+ plots are ready", async (
   assert.ok(harvestAllBtn);
 });
 
+test("farm: main view opens plot menus and keeps harvest-all bulk action", async () => {
+  const nowTs = Date.UTC(2026, 2, 21, 18, 0, 0);
+  const db = new MockDb();
+  const users = { db, async save() {} };
+  const svc = new FarmService({ db, users, now: () => nowTs });
+  const u = makeUser();
+  u.inv = { fertilizer: 2 };
+  u.farm.plotCount = 2;
+  u.farm.plots = [
+    { id: 1, status: "growing", cropId: "carrot", plantedAt: nowTs - 60_000, readyAt: nowTs - 1_000, notifiedReady: false },
+    { id: 2, status: "growing", cropId: "tomato", plantedAt: nowTs - 60_000, readyAt: nowTs - 1_000, notifiedReady: false }
+  ];
+
+  const main = await svc.buildMainView(u);
+  const buttons = (main.keyboard || []).flat();
+
+  assert.ok(buttons.find((x) => x.callback_data === "farm:plot:1"));
+  assert.ok(buttons.find((x) => x.callback_data === "farm:plot:2"));
+  assert.ok(buttons.find((x) => x.callback_data === "farm:harvest_all"));
+  assert.equal(buttons.some((x) => String(x.callback_data || "").startsWith("farm:fertilize:")), false);
+  assert.equal(buttons.some((x) => String(x.callback_data || "").startsWith("farm:harvest:")), false);
+});
+
+test("farm: plot menu shows fertilizer only for growing crop with fertilizer", async () => {
+  const nowTs = Date.UTC(2026, 2, 21, 12, 0, 0);
+  const db = new MockDb();
+  const users = { db, async save() {} };
+  const svc = new FarmService({ db, users, now: () => nowTs });
+  const u = makeUser();
+  u.inv = { fertilizer: 1 };
+  u.farm.plots[0] = {
+    id: 1,
+    status: "growing",
+    cropId: "carrot",
+    seedSpent: 250,
+    plantedAt: nowTs - 60_000,
+    readyAt: nowTs + 3600_000,
+    notifiedReady: false
+  };
+
+  const view = await svc.buildPlotMenuView(u, 1);
+  const buttons = (view.keyboard || []).flat();
+
+  assert.ok(buttons.find((x) => x.callback_data === "farm:fertilize:1"));
+  assert.match(String(view.caption || ""), /Fertilizer: 1/i);
+
+  u.inv = {};
+  const noFertilizerView = await svc.buildPlotMenuView(u, 1);
+  const noFertilizerButtons = (noFertilizerView.keyboard || []).flat();
+  assert.equal(noFertilizerButtons.some((x) => x.callback_data === "farm:fertilize:1"), false);
+});
+
+test("farm: plot menu shows plant choices for empty plot and harvest for ready crop", async () => {
+  let nowTs = Date.UTC(2026, 2, 21, 12, 0, 0);
+  const db = new MockDb();
+  const users = { db, async save() {} };
+  const svc = new FarmService({ db, users, now: () => nowTs });
+  const u = makeUser();
+
+  const emptyView = await svc.buildPlotMenuView(u, 1);
+  let buttons = (emptyView.keyboard || []).flat();
+  assert.ok(buttons.find((x) => x.callback_data === "farm:plant:1:carrot"));
+
+  u.farm.plots[0] = {
+    id: 1,
+    status: "growing",
+    cropId: "carrot",
+    seedSpent: 250,
+    plantedAt: nowTs - 3600_000,
+    readyAt: nowTs - 1000,
+    notifiedReady: false
+  };
+  const readyView = await svc.buildPlotMenuView(u, 1);
+  buttons = (readyView.keyboard || []).flat();
+  assert.ok(buttons.find((x) => x.callback_data === "farm:harvest:1"));
+  assert.equal(buttons.some((x) => x.callback_data === "farm:fertilize:1"), false);
+});
+
 test("farm: harvestAll collects all ready plots with single save", async () => {
   const nowTs = Date.UTC(2026, 2, 21, 15, 0, 0);
   const db = new MockDb();
