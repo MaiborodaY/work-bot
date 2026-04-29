@@ -107,6 +107,62 @@ test("farm: harvest resets plot and pays money", async () => {
   assert.equal(saved, 1);
 });
 
+test("farm: harvest to inventory resets plot and does not pay money", async () => {
+  const nowTs = Date.UTC(2026, 2, 21, 15, 0, 0);
+  const db = new MockDb();
+  let questEvents = 0;
+  let achEvents = 0;
+  let saved = 0;
+  const users = {
+    db,
+    async save() { saved += 1; }
+  };
+  const quests = {
+    async onEvent(u, event, payload) {
+      questEvents += 1;
+      assert.equal(event, "farm_harvest");
+      assert.equal(payload.cropId, "tomato");
+      assert.equal(payload.money, 0);
+      assert.equal(payload.toInventory, true);
+      return { events: [] };
+    },
+    async notifyEvents() {}
+  };
+  const achievements = {
+    async onEvent() {
+      achEvents += 1;
+      return { newlyEarned: [] };
+    },
+    async notifyEarned() {}
+  };
+  const svc = new FarmService({ db, users, now: () => nowTs, quests, achievements });
+  const u = makeUser();
+  u.money = 0;
+  u.farm.plots[0] = {
+    id: 1,
+    status: "growing",
+    cropId: "tomato",
+    plantedAt: nowTs - 3600_000,
+    readyAt: nowTs - 1000,
+    notifiedReady: false
+  };
+
+  const res = await svc.harvestToInventory(u, 1);
+
+  assert.equal(res.ok, true);
+  assert.equal(res.itemId, "crop_tomato");
+  assert.equal(u.money, 0);
+  assert.equal(u.inv.crop_tomato, 1);
+  assert.equal(u.farm.plots[0].status, "empty");
+  assert.equal(u.farm.plots[0].cropId, "");
+  assert.equal(u.stats.farmHarvestCount, 1);
+  assert.equal(u.stats.farmMoneyTotal, 0);
+  assert.equal(u.stats.farmMoneyWeek, 0);
+  assert.equal(questEvents, 1);
+  assert.equal(achEvents, 1);
+  assert.equal(saved, 1);
+});
+
 test("farm: plant fails when not enough energy", async () => {
   const nowTs = Date.UTC(2026, 2, 21, 12, 0, 0);
   const db = new MockDb();
@@ -281,6 +337,7 @@ test("farm: plot menu shows plant choices for empty plot and harvest for ready c
   const readyView = await svc.buildPlotMenuView(u, 1);
   buttons = (readyView.keyboard || []).flat();
   assert.ok(buttons.find((x) => x.callback_data === "farm:harvest:1"));
+  assert.ok(buttons.find((x) => x.callback_data === "farm:harvest_inv:1"));
   assert.equal(buttons.some((x) => x.callback_data === "farm:fertilize:1"), false);
 });
 

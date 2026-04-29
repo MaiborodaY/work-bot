@@ -1,3 +1,5 @@
+import { BusinessSupplyService } from "./BusinessSupplyService.js";
+
 export function getTodayUTC(ts = Date.now()) {
   return new Date(Number(ts) || Date.now()).toISOString().slice(0, 10);
 }
@@ -59,7 +61,13 @@ export function getBusinessAvailableToday(entry, daily, todayUTC = getTodayUTC()
   if (String(e.lastClaimDayUTC || "") === String(todayUTC || "")) return 0;
   const base = Math.max(0, Math.floor(Number(daily) || 0));
   const pending = getBusinessPendingTheft(e, base);
-  return Math.max(0, base - pending);
+  const multiplier = getBusinessClaimMultiplier(e, todayUTC);
+  return Math.max(0, Math.floor((base - pending) * multiplier));
+}
+
+export function getBusinessClaimMultiplier(entry, todayUTC = getTodayUTC()) {
+  const e = normalizeBusinessEntry(entry);
+  return Math.max(1, Math.floor(Number(BusinessSupplyService.claimMultiplier(e, e.id, todayUTC)) || 1));
 }
 
 export function getBusinessStealableForNextClaim(entry, daily, ownerRemainPct = 0.5) {
@@ -89,6 +97,7 @@ export function applyBusinessClaim(entry, daily, todayUTC = getTodayUTC()) {
   const reward = getBusinessAvailableToday(e, daily, todayUTC);
   e.lastClaimDayUTC = String(todayUTC || "");
   e.pendingTheftAmount = 0;
+  BusinessSupplyService.consumeClaimBonus(e, e.id);
   // Keep legacy fields clean.
   e.stolenDayUTC = "";
   e.stolenAmountToday = 0;

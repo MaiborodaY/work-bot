@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   addBusinessPendingTheft,
   applyBusinessClaim,
+  getBusinessClaimMultiplier,
   getBusinessAvailableToday,
   getBusinessStealableForNextClaim,
   getTodayUTC,
@@ -55,6 +56,31 @@ test("business payout: claim applies available reward and resets pending theft",
   assert.equal(reward, 800);
   assert.equal(entry.lastClaimDayUTC, today);
   assert.equal(entry.pendingTheftAmount, 0);
+});
+
+test("business payout: supply multiplier boosts next claim and is consumed", () => {
+  const today = "2026-03-11";
+  const entry = normalizeBusinessEntry({
+    id: "shawarma",
+    lastClaimDayUTC: "",
+    pendingTheftAmount: 100,
+    supply: {
+      unlocked: true,
+      slots: 1,
+      pendingMultiplier: 2,
+      pendingBonusDayUTC: today
+    }
+  }, "shawarma");
+
+  assert.equal(getBusinessClaimMultiplier(entry, today), 2);
+  assert.equal(getBusinessAvailableToday(entry, 1000, today), 1800);
+
+  const reward = applyBusinessClaim(entry, 1000, today);
+  assert.equal(reward, 1800);
+  assert.equal(entry.lastClaimDayUTC, today);
+  assert.equal(entry.pendingTheftAmount, 0);
+  assert.equal(entry.supply.pendingMultiplier, 0);
+  assert.equal(entry.supply.pendingBonusDayUTC, "");
 });
 
 test("business payout: getTodayUTC returns YYYY-MM-DD", () => {

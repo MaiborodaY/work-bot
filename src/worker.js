@@ -49,6 +49,7 @@ import { socialHandler } from "./handlers/social.js";
 import { dailyHandler } from "./handlers/daily.js";
 import { barHandler } from "./handlers/bar.js"; // ДОБАВИТЬ
 import { businessHandler } from "./handlers/business.js"; // ➕ НОВОЕ
+import { businessSupplyHandler } from "./handlers/businessSupply.js";
 import { miniGamesHandler } from "./handlers/minigames.js";
 import { clanHandler } from "./handlers/clan.js";
 import { stocksHandler } from "./handlers/stocks.js";
@@ -1559,6 +1560,7 @@ export default {
         miniGamesHandler,
         workHandler,
         businessHandler,
+        businessSupplyHandler,
         labourHandler,
         farmHandler,
         petHandler,

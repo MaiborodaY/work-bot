@@ -12,6 +12,7 @@ export const farmHandler = {
     data.startsWith("farm:plot:") ||
     data.startsWith("farm:plant_menu:") ||
     data.startsWith("farm:plant:") ||
+    data.startsWith("farm:harvest_inv:") ||
     data.startsWith("farm:harvest:"),
 
   async handle(ctx) {
@@ -160,6 +161,19 @@ export const farmHandler = {
         return;
       }
       const view = farm.buildHarvestResultView(u, res);
+      await answer(cb.id, String(view.caption || "").slice(0, 180));
+      await goTo(u, "Farm");
+    }
+
+    if (data.startsWith("farm:harvest_inv:")) {
+      const plotIndex = Number(data.split(":")[2] || 0);
+      const res = await farm.harvestToInventory(u, plotIndex);
+      if (!res.ok) {
+        await answer(cb.id, res.error || tt("handler.common.unknown_command"));
+        await goTo(u, "Farm");
+        return;
+      }
+      const view = farm.buildHarvestInventoryResultView(u, res);
       await answer(cb.id, String(view.caption || "").slice(0, 180));
       await goTo(u, "Farm");
     }

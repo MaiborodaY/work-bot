@@ -2,6 +2,7 @@ import { CONFIG } from "../../GameConfig.js";
 import { ASSETS, JOB_ASSETS } from "../../Assets.js";
 import {
   getBusinessAvailableToday,
+  getBusinessClaimMultiplier,
   getBusinessPendingTheft,
   getTodayUTC,
   normalizeBusinessEntry
@@ -69,9 +70,10 @@ export async function renderBusinessRoute(ctx, user, { header = "", lang = "ru",
     const entry = isOwned ? normalizeBusinessEntry(typeof ownedObj === "string" ? { id: B.id } : ownedObj, B.id) : null;
     const claimedToday = !!entry && (entry.lastClaimDayUTC === todayUTC);
     const availableToday = entry ? getBusinessAvailableToday(entry, Number(B.daily) || 0, todayUTC) : 0;
+    const supplyMultiplier = entry ? getBusinessClaimMultiplier(entry, todayUTC) : 1;
     const pendingTheft = entry ? getBusinessPendingTheft(entry, Number(B.daily) || 0) : 0;
     const dailyIncome = Math.max(0, Math.floor(Number(B.daily) || 0));
-    const nextClaimAmount = entry ? Math.max(0, dailyIncome - pendingTheft) : dailyIncome;
+    const nextClaimAmount = entry ? availableToday : dailyIncome;
     const guardPrice = Math.max(1, Math.floor(Math.max(0, Number(B.daily) || 0) * 0.10));
     const nowTs = Date.now();
     const guardUntil = entry ? Math.max(0, Math.floor(Number(entry.guardUntil) || 0)) : 0;
@@ -98,6 +100,9 @@ export async function renderBusinessRoute(ctx, user, { header = "", lang = "ru",
       : "";
     const nextClaimLine = isOwned
       ? ctx._t(user, "loc.business.next_claim", { amount: nextClaimAmount })
+      : "";
+    const supplyBonusLine = isOwned && supplyMultiplier > 1
+      ? ctx._t(user, "loc.business.supply_bonus_active", { mult: supplyMultiplier })
       : "";
     const protectionLine = isOwned
       ? (immunityActive
@@ -179,6 +184,7 @@ export async function renderBusinessRoute(ctx, user, { header = "", lang = "ru",
         ctx._t(user, "loc.business.price", { price: B.price }) + "\n" +
         ctx._t(user, "loc.business.daily_income", { daily: B.daily }) + "\n" +
         modeLine +
+        (supplyBonusLine ? `\n${supplyBonusLine}` : "") +
         (nextClaimLine ? `\n${nextClaimLine}` : "") + "\n" +
         statusLine +
         (protectionLine ? `\n\n${protectionLine}` : "") +

@@ -633,6 +633,10 @@ export class FarmService {
         text: this._fmt(s.btnHarvest, { emoji: crop.emoji, name: crop.name.toLowerCase(), price: crop.sellPrice }),
         callback_data: `farm:harvest:${target.index}`
       }]);
+      kb.push([{
+        text: `\u{1F392} ${crop.emoji} ${crop.name}`,
+        callback_data: `farm:harvest_inv:${target.index}`
+      }]);
     } else {
       const left = this._leftLabel(u, toInt(p.readyAt, 0) - nowTs);
       lines.push(this._fmt(s.plotGrowing, { num: target.index, emoji: crop.emoji, name: crop.name, left }));
@@ -790,6 +794,18 @@ export class FarmService {
     const s = this._s(u);
     return {
       caption: this._harvestAllResultCaption(u, data.count, data.totalMoney),
+      keyboard: [[{ text: s.btnBackCity, callback_data: "go:Farm" }]]
+    };
+  }
+
+  buildHarvestInventoryResultView(u, data = {}) {
+    const s = this._s(u);
+    const crop = this._cropInfo(u, data.cropId);
+    const caption = crop
+      ? `${crop.emoji} ${crop.name} x${toInt(data.qty, 1)}`
+      : s.toastOk;
+    return {
+      caption,
       keyboard: [[{ text: s.btnBackCity, callback_data: "go:Farm" }]]
     };
   }
@@ -971,6 +987,64 @@ export class FarmService {
     }
 
     return { ok: true, plotIndex: target.index, cropId: crop.id, sellPrice };
+  }
+
+  async harvestToInventory(u, plotIndex) {
+    this._normalizeModel(u);
+    this._ensureFarmStats(u);
+    const s = this._s(u);
+    const limit = this._plotLimit(u);
+    const target = this._plotByIndex(u, plotIndex);
+    if (!target.ok || target.index < 1 || target.index > limit) {
+      return { ok: false, error: s.errPlotInvalid };
+    }
+    const p = target.plot;
+    if (String(p.status || "") !== "growing") {
+      return { ok: false, error: s.errEmpty };
+    }
+    if (!this._isReady(p, this.now())) {
+      return { ok: false, error: s.errNotReady };
+    }
+
+    const crop = this._cropInfo(u, p.cropId);
+    if (!crop) {
+      Object.assign(p, this._defaultPlot(target.index));
+      await this.users.save(u);
+      return { ok: false, error: s.errCropInvalid };
+    }
+
+    const nowTs = this.now();
+    const itemId = InventoryService.cropItemId(crop.id);
+    InventoryService.add(u, itemId, 1);
+    u.stats.farmHarvestCount = toInt(u?.stats?.farmHarvestCount, 0) + 1;
+
+    Object.assign(p, this._defaultPlot(target.index));
+    markUsefulActivity(u, nowTs);
+
+    let qRes = null;
+    if (this.quests?.onEvent) {
+      qRes = await this.quests.onEvent(u, "farm_harvest", { cropId: crop.id, money: 0, toInventory: true }, {
+        persist: false,
+        notify: false
+      }).catch(() => null);
+    }
+    let aRes = null;
+    if (this.achievements?.onEvent) {
+      aRes = await this.achievements.onEvent(u, "farm_harvest", { cropId: crop.id, money: 0, toInventory: true }, {
+        persist: false,
+        notify: false
+      }).catch(() => null);
+    }
+
+    await this.users.save(u);
+    if (qRes?.events?.length && this.quests?.notifyEvents) {
+      await this.quests.notifyEvents(u, qRes.events).catch(() => {});
+    }
+    if (aRes?.newlyEarned?.length && this.achievements?.notifyEarned) {
+      await this.achievements.notifyEarned(u, aRes.newlyEarned).catch(() => {});
+    }
+
+    return { ok: true, plotIndex: target.index, cropId: crop.id, itemId, qty: 1 };
   }
 
   async harvestAll(u) {

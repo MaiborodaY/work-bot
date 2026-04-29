@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { getTodayUTC } from "../BusinessPayout.js";
 import { Locations } from "../Locations.js";
 import { Routes } from "../Routes.js";
 
@@ -85,4 +86,30 @@ test("core route dynamic: Biz_* route renders business card", async () => {
   assert.equal(mediaCalls.length, 1);
   assert.equal(mediaCalls[0].place, Routes.BUSINESS);
   assert.equal(mediaCalls[0].policy, "photo");
+});
+
+test("core route dynamic: Biz_* shows active supply bonus in next payout", async () => {
+  const { locations, mediaCalls } = createLocations();
+  const u = baseUser();
+  u.biz.owned = [{
+    id: "shawarma",
+    lastClaimDayUTC: "",
+    pendingTheftAmount: 0,
+    supply: {
+      unlocked: true,
+      slots: 1,
+      pendingMultiplier: 2,
+      pendingBonusDayUTC: getTodayUTC()
+    }
+  }];
+
+  await locations.show(u, null, "Biz_shawarma");
+
+  assert.equal(mediaCalls.length, 1);
+  assert.match(mediaCalls[0].caption, /Supply bonus active: x2/);
+  assert.match(mediaCalls[0].caption, /Next claim: \$2000/);
+  assert.equal(
+    mediaCalls[0].keyboard.flat().some((btn) => String(btn.text || "").includes("$2000")),
+    true
+  );
 });

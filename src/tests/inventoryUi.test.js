@@ -28,6 +28,21 @@ test("inventory ui: empty inventory shows empty state and back button only", () 
   );
 });
 
+test("inventory ui: crop item is rendered as supply ingredient without use button", () => {
+  const ui = new UiFactory();
+  const user = makeUser({ crop_tomato: 3 });
+
+  const caption = ui.inventoryCaption(user, "en");
+  const kb = ui.inventory(user, {}, "en");
+
+  assert.match(String(caption || ""), /Tomato x3/);
+  assert.match(String(caption || ""), /business supply ingredient/);
+  assert.equal(
+    kb.some((row) => String(row?.[0]?.callback_data || "") === "inv:use:crop_tomato"),
+    false
+  );
+});
+
 test("inventory ui: coffee item is rendered in caption with quantity and energy effect", () => {
   const ui = new UiFactory();
   const user = makeUser({ coffee: 3 });

@@ -758,6 +758,31 @@ export const CONFIG = {
     ]
   },
 
+  BUSINESS_SUPPLY: {
+    shawarma: {
+      enabled: true,
+      unlockPrice: 10000,
+      maxSlots: 3,
+      recipe: {
+        crop_carrot: 2,
+        crop_tomato: 1
+      },
+      slotProgressTargets: {
+        2: 5,
+        3: 10
+      },
+      slotPrices: {
+        2: 25000,
+        3: 75000
+      },
+      multipliersByOrders: {
+        1: 2,
+        2: 3,
+        3: 5
+      }
+    }
+  },
+
   BUSINESS: {
     shawarma: {
       id: "shawarma",

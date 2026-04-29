@@ -171,3 +171,41 @@ test("farm handler: fertilize returns to plot menu with short toast", async () =
   assert.equal(shows.length, 1);
   assert.equal(shows[0].caption, "plot menu ready");
 });
+
+test("farm handler: harvest to inventory returns to Farm with short toast", async () => {
+  const goes = [];
+  const answers = [];
+  const ctx = {
+    data: "farm:harvest_inv:1",
+    u: { lang: "en" },
+    cb: { id: "4" },
+    async answer(id, text) {
+      answers.push({ id, text });
+    },
+    farm: {
+      async harvestToInventory() {
+        return { ok: true, plotIndex: 1, cropId: "tomato", itemId: "crop_tomato", qty: 1 };
+      },
+      buildHarvestInventoryResultView() {
+        return { caption: "Tomato x1", keyboard: [] };
+      }
+    },
+    locations: {
+      media: { async show() {} },
+      _sourceMsg: null,
+      setSourceMessage() {}
+    },
+    async goTo(u, route, intro) {
+      goes.push({ u, route, intro });
+    },
+    quests: null,
+    users: null
+  };
+
+  await farmHandler.handle(ctx);
+
+  assert.equal(answers.length, 1);
+  assert.match(String(answers[0].text || ""), /Tomato x1/i);
+  assert.equal(goes.length, 1);
+  assert.equal(goes[0].route, Routes.FARM);
+});

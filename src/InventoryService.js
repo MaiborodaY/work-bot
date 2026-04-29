@@ -3,7 +3,8 @@ import { HomeService } from "./HomeService.js";
 import { EnergyService } from "./EnergyService.js";
 
 const USABLE_ITEM_IDS = ["coffee", "sandwich", "lunch", "borscht"];
-const MATERIAL_ITEM_IDS = ["mango_seed", "fertilizer"];
+const CROP_ITEM_IDS = ["crop_carrot", "crop_tomato", "crop_corn", "crop_mango"];
+const MATERIAL_ITEM_IDS = ["mango_seed", "fertilizer", ...CROP_ITEM_IDS];
 
 function toInt(raw, fallback = 0) {
   const n = Number(raw);
@@ -51,6 +52,15 @@ export class InventoryService {
 
   static isMaterial(itemId) {
     return MATERIAL_ITEM_IDS.includes(String(itemId || "").trim());
+  }
+
+  static isCropItem(itemId) {
+    return CROP_ITEM_IDS.includes(String(itemId || "").trim());
+  }
+
+  static cropItemId(cropId) {
+    const key = String(cropId || "").trim();
+    return key ? `crop_${key}` : "";
   }
 
   static itemConfig(itemId) {

@@ -31,6 +31,10 @@ export class UiFactory {
     if (id === "borscht") return l === "en" ? "\u{1F963} Soup of the day" : (l === "uk" ? "\u{1F963} Борщ" : "\u{1F963} Борщ");
     if (id === "mango_seed") return l === "en" ? "\u{1F96D} Mango seed" : (l === "uk" ? "\u{1F96D} Насіння манго" : "\u{1F96D} Семя манго");
     if (id === "fertilizer") return l === "en" ? "\u{1F9EA} Fertilizer" : (l === "uk" ? "\u{1F9EA} Добриво" : "\u{1F9EA} Удобрение");
+    if (id === "crop_carrot") return l === "en" ? "\u{1F955} Carrot" : (l === "uk" ? "\u{1F955} \u041C\u043E\u0440\u043A\u0432\u0430" : "\u{1F955} \u041C\u043E\u0440\u043A\u043E\u0432\u044C");
+    if (id === "crop_tomato") return l === "en" ? "\u{1F345} Tomato" : (l === "uk" ? "\u{1F345} \u041F\u043E\u043C\u0456\u0434\u043E\u0440" : "\u{1F345} \u041F\u043E\u043C\u0438\u0434\u043E\u0440");
+    if (id === "crop_corn") return l === "en" ? "\u{1F33D} Corn" : (l === "uk" ? "\u{1F33D} \u041A\u0443\u043A\u0443\u0440\u0443\u0434\u0437\u0430" : "\u{1F33D} \u041A\u0443\u043A\u0443\u0440\u0443\u0437\u0430");
+    if (id === "crop_mango") return l === "en" ? "\u{1F96D} Mango" : (l === "uk" ? "\u{1F96D} \u041C\u0430\u043D\u0433\u043E" : "\u{1F96D} \u041C\u0430\u043D\u0433\u043E");
     return getShopTitle(id, l) || id;
   }
 
@@ -119,6 +123,10 @@ export class UiFactory {
       [{ text: this._t(l, "ui.earn.business"), callback_data: this._go(Routes.BUSINESS) }],
       [{ text: this._t(l, "ui.earn.farm"), callback_data: this._go(Routes.FARM) }],
     ];
+
+    if (user && this._hasAnyBusiness(user)) {
+      kb.push([{ text: this._t(l, "ui.earn.business_supply"), callback_data: "supply:open" }]);
+    }
 
     // Hide hires menu for players without any purchased business (prevents early confusion).
     // If user isn't provided (legacy call sites), keep showing the button to avoid behavior change.
@@ -528,6 +536,9 @@ export class UiFactory {
         lines.push(`${this._inventoryItemTitle(item.id, l)} x${item.qty} \u2014 ${desc}`);
       } else if (item.id === "fertilizer") {
         const desc = l === "en" ? "instantly finishes growth" : (l === "uk" ? "миттєво завершує ріст" : "мгновенно завершает рост");
+        lines.push(`${this._inventoryItemTitle(item.id, l)} x${item.qty} \u2014 ${desc}`);
+      } else if (InventoryService.isCropItem(item.id)) {
+        const desc = l === "en" ? "business supply ingredient" : (l === "uk" ? "\u0456\u043d\u0433\u0440\u0435\u0434\u0456\u0454\u043d\u0442 \u0434\u043b\u044f \u043f\u043e\u0441\u0442\u0430\u0432\u043e\u043a" : "\u0438\u043d\u0433\u0440\u0435\u0434\u0438\u0435\u043d\u0442 \u0434\u043b\u044f \u043f\u043e\u0441\u0442\u0430\u0432\u043e\u043a");
         lines.push(`${this._inventoryItemTitle(item.id, l)} x${item.qty} \u2014 ${desc}`);
       }
     }
