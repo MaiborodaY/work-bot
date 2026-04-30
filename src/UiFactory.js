@@ -743,6 +743,7 @@ export class UiFactory {
   cityBoard(lang = "ru") {
     const l = this._lang(lang);
     return [
+      [{ text: this._t(l, "ui.cityboard.topcityday"), callback_data: "city:topcityday" }],
       [{ text: this._t(l, "ui.cityboard.contribute"), callback_data: "city:contribute" }],
       [
         { text: this._t(l, "ui.cityboard.topday"),    callback_data: "city:topday" },
@@ -868,6 +869,27 @@ export class UiFactory {
       const m = medals[i] || `${i + 1}.`;
       const total = Math.max(0, Number(x?.total || x?.money || 0));
       lines.push(`${m} ${x.name} — $${total}`);
+    });
+    return lines.join("\n");
+  }
+
+  cityTopCityDayCaption(list, lang = "ru") {
+    const l = this._lang(lang);
+    if (!Array.isArray(list) || !list.length) {
+      return this._t(l, "ui.cityboard.cityday.empty");
+    }
+    const medals = ["🥇", "🥈", "🥉"];
+    const CAT_ICONS = { biz: "🏢", farm: "🌱", syn: "🤝", fish: "🎣", market: "🛒" };
+    const lines = [this._t(l, "ui.cityboard.cityday.title")];
+    list.slice(0, 15).forEach((x, i) => {
+      const m = medals[i] || `${i + 1}.`;
+      const total = Math.max(0, Number(x?.total || 0));
+      const cats = x?.cats || {};
+      const icons = Object.entries(CAT_ICONS)
+        .filter(([cat]) => Math.max(0, Number(cats[cat] || 0)) > 0)
+        .map(([, icon]) => icon)
+        .join("");
+      lines.push(`${m} ${x.name} — $${total}${icons ? "  " + icons : ""}`);
     });
     return lines.join("\n");
   }

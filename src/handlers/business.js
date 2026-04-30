@@ -316,12 +316,12 @@ export const businessHandler = {
         }
       } catch {}
       try {
+        const bizDayTotal = Math.max(0, Number(u?.stats?.bizClaimDayTotal) || 0);
         if (reward > 0 && social?.maybeUpdateBizDayTop) {
-          await social.maybeUpdateBizDayTop({
-            userId: u.id,
-            displayName: u.displayName,
-            total: Math.max(0, Number(u?.stats?.bizClaimDayTotal) || 0)
-          });
+          await social.maybeUpdateBizDayTop({ userId: u.id, displayName: u.displayName, total: bizDayTotal });
+        }
+        if (reward > 0 && social?.maybeUpdateCityDayTop) {
+          await social.maybeUpdateCityDayTop({ userId: u.id, displayName: u.displayName, cat: "biz", amount: bizDayTotal });
         }
       } catch {}
 
@@ -407,12 +407,12 @@ export const businessHandler = {
         }
       } catch {}
       try {
+        const bizDayTotal2 = Math.max(0, Number(u?.stats?.bizClaimDayTotal) || 0);
         if (total > 0 && social?.maybeUpdateBizDayTop) {
-          await social.maybeUpdateBizDayTop({
-            userId: u.id,
-            displayName: u.displayName,
-            total: Math.max(0, Number(u?.stats?.bizClaimDayTotal) || 0)
-          });
+          await social.maybeUpdateBizDayTop({ userId: u.id, displayName: u.displayName, total: bizDayTotal2 });
+        }
+        if (total > 0 && social?.maybeUpdateCityDayTop) {
+          await social.maybeUpdateCityDayTop({ userId: u.id, displayName: u.displayName, cat: "biz", amount: bizDayTotal2 });
         }
       } catch {}
 

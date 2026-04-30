@@ -403,6 +403,14 @@ export class FishingService {
         total: Math.max(0, toInt(user.fishing.moneyDay, 0))
       }).catch(() => {});
     }
+    if (this.social?.maybeUpdateCityDayTop) {
+      await this.social.maybeUpdateCityDayTop({
+        userId: user.id,
+        displayName: String(user?.displayName || "").trim(),
+        cat: "fish",
+        amount: Math.max(0, toInt(user.fishing.moneyDay, 0))
+      }).catch(() => {});
+    }
   }
 
   // ── Session lifecycle ──────────────────────────────────────────────────────

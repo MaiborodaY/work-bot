@@ -319,6 +319,14 @@ export class MarketService {
         total: this._marketGrossToday(u, this.now())
       }).catch(() => {});
     }
+    if (this.social?.maybeUpdateCityDayTop) {
+      await this.social.maybeUpdateCityDayTop({
+        userId: u.id,
+        displayName: String(u?.displayName || "").trim(),
+        cat: "market",
+        amount: this._marketGrossToday(u, this.now())
+      }).catch(() => {});
+    }
 
     return {
       ok: true,

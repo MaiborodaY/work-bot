@@ -894,6 +894,14 @@ export class SyndicateService {
         total: Math.max(0, toInt(user.syndicate.netDay, 0))
       }).catch(() => {});
     }
+    if (this.social?.maybeUpdateCityDayTop) {
+      await this.social.maybeUpdateCityDayTop({
+        userId: user.id,
+        displayName: String(user?.displayName || "").trim(),
+        cat: "syn",
+        amount: Math.max(0, toInt(user.syndicate.netDay, 0))
+      }).catch(() => {});
+    }
     await this._notifyDealFinished(user, deal, outcome, stake, ret, net);
   }
 

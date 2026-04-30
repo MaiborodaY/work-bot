@@ -985,6 +985,14 @@ export class FarmService {
         allTotal: toInt(u?.stats?.farmMoneyTotal, 0)
       }).catch(() => {});
     }
+    if (this.social?.maybeUpdateCityDayTop) {
+      await this.social.maybeUpdateCityDayTop({
+        userId: u.id,
+        displayName: String(u?.displayName || "").trim(),
+        cat: "farm",
+        amount: this._farmIncomeToday(u, nowTs)
+      }).catch(() => {});
+    }
     if (qRes?.events?.length && this.quests?.notifyEvents) {
       await this.quests.notifyEvents(u, qRes.events).catch(() => {});
     }
@@ -1131,6 +1139,14 @@ export class FarmService {
         dayTotal: this._farmIncomeToday(u, nowTs),
         weekTotal: toInt(u?.stats?.farmMoneyWeek, 0),
         allTotal: toInt(u?.stats?.farmMoneyTotal, 0)
+      }).catch(() => {});
+    }
+    if (this.social?.maybeUpdateCityDayTop) {
+      await this.social.maybeUpdateCityDayTop({
+        userId: u.id,
+        displayName: String(u?.displayName || "").trim(),
+        cat: "farm",
+        amount: this._farmIncomeToday(u, nowTs)
       }).catch(() => {});
     }
     if (questEvents.length && this.quests?.notifyEvents) {

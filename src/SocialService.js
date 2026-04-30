@@ -134,6 +134,7 @@ export class SocialService {
         await this.db.put("lb:syn_day", "[]");
         await this.db.put("lb:fish_day", "[]");
         await this.db.put("lb:market_day", "[]");
+        await this.db.put("lb:city_day", "[]");
         await this.db.put("state:dayKey", curDay);
       }
       if (storedWeek !== curWeek) {
@@ -655,6 +656,36 @@ export class SocialService {
   async getMarketDayTop() {
     await this.ensurePeriod();
     const raw = (await this.db.get("lb:market_day")) || "[]";
+    return this._filterOutAdmins(JSON.parse(raw));
+  }
+
+  async maybeUpdateCityDayTop({ userId, displayName, cat, amount }) {
+    await this.ensurePeriod();
+    const CATS = ["biz", "farm", "syn", "fish", "market"];
+    if (!CATS.includes(String(cat))) return;
+    const raw = (await this.db.get("lb:city_day")) || "[]";
+    const list = this._filterOutAdmins(JSON.parse(raw));
+    const idStr = String(userId);
+    if (this._isAdminUserId(idStr)) return;
+    const safeAmount = Math.max(0, Math.floor(Number(amount) || 0));
+    const idx = list.findIndex((x) => String(x.userId) === idStr);
+    if (idx >= 0) {
+      list[idx].name = displayName || idStr;
+      list[idx].cats = list[idx].cats || {};
+      list[idx].cats[cat] = safeAmount;
+      list[idx].total = CATS.reduce((s, c) => s + Math.max(0, Math.floor(Number(list[idx].cats[c]) || 0)), 0);
+    } else {
+      const cats = {};
+      CATS.forEach((c) => { cats[c] = c === cat ? safeAmount : 0; });
+      list.push({ userId: idStr, name: displayName || idStr, cats, total: safeAmount });
+    }
+    list.sort((a, b) => (b.total || 0) - (a.total || 0));
+    await this.db.put("lb:city_day", JSON.stringify(list.slice(0, 50)));
+  }
+
+  async getCityDayTop() {
+    await this.ensurePeriod();
+    const raw = (await this.db.get("lb:city_day")) || "[]";
     return this._filterOutAdmins(JSON.parse(raw));
   }
 
