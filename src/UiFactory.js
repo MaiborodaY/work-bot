@@ -765,7 +765,7 @@ export class UiFactory {
         { text: this._t(l, "ui.cityboard.toptheftweek"),  callback_data: "city:toptheftweek" }
       ],
       [
-        { text: this._t(l, "ui.cityboard.contribute"), callback_data: "city:contribute" },
+        { text: this._t(l, "ui.cityboard.contribute"), callback_data: this._go(Routes.EARN) },
         { text: this._t(l, "ui.cityboard.rename"),     callback_data: "social:name" }
       ],
       [{ text: this._t(l, "ui.back.default"), callback_data: this._go(Routes.CITY) }],
@@ -885,7 +885,7 @@ export class UiFactory {
       return this._t(l, "ui.cityboard.cityday.empty");
     }
     const medals = ["🥇", "🥈", "🥉"];
-    const CAT_ICONS = { biz: "🏢", farm: "🌱", syn: "🤝", fish: "🎣", market: "🛒" };
+    const CAT_ICONS = { work: "💼", biz: "🏢", farm: "🌱", syn: "🤝", fish: "🎣", market: "🛒", labour: "👔" };
     const lines = [this._t(l, "ui.cityboard.cityday.title")];
     list.slice(0, 15).forEach((x, i) => {
       const m = medals[i] || `${i + 1}.`;

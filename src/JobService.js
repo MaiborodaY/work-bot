@@ -232,6 +232,13 @@ export class JobService {
           displayName: u.displayName || String(u.id),
           total: u.weekTotal
         });
+
+        await this.social.maybeUpdateCityDayTop({
+          userId: u.id,
+          displayName: u.displayName || String(u.id),
+          cat: "work",
+          amount: u.dayTotal
+        });
       }
     } catch {}
 

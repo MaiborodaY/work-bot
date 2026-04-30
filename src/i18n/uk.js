@@ -475,7 +475,7 @@ export const UK = {
   "ui.upgrades.title": "🛠️ Твої покращення:",
   "ui.upgrades.bought": "✅ Куплено: {{title}}",
   "ui.upgrades.buy": "🛒 {{title}} · ${{price}}",
-  "ui.cityboard.contribute": "🤝 Зробити внесок",
+  "ui.cityboard.contribute": "🏆 Стати головним у місті",
   "ui.cityboard.topday": "📅 Роботи за день",
   "ui.cityboard.topweek": "🗓️ Роботи за тиждень",
   "ui.cityboard.topsmart": "🧠 Вікторина за день",

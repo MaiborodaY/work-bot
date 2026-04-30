@@ -299,9 +299,19 @@ export class LabourService {
   }
 
   async _maybeUpdateLabourDayTop(payload) {
-    if (!payload || !this.social || typeof this.social.maybeUpdateLabourDayTop !== "function") return;
+    if (!payload || !this.social) return;
     try {
-      await this.social.maybeUpdateLabourDayTop(payload);
+      if (typeof this.social.maybeUpdateLabourDayTop === "function") {
+        await this.social.maybeUpdateLabourDayTop(payload);
+      }
+      if (typeof this.social.maybeUpdateCityDayTop === "function") {
+        await this.social.maybeUpdateCityDayTop({
+          userId: payload.userId,
+          displayName: payload.displayName,
+          cat: "labour",
+          amount: Math.max(0, Number(payload.money) || 0)
+        });
+      }
     } catch {}
   }
 

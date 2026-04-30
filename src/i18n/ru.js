@@ -205,7 +205,7 @@ export const RU = {
   "ui.upgrades.bought": "✅ Куплено: {{title}}",
   "ui.upgrades.buy": "🛒 {{title}} · ${{price}}",
 
-  "ui.cityboard.contribute": "🤝 Внести вклад",
+  "ui.cityboard.contribute": "🏆 Стать главным в городе",
   "ui.cityboard.topday": "📅 Работы за день",
   "ui.cityboard.topweek": "🗓️ Работы за неделю",
   "ui.cityboard.topsmart": "🧠 Викторина за день",

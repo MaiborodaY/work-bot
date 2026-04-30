@@ -661,7 +661,7 @@ export class SocialService {
 
   async maybeUpdateCityDayTop({ userId, displayName, cat, amount }) {
     await this.ensurePeriod();
-    const CATS = ["biz", "farm", "syn", "fish", "market"];
+    const CATS = ["work", "biz", "farm", "syn", "fish", "market", "labour"];
     if (!CATS.includes(String(cat))) return;
     const raw = (await this.db.get("lb:city_day")) || "[]";
     const list = this._filterOutAdmins(JSON.parse(raw));

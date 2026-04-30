@@ -469,7 +469,7 @@ export const EN = {
   "ui.upgrades.title": "🛠️ Your upgrades:",
   "ui.upgrades.bought": "✅ Purchased: {{title}}",
   "ui.upgrades.buy": "🛒 {{title}} · ${{price}}",
-  "ui.cityboard.contribute": "🤝 Contribute",
+  "ui.cityboard.contribute": "🏆 Become city leader",
   "ui.cityboard.topday": "📅 Work earnings (day)",
   "ui.cityboard.topweek": "🗓️ Work earnings (week)",
   "ui.cityboard.topsmart": "🧠 Quiz per day",
