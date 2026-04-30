@@ -80,6 +80,7 @@ export class AdminCommands {
         "/admin_syndicate - syndicate stats snapshot\n" +
         "/admin_fishing - fishing outcomes & strategy stats\n" +
         "/admin_cron_stats - KV ops per service from last cron run\n" +
+        "/admin_city_day - dump raw lb:city_day for debugging\n" +
         "/admin_new_users [limit] - newest users list\n" +
         "/admin_quiz - quiz stats\n\n" +
         "<b>Channel</b>\n" +
@@ -557,6 +558,22 @@ export class AdminCommands {
       await this._sendFishingStats();
       return true;
     }
+    if (/^\/admin_city_day(?:@\w+)?\s*$/i.test(input)) {
+      const raw = await this.db.get("lb:city_day").catch(() => null);
+      if (!raw) { await this.send("lb:city_day is empty."); return true; }
+      let list; try { list = JSON.parse(raw); } catch { await this.send("Parse error."); return true; }
+      const lines = [`<b>lb:city_day</b> (${list.length} entries)`, ""];
+      for (const x of list.slice(0, 10)) {
+        const cats = x.cats || {};
+        const catStr = Object.entries(cats).filter(([,v]) => v > 0).map(([k,v]) => `${k}:${v}`).join(" ");
+        lines.push(`<b>${x.name}</b> total=${x.total}`);
+        lines.push(catStr || "no cats");
+        lines.push("");
+      }
+      await this.send(lines.join("\n"));
+      return true;
+    }
+
     if (/^\/admin_cron_stats(?:@\w+)?\s*$/i.test(input)) {
       await this._sendCronStats();
       return true;
