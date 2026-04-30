@@ -744,24 +744,30 @@ export class UiFactory {
     const l = this._lang(lang);
     return [
       [{ text: this._t(l, "ui.cityboard.topcityday"), callback_data: "city:topcityday" }],
-      [{ text: this._t(l, "ui.cityboard.contribute"), callback_data: "city:contribute" }],
       [
-        { text: this._t(l, "ui.cityboard.topday"),    callback_data: "city:topday" },
-        { text: this._t(l, "ui.cityboard.topweek"), callback_data: "city:topweek" }
+        { text: this._t(l, "ui.cityboard.topday"),   callback_data: "city:topday" },
+        { text: this._t(l, "ui.cityboard.topweek"),  callback_data: "city:topweek" }
       ],
       [
-        { text: this._t(l, "ui.cityboard.topsmart"), callback_data: "city:topsmart" },
-        { text: this._t(l, "ui.cityboard.topstrong"),    callback_data: "city:topstrong" }
+        { text: this._t(l, "ui.cityboard.topsmart"),  callback_data: "city:topsmart" },
+        { text: this._t(l, "ui.cityboard.topstrong"), callback_data: "city:topstrong" }
       ],
       [
         { text: this._t(l, "ui.cityboard.topfarmday"), callback_data: "city:topfarmday" },
-        { text: this._t(l, "ui.cityboard.topbizday"), callback_data: "city:topbizday" }
+        { text: this._t(l, "ui.cityboard.topbizday"),  callback_data: "city:topbizday" }
       ],
-      [{ text: this._t(l, "ui.cityboard.topsynday"), callback_data: "city:topsynday" }],
-      [{ text: this._t(l, "ui.cityboard.topfishday"), callback_data: "city:topfishday" }],
-      [{ text: this._t(l, "ui.cityboard.topmarketday"), callback_data: "city:topmarketday" }],
-      [{ text: this._t(l, "ui.cityboard.toptheftweek"), callback_data: "city:toptheftweek" }],
-      [{ text: this._t(l, "ui.cityboard.rename"), callback_data: "social:name" }],
+      [
+        { text: this._t(l, "ui.cityboard.topsynday"),  callback_data: "city:topsynday" },
+        { text: this._t(l, "ui.cityboard.topfishday"), callback_data: "city:topfishday" }
+      ],
+      [
+        { text: this._t(l, "ui.cityboard.topmarketday"),  callback_data: "city:topmarketday" },
+        { text: this._t(l, "ui.cityboard.toptheftweek"),  callback_data: "city:toptheftweek" }
+      ],
+      [
+        { text: this._t(l, "ui.cityboard.contribute"), callback_data: "city:contribute" },
+        { text: this._t(l, "ui.cityboard.rename"),     callback_data: "social:name" }
+      ],
       [{ text: this._t(l, "ui.back.default"), callback_data: this._go(Routes.CITY) }],
     ];
   }
