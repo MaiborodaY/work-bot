@@ -325,9 +325,9 @@ export class Locations {
           }
           return null;
         },
-        fallbackCaptionKey: "loc.city.caption",
+        fallbackCaptionKey: "loc.business_district.caption",
         fallbackBackTextKey: "ui.back.default",
-        fallbackBackCb: toGoCallback(Routes.CITY)
+        fallbackBackCb: toGoCallback(Routes.BUSINESS_DISTRICT)
       }),
 
       [Routes.FISHING]: async () => this._renderServiceRoute({

@@ -986,7 +986,7 @@ export class SyndicateService {
       ];
       return {
         caption: lines.join("\n"),
-        keyboard: [[{ text: s.btnBackCity, callback_data: "go:Earn" }]]
+        keyboard: [[{ text: s.btnBackCity, callback_data: "go:BusinessDistrict" }]]
       };
     }
 
@@ -1050,7 +1050,7 @@ export class SyndicateService {
     kb.push([{ text: s.btnRatingWeek, callback_data: "syn:rating:week" }]);
     kb.push([{ text: s.btnRatingAll, callback_data: "syn:rating:all" }]);
     kb.push([{ text: s.btnHelp, callback_data: "syn:help" }]);
-    kb.push([{ text: s.btnBackCity, callback_data: "go:City" }]);
+    kb.push([{ text: s.btnBackCity, callback_data: "go:BusinessDistrict" }]);
 
     return {
       caption: lines.join("\n"),

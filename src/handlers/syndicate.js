@@ -31,7 +31,7 @@ export const syndicateHandler = {
         sourceMsg: locations._sourceMsg || cb?.message || null,
         place: Routes.SYNDICATE,
         caption: String(view?.caption || ""),
-        keyboard: Array.isArray(view?.keyboard) ? view.keyboard : [[{ text: "⬅️", callback_data: "go:City" }]],
+        keyboard: Array.isArray(view?.keyboard) ? view.keyboard : [[{ text: "⬅️", callback_data: "go:BusinessDistrict" }]],
         asset: view?.asset || undefined,
         policy: "auto"
       });

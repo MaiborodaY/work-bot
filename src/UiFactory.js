@@ -129,9 +129,6 @@ export class UiFactory {
     if (earnPlayerLevel >= 2) {
       kb.push([{ text: this._t(l, "ui.earn.stocks"), callback_data: this._go(Routes.STOCKS) }]);
     }
-    if (earnPlayerLevel >= 5) {
-      kb.push([{ text: this._t(l, "ui.city.syndicate"), callback_data: this._go(Routes.SYNDICATE) }]);
-    }
     kb.push(
       [{ text: this._t(l, "ui.earn.fishing"), callback_data: this._go(Routes.FISHING) }],
       [{ text: this._t(l, "ui.back.city"),    callback_data: this._go(Routes.SQUARE) }],
@@ -152,6 +149,11 @@ export class UiFactory {
     if (user && this._hasAnyBusiness(user)) {
       kb.push([{ text: this._t(l, "ui.earn.labour"), callback_data: this._go(Routes.LABOUR) }]);
       kb.push([{ text: this._t(l, "ui.earn.business_supply"), callback_data: "supply:open" }]);
+    }
+
+    const bdPlayerLevel = user ? Math.max(1, ProgressionService.getLevelInfo(user)?.level || 1) : 99;
+    if (bdPlayerLevel >= 5) {
+      kb.push([{ text: this._t(l, "ui.city.syndicate"), callback_data: this._go(Routes.SYNDICATE) }]);
     }
 
     kb.push([{ text: this._t(l, "ui.back.earn"), callback_data: this._go(Routes.EARN) }]);
