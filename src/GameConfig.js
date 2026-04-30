@@ -272,6 +272,7 @@ export const CONFIG = {
 
   CLANS: {
     MAX_MEMBERS: 10,
+    KICK_INACTIVE_DAYS: 7,
     CONTRACTS_PER_WEEK: 3,
     ALWAYS_CONTRACT: "work_money",
     CONTRACTS: {

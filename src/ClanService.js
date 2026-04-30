@@ -2,6 +2,7 @@
 import { CONFIG } from "./GameConfig.js";
 import { EconomyService } from "./EconomyService.js";
 import { normalizeLang, t } from "./i18n/index.js";
+import { dayDiffUtc, dayStrUtc } from "./PlayerStats.js";
 
 const CLAN_INDEX_KEY = "clan:index";
 const CLAN_STATE_WEEK_KEY = "clan:state:weekKey";
@@ -874,6 +875,47 @@ export class ClanService {
     return { ok: true, nextWeek, nextWeekStart };
   }
 
+  async kickMember(actor, targetUserId) {
+    await this.ensureWeek();
+    const actorClanId = String(actor?.clan?.clanId || "");
+    if (!actorClanId) return { ok: false, error: this._t(actor, "clan.err.not_member") };
+
+    const target = await this.users.load(String(targetUserId)).catch(() => null);
+    if (!target) return { ok: false, error: this._t(actor, "clan.err.kick_not_found") };
+
+    const targetClanId = String(target?.clan?.clanId || "");
+    if (targetClanId !== actorClanId) return { ok: false, error: this._t(actor, "clan.err.kick_not_member") };
+    if (String(target.id) === String(actor.id)) return { ok: false, error: this._t(actor, "clan.err.kick_self") };
+
+    const inactiveDays = Math.max(1, Number(CONFIG?.CLANS?.KICK_INACTIVE_DAYS) || 7);
+    const today = dayStrUtc(Date.now());
+    const lastActive = String(target?.stats?.lastActiveDay || "");
+    const daysInactive = lastActive ? dayDiffUtc(lastActive, today) : 999;
+    if (daysInactive < inactiveDays) return { ok: false, error: this._t(actor, "clan.err.kick_active") };
+
+    const clan = await this._readClan(actorClanId);
+    if (!clan) return { ok: false, error: this._t(actor, "clan.err.not_found") };
+    this._ensureClanShape(clan);
+    clan.members = clan.members.filter((id) => String(id) !== String(target.id));
+    await this._saveClan(clan);
+
+    const nextWeek = this._nextWeekKey();
+    target.clan.clanId = "";
+    target.clan.joinedAt = 0;
+    target.clan.joinAvailableFromWeek = nextWeek;
+    target.clan.lastPresenceDay = "";
+    target.clanCosmetic = null;
+    await this.users.save(target);
+
+    if (this.bot && target.chatId) {
+      try {
+        await this.bot.sendMessage(target.chatId, this._t(target, "clan.notify.kicked", { name: clan.name }));
+      } catch {}
+    }
+
+    return { ok: true, name: String(target.displayName || target.id) };
+  }
+
   async touchDailyPresence(u) {
     await this.ensureWeek();
 
@@ -1192,8 +1234,11 @@ export class ClanService {
     this._ensureClanShape(clan);
     this._ensureClanWeek(clan, this._weekKey());
 
+    const inactiveDays = Math.max(1, Number(CONFIG?.CLANS?.KICK_INACTIVE_DAYS) || 7);
+    const today = dayStrUtc(Date.now());
     const weekScore = Math.max(0, Number(clan.week.score) || 0);
     const lines = [this._t(u, "clan.members.title", { name: clan.name }), ""];
+    const kb = [];
 
     for (const uid of clan.members || []) {
       const user = await this.users.load(uid).catch(() => null);
@@ -1202,28 +1247,35 @@ export class ClanService {
         ? String(user.displayName).trim()
         : this._t(u, "clan.members.player_fallback", { id: String(uid).slice(-4).padStart(4, "0") });
       const tier = String(user?.clanCosmetic?.tier || "");
-      const cosmeticPrefix = tier === "top1"
-        ? "🥇"
-        : tier === "top2"
-          ? "🥈"
-          : tier === "top3"
-            ? "🥉"
-            : "";
+      const cosmeticPrefix = tier === "top1" ? "🥇" : tier === "top2" ? "🥈" : tier === "top3" ? "🥉" : "";
+
+      const lastActive = String(user?.stats?.lastActiveDay || "");
+      const daysInactive = lastActive ? dayDiffUtc(lastActive, today) : 999;
+      const isInactive = daysInactive >= inactiveDays;
+      const isSelf = String(uid) === String(u.id);
+
+      const inactiveMark = isInactive ? ` 💤 ${daysInactive}д` : "";
       const shownName = cosmeticPrefix ? `${cosmeticPrefix} ${name}` : name;
 
       const pts = Math.max(0, Number(m.points) || 0);
       const useful = Math.max(0, Number(m.usefulEvents) || 0);
       const share = weekScore > 0 ? Math.floor((pts / weekScore) * 1000) / 10 : 0;
 
-      lines.push(`${shownName}`);
+      lines.push(`${shownName}${inactiveMark}`);
       lines.push(this._t(u, "clan.members.contribution", { pts, share }));
       lines.push(this._t(u, "clan.members.useful_events", { useful }));
       lines.push("");
+
+      if (isInactive && !isSelf) {
+        kb.push([{ text: this._t(u, "clan.btn.kick", { name }), callback_data: `clan:kick_confirm:${uid}` }]);
+      }
     }
+
+    kb.push([{ text: this._t(u, "worker.btn.back"), callback_data: "go:Clan" }]);
 
     return {
       caption: lines.join("\n").trim(),
-      keyboard: [[{ text: this._t(u, "worker.btn.back"), callback_data: "go:Clan" }]]
+      keyboard: kb
     };
   }
 

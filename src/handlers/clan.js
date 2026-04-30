@@ -11,7 +11,9 @@ export const clanHandler = {
     data === "clan:rating_info" ||
     data === "clan:leave" ||
     data === "clan:leave_confirm" ||
-    data.startsWith("clan:join:"),
+    data.startsWith("clan:join:") ||
+    data.startsWith("clan:kick_confirm:") ||
+    data.startsWith("clan:kick:"),
 
   async handle(ctx) {
     const { data, u, cb, answer, users, locations, clans, achievements, quests, goTo } = ctx;
@@ -118,6 +120,35 @@ export const clanHandler = {
 
     if (data === "clan:members") {
       await answer(cb.id);
+      const view = await clans.buildMembersView(u);
+      await show(view);
+      return;
+    }
+
+    if (data.startsWith("clan:kick_confirm:")) {
+      await answer(cb.id);
+      const targetId = data.split(":")[2] || "";
+      const target = await users.load(targetId).catch(() => null);
+      const name = target?.displayName || targetId;
+      await show({
+        caption: tt("clan.kick.confirm_title") + "\n\n" + tt("clan.kick.confirm_text", { name }),
+        keyboard: [
+          [{ text: tt("clan.kick.confirm_btn", { name }), callback_data: `clan:kick:${targetId}` }],
+          [{ text: tt("ui.back.default"), callback_data: "clan:members" }]
+        ]
+      });
+      return;
+    }
+
+    if (data.startsWith("clan:kick:")) {
+      const targetId = data.split(":")[2] || "";
+      const res = await clans.kickMember(u, targetId);
+      if (!res.ok) {
+        await answer(cb.id, res.error || tt("handler.common.unknown_command"));
+        await goTo(u, "Clan");
+        return;
+      }
+      await answer(cb.id, tt("clan.kick.success", { name: res.name }));
       const view = await clans.buildMembersView(u);
       await show(view);
       return;
