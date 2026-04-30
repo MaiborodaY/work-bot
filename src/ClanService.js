@@ -458,6 +458,7 @@ export class ClanService {
       completedContracts,
       scoreUpdatedAt,
       membersCount: Array.isArray(clan.members) ? clan.members.length : 0,
+      maxMembers: Math.max(1, Number(clan.maxMembers) || this._maxMembers()),
       cosmetic: clan.cosmetic || null,
       createdAt: Math.max(0, Number(clan.createdAt) || 0)
     };
@@ -1067,6 +1068,7 @@ export class ClanService {
         top1: Math.max(0, Number(clan?.allTime?.top1) || 0),
         top3: Math.max(0, Number(clan?.allTime?.top3) || 0),
         membersCount: Array.isArray(clan.members) ? clan.members.length : 0,
+        maxMembers: Math.max(1, Number(clan.maxMembers) || this._maxMembers()),
         createdAt: Math.max(0, Number(clan.createdAt) || 0),
         cosmetic: clan.cosmetic || null
       }))
@@ -1332,7 +1334,8 @@ export class ClanService {
         const mark = medals[i] || `${i + 1}.`;
         const badgeLabel = this._cosmeticLabel(x?.cosmetic?.tier, u);
         const badge = badgeLabel ? ` ${badgeLabel}` : "";
-        lines.push(`${mark} ${x.name}${badge}`);
+        const members = `(👥${x.membersCount}/${x.maxMembers || this._maxMembers()})`;
+        lines.push(`${mark} ${x.name} ${members}${badge}`);
         lines.push(this._t(u, "clan.top.weekly.line", {
           score: x.score,
           max: x.maxScore,
@@ -1360,7 +1363,8 @@ export class ClanService {
       for (let i = 0; i < list.length; i++) {
         const x = list[i];
         const mark = medals[i] || `${i + 1}.`;
-        lines.push(`${mark} ${x.name}`);
+        const members2 = `(👥${x.membersCount}/${x.maxMembers || this._maxMembers()})`;
+        lines.push(`${mark} ${x.name} ${members2}`);
         lines.push(this._t(u, "clan.top.alltime.line1", { score: x.score, contracts: x.completedContracts }));
         lines.push(this._t(u, "clan.top.alltime.line2", { weeks: x.weeksPlayed, top1: x.top1 }));
       }
