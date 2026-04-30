@@ -148,7 +148,7 @@ export default {
       const farm = new FarmService({ db: _countDb("farm"), users, now: () => Date.now(), bot, quests, achievements, social });
       const colosseum = new ColosseumService({ db: _countDb("colosseum"), users, now: () => Date.now(), bot, isAdmin, quests, achievements });
       const syndicate = new SyndicateService({ db: _countDb("syndicate"), users, now: () => Date.now(), bot, isAdmin, achievements });
-      const fishing   = new FishingService({ db: _countDb("fishing"), users, now: () => Date.now(), bot, isAdmin, achievements });
+      const fishing   = new FishingService({ db: _countDb("fishing"), users, now: () => Date.now(), bot, isAdmin, achievements, social });
       const notifier = new NotificationService({
         users,
         bot,
@@ -278,7 +278,7 @@ export default {
     const market = new MarketService({ users, now, social });
     const colosseum = new ColosseumService({ db: env.DB, users, now, bot, isAdmin, quests, achievements });
     const syndicate = new SyndicateService({ db: env.DB, users, now, bot, isAdmin, achievements });
-    const fishing   = new FishingService({ db: env.DB, users, now, bot, isAdmin, achievements });
+    const fishing   = new FishingService({ db: env.DB, users, now, bot, isAdmin, achievements, social });
     const referrals = new ReferralService({
       users,
       now,
@@ -1644,7 +1644,7 @@ export default {
     const farm = new FarmService({ db: env.DB, users, now: () => Date.now(), bot, quests, achievements, social });
     const colosseum = new ColosseumService({ db: env.DB, users, now: () => Date.now(), bot, isAdmin, quests, achievements });
     const syndicate = new SyndicateService({ db: env.DB, users, now: () => Date.now(), bot, isAdmin, achievements });
-    const fishing   = new FishingService({ db: env.DB, users, now: () => Date.now(), bot, isAdmin, achievements });
+    const fishing   = new FishingService({ db: env.DB, users, now: () => Date.now(), bot, isAdmin, achievements, social });
 
     const notifier = new NotificationService({
       users,

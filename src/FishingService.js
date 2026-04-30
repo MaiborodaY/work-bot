@@ -2,7 +2,7 @@ import { CONFIG } from "./GameConfig.js";
 import { ASSETS } from "./Assets.js";
 import { normalizeLang } from "./i18n/index.js";
 import { getFishingStrings } from "./i18n/fishing.js";
-import { markUsefulActivity } from "./PlayerStats.js";
+import { markUsefulActivity, dayStrUtc } from "./PlayerStats.js";
 import { ProgressionService } from "./ProgressionService.js";
 
 const HOUR_MS = 60 * 60 * 1000;
@@ -37,7 +37,7 @@ function shortName(id, displayName) {
 
 
 export class FishingService {
-  constructor({ db, users, now, bot, isAdmin, achievements, quests } = {}) {
+  constructor({ db, users, now, bot, isAdmin, achievements, quests, social } = {}) {
     this.db = db || null;
     this.users = users || null;
     this.now = typeof now === "function" ? now : () => Date.now();
@@ -45,6 +45,7 @@ export class FishingService {
     this.isAdmin = typeof isAdmin === "function" ? isAdmin : () => false;
     this.achievements = achievements || null;
     this.quests = quests || null;
+    this.social = social || null;
   }
 
   // ── Config ─────────────────────────────────────────────────────────────────
@@ -121,7 +122,9 @@ export class FishingService {
     if (typeof f.completedWeek  !== "number") f.completedWeek  = 0;
     if (typeof f.moneyTotal     !== "number") f.moneyTotal     = 0;
     if (typeof f.moneyWeek      !== "number") f.moneyWeek      = 0;
+    if (typeof f.moneyDay       !== "number") f.moneyDay       = 0;
     if (typeof f.weekKey        !== "string")  f.weekKey        = "";
+    if (typeof f.dayKey         !== "string")  f.dayKey         = "";
     if (!Array.isArray(f.recentOutcomes))      f.recentOutcomes = [];
     if (typeof f.ccStreak !== "number")         f.ccStreak = 0;
     if (typeof f.activeSession !== "string")    f.activeSession = "";
@@ -140,6 +143,11 @@ export class FishingService {
       u.fishing.weekKey = week;
       u.fishing.completedWeek = 0;
       u.fishing.moneyWeek = 0;
+    }
+    const today = dayStrUtc(this.now());
+    if (u.fishing.dayKey !== today) {
+      u.fishing.dayKey = today;
+      u.fishing.moneyDay = 0;
     }
   }
 
@@ -366,6 +374,7 @@ export class FishingService {
     user.fishing.completedWeek  += 1;
     user.fishing.moneyTotal = toInt(user.fishing.moneyTotal, 0) + profit;
     user.fishing.moneyWeek  = toInt(user.fishing.moneyWeek,  0) + profit;
+    user.fishing.moneyDay   = toInt(user.fishing.moneyDay,   0) + profit;
     user.fishing.activeSession = "";
     const outcomeKey = `${myChoice === "C" ? "C" : "D"}${theirChoice === "C" ? "C" : "D"}`;
     user.fishing.outcomes[outcomeKey] = toInt(user.fishing.outcomes[outcomeKey], 0) + 1;
@@ -387,6 +396,13 @@ export class FishingService {
 
     await this.users.save(user);
     await this._updateRatingForUser(user);
+    if (this.social?.maybeUpdateFishDayTop) {
+      await this.social.maybeUpdateFishDayTop({
+        userId: user.id,
+        displayName: String(user?.displayName || "").trim(),
+        total: Math.max(0, toInt(user.fishing.moneyDay, 0))
+      }).catch(() => {});
+    }
   }
 
   // ── Session lifecycle ──────────────────────────────────────────────────────
