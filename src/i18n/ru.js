@@ -206,8 +206,8 @@ export const RU = {
   "ui.upgrades.buy": "🛒 {{title}} · ${{price}}",
 
   "ui.cityboard.contribute": "🤝 Внести вклад",
-  "ui.cityboard.topday": "📅 Топ за день",
-  "ui.cityboard.topweek": "🗓️ Топ за неделю",
+  "ui.cityboard.topday": "📅 Работы за день",
+  "ui.cityboard.topweek": "🗓️ Работы за неделю",
   "ui.cityboard.topsmart": "🧠 Викторина (день)",
   "ui.cityboard.topstrong": "👔 Наёмники (день)",
   "ui.cityboard.topfarmweek": "🌱 Ферма за неделю",
