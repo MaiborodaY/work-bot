@@ -895,13 +895,19 @@ export class SyndicateService {
         total: Math.max(0, toInt(user.syndicate.netDay, 0))
       }).catch(() => {});
     }
-    if (this.social?.maybeUpdateCityDayTop) {
-      await this.social.maybeUpdateCityDayTop({
-        userId: user.id,
-        displayName: String(user?.displayName || "").trim(),
-        cat: "syn",
-        amount: Math.max(0, toInt(user.syndicate.netDay, 0))
-      }).catch(() => {});
+    try {
+      console.log(`syn.city_day_update uid=${user.id} netDay=${user.syndicate.netDay} hasSocial=${!!this.social} hasFn=${!!this.social?.maybeUpdateCityDayTop}`);
+      if (this.social?.maybeUpdateCityDayTop) {
+        await this.social.maybeUpdateCityDayTop({
+          userId: user.id,
+          displayName: String(user?.displayName || "").trim(),
+          cat: "syn",
+          amount: Math.max(0, toInt(user.syndicate.netDay, 0))
+        });
+        console.log(`syn.city_day_update.ok uid=${user.id}`);
+      }
+    } catch (e) {
+      console.log(`syn.city_day_update.err uid=${user.id} err=${e?.message || e}`);
     }
     await this._notifyDealFinished(user, deal, outcome, stake, ret, net);
   }
