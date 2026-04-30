@@ -49,13 +49,14 @@ function makeDealId(nowTs) {
 }
 
 export class SyndicateService {
-  constructor({ db, users, now, bot = null, isAdmin = null, achievements = null }) {
+  constructor({ db, users, now, bot = null, isAdmin = null, achievements = null, social = null }) {
     this.db = db || users?.db || null;
     this.users = users || null;
     this.now = now || (() => Date.now());
     this.bot = bot || null;
     this.isAdmin = (typeof isAdmin === "function") ? isAdmin : (() => false);
     this.achievements = achievements || null;
+    this.social = social || null;
   }
 
   _cfg() {
