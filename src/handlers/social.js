@@ -12,6 +12,7 @@ export const socialHandler = {
   data === "city:toplucky" ||
   data === "city:topsynday" ||
   data === "city:topfishday" ||
+  data === "city:topmarketday" ||
   data === "city:topbizday" ||
   data === "city:toptheftweek" ||
   data === "city:topfarmweek" ||
@@ -158,6 +159,21 @@ export const socialHandler = {
         place: "CityBoard",
         caption: ui.cityTopFarmWeekCaption(top, lang),
         keyboard: topProfileKb(top, "farmweek", ui.cityTopDay(lang)),
+        policy: "auto",
+      });
+      locations.setSourceMessage(null);
+      return;
+    }
+
+    if (data === "city:topmarketday") {
+      await answer(cb.id);
+      const raw = await social.getMarketDayTop().catch(() => []);
+      const top = await normalizeTop(raw);
+      await locations.media.show({
+        sourceMsg: locations._sourceMsg,
+        place: "CityBoard",
+        caption: ui.cityTopMarketDayCaption(top, lang),
+        keyboard: topProfileKb(top, "marketday", ui.cityTopDay(lang)),
         policy: "auto",
       });
       locations.setSourceMessage(null);

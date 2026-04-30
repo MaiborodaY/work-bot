@@ -133,6 +133,7 @@ export class SocialService {
         await this.db.put("lb:gquiz_day", "[]");
         await this.db.put("lb:syn_day", "[]");
         await this.db.put("lb:fish_day", "[]");
+        await this.db.put("lb:market_day", "[]");
         await this.db.put("state:dayKey", curDay);
       }
       if (storedWeek !== curWeek) {
@@ -625,6 +626,35 @@ export class SocialService {
   async getFishDayTop() {
     await this.ensurePeriod();
     const raw = (await this.db.get("lb:fish_day")) || "[]";
+    return this._filterOutAdmins(JSON.parse(raw));
+  }
+
+  async maybeUpdateMarketDayTop({ userId, displayName, total }) {
+    await this.ensurePeriod();
+    const raw = (await this.db.get("lb:market_day")) || "[]";
+    const list = this._filterOutAdmins(JSON.parse(raw));
+    const idStr = String(userId);
+    if (this._isAdminUserId(idStr)) {
+      const cleaned = list.filter((x) => String(x.userId) !== idStr);
+      cleaned.sort((a, b) => (Number(b.total) || 0) - (Number(a.total) || 0));
+      await this.db.put("lb:market_day", JSON.stringify(cleaned.slice(0, this._topLimit())));
+      return;
+    }
+    const safeTotal = Math.max(0, Number(total) || 0);
+    const idx = list.findIndex((x) => String(x.userId) === idStr);
+    if (idx >= 0) {
+      list[idx].name = displayName || idStr;
+      list[idx].total = safeTotal;
+    } else {
+      list.push({ userId: idStr, name: displayName || idStr, total: safeTotal });
+    }
+    list.sort((a, b) => (Number(b.total) || 0) - (Number(a.total) || 0));
+    await this.db.put("lb:market_day", JSON.stringify(list.slice(0, this._topLimit())));
+  }
+
+  async getMarketDayTop() {
+    await this.ensurePeriod();
+    const raw = (await this.db.get("lb:market_day")) || "[]";
     return this._filterOutAdmins(JSON.parse(raw));
   }
 

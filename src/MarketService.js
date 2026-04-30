@@ -140,6 +140,16 @@ export class MarketService {
       .map(([day, amt]) => ({ day, amount: amt }));
   }
 
+  _marketGrossToday(u, nowTs = this.now()) {
+    const day = this._todayUTC(nowTs);
+    const rows = Array.isArray(u?.stats?.marketDays) ? u.stats.marketDays : [];
+    for (const row of rows) {
+      if (String(row?.day || "") !== day) continue;
+      return Math.max(0, Math.floor(Number(row?.gross) || 0));
+    }
+    return 0;
+  }
+
   _farmIncomeToday(u, nowTs = this.now()) {
     this._ensureFarmStats(u);
     const day = this._todayUTC(nowTs);
@@ -300,6 +310,13 @@ export class MarketService {
         dayTotal: this._farmIncomeToday(u, this.now()),
         weekTotal: Math.max(0, toInt(u?.stats?.farmMoneyWeek, 0)),
         allTotal: Math.max(0, toInt(u?.stats?.farmMoneyTotal, 0))
+      }).catch(() => {});
+    }
+    if (this.social?.maybeUpdateMarketDayTop) {
+      await this.social.maybeUpdateMarketDayTop({
+        userId: u.id,
+        displayName: String(u?.displayName || "").trim(),
+        total: this._marketGrossToday(u, this.now())
       }).catch(() => {});
     }
 
