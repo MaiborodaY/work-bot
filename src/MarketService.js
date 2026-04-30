@@ -1,4 +1,5 @@
 import { CONFIG } from "./GameConfig.js";
+import { ASSETS } from "./Assets.js";
 import { InventoryService } from "./InventoryService.js";
 import { markUsefulActivity, recordMarketStats } from "./PlayerStats.js";
 import { normalizeLang, t } from "./i18n/index.js";
@@ -221,7 +222,7 @@ export class MarketService {
     }
 
     kb.push([{ text: this._t(u, "market.btn.back_earn"), callback_data: "go:Earn" }]);
-    return { caption: lines.join("\n"), keyboard: kb };
+    return { caption: lines.join("\n"), keyboard: kb, asset: ASSETS.Market };
   }
 
   async buildItemView(u, itemIdRaw) {
