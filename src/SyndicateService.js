@@ -2,7 +2,7 @@ import { CONFIG } from "./GameConfig.js";
 import { getBusinessTitle } from "./I18nCatalog.js";
 import { normalizeLang } from "./i18n/index.js";
 import { getSyndicateStrings } from "./i18n/syndicate.js";
-import { markUsefulActivity } from "./PlayerStats.js";
+import { markUsefulActivity, dayStrUtc } from "./PlayerStats.js";
 import { ProgressionService } from "./ProgressionService.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -456,6 +456,13 @@ export class SyndicateService {
       u.syndicate.outcomeWeek = { success: 0, lucky: 0, fail: 0 };
       changed = true;
     }
+    const today = dayStrUtc(this.now());
+    if (String(u?.syndicate?.dayKey || "") !== today) {
+      if (!u.syndicate || typeof u.syndicate !== "object") u.syndicate = {};
+      u.syndicate.dayKey = today;
+      u.syndicate.netDay = 0;
+      changed = true;
+    }
     return changed;
   }
 
@@ -465,12 +472,14 @@ export class SyndicateService {
     if (!u.syndicate || typeof u.syndicate !== "object") {
       u.syndicate = {
         weekKey: this._nowWeekKey(),
+        dayKey: dayStrUtc(this.now()),
         completedWeek: 0,
         completedTotal: 0,
         weightedWeek: 0,
         weightedTotal: 0,
         netWeek: 0,
         netTotal: 0,
+        netDay: 0,
         outcomeWeek: { success: 0, lucky: 0, fail: 0 },
         outcomeTotal: { success: 0, lucky: 0, fail: 0 },
         byBiz: {},
@@ -479,7 +488,7 @@ export class SyndicateService {
       changed = true;
     }
     const s = u.syndicate;
-    const numKeys = ["completedWeek", "completedTotal", "weightedWeek", "weightedTotal", "netWeek", "netTotal"];
+    const numKeys = ["completedWeek", "completedTotal", "weightedWeek", "weightedTotal", "netWeek", "netTotal", "netDay"];
     for (const key of numKeys) {
       const fixed = Math.max(0, toInt(s?.[key], 0));
       if (fixed !== s[key]) {
@@ -854,6 +863,7 @@ export class SyndicateService {
     user.syndicate.weightedWeek += points;
     user.syndicate.netTotal += net;
     user.syndicate.netWeek += net;
+    user.syndicate.netDay = Math.max(0, toInt(user.syndicate.netDay, 0) + net);
     if (["success", "lucky", "fail"].includes(outcome)) {
       user.syndicate.outcomeTotal[outcome] = Math.max(0, toInt(user?.syndicate?.outcomeTotal?.[outcome], 0)) + 1;
       user.syndicate.outcomeWeek[outcome] = Math.max(0, toInt(user?.syndicate?.outcomeWeek?.[outcome], 0)) + 1;
@@ -877,6 +887,13 @@ export class SyndicateService {
 
     await this.users.save(user);
     await this._updateRatingForUser(user);
+    if (this.social?.maybeUpdateSynDayTop) {
+      await this.social.maybeUpdateSynDayTop({
+        userId: user.id,
+        displayName: String(user?.displayName || "").trim(),
+        total: Math.max(0, toInt(user.syndicate.netDay, 0))
+      }).catch(() => {});
+    }
     await this._notifyDealFinished(user, deal, outcome, stake, ret, net);
   }
 
