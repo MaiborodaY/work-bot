@@ -113,9 +113,9 @@ test("business supply handler: submit consumes ingredients, saves, sends separat
   assert.equal(saves.length, 1);
   assert.match(answers.at(-1)?.text || "", /Supply completed/);
   assert.equal(sends.length, 1);
-  assert.match(sends[0], /Next shawarma payout will be x2/);
+  assert.match(sends[0], /Tomorrow's shawarma payout will be x2/);
   assert.equal(mediaCalls.length, 1);
-  assert.match(mediaCalls[0].caption, /Supply completed|Claim shawarma payout first/);
+  assert.match(mediaCalls[0].caption, /Tomorrow's shawarma payout|Today's supply is completed/);
 });
 
 test("business supply handler: missing ingredients does not list shortages or send notice", async () => {
@@ -134,6 +134,37 @@ test("business supply handler: missing ingredients does not list shortages or se
   assert.match(answers.at(-1)?.text || "", /cannot be completed/);
   assert.equal(mediaCalls.length, 1);
   assert.doesNotMatch(mediaCalls[0].caption, /missing|need|short/i);
+});
+
+test("business supply handler: claimed payout still allows supply for tomorrow", async () => {
+  const { ctx, answers, saves, sends, mediaCalls } = createCtx({
+    data: "supply:submit:shawarma",
+    u: {
+      inv: { crop_carrot: 2, crop_tomato: 1 },
+      biz: {
+        owned: [{
+          id: "shawarma",
+          lastClaimDayUTC: getTodayUTC(),
+          supply: { unlocked: true, slots: 1 }
+        }]
+      }
+    }
+  });
+
+  await businessSupplyHandler.handle(ctx);
+
+  assert.deepEqual(ctx.u.inv, {});
+  assert.equal(ctx.u.biz.owned[0].supply.pendingMultiplier, 2);
+  assert.equal(saves.length, 1);
+  assert.equal(sends.length, 1);
+  assert.match(answers.at(-1)?.text || "", /Supply completed/);
+  assert.match(sends[0], /Tomorrow's shawarma payout will be x2/);
+  assert.equal(mediaCalls.length, 1);
+  assert.match(mediaCalls[0].caption, /Tomorrow's shawarma payout|Today's supply is completed/);
+  assert.equal(
+    mediaCalls[0].keyboard.flat().some((btn) => btn.callback_data === "supply:submit:shawarma"),
+    false
+  );
 });
 
 test("business supply handler: full progress shows and buys next order slot", async () => {
@@ -203,6 +234,7 @@ test("business supply handler: buy slot fails without enough money", async () =>
 });
 
 test("business supply handler: hides daily order block when today's order limit is reached", async () => {
+  const tomorrow = new Date(Date.parse(`${getTodayUTC()}T00:00:00.000Z`) + 86_400_000).toISOString().slice(0, 10);
   const { ctx, mediaCalls } = createCtx({
     data: "supply:open",
     u: {
@@ -213,7 +245,9 @@ test("business supply handler: hides daily order block when today's order limit 
             unlocked: true,
             slots: 1,
             ordersToday: 1,
-            lastOrderDayUTC: getTodayUTC()
+            lastOrderDayUTC: getTodayUTC(),
+            pendingMultiplier: 2,
+            pendingBonusDayUTC: tomorrow
           }
         }]
       }
@@ -224,5 +258,6 @@ test("business supply handler: hides daily order block when today's order limit 
 
   assert.equal(mediaCalls.length, 1);
   assert.doesNotMatch(String(mediaCalls[0].caption || ""), /Daily order:/i);
-  assert.match(String(mediaCalls[0].caption || ""), /Claim shawarma payout first/i);
+  assert.match(String(mediaCalls[0].caption || ""), /Tomorrow's shawarma payout will be boosted/i);
+  assert.match(String(mediaCalls[0].caption || ""), /Bonus to tomorrow's payout: x2/i);
 });

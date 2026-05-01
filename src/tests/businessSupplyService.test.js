@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { BusinessSupplyService } from "../BusinessSupplyService.js";
 
 const today = "2026-04-29";
+const tomorrow = "2026-04-30";
 
 test("business supply: default shawarma state is locked with one slot", () => {
   const entry = { id: "shawarma" };
@@ -54,7 +55,7 @@ test("business supply: submit consumes ingredients, sets x2 bonus and adds progr
   assert.deepEqual(u.inv, { crop_carrot: 1 });
   assert.equal(entry.supply.ordersToday, 1);
   assert.equal(entry.supply.pendingMultiplier, 2);
-  assert.equal(entry.supply.pendingBonusDayUTC, today);
+  assert.equal(entry.supply.pendingBonusDayUTC, tomorrow);
 });
 
 test("business supply: submit fails when locked or ingredients are missing", () => {
@@ -80,20 +81,42 @@ test("business supply: one-slot order cannot be repeated on the same day", () =>
   assert.deepEqual(u.inv, { crop_carrot: 2, crop_tomato: 1 });
 });
 
-test("business supply: pending bonus does not carry over to the next day", () => {
+test("business supply: submit after today's payout still boosts tomorrow without wasting ingredients", () => {
+  const u = { inv: { crop_carrot: 2, crop_tomato: 1 } };
+  const entry = {
+    id: "shawarma",
+    lastClaimDayUTC: today,
+    supply: { unlocked: true, slots: 1 }
+  };
+
+  const res = BusinessSupplyService.submitOrder(u, entry, "shawarma", today);
+
+  assert.equal(res.ok, true);
+  assert.deepEqual(u.inv, {});
+  assert.equal(entry.supply.ordersToday, 1);
+  assert.equal(entry.supply.pendingMultiplier, 2);
+  assert.equal(entry.supply.pendingBonusDayUTC, tomorrow);
+  assert.equal(BusinessSupplyService.claimMultiplier(entry, "shawarma", today), 1);
+  assert.equal(BusinessSupplyService.claimMultiplier(entry, "shawarma", tomorrow), 2);
+});
+
+test("business supply: pending bonus activates tomorrow and expires after that day", () => {
   const entry = {
     id: "shawarma",
     supply: {
       unlocked: true,
       slots: 1,
-      lastOrderDayUTC: "2026-04-28",
+      lastOrderDayUTC: today,
       ordersToday: 1,
       pendingMultiplier: 2,
-      pendingBonusDayUTC: "2026-04-28"
+      pendingBonusDayUTC: tomorrow
     }
   };
 
   assert.equal(BusinessSupplyService.claimMultiplier(entry, "shawarma", today), 1);
+  assert.equal(entry.supply.pendingMultiplier, 2);
+  assert.equal(BusinessSupplyService.claimMultiplier(entry, "shawarma", tomorrow), 2);
+  assert.equal(BusinessSupplyService.claimMultiplier(entry, "shawarma", "2026-05-01"), 1);
   assert.equal(entry.supply.ordersToday, 0);
   assert.equal(entry.supply.pendingMultiplier, 0);
   assert.equal(entry.supply.pendingBonusDayUTC, "");

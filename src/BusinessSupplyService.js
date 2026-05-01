@@ -12,6 +12,14 @@ function normalizeDay(raw) {
   return /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : "";
 }
 
+function addUTCDays(dayRaw, delta) {
+  const day = normalizeDay(dayRaw);
+  if (!day) return "";
+  const ts = Date.parse(`${day}T00:00:00.000Z`);
+  if (!Number.isFinite(ts)) return "";
+  return new Date(ts + (Math.trunc(Number(delta) || 0) * 86_400_000)).toISOString().slice(0, 10);
+}
+
 function cleanRecipe(recipe) {
   const out = {};
   if (!recipe || typeof recipe !== "object") return out;
@@ -66,7 +74,7 @@ export class BusinessSupplyService {
       supply.lastOrderDayUTC = "";
     }
 
-    if (supply.pendingBonusDayUTC && supply.pendingBonusDayUTC !== day) {
+    if (supply.pendingBonusDayUTC && supply.pendingBonusDayUTC < day) {
       supply.pendingMultiplier = 0;
       supply.pendingBonusDayUTC = "";
     }
@@ -149,7 +157,7 @@ export class BusinessSupplyService {
     if (day) supply.lastOrderDayUTC = day;
     const multiplier = toInt(cfg?.multipliersByOrders?.[nextOrders], 1);
     supply.pendingMultiplier = Math.max(1, multiplier);
-    if (day) supply.pendingBonusDayUTC = day;
+    if (day) supply.pendingBonusDayUTC = addUTCDays(day, 1);
 
     const target = this.progressTarget(entry, id);
     const activeSupply = this.normalize(entry, id, day);
@@ -232,6 +240,9 @@ export class BusinessSupplyService {
       progress: toInt(supply?.progress, 0),
       progressTarget: this.progressTarget(entry, id),
       nextSlotPrice: this.slotPrice(entry, id),
+      pendingMultiplier: toInt(supply?.pendingMultiplier, 0),
+      pendingBonusDayUTC: normalizeDay(supply?.pendingBonusDayUTC),
+      tomorrowUTC: addUTCDays(todayUTC, 1),
       canSubmit: !!canSubmit.ok,
       canBuySlot: !!canBuySlot.ok,
       submitBlockCode: canSubmit.ok ? "" : canSubmit.code,

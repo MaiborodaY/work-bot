@@ -92,7 +92,7 @@ test("core route dynamic: Biz_* route renders business card", async () => {
   assert.equal(mediaCalls[0].policy, "photo");
 });
 
-test("core route dynamic: Biz_* shows active supply bonus in next payout", async () => {
+test("core route dynamic: Biz_* shows active supply bonus for today's payout", async () => {
   const { locations, mediaCalls } = createLocations();
   const u = baseUser();
   u.biz.owned = [{

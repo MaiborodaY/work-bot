@@ -87,8 +87,11 @@ function buildCaption(u, entry, lang) {
   if (vm.submitBlockCode === "missing_ingredients") statusKey = "business_supply.status_collect_ingredients";
   const showOrderBlock = vm.submitBlockCode !== "daily_limit";
   const currentBonus = Math.max(1, Number(vm?.multiplier || 1));
+  const pendingBonus = Math.max(0, Number(vm?.pendingMultiplier || 0));
   const bonusLine = currentBonus > 1
-    ? tt("business_supply.bonus_next", { mult: currentBonus })
+    ? tt("business_supply.bonus_active_today", { mult: currentBonus })
+    : pendingBonus > 1
+      ? tt("business_supply.bonus_next", { mult: pendingBonus })
     : tt("business_supply.bonus_none");
   const progressLine = vm.progressTarget > 0
     ? tt("business_supply.progress", { progress: vm.progress, target: vm.progressTarget })
